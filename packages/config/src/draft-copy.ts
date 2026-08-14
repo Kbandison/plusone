@@ -70,7 +70,86 @@ export const DRAFT_COPY = {
       mismatch: "That combination is not one of the options.",
     },
   },
+
+  liveness: {
+    heading: "A quick selfie",
+    intro:
+      "Every profile here is a verified human. One selfie, checked automatically, and the picture is deleted the moment the check finishes. It is never shown to anyone.",
+    startLabel: "Take the selfie",
+    checkingLabel: "Checking…",
+    retryLabel: "Try again",
+    retriesLeft: (n: number) => `${n} ${n === 1 ? "attempt" : "attempts"} left before a person takes a look.`,
+    flaggedHeading: "We will take a look",
+    flaggedBody:
+      "The automatic check could not decide. Someone on our team will review it, usually within a day. You do not need to do anything.",
+    errors: {
+      failed: "That did not pass. Make sure your face is well lit and fills the frame.",
+      unavailable: "The check is unavailable right now. Try again in a moment.",
+    },
+  },
+
+  intention: {
+    heading: "What you are here for",
+    intro: "This shapes who you see. Be honest — everyone here is.",
+    continueLabel: "Continue",
+    errors: { required: "Choose one." },
+  },
+
+  photos: {
+    heading: "Your photos",
+    intro: "At least one photo, and you choose who gets to see it clearly.",
+    addLabel: "Add a photo",
+    privacyLabel: "Who sees your photos",
+    clearLabel: "Everyone who can see my profile",
+    blurredLabel: "Blurred until we connect",
+    blurredHint: "People see that you have photos, and see them properly once you have both said yes.",
+    continueLabel: "Continue",
+    errors: {
+      required: "Add at least one photo.",
+      tooLarge: "That image is larger than 8 MB.",
+      wrongType: "Photos have to be JPEG, PNG, WebP or HEIC.",
+      uploadFailed: "That did not upload. Try again.",
+    },
+  },
+
+  radius: {
+    heading: "How far you will go",
+    intro:
+      "We look for people within this distance first. If there are not many nearby, we widen the search for that night and tell you we did.",
+    label: "Search radius",
+    unit: (mi: number) => `${mi} miles`,
+    continueLabel: "Finish",
+  },
 } as const;
+
+/**
+ * The §7.2 compatibility quiz — 10 to 12 questions.
+ *
+ * DELIBERATELY EMPTY. The spec asks for the quiz but never writes the
+ * questions, and §10's cut order says in as many words: "ship with
+ * intention-weighting only, quiz in fast-follow". Ten to twelve invented
+ * questions would shape who members are shown to each other, which is not a
+ * thing to guess at.
+ *
+ * The step stays in the §7.2 order. `quizSettled` treats an empty question set
+ * as nothing to answer, so onboarding does not stall on a screen with no
+ * content — and the step turns itself on the moment a question is added here.
+ */
+export const QUIZ_QUESTIONS: readonly { id: string; prompt: string; options: readonly string[] }[] =
+  [];
+
+/**
+ * Labels for the intention enum. §3.4 gives the lock notice but not the option
+ * names, so these are drafts too.
+ */
+export const INTENTION_LABELS = {
+  long_term: "Something long term",
+  open_to_either: "Open to either",
+  casual: "Something casual",
+  friends_support: "Friends and support",
+} as const;
+
+export type Intention = keyof typeof INTENTION_LABELS;
 
 /**
  * Labels for the condition_detail enum. These are names for things, not

@@ -1,5 +1,78 @@
 # Project Updates
 
+## 2026-08-14 — Liveness, intention, radius; the quiz gap
+
+Seven of the nine §7.2 steps are built and guarded. Photos is the remaining
+screen; the quiz is deliberately inert (below).
+
+### Two more places the schema assumed a finished profile
+
+`display_name` and `birthdate` were the last NOT NULLs, and liveness runs
+*before* basics — so a liveness result had nowhere to live. Migration
+`20260814000200` drops them and creates the profile row **by trigger on
+auth.users**, so it cannot be missed by a code path that signs someone in
+without going through onboarding. Every step is now an UPDATE.
+
+`search_radius_mi` carried `not null default 50`, which made "chose a radius"
+and "has not reached that screen" indistinguishable — **the radius step would
+never have rendered.** The default was doing two jobs; `20260814000300` keeps the
+sensible starting value in `RADIUS.defaultMi` and lets null mean unanswered.
+
+`profiles_complete_when_verified` grew to cover all six fields. `pnpm check:db`
+now runs eight cases against the catalogue's own constraint text, including that
+an under-18 birthdate is still rejected and that the sign-up trigger is present
+and enabled.
+
+### Two tooling bugs, both mine
+
+**`check:sql` false-positived on the new trigger.** Its regex looked for
+`on public.` within a window after the timing clause, and matched the `on` inside
+`executi**on** function public.foo()` — reporting the function as a missing
+table. Fixed with a word boundary and by reading the schema-qualified target
+properly, so `auth.*` triggers are skipped rather than misread.
+
+**And that failure did not stop the migration.** `pnpm check:sql | tail -3 && …`
+takes its exit status from `tail`, so the `&&` saw success and pushed anyway. The
+migration happened to be fine because the checker was wrong, but the guard was
+not guarding. Chained verification now runs with `set -o pipefail`.
+
+### The quiz is deliberately empty
+
+§7.2 asks for 10–12 questions and **never writes them**, and §10's cut order says
+in as many words: *"ship with intention-weighting only, quiz in fast-follow"*.
+Ten invented questions would shape who members are shown to each other, which is
+not a thing to guess at.
+
+`QUIZ_QUESTIONS` is an empty array with that reasoning attached. The step stays
+in the §7.2 order; `quizSettled` treats an empty question set as nothing to
+answer, so onboarding does not stall on a blank screen — **and the step turns
+itself on the moment a question is added.**
+
+### Screens
+
+**Liveness** does not decide anything itself. It calls the reducer in
+`packages/logic/verification` and carries the result to the database, so
+verified-vs-retry-vs-flagged stays in one tested place. Running out of attempts
+shows the flagged panel, not a rejection — Decision #21 puts a human in the loop
+on a risk flag, and the member is told plainly and asked to do nothing.
+
+**Intention** renders the §3.4 lock notice verbatim and stamps
+`intention_changed_at` on the first choice, so the 30-day clock is the same one
+for everybody rather than starting whenever a member first edits it.
+
+**Radius** re-clamps server-side. The slider enforces 5–250 and a slider enforces
+nothing.
+
+Verified: all seven steps 307 an anonymous visitor to the phone entry.
+
+### Next
+
+Photos — the heaviest step. `profile_photos.blurred_path` is NOT NULL, so
+Decision #19's blurred-until-connected needs a blurred variant generated **at
+upload, server-side**; the privacy policy already says the blur happens before
+the image is sent, and that has to stay true. Needs the storage buckets (§4.2:
+`photos`, private, signed URLs) and an image library.
+
 ## 2026-08-14 — Onboarding routing, phone entry, basics, community
 
 ### The schema assumed profiles spring into existence complete
@@ -418,11 +491,12 @@ from the environment.)
 | 1 | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Waiting on the domain being secured; `privacy@yourplusone.app` is the intended alias. Note Resend only *sends* — receiving needs mail hosting or a forwarding rule. | **launch** |
 | 2 | **Privacy policy review.** Drafted 2026-08-14, live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). | launch |
 | 3 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
-| 4 | **Onboarding draft copy.** Headings and field labels for phone, basics and community in `DRAFT_COPY`. Not spec copy. | Milestone 2 sign-off |
-| 5 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 6 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 7 | **Resend API key.** | Milestone 7 |
-| 8 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| 4 | **Onboarding draft copy.** Headings, field labels and intention option names for every step, in `DRAFT_COPY`. Not spec copy. | Milestone 2 sign-off |
+| 5 | **Quiz questions (10–12).** §7.2 asks for them and never writes them. `QUIZ_QUESTIONS` is empty and the step self-activates when populated. §10 permits shipping without it. | fast-follow |
+| 6 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
+| 7 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
+| 8 | **Resend API key.** | Milestone 7 |
+| 9 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
 
 ### Next
 

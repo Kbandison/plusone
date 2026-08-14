@@ -115,8 +115,17 @@ for (const m of code.matchAll(/public\.(\w+)\s*\(/g)) {
 for (const m of code.matchAll(/create policy\s+"[^"]+"\s*\n?\s*on public\.(\w+)/g)) {
   if (!relations.has(m[1])) problems.push(`policy -> missing relation public.${m[1]}`);
 }
-for (const m of code.matchAll(/create trigger \w+\s*\n?\s*(?:before|after)[\s\S]{0,60}?on public\.(\w+)/g)) {
-  if (!relations.has(m[1])) problems.push(`trigger -> missing relation public.${m[1]}`);
+// The target table, and only the target table. An earlier version searched for
+// "on public." within a window after the timing clause, which happily matched
+// the "on public." inside `execute functi-on public.foo()` and reported the
+// function as a missing table. \b stops that: in "function" the o is preceded
+// by a word character, so there is no boundary there.
+for (const m of code.matchAll(
+  /create trigger \w+\s+(?:before|after|instead of)\b[\s\S]{0,120}?\bon\s+(\w+)\.(\w+)/g,
+)) {
+  const [, schema, rel] = m;
+  if (schema !== "public") continue; // auth.* and storage.* are Supabase-managed
+  if (!relations.has(rel)) problems.push(`trigger -> missing relation public.${rel}`);
 }
 for (const m of code.matchAll(/grant [\w\s,]+ on public\.(\w+) to/g)) {
   if (!relations.has(m[1])) problems.push(`grant -> missing relation public.${m[1]}`);

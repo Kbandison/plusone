@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { CONSENT_COPY_VERSION } from "@plusone/config";
+import { CONSENT_COPY_VERSION, QUIZ_QUESTIONS } from "@plusone/config";
 import { onboarding } from "@plusone/logic";
 
 import { getServerSupabase } from "./supabase";
@@ -35,7 +35,7 @@ export const STEP_ROUTES: Record<Step, string> = {
 export async function loadFacts(userId: string): Promise<onboarding.OnboardingFacts> {
   const supabase = await getServerSupabase();
 
-  const [{ data: user }, { data: profile }, { data: consent }, { data: photos }] =
+  const [{ data: user }, { data: profile }, { data: consent }, { data: photos }, { data: quiz }] =
     await Promise.all([
       supabase.auth.getUser(),
       supabase
@@ -53,6 +53,7 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
         .eq("copy_version", CONSENT_COPY_VERSION.health_data)
         .maybeSingle(),
       supabase.from("profile_photos").select("id").eq("user_id", userId).limit(1),
+      supabase.from("quiz_responses").select("user_id").eq("user_id", userId).maybeSingle(),
     ]);
 
   return {
@@ -62,9 +63,12 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
     hasCommunity: Boolean(profile?.community && profile.condition),
     hasHealthConsent: Boolean(consent),
     hasIntention: Boolean(profile?.intention),
-    // The quiz is skippable (§7.2), and a skip is recorded as an empty answer
-    // set rather than an absence — otherwise skipping would loop forever.
-    quizSettled: false,
+    // §7.2 asks for 10-12 questions and never writes them, and §10 says to ship
+    // with intention-weighting only. With no questions there is nothing to
+    // answer, so the step does not stall onboarding — and it turns itself on
+    // the moment a question is added to QUIZ_QUESTIONS. A skip is recorded as
+    // an empty answer set rather than an absence, so skipping does not loop.
+    quizSettled: QUIZ_QUESTIONS.length === 0 || Boolean(quiz),
     hasPhoto: Boolean(photos && photos.length > 0),
     radiusSet: Boolean(profile?.search_radius_mi),
   };

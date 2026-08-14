@@ -70,5 +70,7 @@ export {
   CONDITIONS_BY_COMMUNITY,
   allowsUEqualsU,
   isValidPair,
+  QUIZ_QUESTIONS,
+  INTENTION_LABELS,
 } from "./draft-copy";
-export type { Community, ConditionDetail } from "./draft-copy";
+export type { Community, ConditionDetail, Intention } from "./draft-copy";

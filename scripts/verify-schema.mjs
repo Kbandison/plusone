@@ -31,7 +31,7 @@ if (!DB_URL) {
 
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
-const EXPECT = { tables: 24, views: 3, functions: 32, enums: 17, rooms: 5, config: 16 };
+const EXPECT = { tables: 24, views: 3, functions: 33, enums: 17, rooms: 5, config: 16 };
 const INVOKER_VIEWS = ["visible_profiles", "preview_profiles", "visible_profile_photos"];
 const NO_UPDATE_PATH = ["connects", "chats"];
 
@@ -135,6 +135,8 @@ const PROFILE_CHECKS = [
   "profiles_condition_matches_community",
   "profiles_ueu_hiv_only",
   "profiles_complete_when_verified",
+  "profiles_adult",
+  "profiles_radius_range",
 ];
 const defs = Object.fromEntries(
   (
@@ -152,23 +154,39 @@ check(
 );
 
 const CAST = {
+  display_name: "text",
+  birthdate: "date",
+  search_radius_mi: "integer",
   community: "public.condition_community",
   condition: "public.condition_detail",
   intention: "public.intention",
   u_equals_u: "boolean",
   verification_status: "public.verification_status",
 };
+const EMPTY = {
+  display_name: null, birthdate: null, community: null, condition: null,
+  intention: null, search_radius_mi: null, u_equals_u: false,
+  verification_status: "unverified",
+};
+const FULL = {
+  display_name: "Sam", birthdate: "1990-06-15", community: "hiv", condition: "hiv",
+  intention: "long_term", search_radius_mi: 50, u_equals_u: true,
+  verification_status: "verified",
+};
 const CASES = [
-  ["half-built and unverified is allowed",
-    { community: null, condition: null, intention: null, u_equals_u: false, verification_status: "unverified" }, true],
+  ["a bare row from the sign-up trigger is allowed", EMPTY, true],
   ["mismatched community and condition is rejected",
-    { community: "hsv", condition: "hiv", intention: "casual", u_equals_u: false, verification_status: "unverified" }, false],
+    { ...EMPTY, community: "hsv", condition: "hiv" }, false],
   ["U=U without the hiv community is rejected",
-    { community: "hsv", condition: "hsv2", intention: "casual", u_equals_u: true, verification_status: "unverified" }, false],
-  ["complete and verified is allowed",
-    { community: "hiv", condition: "hiv", intention: "long_term", u_equals_u: true, verification_status: "verified" }, true],
-  ["verified with a gap is rejected",
-    { community: "hiv", condition: "hiv", intention: null, u_equals_u: false, verification_status: "verified" }, false],
+    { ...EMPTY, community: "hsv", condition: "hsv2", u_equals_u: true }, false],
+  ["an under-18 birthdate is rejected",
+    { ...EMPTY, display_name: "Sam", birthdate: "2020-01-01" }, false],
+  ["complete and verified is allowed", FULL, true],
+  ["verified with no name is rejected", { ...FULL, display_name: null }, false],
+  ["verified with no birthdate is rejected", { ...FULL, birthdate: null }, false],
+  ["verified with no intention is rejected", { ...FULL, intention: null }, false],
+  ["verified with no chosen radius is rejected", { ...FULL, search_radius_mi: null }, false],
+  ["a radius outside 5..250 is rejected", { ...FULL, search_radius_mi: 400 }, false],
 ];
 for (const [label, row, expected] of CASES) {
   const bindings = Object.entries(row)
@@ -182,6 +200,16 @@ for (const [label, row, expected] of CASES) {
   const accepted = violated.length === 0;
   check(accepted === expected, `${label}${violated.length ? ` (by ${violated.join(", ")})` : ""}`);
 }
+
+console.log("\n── every auth user gets a profile row ──");
+const [signupTrigger] = await q(
+  `select tgname, tgrelid::regclass::text tbl, tgenabled from pg_trigger
+   where tgname = 'create_profile_on_signup'`,
+);
+check(
+  signupTrigger?.tbl === "auth.users" && signupTrigger.tgenabled !== "D",
+  `create_profile_on_signup is on ${signupTrigger?.tbl ?? "NOTHING"} and enabled`,
+);
 
 console.log("\n── seed ──");
 const [{ rooms }] = await q(`select count(*) rooms from public.rooms`);
