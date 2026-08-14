@@ -304,6 +304,40 @@ for (const fn of RLS_HELPERS) {
   check(row?.auth_can === true, `${fn} stays reachable, or every policy breaks`);
 }
 
+// §10's never-cut list. Each of these is a thing the product promises and
+// could plausibly be dropped under time pressure without anyone noticing until
+// launch. Asserting they exist is cheap; discovering at launch that voice notes
+// have nowhere to live is not.
+console.log("\n── the never-cut list has somewhere to live ──");
+const NEVER_CUT = [
+  ["voice notes", `select 1 from storage.buckets where id = 'voice-notes' and public = false`],
+  ["hard delete", `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                   where n.nspname = 'public' and p.proname = 'purge_due_deletions'`],
+  ["deletion requests", `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public' and p.proname = 'request_deletion'`],
+  ["the fuse sweep", `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                      where n.nspname = 'public' and p.proname = 'sweep_expired_fuses'`],
+  ["consent records", `select 1 from information_schema.columns
+                       where table_schema = 'public' and table_name = 'consents'
+                         and column_name = 'copy_version'`],
+];
+for (const [label, sql] of NEVER_CUT) {
+  const rows = await q(sql);
+  check(rows.length > 0, `${label}`);
+}
+
+// A closed chat accepts no further audio, or a member could keep talking into a
+// conversation that had already closed kindly.
+const voiceWrite = await q(
+  `select policyname, with_check from pg_policies
+   where schemaname = 'storage' and tablename = 'objects'
+     and with_check like '%voice-notes%'`,
+);
+check(
+  voiceWrite.some((p) => p.with_check.includes("chat_accepts_messages")),
+  "voice uploads are refused on a closed chat",
+);
+
 console.log("\n── seed ──");
 const [{ rooms }] = await q(`select count(*) rooms from public.rooms`);
 const [{ cfg }] = await q(`select count(*) cfg from public.app_config`);

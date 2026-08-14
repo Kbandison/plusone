@@ -32,6 +32,7 @@ const NAV = [
   { href: "/app/rooms", label: DRAFT_COPY.app.navRooms },
   { href: "/app/invite", label: DRAFT_COPY.app.navInvite },
   { href: "/app/profile", label: DRAFT_COPY.app.navProfile },
+  { href: "/app/settings", label: DRAFT_COPY.app.navSettings },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

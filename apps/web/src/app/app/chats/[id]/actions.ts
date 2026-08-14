@@ -30,6 +30,65 @@ export async function sendMessage(_prev: ChatState, formData: FormData): Promise
   return { error: null };
 }
 
+/** §5.2 — messages_voice_len caps a note at 120 seconds. */
+const MAX_VOICE_SECONDS = 120;
+const VOICE_TYPES = ["audio/webm", "audio/ogg", "audio/mpeg", "audio/mp4", "audio/aac"];
+
+/**
+ * A voice note (§10, never-cut list).
+ *
+ * The row is written FIRST and the audio uploaded to a path built from its id.
+ * The other order needs a path invented before there is anything to name it
+ * after, and leaves an orphaned object whenever the insert then fails. If the
+ * upload fails the row is removed, so a message never exists that plays
+ * silence.
+ */
+export async function sendVoiceNote(_prev: ChatState, formData: FormData): Promise<ChatState> {
+  const chatId = String(formData.get("chat_id") ?? "");
+  const seconds = Math.round(Number(formData.get("seconds") ?? 0));
+  const audio = formData.get("audio");
+
+  if (!(audio instanceof File) || audio.size === 0) return { error: "Nothing recorded." };
+  if (!VOICE_TYPES.includes(audio.type)) return { error: "That audio format is not supported." };
+  if (!Number.isFinite(seconds) || seconds < 1) return { error: "That recording was too short." };
+  if (seconds > MAX_VOICE_SECONDS) return { error: "Voice notes cap at two minutes." };
+
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+
+  // Whether this chat still accepts messages is RLS's decision, here and on the
+  // storage object. A closed chat rejects both.
+  const { data: message, error: insertError } = await supabase
+    .from("messages")
+    .insert({
+      chat_id: chatId,
+      sender_id: auth.user!.id,
+      voice_note_path: "pending",
+      voice_note_seconds: seconds,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !message) return { error: "That didn't send." };
+
+  const extension = audio.type.split("/")[1]?.split(";")[0] ?? "webm";
+  const path = `${chatId}/${message.id}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("voice-notes")
+    .upload(path, audio, { contentType: audio.type });
+
+  if (uploadError) {
+    await supabase.from("messages").delete().eq("id", message.id);
+    return { error: "That didn't send." };
+  }
+
+  await supabase.from("messages").update({ voice_note_path: path }).eq("id", message.id);
+
+  revalidatePath(`/app/chats/${chatId}`);
+  return { error: null };
+}
+
 /**
  * §6.2 — a plan is concrete or it is not a plan: a day, a rough time, and a
  * place or video. The same three fields the reducer requires, checked here so

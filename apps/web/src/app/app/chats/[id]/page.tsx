@@ -6,6 +6,7 @@ import { fuse } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
+import { VoiceRecorder } from "./voice-recorder";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
@@ -17,6 +18,27 @@ interface Plan {
   place?: string;
   proposedBy?: string;
   confirmedBy?: string | null;
+}
+
+/**
+ * Plays a voice note through a signed URL, minted per render.
+ *
+ * The bucket is private and the storage policy checks chat participation, so
+ * the URL is short-lived and only obtainable by someone already entitled to
+ * hear it. A public path would be a permanent link to somebody's actual voice.
+ */
+async function VoiceNote({ path, seconds }: { path: string; seconds: number | null }) {
+  const supabase = await getServerSupabase();
+  const { data } = await supabase.storage.from("voice-notes").createSignedUrl(path, 60 * 10);
+
+  if (!data?.signedUrl) return <span className="text-[14.5px] text-ink-3">Voice note</span>;
+
+  return (
+    <span className="flex items-center gap-3">
+      <audio src={data.signedUrl} controls preload="none" className="max-w-full" />
+      {seconds ? <span className="text-[13.5px] text-ink-3">{seconds}s</span> : null}
+    </span>
+  );
 }
 
 export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +59,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   const { data: messages } = await supabase
     .from("messages")
-    .select("id, sender_id, body, created_at")
+    .select("id, sender_id, body, voice_note_path, voice_note_seconds, created_at")
     .eq("chat_id", id)
     .order("created_at", { ascending: true });
 
@@ -82,7 +104,14 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 : "bg-surface text-ink"
             }`}
           >
-            {message.body as string}
+            {message.voice_note_path ? (
+              <VoiceNote
+                path={message.voice_note_path as string}
+                seconds={message.voice_note_seconds as number | null}
+              />
+            ) : (
+              (message.body as string)
+            )}
           </li>
         ))}
       </ul>
@@ -100,6 +129,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       ) : (
         <>
           <Composer chatId={id} />
+          <VoiceRecorder chatId={id} />
 
           {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
 

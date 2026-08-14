@@ -1,5 +1,63 @@
 # Project Updates
 
+## 2026-08-14 — The never-cut list: deletion and voice notes
+
+Two items on §10's never-cut list were not built, and one of them was worse than
+it looked.
+
+### A member could not ask to be deleted
+
+The purge job ran nightly. `request_deletion()` existed and was tested. §3.4's
+confirmation copy was written. **Nothing called any of it** — there was no
+surface, so hard delete was a promise the product could keep and had no way of
+being asked to.
+
+`/app/settings` now has it, with §3.4's copy verbatim: *"This cannot be undone —
+and we mean actually deleted."* A product that says that has to make the control
+match, so it asks the member to type DELETE rather than tap a red button they
+could hit by accident.
+
+Deliberately no soft-delete in the meantime. The account works normally until it
+stops existing — a seven-day limbo where you are invisible but not gone is a
+worse experience than either end of it.
+
+### Voice notes
+
+`messages.voice_note_path` and `voice_note_seconds` have been there since
+Milestone 1. What was missing was somewhere to put the audio.
+
+**SPEC GAP:** §4.2 lists `photos`, `verification-selfies` and `room-media` (v2)
+and no bucket for voice. The column implies one, so `voice-notes` is added —
+private, 4 MB, audio MIME types only. Flagged rather than assumed to be an
+oversight.
+
+The path is keyed on the **chat**, not the sender: who may hear a note is
+decided by chat participation, so the path expresses the same rule the messages
+policy uses. Playback goes through a signed URL minted per render, valid ten
+minutes. A public path would be a permanent link to somebody's actual voice.
+
+Two details that are the point rather than polish:
+
+- **The row is written first**, then the audio uploaded to a path built from its
+  id. The other order needs a path invented before there is anything to name it
+  after, and orphans an object whenever the insert then fails. If the upload
+  fails the row is deleted, so no message exists that plays silence.
+- **A closed chat refuses audio too**, enforced in the storage policy via
+  `chat_accepts_messages`. Without it a member could keep talking into a
+  conversation that had already closed kindly.
+
+The recorder is deliberately plain — a button, a running count, and a chance to
+hear it before it goes. No waveform, no filters. The point of the feature is
+that it is unmistakably a real person, and production polish works against that.
+It stops itself at the two-minute cap rather than letting someone talk past it
+and lose the recording.
+
+### check:db now asserts the never-cut list
+
+Voice notes, hard delete, deletion requests, the fuse sweep and versioned
+consent each get a check that they have somewhere to live. Discovering at launch
+that one of them quietly has nowhere is the failure this prevents.
+
 ## 2026-08-14 — Referrals: the invite link, attribution and payout
 
 Milestone 6's growth half, which needs no Stripe. The invite landing is the
