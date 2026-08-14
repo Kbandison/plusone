@@ -7,8 +7,10 @@
  * supabase/migrations. If the schema changes, this changes.
  *
  * Two rules it holds to:
- *   · "private", never "encrypted", "anonymous" or "guaranteed" — E2EE is out
- *     for v1 and the other two are not true either. Enforced by a unit test.
+ *   · §3.3 — never "encrypted", "anonymous" or "guaranteed" UNLESS LITERALLY
+ *     TRUE. Encryption in transit and at rest is a fact and is stated as one;
+ *     a bare "encrypted" would imply the E2EE that Decision #29 puts out of
+ *     v1. Enforced by a unit test that requires a denial or a qualification.
  *   · plain language (§7.1). No defined terms, no "processing activities",
  *     nothing that needs a second reading.
  */
@@ -99,7 +101,8 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     title: "Messages",
     body: [
       "Messages are private between you and the person you are talking to. They are not scanned to target you with anything, and they are not used to train anything.",
-      "They are not end-to-end encrypted. We could read them if we were compelled to, or if we went looking — so we tell you that plainly instead of implying otherwise. They are stored on our servers and protected by the same database rules as everything else.",
+      "They are encrypted in transit and encrypted at rest, and the same database rules that protect everything else protect them too.",
+      "They are not end-to-end encrypted, and we would rather say so than let you assume otherwise. That means we could read them if we were compelled to, or if we went looking. The reason is moderation: if you report a message, a human has to be able to read it, and that is not possible in a system where we hold no key. We think being able to act on reports matters more here than the stronger guarantee, and you deserve to know which trade we made.",
       "If you report someone, the moderators reviewing the report can see the messages you reported.",
     ],
   },

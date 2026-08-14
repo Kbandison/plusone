@@ -85,27 +85,42 @@ describe("the privacy policy draft", () => {
     expect(PRIVACY_POLICY.map((s) => s.id)).toContain(HEALTH_DATA_ANCHOR);
   });
 
-  // These words may appear only as denials. "Not end-to-end encrypted" is honest
-  // and important to say; "encrypted" as a promise would not be true, since
-  // E2EE is out for v1. The rule is per sentence rather than per adjacent word,
-  // because the negation is rarely the word immediately before.
-  it("uses a banned claim only to deny it, never to promise it", () => {
+  // §3.3: never "encrypted", "anonymous" or "guaranteed" — UNLESS LITERALLY
+  // TRUE. So the rule is not avoidance, it is qualification. "Encrypted in
+  // transit" is a fact and belongs in a privacy policy; a bare "encrypted"
+  // would imply E2EE, which Decision #29 puts out of v1.
+  const LITERALLY_TRUE = [/in transit/i, /at rest/i];
+
+  it("uses a banned claim only when denied or literally qualified", () => {
     for (const text of all) {
       for (const sentence of text.split(/(?<=[.!?])\s+/)) {
         for (const claim of BANNED_PRIVACY_CLAIMS) {
           if (!new RegExp(`\\b${claim}`, "i").test(sentence)) continue;
+          const denied = /\b(not|never|no)\b/i.test(sentence);
+          const qualified = LITERALLY_TRUE.some((q) => q.test(sentence));
           expect(
-            sentence,
-            `"${sentence}" uses "${claim}" without denying it`,
-          ).toMatch(/\b(not|never|no)\b/i);
+            denied || qualified,
+            `"${sentence}" claims "${claim}" without denying or qualifying it`,
+          ).toBe(true);
         }
       }
     }
   });
 
-  it("says plainly that messages are not end-to-end encrypted", () => {
-    const messages = PRIVACY_POLICY.find((s) => s.id === "messages");
-    expect(messages?.body.join(" ")).toContain("not end-to-end encrypted");
+  // Decision #29 lists BOTH: encryption in transit and at rest is real
+  // protection, and E2EE being out is a real limitation. Stating only the
+  // limitation understates the product; stating only the protection oversells
+  // it. The policy has to carry both.
+  it("states both that messages are encrypted and that they are not E2EE", () => {
+    const messages = PRIVACY_POLICY.find((s) => s.id === "messages")?.body.join(" ") ?? "";
+    expect(messages).toContain("encrypted in transit");
+    expect(messages).toContain("at rest");
+    expect(messages).toContain("not end-to-end encrypted");
+  });
+
+  it("gives the reason E2EE is out rather than just asserting it", () => {
+    const messages = PRIVACY_POLICY.find((s) => s.id === "messages")?.body.join(" ") ?? "";
+    expect(messages).toMatch(/moderation/i);
   });
 
   it("promises no sale of health data", () => {
