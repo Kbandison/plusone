@@ -137,6 +137,23 @@ describe("the privacy policy draft", () => {
     }
   });
 
+  // §9.4's JSON export is unbuilt and is second in the §10 cut order. A policy
+  // is the one document that cannot describe intentions, so the promise stays
+  // out until the feature is in. Delete this test when the export ships.
+  it("promises no data export while the export does not exist", () => {
+    for (const text of all) {
+      expect(text, `"${text.slice(0, 70)}…"`).not.toMatch(/\bexport\b/i);
+    }
+  });
+
+  // The policy commits to rights that carry response clocks, so it needs a
+  // route for making a request. There is none yet — the domain is not secured.
+  // Delete this test and add the address when it is.
+  it("has no contact route yet, and says so honestly by not implying one", () => {
+    const joined = all.join(" ");
+    expect(joined).not.toMatch(/@[\w.-]+\.[a-z]{2,}/i);
+  });
+
   it("carries an effective date the page can show", () => {
     expect(PRIVACY_POLICY_EFFECTIVE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });

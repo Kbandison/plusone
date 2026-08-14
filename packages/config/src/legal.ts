@@ -156,7 +156,13 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     id: "your-choices",
     title: "Your choices",
     body: [
-      "You can export a copy of your data as a file, change or withdraw your health-data consent, switch to support-only mode, turn off optional notifications, or delete everything. Withdrawing health-data consent means we can no longer run matching for you, so it deletes your account.",
+      // The §9.4 JSON self-export is NOT built, and it is second in the §10 cut
+      // order — so a policy promising it is promising something that may never
+      // ship. Restore "export a copy of your data as a file," to this sentence
+      // when the export exists, and not before. A guard test keeps it out until
+      // then. A privacy policy is the one document that cannot describe
+      // intentions.
+      "You can change or withdraw your health-data consent, switch to support-only mode, turn off optional notifications, or delete everything. Withdrawing health-data consent means we can no longer run matching for you, so it deletes your account.",
       "You do not have to give a reason for any of this, and using any of it will never get you treated differently.",
     ],
   },

@@ -1,5 +1,36 @@
 # Project Updates
 
+## 2026-08-14 — Policy corrections
+
+**Messages are encrypted, and the draft only said they were not E2EE.** Decision
+#29 carries both halves — "Encryption in transit + at rest + RLS + content-blind
+notifications", with E2EE out because it breaks tone-check and moderation. Saying
+only the second understates a real protection. In a privacy policy, omitting a
+true safeguard distorts as much as claiming a false one.
+
+The section now states the encryption, states that it is not end-to-end, and
+gives the reason: a reported message has to be readable by a human, which is
+impossible when we hold no key. The honest cost is stated too — compelled
+disclosure is possible here in a way it is not on Signal.
+
+The guard test was also wrong. §3.3 reads "never 'encrypted', 'anonymous' or
+'guaranteed' **unless literally true**" — a rule about qualification, not
+avoidance. It now allows a banned claim in a sentence that denies it or
+qualifies it as in-transit/at-rest, and separately requires the messages section
+to carry both facts plus the reason.
+
+**The data-export promise is cut.** §9.4's JSON self-export is not built and is
+**second in the §10 cut order**, so the policy was promising something that may
+never ship. It comes back when the feature does. A test now fails if the word
+returns to the policy first — a privacy policy is the one document that cannot
+describe intentions.
+
+**No contact address yet**, by Kevin's call: the domain is not secured. A test
+asserts the policy contains no email address, so the gap stays visible instead of
+being half-filled with something that does not resolve. This is a **launch
+blocker** — the policy commits to rights that carry response clocks, and those
+need somewhere to arrive.
+
 ## 2026-08-14 — Consent copy approved · privacy policy drafted
 
 Kevin authorised writing the four consent-screen strings and drafting the privacy
@@ -305,11 +336,13 @@ from the environment.)
 
 | # | Held | Blocks |
 |---|---|---|
-| 1 | **Privacy policy review.** Drafted 2026-08-14 and live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). Open questions inside: the data-export promise is not built yet, and there is **no contact address** in it. | launch |
-| 2 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 3 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 4 | **Resend API key.** | Milestone 7 |
-| 5 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| 1 | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Waiting on the domain being secured; `privacy@yourplusone.app` is the intended alias. Note Resend only *sends* — receiving needs mail hosting or a forwarding rule. | **launch** |
+| 2 | **Privacy policy review.** Drafted 2026-08-14, live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). | launch |
+| 3 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
+| 4 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
+| 5 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
+| 6 | **Resend API key.** | Milestone 7 |
+| 7 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
 
 ### Next
 
