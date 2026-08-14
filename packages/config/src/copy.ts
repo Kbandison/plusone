@@ -137,9 +137,16 @@ export const CLOSURE_TEMPLATES = [
 export const DEFAULT_CLOSURE_TEMPLATE_INDEX = 0;
 
 /** Render a closure template, substituting the sender's display name. */
-export function renderClosureTemplate(index: number, senderName: string): string {
+export function renderClosureTemplate(index: number, senderName?: string | null): string {
   const template = CLOSURE_TEMPLATES[index] ?? CLOSURE_TEMPLATES[DEFAULT_CLOSURE_TEMPLATE_INDEX];
-  return template.replace("{name}", senderName);
+  const name = senderName?.trim();
+
+  // Without a name, the signature goes with it. A note ending in a bare em dash
+  // reads as unfinished, and this note is the last thing one member says to
+  // another — it does not get to look like a bug.
+  if (!name) return template.replace(/\s*—\s*\{name\}/, "").replace("{name}", "").trim();
+
+  return template.replace("{name}", name);
 }
 
 /** §6.3 — auto-note delivered when a pending connect expires unanswered. */

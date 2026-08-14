@@ -10,6 +10,8 @@ import {
   PRIVACY_POLICY,
   PRIVACY_POLICY_EFFECTIVE,
   PRIVACY_POLICY_INTRO,
+  CLOSURE_TEMPLATES,
+  renderClosureTemplate,
 } from "./index";
 
 /**
@@ -156,5 +158,37 @@ describe("the privacy policy draft", () => {
 
   it("carries an effective date the page can show", () => {
     expect(PRIVACY_POLICY_EFFECTIVE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+// §3.5 — this note is the last thing one member says to another. It does not
+// get to look like a bug.
+describe("closure notes", () => {
+  it("signs the template that carries a name", () => {
+    expect(renderClosureTemplate(0, "Sam")).toContain("— Sam");
+    expect(renderClosureTemplate(0, "Sam")).not.toContain("{name}");
+  });
+
+  it("drops the signature entirely when there is no name", () => {
+    const rendered = renderClosureTemplate(0);
+    expect(rendered).not.toContain("{name}");
+    expect(rendered).not.toMatch(/—\s*$/);
+    expect(rendered.endsWith("Wishing you a real one.")).toBe(true);
+  });
+
+  it.each([undefined, null, "", "   "])("treats %s as no name", (value) => {
+    expect(renderClosureTemplate(0, value)).not.toMatch(/—\s*$/);
+  });
+
+  it("falls back to the default template for an unknown index", () => {
+    expect(renderClosureTemplate(99, "Sam")).toBe(renderClosureTemplate(0, "Sam"));
+    expect(renderClosureTemplate(-1, "Sam")).toBe(renderClosureTemplate(0, "Sam"));
+  });
+
+  it("leaves the templates without a name placeholder untouched", () => {
+    for (let i = 1; i < CLOSURE_TEMPLATES.length; i++) {
+      expect(renderClosureTemplate(i, "Sam")).toBe(CLOSURE_TEMPLATES[i]);
+      expect(renderClosureTemplate(i)).toBe(CLOSURE_TEMPLATES[i]);
+    }
   });
 });

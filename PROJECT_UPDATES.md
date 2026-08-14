@@ -1,5 +1,55 @@
 # Project Updates
 
+## 2026-08-14 — Inbox and chats: the fuse and the closure note
+
+The surfaces the product is actually promising. Both are on the never-cut list.
+
+### Silence is impossible by construction, and now the UI agrees
+
+There is no "just decline" button and no "just leave" button. Declining opens a
+template picker with one already selected; closing a chat does the same. A
+member can choose *which* note is sent, never *whether* one is. The RPCs default
+to template 0 for the same reason — the default is a note, not an absence.
+
+The optional personal line is tone-checked before it goes anywhere, and the rule
+that matters most there is that **it cannot mention anyone's status**. These
+notes are read by someone being turned down. The violation messages are written
+as sentences a person says rather than validator output, and the condition one
+is deliberately the gentlest of them: someone who has just been told their note
+is unacceptable does not also need to be told off.
+
+### The fuse is visible everywhere it exists
+
+On every row of the chat list and at the top of every chat, from
+`fuse.countdown` — the same tested function, not a second calculation. §7.2 asks
+for a visible timer, and a timer you have to go looking for is a deadline that
+surprises people.
+
+A proposed plan that the other person has not confirmed shows "waiting for them
+to confirm" and **the fuse keeps running**, which is what the reducer already
+does. A plan one person likes is not a plan.
+
+### A fix worth making properly
+
+The closed-chat view rendered template 1 with no name and produced a note ending
+in a bare em dash. My first version stripped it with a regex in the component.
+That was the wrong place: `renderClosureTemplate` now drops the signature along
+with the name, with tests for undefined, null, empty and whitespace. This note is
+the last thing one member says to another — it does not get to look like a bug.
+
+### Known gap
+
+**Nothing sweeps an expired fuse yet.** `needsSweep` exists and is tested, and
+the countdown reads zero when the window has passed, but the cron that closes
+the chat and delivers the note is Milestone 7. Until then a fuse runs out and
+the chat sits there — the mechanic is right and the janitor is missing. Worth
+being plain about, because "the fuse closed it kindly" is a promise the cron
+keeps, not the reducer.
+
+### Next
+
+Browse, rooms, and the Preview Drop surface for support-only members.
+
 ## 2026-08-14 — The member app: Tonight's Drop, connect, mode toggle
 
 Onboarding redirected to `/app`, which did not exist. The member shell does now,
