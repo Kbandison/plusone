@@ -13,7 +13,12 @@
  * namespace here, or the subpath (`@plusone/logic/fuse`) for the bare names.
  */
 
+export * as connects from "./connects/index";
+export * as drop from "./drop/index";
 export * as fuse from "./fuse/index";
+export * as modes from "./modes/index";
 export * as onboarding from "./onboarding/index";
 export * as profile from "./profile/index";
+export * as referrals from "./referrals/index";
+export * as tone from "./tone/index";
 export * as verification from "./verification/index";

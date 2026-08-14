@@ -10,7 +10,12 @@
     "./fuse": "./src/fuse/index.ts",
     "./verification": "./src/verification/index.ts",
     "./onboarding": "./src/onboarding/index.ts",
-    "./profile": "./src/profile/index.ts"
+    "./profile": "./src/profile/index.ts",
+    "./modes": "./src/modes/index.ts",
+    "./connects": "./src/connects/index.ts",
+    "./referrals": "./src/referrals/index.ts",
+    "./drop": "./src/drop/index.ts",
+    "./tone": "./src/tone/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

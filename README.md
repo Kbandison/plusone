@@ -70,7 +70,7 @@ asserted in a comment.
 |---|---|---|
 | 1 | Foundation — monorepo, config/types/db/ui-tokens, schema + RLS + RPCs, CI | done |
 | 2 | Identity — phone OTP, liveness, verification pipeline, consent screen | done |
-| 3 | Mechanics core — drop, connects, modes, referrals, tone | fuse done |
+| 3 | Mechanics core — drop, connects, modes, referrals, tone | logic done |
 | 4 | Member app α | |
 | 5 | Community — rooms, preview drop, mode toggle | |
 | 6 | Money + growth — Stripe, premium gates, referrals | |

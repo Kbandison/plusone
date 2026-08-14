@@ -1,5 +1,73 @@
 # Project Updates
 
+## 2026-08-14 — Milestone 3 logic: drop, connects, modes, referrals, tone
+
+All five §6 mechanics are pure modules with tests. 346 tests in `packages/logic`,
+up from 199. No surface consumes them yet — §12 says the logic lands first.
+
+### The guarantees, and why each one is structural rather than remembered
+
+**A drop connect costs nothing, and cannot be made to cost anything.**
+`costOf(source, config)` takes the source and the config and nothing about the
+member — so a drop connect cannot be priced differently for someone who pays,
+because whether they pay is not in scope. A test reads the signature. The
+curated three are the product; charging for them turns the mechanic that makes
+this app different into the one that makes it the same.
+
+**Premium raises the cap and never removes it.** `dailyAllowance` returns a
+number. There is no Infinity, no null, no sentinel — expressing "unlimited"
+would mean changing the return type, not adding a config value. Unlimited
+initiation is the mechanic that produces the inbox nobody reads.
+
+**Leaving dating is never gated.** The support_only branch of `switchMode` has
+no condition in it, asserted by a test that reads the branch for `if` and
+`ok: false`. A cooldown on the way out would hold someone in a dating pool they
+have asked to leave, and Decision #18 makes support-only a shield, not a
+privilege. Coming *back* is gated, and a test flicks modes five times to show
+the clock never shortens.
+
+**Referrals cannot reach matching.** §6.5 asks for this in as many words —
+"assert in tests". Three ways: `DropCandidate` and `DropViewer` have no referral
+field (field names scanned, not raw text — the comment saying there are none
+matched the first version of that test); two candidates identical but for
+smuggled-on referral properties score identically; and the whole scorer is
+grepped for the words. A referral programme that quietly boosts reach is an
+advertising product wearing a friend's face.
+
+**The pool is never padded.** §6.1 step 4. `selectDrop` slices what it has and
+has nowhere to pad from. Serving two real people beats serving three when the
+third last opened the app in March.
+
+**No pair of intentions scores zero.** §6.1 — "never a hard wall between dating
+intentions". A zero would be a wall pretending to be a preference, quietly
+making some members invisible to each other for good. Asserted across all
+sixteen pairs, along with symmetry.
+
+**A skipped quiz is neutral, not incompatible.** The quiz is skippable (§7.2);
+scoring a skip as zero compatibility would make it compulsory in everything but
+name.
+
+**A closure line cannot mention a condition.** §6.6. These notes are read by
+someone being turned down, and a parting shot about their status is the
+cruellest thing this product could carry — and the one thing a blocklist
+reliably catches. Twelve phrasings tested, including "are you clean", plus six
+ordinary sentences that must pass untouched, plus every spec closure template.
+
+### Three bugs found by tests
+
+- A referrals test read `.reason` on a union where only one variant has it.
+  Vitest passed it; `tsc` did not. Tests passing is not the same as tests
+  typechecking, and only one of those two runs the type system.
+- The drop's "no referral field" test matched the comment saying there are no
+  referral fields. Now scans declared field names.
+- The tone check's phone pattern allowed one separator character between
+  digits, so `+1 (555) 123-4567` — which has a `") "` in it — slipped through.
+
+### Next
+
+Milestone 3's surfaces: the Drop screen, browse, connects, and the mode toggle,
+all consuming the logic above.
+
 ## 2026-08-14 — Milestone 2 complete: the admin flag queue
 
 ### The reveal cannot happen without the log
