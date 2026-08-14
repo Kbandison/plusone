@@ -11,7 +11,11 @@ export {
   DEFAULT_CLOSURE_TEMPLATE_INDEX,
   renderClosureTemplate,
   CONNECT_EXPIRY_NOTE,
+  CONSENT_COPY_VERSION,
+  CONSENT_COPY_DIGEST,
+  PENDING_COPY,
 } from "./copy";
+export type { ConsentKind } from "./copy";
 
 export {
   FUSE,
@@ -43,3 +47,11 @@ export {
   CONTENT_BLIND_BANNED_TERMS,
 } from "./notifications";
 export type { NotificationEvent, NotificationTemplate } from "./notifications";
+
+export {
+  clientEnvSchema,
+  serverEnvSchema,
+  parseClientEnv,
+  parseServerEnv,
+} from "./env";
+export type { ClientEnv, ServerEnv } from "./env";

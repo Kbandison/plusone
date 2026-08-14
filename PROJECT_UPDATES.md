@@ -1,5 +1,67 @@
 # Project Updates
 
+## 2026-08-14 — The §9.1 consent screen
+
+**Decision confirmed:** consent gets its own screen with an unbundled checkbox,
+per §9.1 rather than §7.2. The onboarding machine already enforced it; this
+records the call.
+
+### The screen
+
+`/onboarding/consent`. The §9.1 paragraph renders verbatim and in full — it is
+the consent, not a summary of one, so nothing is truncated behind a "read more".
+The checkbox starts unticked, is the only thing on the screen, and carries a real
+`<label>`. Verified against the served HTML rather than assumed.
+
+The action treats itself as an untrusted entry point (as Next's own guidance
+puts it) and re-checks the tick server-side: a consent recorded from a client's
+assertion is not a consent. It runs as the member, so the RLS policy on
+`consents` is what authorises the write. A duplicate submit hits the
+`(user_id, kind, copy_version)` unique constraint and moves forward rather than
+erroring — a double-tap is not a failure.
+
+### Consent copy is versioned by content digest
+
+`consents.copy_version` ties a member's tick to the exact wording they read.
+`CONSENT_COPY_VERSION` records the version and `CONSENT_COPY_DIGEST` records a
+SHA-256 prefix of the copy, checked by a unit test. **Editing the consent wording
+without bumping the version now fails CI**, with the correct digest in the
+failure message — otherwise old consents would silently stand in for new wording,
+which is the one failure mode this column exists to prevent.
+
+### Finding — member surfaces inherited the marketing description
+
+The root layout sets `description` to the §3.1 marketing sub, which names both
+conditions. Correct on a page whose job is to be found; wrong on a screen someone
+is filling in.
+
+Social cards were **not** affected — the root layout already points Open Graph at
+the neutral §3.4 landing copy, deliberately, so link previews never leaked. The
+gap was the plain `<meta name="description">` tag riding along onto member
+surfaces, doing no work on a noindex page and carrying disclosure risk for no
+benefit. Nulled in a new `/onboarding` layout, which covers every step including
+the ones not written yet. Verified by diffing the served metadata of a marketing
+page against a member page.
+
+### Copy gaps — need Kevin
+
+§9.1 gives the consent body verbatim but no heading, checkbox label, button or
+link text, and a screen cannot be built without them. Per §12 copy is never
+invented, so the four drafts live in `PENDING_COPY` in `packages/config` —
+flagged in one place rather than scattered through components pretending to be
+approved. The checkbox label is the one carrying legal weight: it has to state
+what is being agreed to on its own, because that is what unbundled means.
+
+`/privacy#health-data` is linked per §9.1 but **the route does not exist yet**.
+The privacy policy body is not in the spec and is subject to counsel review
+(Decision #30), so it is not something to draft here.
+
+### Next
+
+Profile basics and community + condition, then the auth entry at `/onboarding`
+— which is also where the consent action currently redirects an unauthenticated
+member, so that route landing is what makes the guard real rather than nominal.
+
 ## 2026-08-14 — Onboarding flow and the OTP seam
 
 Twilio credentials are coming later, so the phone provider is stubbed. The phone
@@ -190,10 +252,12 @@ from the environment.)
 
 | # | Held | Blocks |
 |---|---|---|
-| 1 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 2 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 3 | **Resend API key.** | Milestone 7 |
-| 4 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| 1 | **Four consent-screen strings** — heading, checkbox label, continue button, policy link text. Drafts in `PENDING_COPY` (`packages/config/src/copy.ts`). The checkbox label carries legal weight. | Milestone 2 sign-off |
+| 2 | **Privacy policy page.** §9.1 requires the consent screen to link to a health-data section; `/privacy#health-data` has no destination yet. Body copy is not in the spec and needs counsel (Decision #30). | launch |
+| 3 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
+| 4 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
+| 5 | **Resend API key.** | Milestone 7 |
+| 6 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
 
 ### Next
 
