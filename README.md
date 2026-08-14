@@ -47,6 +47,7 @@ pnpm dev
 | `pnpm test` | Run all unit tests |
 | `pnpm check:sql` | Parse + cross-check every migration (no database needed) |
 | `pnpm check:db` | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
+| `pnpm check:admin` | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 
@@ -68,7 +69,7 @@ asserted in a comment.
 | # | Milestone | Status |
 |---|---|---|
 | 1 | Foundation — monorepo, config/types/db/ui-tokens, schema + RLS + RPCs, CI | done |
-| 2 | Identity — phone OTP, liveness, verification pipeline, consent screen | pipeline + adapter done |
+| 2 | Identity — phone OTP, liveness, verification pipeline, consent screen | done |
 | 3 | Mechanics core — drop, connects, modes, referrals, tone | fuse done |
 | 4 | Member app α | |
 | 5 | Community — rooms, preview drop, mode toggle | |

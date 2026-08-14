@@ -31,7 +31,7 @@ if (!DB_URL) {
 
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
-const EXPECT = { tables: 24, views: 3, functions: 33, enums: 17, rooms: 5, config: 16 };
+const EXPECT = { tables: 24, views: 3, functions: 36, enums: 17, rooms: 5, config: 16 };
 const INVOKER_VIEWS = ["visible_profiles", "preview_profiles", "visible_profile_photos"];
 const NO_UPDATE_PATH = ["connects", "chats"];
 
@@ -134,7 +134,7 @@ console.log("\n── a visible profile is a complete one ──");
 const PROFILE_CHECKS = [
   "profiles_condition_matches_community",
   "profiles_ueu_hiv_only",
-  "profiles_complete_when_verified",
+  "profiles_complete_when_onboarded",
   "profiles_adult",
   "profiles_radius_range",
 ];
@@ -162,16 +162,17 @@ const CAST = {
   intention: "public.intention",
   u_equals_u: "boolean",
   verification_status: "public.verification_status",
+  onboarded_at: "timestamptz",
 };
 const EMPTY = {
   display_name: null, birthdate: null, community: null, condition: null,
   intention: null, search_radius_mi: null, u_equals_u: false,
-  verification_status: "unverified",
+  verification_status: "unverified", onboarded_at: null,
 };
 const FULL = {
   display_name: "Sam", birthdate: "1990-06-15", community: "hiv", condition: "hiv",
   intention: "long_term", search_radius_mi: 50, u_equals_u: true,
-  verification_status: "verified",
+  verification_status: "verified", onboarded_at: "2026-08-14T00:00:00Z",
 };
 const CASES = [
   ["a bare row from the sign-up trigger is allowed", EMPTY, true],
@@ -181,11 +182,15 @@ const CASES = [
     { ...EMPTY, community: "hsv", condition: "hsv2", u_equals_u: true }, false],
   ["an under-18 birthdate is rejected",
     { ...EMPTY, display_name: "Sam", birthdate: "2020-01-01" }, false],
-  ["complete and verified is allowed", FULL, true],
-  ["verified with no name is rejected", { ...FULL, display_name: null }, false],
-  ["verified with no birthdate is rejected", { ...FULL, birthdate: null }, false],
-  ["verified with no intention is rejected", { ...FULL, intention: null }, false],
-  ["verified with no chosen radius is rejected", { ...FULL, search_radius_mi: null }, false],
+  // Liveness runs before basics, so a member can be verified with an empty
+  // profile. That is correct and must stay allowed — an administrator upholding
+  // an appeal for someone flagged at step 2 depends on it.
+  ["verified but not yet onboarded is allowed", { ...EMPTY, verification_status: "verified" }, true],
+  ["complete and onboarded is allowed", FULL, true],
+  ["onboarded with no name is rejected", { ...FULL, display_name: null }, false],
+  ["onboarded with no birthdate is rejected", { ...FULL, birthdate: null }, false],
+  ["onboarded with no intention is rejected", { ...FULL, intention: null }, false],
+  ["onboarded with no chosen radius is rejected", { ...FULL, search_radius_mi: null }, false],
   ["a radius outside 5..250 is rejected", { ...FULL, search_radius_mi: 400 }, false],
 ];
 for (const [label, row, expected] of CASES) {

@@ -1,5 +1,68 @@
 # Project Updates
 
+## 2026-08-14 — Milestone 2 complete: the admin flag queue
+
+### The reveal cannot happen without the log
+
+§7.3 says condition data is never shown by default and a reveal "requires
+explicit reason logged". Both halves are structural rather than conventional.
+
+The queue query **does not select condition, community or U=U at all**. Not
+hidden with CSS, not filtered in the component — absent from the payload, so it
+cannot be read out of the page source. A moderator deciding whether a selfie
+matches a face has no use for someone's diagnosis.
+
+`admin_reveal_condition` writes the audit entry and returns the data **in one
+statement**: a data-modifying CTE always executes when it is referenced, and the
+select joins it. There is no ordering in which the read happens and the write
+does not, and no later edit can separate them without visibly rewriting the
+query. A function that logged first and selected second would be two statements,
+and two statements can become one.
+
+Proven behaviourally, not asserted: `pnpm check:admin` creates a throwaway
+member and administrator, acts as each, and checks what actually happens —
+a null, blank or eight-character reason is refused and writes nothing; a valid
+one returns the data and logs the actor and reason verbatim; an ordinary member
+is refused and logs nothing. That is the only way to test a SECURITY DEFINER
+function's own authorisation, since nothing about its definition tells you
+whether the check inside it works. It runs in a transaction that is rolled back,
+so it is safe against the real project, and it is wired into CI.
+
+### The queue found a real bug in my own constraint
+
+Liveness runs at **step 2** of §7.2, before basics. So a member flagged at
+liveness has an entirely empty profile — and an administrator approving them set
+`verification_status = 'verified'` and hit `profiles_complete_when_verified`. A
+raw 23514 in the moderation queue, for doing the one thing the queue exists to
+do.
+
+The conflation was mine: "passed the identity check" and "finished onboarding"
+are different facts with different timing, and one column cannot carry both.
+Split into `liveness_passed_at` and `onboarded_at`, with the completeness
+invariant now hanging off the second — which is the fact it was always about.
+Visibility never depended on it anyway: a profile with a null community cannot
+match the community wall, so an unfinished profile is unreachable regardless.
+
+### Also
+
+An earlier draft of the admin migration re-created a policy that already existed
+in `20260813000500`, and `CREATE POLICY` has no `OR REPLACE`. The push is
+transactional, so nothing partially applied — worth knowing, since the failure
+looked alarming and was not.
+
+`check:sql` does not validate enum literals, which is how `'verification'`
+reached a push that `moderation_kind` was always going to reject (the value is
+`'verification_flag'`). Noted rather than fixed: parsing enum membership out of
+SQL text is a bigger job than it repays right now, and the push catches it.
+
+**Milestone 2 is complete.** Phone OTP, liveness adapter, verification pipeline,
+admin flag queue, profile CRUD through onboarding, and the §9.1 consent screen.
+
+### Next
+
+Milestone 3 — mechanics core: the Drop, connects, modes, referrals, tone. The
+fuse is already done.
+
 ## 2026-08-14 — Photos, and the end of the §7.2 flow
 
 All nine onboarding steps are built and guarded. Every one 307s an anonymous

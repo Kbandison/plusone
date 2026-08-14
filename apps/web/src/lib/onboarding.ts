@@ -40,7 +40,9 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
       supabase.auth.getUser(),
       supabase
         .from("profiles")
-        .select("display_name, birthdate, community, condition, intention, search_radius_mi, verification_status")
+        .select(
+          "display_name, birthdate, community, condition, intention, search_radius_mi, liveness_passed_at",
+        )
         .eq("id", userId)
         .maybeSingle(),
       supabase
@@ -58,7 +60,9 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
 
   return {
     phoneVerified: Boolean(user.user?.phone_confirmed_at),
-    livenessPassed: profile?.verification_status === "verified",
+    // Its own column, not a reading of verification_status. Liveness runs at
+    // step 2 and onboarding finishes at step 9 — one flag cannot mean both.
+    livenessPassed: Boolean(profile?.liveness_passed_at),
     hasBasics: Boolean(profile?.display_name && profile.birthdate),
     hasCommunity: Boolean(profile?.community && profile.condition),
     hasHealthConsent: Boolean(consent),

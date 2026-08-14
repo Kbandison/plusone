@@ -87,7 +87,9 @@ export async function runLivenessCheck(
     .from("profiles")
     .update({
       verification_status: next.status,
-      ...(next.status === "verified" ? { verified_at: new Date().toISOString() } : {}),
+      ...(next.status === "verified"
+        ? { liveness_passed_at: new Date().toISOString(), verified_at: new Date().toISOString() }
+        : {}),
     })
     .eq("id", userId);
 

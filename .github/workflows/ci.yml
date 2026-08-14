@@ -69,5 +69,14 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # Behavioural, not structural: creates a throwaway member and admin, acts
+      # as each, and asserts what actually happens — the only way to test a
+      # SECURITY DEFINER function's own authorisation. Runs inside a transaction
+      # that is rolled back. Skips silently without the credential.
+      - name: Verify admin guarantees
+        run: pnpm check:admin
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build

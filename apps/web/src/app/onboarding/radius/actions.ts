@@ -24,7 +24,10 @@ export async function saveRadius(_previous: RadiusState, formData: FormData): Pr
   const supabase = await getServerSupabase();
   const { error } = await supabase
     .from("profiles")
-    .update({ search_radius_mi: radius })
+    // The last §7.2 step, so this is where onboarding is done. The
+    // profiles_complete_when_onboarded constraint checks the rest is present,
+    // which makes a half-finished profile impossible to mark finished.
+    .update({ search_radius_mi: radius, onboarded_at: new Date().toISOString() })
     .eq("id", userId);
 
   if (error) return { error: "That didn't save. Try again." };

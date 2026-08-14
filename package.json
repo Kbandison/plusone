@@ -15,6 +15,7 @@
     "test": "turbo run test",
     "check:sql": "node scripts/check-migrations.mjs",
     "check:db": "node scripts/verify-schema.mjs",
+    "check:admin": "node scripts/verify-admin.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css,sql}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css,sql}\""
   },
