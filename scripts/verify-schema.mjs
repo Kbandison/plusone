@@ -31,7 +31,7 @@ if (!DB_URL) {
 
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
-const EXPECT = { tables: 24, views: 3, functions: 37, enums: 17, rooms: 5, config: 16 };
+const EXPECT = { tables: 24, views: 3, functions: 42, enums: 17, rooms: 5, config: 16 };
 const INVOKER_VIEWS = ["visible_profiles", "preview_profiles", "visible_profile_photos"];
 const NO_UPDATE_PATH = ["connects", "chats"];
 
@@ -237,6 +237,61 @@ check(
   signupTrigger?.tbl === "auth.users" && signupTrigger.tgenabled !== "D",
   `create_profile_on_signup is on ${signupTrigger?.tbl ?? "NOTHING"} and enabled`,
 );
+
+// These act across every member's rows, so the service role is the only caller
+// for which that is coherent. SECURITY DEFINER functions are executable by
+// public by default, and that default is how a sweep becomes an anybody-button.
+// Supabase's default privileges grant EXECUTE on every new public function to
+// anon and authenticated, and `revoke ... from public` does not touch a named
+// grant. That is how purge_due_deletions — which deletes accounts — was
+// callable by any signed-in member. This is the check that would have caught it.
+console.log("\n── sweeps are service-role only ──");
+const SWEEPS = [
+  "sweep_expired_fuses",
+  "sweep_expired_connects",
+  "purge_due_deletions",
+  "fuses_expiring_within",
+  "audit",
+  "create_profile_for_new_user",
+  "enforce_connect_rules",
+  "assert_not_end_user",
+];
+for (const fn of SWEEPS) {
+  const [row] = await q(
+    `select p.proname,
+            coalesce(has_function_privilege('authenticated', p.oid, 'EXECUTE'), false) auth_can,
+            coalesce(has_function_privilege('anon', p.oid, 'EXECUTE'), false) anon_can,
+            coalesce(has_function_privilege('service_role', p.oid, 'EXECUTE'), false) svc_can
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = $1`,
+    [fn],
+  );
+  check(
+    row !== undefined && !row.auth_can && !row.anon_can,
+    `${fn}: out of reach (authenticated=${row?.auth_can}, anon=${row?.anon_can})`,
+  );
+}
+
+// The other half of the same fix: these MUST stay executable. A policy
+// expression runs as the querying role, so revoking them fails closed on
+// everything rather than on the thing you meant.
+const RLS_HELPERS = [
+  "can_view_profile",
+  "is_blocked_either_way",
+  "profile_mode",
+  "is_chat_participant",
+  "chat_accepts_messages",
+  "viewer_community",
+];
+for (const fn of RLS_HELPERS) {
+  const [row] = await q(
+    `select coalesce(has_function_privilege('authenticated', p.oid, 'EXECUTE'), false) auth_can
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = $1 limit 1`,
+    [fn],
+  );
+  check(row?.auth_can === true, `${fn} stays reachable, or every policy breaks`);
+}
 
 console.log("\n── seed ──");
 const [{ rooms }] = await q(`select count(*) rooms from public.rooms`);

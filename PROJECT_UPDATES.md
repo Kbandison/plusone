@@ -1,5 +1,87 @@
 # Project Updates
 
+## 2026-08-14 — The sweeps, and a security hole they uncovered
+
+### SECURITY: every SECURITY DEFINER function was callable by anyone
+
+Supabase sets default privileges granting `EXECUTE` on every new function in
+`public` to `anon`, `authenticated` and `service_role`. `revoke all ... from
+public` does **not** touch those — they are named grants, not the PUBLIC
+pseudo-role. My grants file had a "deliberately NOT granted" comment describing
+something that was never true.
+
+All 33 definer functions were reachable by any signed-in member, and by anyone
+at all. Most check their caller and were unharmed. Four did not:
+
+| Function | What an arbitrary caller could do |
+|---|---|
+| `purge_due_deletions` | **Delete every account whose 7-day window had elapsed.** |
+| `sweep_expired_fuses` | Close chats across the whole system. |
+| `sweep_expired_connects` | Expire connects across the whole system. |
+| `audit` | Write arbitrary audit entries. A forgeable log is worse than none — it still looks intact. |
+
+Found by a check I wrote *while adding the sweeps*, asserting they were
+service-role only. They were not, and neither was anything else.
+
+Fixed in two layers, because the grant is what failed:
+
+1. Revoked from `anon` and `authenticated` **by name**.
+2. `assert_not_end_user()` inside each one — a cron call arrives with no
+   `auth.uid()`, a member's call always has one. Verified by re-granting
+   `purge_due_deletions` to `authenticated` and confirming it still refuses.
+
+**What deliberately stays reachable**, now written down rather than assumed: the
+RLS helper predicates — `can_view_profile`, `profile_mode`,
+`is_blocked_either_way` and the rest — must remain executable by
+`authenticated`, because a policy expression is evaluated as the querying role.
+Revoking them fails closed on *everything*.
+
+The honest cost: a member who knows another member's uuid can call
+`profile_mode()` or `is_premium()` and learn a fact the UI would not show them —
+including whether someone is in support-only mode. That is a small leak inherent
+to putting the wall in a function, and the wall is worth more than the leak. It
+is written here because it should be a known trade rather than a surprise.
+
+`pnpm check:db` now audits both halves: eight functions that must be out of
+reach, six that must stay in it.
+
+### The fuse actually closes now
+
+`sweep_expired_fuses` sets status and `closure_template` **in the same UPDATE**.
+There is no ordering in which a chat is closed and the note is still to come.
+`closed_by` stays null, because the fuse closed it and not a person — which is
+what makes the note read as the mechanic rather than as the other member walking
+away.
+
+`pnpm check:sweeps` makes a real fuse expire and looks at what comes out: closed,
+with a note, fuse cleared, `closed_by` null, and a chat with time left untouched.
+
+### Hard delete cascades rather than enumerating
+
+`purge_due_deletions` deletes the `auth.users` row; every profile-referencing
+table cascades from it. A purge that lists tables is a purge that misses the next
+table added. Verified: the profile, their connects and the chats hanging off them
+all disappear.
+
+Storage objects cannot cascade, so the cron removes them **after** the rows are
+gone. A crash between the two leaves orphaned files, which is recoverable; the
+other order leaves a deleted member's photos with a live profile pointing at
+them. Orphans are reported in the response rather than swallowed.
+
+### Cron
+
+Three Vercel cron entries: fuse sweep every 15 minutes, connect sweep hourly,
+purge nightly. Authorised by `CRON_SECRET` compared in **constant time** — a
+timing-variable comparison on a bearer token leaks the token, and this endpoint
+deletes accounts.
+
+### Still open
+
+Notifications are not wired. The §8 templates and the content-blind test exist,
+`fuses_expiring_within` returns exactly who to tell and nothing about the chat,
+but nothing sends: Resend's key is still a placeholder. The 24-hour warning is
+therefore computed and discarded.
+
 ## 2026-08-14 — Preview Drop, browse and rooms
 
 ### A real bug in what I shipped yesterday

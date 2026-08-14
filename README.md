@@ -48,6 +48,7 @@ pnpm dev
 | `pnpm check:sql` | Parse + cross-check every migration (no database needed) |
 | `pnpm check:db` | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
 | `pnpm check:admin` | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction |
+| `pnpm check:sweeps` | Expire a real fuse and assert it closes **with a note**; verify hard delete cascades |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 
@@ -74,7 +75,7 @@ asserted in a comment.
 | 4 | Member app α | |
 | 5 | Community — rooms, preview drop, mode toggle | |
 | 6 | Money + growth — Stripe, premium gates, referrals | |
-| 7 | Admin + notifications + cron | |
+| 7 | Admin + notifications + cron | sweeps + cron done |
 | 8 | Polish + launch | |
 
 Never cut, whatever the timeline: verification, RLS and the walls, fuse + closure,

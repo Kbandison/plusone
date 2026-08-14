@@ -78,5 +78,13 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # The fuse's promise is not that a number reaches zero — it is that a chat
+      # closes WITH A NOTE when it does. Behavioural, rolled back, skips without
+      # the credential.
+      - name: Verify sweeps
+        run: pnpm check:sweeps
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build
