@@ -201,6 +201,28 @@ for (const [label, row, expected] of CASES) {
   check(accepted === expected, `${label}${violated.length ? ` (by ${violated.join(", ")})` : ""}`);
 }
 
+// A public bucket is a permanent, unauthenticated link to a member's face, and
+// no amount of RLS elsewhere takes that back. There is no public bucket in this
+// product and there should never be one.
+console.log("\n── no storage bucket is public ──");
+const buckets = await q(`select id, public from storage.buckets order by id`);
+check(buckets.length >= 2, `${buckets.length} bucket(s) defined`);
+for (const bucket of buckets) {
+  check(bucket.public === false, `${bucket.id} is private`);
+}
+for (const expected of ["photos", "verification-selfies"]) {
+  check(buckets.some((b) => b.id === expected), `${expected} bucket exists`);
+}
+
+// Members write selfies and never read them back; the liveness path purges them
+// at decision time, so a readable object would be a bug.
+const selfieReads = await q(
+  `select policyname from pg_policies
+   where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'
+     and qual like '%verification-selfies%'`,
+);
+check(selfieReads.length === 0, "nothing grants read access to verification selfies");
+
 console.log("\n── every auth user gets a profile row ──");
 const [signupTrigger] = await q(
   `select tgname, tgrelid::regclass::text tbl, tgenabled from pg_trigger

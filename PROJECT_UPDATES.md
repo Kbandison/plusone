@@ -1,5 +1,79 @@
 # Project Updates
 
+## 2026-08-14 — Photos, and the end of the §7.2 flow
+
+All nine onboarding steps are built and guarded. Every one 307s an anonymous
+visitor to the phone entry.
+
+### Uploaded photos carry GPS, and that would have undone the location design
+
+A phone photo carries EXIF, and EXIF carries coordinates. Storing that would
+hand out a member's exact position while the rest of the product rounds their
+location to roughly a kilometre and shows a distance rather than a point.
+
+sharp drops metadata unless asked to keep it, but a default is a thing that can
+change, so there is a test. **The first version of that test was vacuous**: it
+built its fixture with sharp's `withExif`, which silently discards a GPS block,
+so it asserted "no GPS in the output" against an input that never had any.
+TypeScript flagged `GPS` as an invalid key and I checked instead of suppressing
+it. The fixture is now written with piexifjs, carries real coordinates, and
+`expectsGps()` fails loudly if it ever stops doing so.
+
+A second fixture bug in the same file: an orientation test built with `withExif`
+read back as orientation 1, so it passed without testing anything. Now built
+with `withMetadata({ orientation })` and asserted before use. Both were the same
+mistake — trusting a fixture to contain what I asked for.
+
+### The blur destroys data rather than hiding it
+
+A gaussian blur over a full-resolution image only obscures; deconvolution can
+recover some of it. So the blurred variant is **resampled down to 24px first**,
+which throws the information away, and only then blurred and scaled back up.
+
+That claim is tested directly rather than by proxy. The first attempt compared
+file sizes, which measures how compressible an image is, not how much of it
+survives — and it failed against a flat fixture that genuinely had nothing to
+lose. The test now pushes both variants back through the same 24px bottleneck
+and measures how much changes: the blurred one barely moves, because it has
+already been through it. The fixture is a fine checkerboard, the most
+high-frequency image there is and therefore the one with the most to lose.
+
+The blurred variant is a **separate stored object**, generated at upload. §5.3
+and the privacy policy both say the blur happens before the image is sent — a
+CSS filter would mean shipping the real photo to someone who has not connected,
+and would make that sentence false.
+
+### Storage
+
+Two private buckets (§4.2). `check:db` now asserts **no bucket is public** — a
+public URL is a permanent, unauthenticated link to a member's face, and no
+amount of RLS elsewhere takes that back. It also asserts that nothing grants
+read access to `verification-selfies`: members write a selfie and never read it
+back, and the liveness path purges it at decision time.
+
+No storage policy grants read access to another member's photos. Those are
+reached only through signed URLs minted server-side after `visible_profile_photos`
+has decided which variant the viewer may see; a select policy here would be a
+second, weaker path to the same bytes.
+
+### Two build problems
+
+sharp reached a client bundle, because the client form imported a constant from
+the module that imports sharp. The error pointed at `detect-libc`, not at the
+import that caused it. Limits now live in `photo-limits.ts` with no server
+imports, and `photos.ts` carries `import "server-only"` so it cannot recur.
+
+That guard then broke the tests — `server-only` throws on import outside a
+Server Component, which is its entire purpose and also makes anything importing
+it untestable. Aliased to a stub in `vitest.config.ts`, so the production guard
+stays and the module it guards is still exercised. apps/web now runs tests in
+the workspace suite.
+
+### Next
+
+Milestone 2's remaining pieces: the admin flag queue for verifications, and
+profile CRUD outside onboarding.
+
 ## 2026-08-14 — Liveness, intention, radius; the quiz gap
 
 Seven of the nine §7.2 steps are built and guarded. Photos is the remaining

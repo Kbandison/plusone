@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     "@plusone/types",
     "@plusone/ui-tokens",
   ],
+  // Native module. Bundling it produces a build error that points at
+  // detect-libc rather than at sharp.
+  serverExternalPackages: ["sharp"],
+
   images: {
     // Caps the number of transformation variants Vercel bills for
     // (BACKEND.md → Scale & Cost Resilience, Layer 2).
