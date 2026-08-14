@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plus One
 
-## Getting Started
+A private, verified community for people with HSV and HIV.
 
-First, run the development server:
+> Dating with the talk already handled. Real people, real privacy, nobody gets ghosted.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Build specification: [`yourplusone-spec.md`](./yourplusone-spec.md). Decisions in §2 are
+locked. All user-facing copy is finalised in §3 and §9 and lives in
+`packages/config` — never invent a string in a component.
+
+## Layout
+
+```
+apps/
+  web/            Next.js 16 App Router — marketing + member PWA
+packages/
+  config/         brand, verbatim copy, pricing, mechanic thresholds, env schema
+  types/          domain types mirroring the SQL enums
+  db/             Supabase clients (browser / server / service)
+  logic/          PURE business logic — every mechanic, unit-tested, zero UI
+  ui-tokens/      Linen (light) + Dusk (dark) design tokens
+supabase/
+  migrations/     schema, walls, RLS, views, RPCs
+scripts/
+  check-migrations.mjs   parses + cross-checks migrations without a database
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**The critical rule:** every mechanic lives in `packages/logic` as pure functions with
+unit tests, and every wall is enforced in RLS or an RPC. No mechanic logic in a
+component, ever — a client bug must not be able to open a wall.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quickstart
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm install
+cp .env.example .env.local   # fill in from the Vercel dashboard
+pnpm dev
+```
 
-## Learn More
+## Common tasks
 
-To learn more about Next.js, take a look at the following resources:
+| Command | What it does |
+|---|---|
+| `pnpm dev` | Run the web app |
+| `pnpm typecheck` | Typecheck every package |
+| `pnpm test` | Run all unit tests |
+| `pnpm check:sql` | Parse + cross-check every migration (no database needed) |
+| `pnpm check:db` | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
+| `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
+| `pnpm build` | Production build |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design direction
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Luxury Minimal × Soft Consumer — structure from the first (space, hierarchy, one
+accent, no decoration), temperature from the second (warm neutrals, gentle easing,
+humane radii). **Linen** is the light theme, **Dusk** is the dark one; the type
+system does not fork by theme.
 
-## Deploy on Vercel
+Instrument Serif (display) + Satoshi (body). Dials: VARIANCE 5 / MOTION 6 / DENSITY 3.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Every palette value is verified against WCAG 2.2 AA by recomputation in
+`packages/ui-tokens/src/tokens.test.ts` — the contrast numbers are measured, not
+asserted in a comment.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Milestones
+
+| # | Milestone | Status |
+|---|---|---|
+| 1 | Foundation — monorepo, config/types/db/ui-tokens, schema + RLS + RPCs, CI | done |
+| 2 | Identity — phone OTP, liveness, verification pipeline, consent screen | pipeline + adapter done |
+| 3 | Mechanics core — drop, connects, modes, referrals, tone | fuse done |
+| 4 | Member app α | |
+| 5 | Community — rooms, preview drop, mode toggle | |
+| 6 | Money + growth — Stripe, premium gates, referrals | |
+| 7 | Admin + notifications + cron | |
+| 8 | Polish + launch | |
+
+Never cut, whatever the timeline: verification, RLS and the walls, fuse + closure,
+content-blind notifications, hard delete, the consent screen, and chat voice notes.
