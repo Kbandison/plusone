@@ -17,6 +17,7 @@ const VALID_SERVER = {
   STRIPE_PRICE_PREMIUM_3MO: "price_3",
   STRIPE_PRICE_PREMIUM_6MO: "price_6",
   RESEND_API_KEY: "re_abc123",
+  OTP_PROVIDER: "stub",
   LIVENESS_PROVIDER: "stub",
   LIVENESS_API_KEY: "abc123",
   CRON_SECRET: "x".repeat(32),
@@ -98,6 +99,12 @@ describe("server env", () => {
 
   it("rejects a cron secret short enough to guess", () => {
     expect(() => parseServerEnv({ ...VALID_SERVER, CRON_SECRET: "short" })).toThrow(
+      /Invalid server environment/,
+    );
+  });
+
+  it("rejects an OTP provider outside the known adapters", () => {
+    expect(() => parseServerEnv({ ...VALID_SERVER, OTP_PROVIDER: "twilio_direct" })).toThrow(
       /Invalid server environment/,
     );
   });

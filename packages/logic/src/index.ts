@@ -14,4 +14,5 @@
  */
 
 export * as fuse from "./fuse/index";
+export * as onboarding from "./onboarding/index";
 export * as verification from "./verification/index";

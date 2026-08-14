@@ -1,5 +1,60 @@
 # Project Updates
 
+## 2026-08-14 — Onboarding flow and the OTP seam
+
+Twilio credentials are coming later, so the phone provider is stubbed. The phone
+step itself stays **required** in the onboarding machine — only the provider is
+swappable. Disabling the step to unblock development would have been the version
+of this that quietly ships.
+
+### Spec conflict — where the consent checkbox lives
+
+§7.2 puts the health-data consent checkbox on the community + condition screen.
+§9.1 requires it on its **own screen, unbundled**. Those cannot both hold: a
+checkbox on the screen where a member is also choosing their condition is the
+definition of bundled.
+
+Built to §9.1, which is headed "build requirements, not aspirations" and matches
+what WA My Health My Data actually requires of separate consent. **Flagged for
+Kevin** — if §7.2 is the intended reading, this is one line in ONBOARDING_STEPS,
+but the compliance-safe default is the one worth defaulting to.
+
+### `packages/logic/onboarding` — 43 tests
+
+The §7.2 order as a pure reducer: phone -> liveness -> profile basics ->
+community + condition -> health consent -> intention -> quiz -> photos ->
+radius -> done. Two structural guarantees:
+
+- **The generic advance cannot pass the consent step.** `complete` fails on
+  `health_consent`; only `grant_consent`, carrying the timestamp §9.1 says to
+  store, moves a member past it. And it cannot be granted from any earlier step,
+  which is the other half of unbundled. Bundled consent is not something this
+  machine can express.
+- **Only the quiz is skippable.** §7.2 marks it "skippable-but-nudged" and marks
+  nothing else. `SKIPPABLE_STEPS` is the sole source of that, `skip` fails on
+  every other step, and a test walks all of them to prove it.
+
+### `packages/logic/verification/otp` — 28 tests
+
+The seam around Supabase Auth's Twilio provider, plus a deterministic stub that
+refuses to construct in production.
+
+**The code is never handed back to the caller.** `OtpChallenge` has no field that
+could carry it — asserted against both the source and the runtime object — because
+a provider that returned the code would let a client verify itself, which is the
+entire value of an out-of-band factor gone.
+
+`normalizePhone` strips the punctuation people type but will not invent a country
+code: guessing one silently sends a member's code to a stranger.
+
+`OTP_PROVIDER` joins the env schema. Note it takes no credential — Twilio's live
+in the Supabase dashboard, since Supabase Auth talks to Twilio on our behalf.
+
+### Next
+
+Surfaces: the §9.1 consent screen, profile basics, and community + condition,
+built on Linen/Dusk with copy drawn from `packages/config`.
+
 ## 2026-08-14 — Supabase wired · TypeScript 7
 
 **Supabase project is live and the schema is applied.** All 8 migrations pushed

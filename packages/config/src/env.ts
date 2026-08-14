@@ -72,6 +72,14 @@ export const serverEnvSchema = z.object({
   RESEND_API_KEY: z.string().startsWith("re_"),
 
   /**
+   * Phone OTP provider (§7.2). Twilio credentials live in the Supabase
+   * dashboard, not here — Supabase Auth talks to Twilio on our behalf, so this
+   * only records WHICH provider is live. `stub` accepts a fixed code and
+   * refuses to construct in production.
+   */
+  OTP_PROVIDER: z.enum(["stub", "supabase_twilio"]),
+
+  /**
    * Swappable liveness adapter (§4.2). The provider choice is still open — see
    * PROJECT_UPDATES.md — so `stub` is a legal value here and is the default for
    * development. The stub itself refuses to construct in production, so a
