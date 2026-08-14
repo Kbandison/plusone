@@ -3,6 +3,7 @@ import {
   ONBOARDING_STEPS,
   SKIPPABLE_STEPS,
   type OnboardingErrorCode,
+  type OnboardingFacts,
   type OnboardingEvent,
   type OnboardingResult,
   type OnboardingState,
@@ -117,4 +118,46 @@ export function hasHealthConsent(state: OnboardingState): boolean {
  */
 export function remainingSteps(state: OnboardingState): readonly OnboardingStep[] {
   return ONBOARDING_STEPS.slice(stepIndex(state.step), ONBOARDING_STEPS.length - 1);
+}
+
+/** Which fact settles each step. `done` has none — it is the absence of gaps. */
+const SETTLED_BY: Record<Exclude<OnboardingStep, "done">, (f: OnboardingFacts) => boolean> = {
+  phone: (f) => f.phoneVerified,
+  liveness: (f) => f.livenessPassed,
+  profile_basics: (f) => f.hasBasics,
+  community_condition: (f) => f.hasCommunity,
+  health_consent: (f) => f.hasHealthConsent,
+  intention: (f) => f.hasIntention,
+  quiz: (f) => f.quizSettled,
+  photos: (f) => f.hasPhoto,
+  radius: (f) => f.radiusSet,
+};
+
+/**
+ * Where a member belongs right now, given what the database knows.
+ *
+ * This is what makes onboarding resumable: someone who closes the app at the
+ * photos step and comes back three days later lands on photos, not at the
+ * beginning. §7.2 targets under eight minutes, and re-answering four screens
+ * because you took a phone call is how that target gets missed.
+ *
+ * It returns the FIRST unsettled step in §7.2 order, never the furthest one
+ * reached. That ordering is what makes consent a gate rather than a checkpoint:
+ * if a consent is missing — because the wording changed and the old tick no
+ * longer counts — a member goes back to it even though every later step is
+ * already answered.
+ */
+export function resolveStep(facts: OnboardingFacts): OnboardingStep {
+  for (const step of ONBOARDING_STEPS) {
+    if (step === FINAL_STEP) break;
+    if (!SETTLED_BY[step](facts)) return step;
+  }
+  return FINAL_STEP;
+}
+
+/** Every step still unsettled, in order. For a "what's left" summary. */
+export function unsettledSteps(facts: OnboardingFacts): readonly OnboardingStep[] {
+  return ONBOARDING_STEPS.filter(
+    (step) => step !== FINAL_STEP && !SETTLED_BY[step](facts),
+  );
 }

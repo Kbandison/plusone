@@ -62,3 +62,13 @@ export {
   HEALTH_DATA_ANCHOR,
 } from "./legal";
 export type { PolicySection } from "./legal";
+
+export {
+  DRAFT_COPY,
+  CONDITION_LABELS,
+  COMMUNITY_LABELS,
+  CONDITIONS_BY_COMMUNITY,
+  allowsUEqualsU,
+  isValidPair,
+} from "./draft-copy";
+export type { Community, ConditionDetail } from "./draft-copy";

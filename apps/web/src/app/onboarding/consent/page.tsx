@@ -4,6 +4,7 @@ import Link from "next/link";
 import { COPY, HEALTH_DATA_ANCHOR } from "@plusone/config";
 import { onboarding } from "@plusone/logic";
 
+import { requireStep } from "@/lib/onboarding";
 import { ConsentForm } from "./consent-form";
 
 /**
@@ -26,7 +27,9 @@ export const metadata: Metadata = {
 
 const STEP = "health_consent" as const;
 
-export default function ConsentPage() {
+export default async function ConsentPage() {
+  await requireStep("health_consent");
+
   const { current, total } = onboarding.progress({
     step: STEP,
     completed: [],

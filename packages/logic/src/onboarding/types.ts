@@ -91,3 +91,34 @@ export type OnboardingErrorCode =
 export type OnboardingResult =
   | { readonly ok: true; readonly state: OnboardingState }
   | { readonly ok: false; readonly code: OnboardingErrorCode };
+
+/**
+ * What the database knows about a member's progress, as booleans.
+ *
+ * Deliberately not the profile row: this package stays free of database shapes,
+ * and a boolean per step is the whole of what the resolver needs. The mapping
+ * from row to facts lives in the app, where the row does.
+ */
+export interface OnboardingFacts {
+  readonly phoneVerified: boolean;
+  readonly livenessPassed: boolean;
+  readonly hasBasics: boolean;
+  readonly hasCommunity: boolean;
+  readonly hasHealthConsent: boolean;
+  readonly hasIntention: boolean;
+  readonly quizSettled: boolean;
+  readonly hasPhoto: boolean;
+  readonly radiusSet: boolean;
+}
+
+export const NO_PROGRESS: OnboardingFacts = {
+  phoneVerified: false,
+  livenessPassed: false,
+  hasBasics: false,
+  hasCommunity: false,
+  hasHealthConsent: false,
+  hasIntention: false,
+  quizSettled: false,
+  hasPhoto: false,
+  radiusSet: false,
+};

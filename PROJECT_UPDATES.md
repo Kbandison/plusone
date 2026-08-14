@@ -1,5 +1,84 @@
 # Project Updates
 
+## 2026-08-14 — Onboarding routing, phone entry, basics, community
+
+### The schema assumed profiles spring into existence complete
+
+`community`, `condition` and `intention` were `NOT NULL`, but §7.2 collects
+basics **before** community — so a half-onboarded member could not have a row at
+all. Migration `20260814000100` drops those NOT NULLs and moves the invariant to
+where it actually matters: `profiles_complete_when_verified` requires them once
+`verification_status = 'verified'`, and an unfinished profile is never visible
+because both `can_view_profile()` and `visible_profiles` require verified.
+
+Loosening a constraint deserves proof it did not loosen anything else, so
+`pnpm check:db` now evaluates the **catalogue's own constraint text** against
+representative rows — testing Postgres rather than a retyping of it. Five cases:
+half-built is allowed, mismatched community/condition still rejected, U=U
+without the HIV community still rejected, complete-and-verified allowed,
+verified-with-a-gap rejected. An earlier hand-written version of this check used
+the wrong enum values and passed vacuously, which is why it reads the real
+definitions now.
+
+### One door, and it cannot be walked around
+
+`/onboarding` renders nothing. It resolves where the member belongs and sends
+them there; every screen finishes by returning to it rather than naming its own
+successor, so the §7.2 order lives in exactly one place.
+
+`resolveStep` returns the **first** unsettled step, never the furthest reached.
+That ordering is what makes consent a gate rather than a checkpoint: if the
+consent copy changes and the old tick stops counting, a member returns to
+consent even though every later answer is already stored. Verified for an
+anonymous visitor: `/onboarding`, `/basics`, `/community` and `/consent` all
+307 to `/onboarding/phone`. Typing the consent URL cannot walk past it, and the
+consent **action** carries the same guard, so it cannot be POSTed out of order
+either.
+
+It also makes onboarding resumable — someone who takes a phone call at the
+photos step comes back to photos. §7.2 targets under eight minutes and
+re-answering four screens is how that target gets missed.
+
+### Screens: phone, basics, community
+
+Phone goes through Supabase Auth, which is the identity provider and the only
+thing that can mint a session — our OTP stub covers the pure part (E.164,
+expiry), not the round trip. Until Twilio is configured in the dashboard, `send`
+fails and says so as a setup problem on our side, not something the member did.
+Wrong code and expired code share one message deliberately; distinguishing them
+tells a guesser which half they got right.
+
+Basics enforces 18+ in the action and in the database. Age is a new tested pure
+function comparing **calendar dates rather than instants** — doing this with
+`Date` arithmetic is how someone turns 18 a day early in one timezone and a day
+late in another. It also refuses dates that do not exist: `2025-02-30` passes a
+regex and silently rolls into March. A test asserting a leap-day baby turns 18
+on a leap day was wrong and is now corrected — 18 is not a multiple of four, so
+that anniversary always lands in a common year.
+
+Community's condition options depend on the community chosen, and
+`CONDITIONS_BY_COMMUNITY` is asserted against the `profiles_condition_matches_community`
+CHECK by a unit test — a drift there would offer a member a choice the database
+then refuses, at the end of a form they already filled in. The pair and the U=U
+eligibility are both re-checked server-side; a client component is not a place
+to enforce anything.
+
+Onboarding routes are `force-dynamic`. They were being prerendered, and the
+environment parse throws before the first `cookies()` read, so relying on that
+to opt out failed at build rather than bailing cleanly. They are per-member
+screens; a cached copy would at best be wrong and at worst be someone else's.
+
+### Draft copy
+
+Screen headings and field labels are not in §3 or §9. They live in `DRAFT_COPY`
+(`packages/config/src/draft-copy.ts`) — one file, clearly marked, for review in
+one pass. Anything in `COPY` is spec-verbatim; anything in `DRAFT_COPY` is mine
+and awaiting approval.
+
+### Next
+
+Liveness, intention, quiz, photos, radius — the remaining §7.2 steps.
+
 ## 2026-08-14 — Policy corrections
 
 **Messages are encrypted, and the draft only said they were not E2EE.** Decision
@@ -339,10 +418,11 @@ from the environment.)
 | 1 | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Waiting on the domain being secured; `privacy@yourplusone.app` is the intended alias. Note Resend only *sends* — receiving needs mail hosting or a forwarding rule. | **launch** |
 | 2 | **Privacy policy review.** Drafted 2026-08-14, live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). | launch |
 | 3 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
-| 4 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 5 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 6 | **Resend API key.** | Milestone 7 |
-| 7 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| 4 | **Onboarding draft copy.** Headings and field labels for phone, basics and community in `DRAFT_COPY`. Not spec copy. | Milestone 2 sign-off |
+| 5 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
+| 6 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
+| 7 | **Resend API key.** | Milestone 7 |
+| 8 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
 
 ### Next
 

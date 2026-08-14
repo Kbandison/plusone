@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./fuse": "./src/fuse/index.ts",
     "./verification": "./src/verification/index.ts",
-    "./onboarding": "./src/onboarding/index.ts"
+    "./onboarding": "./src/onboarding/index.ts",
+    "./profile": "./src/profile/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

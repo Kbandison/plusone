@@ -12,7 +12,15 @@ import type { Metadata } from "next";
  * Nulling it here covers every onboarding step at once, including the ones not
  * written yet — which is the point of putting it in the layout rather than
  * remembering it per page.
+ *
+ * The same goes for `dynamic` below: every onboarding screen is a function of
+ * who is asking, so a static copy would at best be wrong and at worst be
+ * someone else's. Relying on `cookies()` to opt these routes out is not enough
+ * — the environment is parsed before the first cookie read, so a build-time
+ * render fails there rather than bailing out cleanly.
  */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   description: null,
   robots: { index: false, follow: false },

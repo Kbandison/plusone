@@ -1,0 +1,115 @@
+/**
+ * DRAFT COPY — written here, not taken from the spec.
+ *
+ * §3 and §9 finalise the copy that carries the product's promises. They do not
+ * cover field labels and screen headings, and a screen cannot be built without
+ * them. Rather than scatter unreviewed strings through components where they
+ * would read as approved, every one of them lives here for Kevin to review in
+ * one pass.
+ *
+ * Anything in `COPY` is spec-verbatim and must not be edited. Anything here is
+ * a draft. When a string is approved it moves to `COPY` and leaves this file.
+ */
+
+export const DRAFT_COPY = {
+  phone: {
+    heading: "Your number",
+    intro:
+      "We text you a code to sign in. Your number is never shown to anyone, and it is not used to find you.",
+    phoneLabel: "Mobile number",
+    phoneHint: "Include your country code, like +1.",
+    sendLabel: "Send code",
+    codeHeading: "Enter the code",
+    codeIntro: "We sent a six-digit code. It is good for ten minutes.",
+    codeLabel: "Code",
+    verifyLabel: "Verify",
+    resendLabel: "Send it again",
+    changeNumberLabel: "Use a different number",
+    errors: {
+      phoneRequired: "Enter your mobile number.",
+      phoneInvalid: "That does not look like a mobile number. Include the country code, like +1.",
+      codeRequired: "Enter the code we sent.",
+      codeInvalid: "That code is not right, or it has expired.",
+      sendFailed: "We could not send a code just now. Try again in a moment.",
+      notConfigured:
+        "Phone sign-in is not switched on yet. This is a setup step on our side, not something you did.",
+    },
+  },
+
+  basics: {
+    heading: "The basics",
+    intro:
+      "Your name is what other members see. It does not have to be the one on your ID — most people here use a first name only.",
+    displayNameLabel: "Display name",
+    displayNameHint: "Up to 40 characters.",
+    birthdateLabel: "Date of birth",
+    birthdateHint: "Members see your age, never your date of birth.",
+    continueLabel: "Continue",
+    errors: {
+      nameRequired: "Choose a display name.",
+      nameTooLong: "That is longer than 40 characters.",
+      birthdateRequired: "Enter your date of birth.",
+      birthdateInvalid: "That date does not look right.",
+      tooYoung: "You have to be 18 or over to use Plus One.",
+    },
+  },
+
+  community: {
+    heading: "Your community",
+    intro:
+      "This decides who you see and who sees you. You can change it later, and you can opt in to seeing the other community from Settings.",
+    communityLabel: "Community",
+    conditionLabel: "What you are living with",
+    uEqualsULabel: "Show the U=U badge on my profile",
+    uEqualsUHint:
+      "Undetectable equals untransmittable. Only you decide whether this appears.",
+    continueLabel: "Continue",
+    errors: {
+      communityRequired: "Choose a community.",
+      conditionRequired: "Choose one.",
+      mismatch: "That combination is not one of the options.",
+    },
+  },
+} as const;
+
+/**
+ * Labels for the condition_detail enum. These are names for things, not
+ * marketing, so they are stated the way the communities themselves state them.
+ */
+export const CONDITION_LABELS = {
+  hsv1: "HSV-1",
+  hsv2: "HSV-2",
+  hsv1_hsv2: "HSV-1 and HSV-2",
+  hiv: "HIV",
+  hiv_hsv: "HIV and HSV",
+} as const;
+
+export const COMMUNITY_LABELS = {
+  hsv: "HSV",
+  hiv: "HIV",
+} as const;
+
+/**
+ * Which conditions belong to which community.
+ *
+ * This MUST match the profiles_condition_matches_community CHECK in the SQL. A
+ * unit test asserts it against the migration text, because a mismatch here does
+ * not fail loudly — it offers a member a choice the database will then refuse,
+ * at the end of a form they have already filled in.
+ */
+export const CONDITIONS_BY_COMMUNITY = {
+  hsv: ["hsv1", "hsv2", "hsv1_hsv2"],
+  hiv: ["hiv", "hiv_hsv"],
+} as const;
+
+export type Community = keyof typeof CONDITIONS_BY_COMMUNITY;
+export type ConditionDetail = keyof typeof CONDITION_LABELS;
+
+/** §5.2 — the U=U badge is only meaningful for the HIV community. */
+export function allowsUEqualsU(community: Community): boolean {
+  return community === "hiv";
+}
+
+export function isValidPair(community: Community, condition: ConditionDetail): boolean {
+  return (CONDITIONS_BY_COMMUNITY[community] as readonly string[]).includes(condition);
+}

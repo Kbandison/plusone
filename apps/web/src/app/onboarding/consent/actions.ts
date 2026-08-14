@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { CONSENT_COPY_VERSION } from "@plusone/config";
 
+import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 
 export type ConsentActionState = { readonly error: string | null };
@@ -29,14 +30,13 @@ export async function grantHealthDataConsent(
     return { error: "Tick the box to continue." };
   }
 
+  // Also the guard: this cannot be POSTed out of order, so consent can never be
+  // recorded for a member who has not reached the screen.
+  const { userId } = await requireStep("health_consent");
   const supabase = await getServerSupabase();
-  const { data, error: authError } = await supabase.auth.getUser();
-  if (authError || !data.user) {
-    redirect("/onboarding");
-  }
 
   const { error } = await supabase.from("consents").insert({
-    user_id: data.user.id,
+    user_id: userId,
     kind: "health_data",
     copy_version: CONSENT_COPY_VERSION.health_data,
   });
@@ -48,5 +48,7 @@ export async function grantHealthDataConsent(
     return { error: "That didn't save. Try again." };
   }
 
-  redirect("/onboarding/intention");
+  // Back to the one door. Each screen knowing only "I am finished" keeps the
+  // §7.2 order in a single place.
+  redirect("/onboarding");
 }

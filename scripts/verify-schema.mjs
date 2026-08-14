@@ -126,6 +126,63 @@ check(
   `anon holds no table grants${anonGrants.length ? ` — found ${anonGrants.map((g) => `${g.table_name}/${g.privilege_type}`).join(", ")}` : ""}`,
 );
 
+// Onboarding builds a profile across screens, so community/condition/intention
+// are nullable. The invariant moved rather than disappeared: a VERIFIED profile
+// must be complete. Evaluated against the catalogue's own constraint text, so
+// this tests Postgres rather than a retyping of it.
+console.log("\n── a visible profile is a complete one ──");
+const PROFILE_CHECKS = [
+  "profiles_condition_matches_community",
+  "profiles_ueu_hiv_only",
+  "profiles_complete_when_verified",
+];
+const defs = Object.fromEntries(
+  (
+    await q(
+      `select conname, pg_get_constraintdef(oid) def from pg_constraint
+       where conrelid = 'public.profiles'::regclass and contype = 'c'
+         and conname = any($1)`,
+      [PROFILE_CHECKS],
+    )
+  ).map((r) => [r.conname, r.def.replace(/^CHECK\s*\(/, "").replace(/\)$/, "")]),
+);
+check(
+  Object.keys(defs).length === PROFILE_CHECKS.length,
+  `all ${PROFILE_CHECKS.length} profile constraints present`,
+);
+
+const CAST = {
+  community: "public.condition_community",
+  condition: "public.condition_detail",
+  intention: "public.intention",
+  u_equals_u: "boolean",
+  verification_status: "public.verification_status",
+};
+const CASES = [
+  ["half-built and unverified is allowed",
+    { community: null, condition: null, intention: null, u_equals_u: false, verification_status: "unverified" }, true],
+  ["mismatched community and condition is rejected",
+    { community: "hsv", condition: "hiv", intention: "casual", u_equals_u: false, verification_status: "unverified" }, false],
+  ["U=U without the hiv community is rejected",
+    { community: "hsv", condition: "hsv2", intention: "casual", u_equals_u: true, verification_status: "unverified" }, false],
+  ["complete and verified is allowed",
+    { community: "hiv", condition: "hiv", intention: "long_term", u_equals_u: true, verification_status: "verified" }, true],
+  ["verified with a gap is rejected",
+    { community: "hiv", condition: "hiv", intention: null, u_equals_u: false, verification_status: "verified" }, false],
+];
+for (const [label, row, expected] of CASES) {
+  const bindings = Object.entries(row)
+    .map(([k, v]) => `${v === null ? "null" : `'${v}'`}::${CAST[k]} as ${k}`)
+    .join(", ");
+  const exprs = Object.entries(defs)
+    .map(([name, def]) => `coalesce((${def}), true) as "${name}"`)
+    .join(", ");
+  const [r] = await q(`with candidate as (select ${bindings}) select ${exprs} from candidate`);
+  const violated = Object.entries(r).filter(([, ok]) => ok === false).map(([n]) => n);
+  const accepted = violated.length === 0;
+  check(accepted === expected, `${label}${violated.length ? ` (by ${violated.join(", ")})` : ""}`);
+}
+
 console.log("\n── seed ──");
 const [{ rooms }] = await q(`select count(*) rooms from public.rooms`);
 const [{ cfg }] = await q(`select count(*) cfg from public.app_config`);

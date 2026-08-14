@@ -8,13 +8,17 @@ import {
   ONBOARDING_STEPS,
   SKIPPABLE_STEPS,
   hasHealthConsent,
+  NO_PROGRESS,
   isFinished,
   isSkippable,
   progress,
   remainingSteps,
   stepIndex,
+  resolveStep,
   transition,
+  unsettledSteps,
   type OnboardingEvent,
+  type OnboardingFacts,
   type OnboardingState,
   type OnboardingStep,
 } from "./index";
@@ -272,5 +276,84 @@ describe("structural guarantees", () => {
     const block = /export const ONBOARDING_STEPS = \[([\s\S]*?)\] as const/.exec(source)?.[1] ?? "";
     expect(block).toContain('"health_consent"');
     expect(block).toContain('"community_condition"');
+  });
+});
+
+describe("resuming where you left off", () => {
+  type FactKey = keyof OnboardingFacts;
+
+  const settledThrough = (step: OnboardingStep): OnboardingFacts => {
+    const upTo = ONBOARDING_STEPS.slice(0, stepIndex(step));
+    const byStep: Record<string, FactKey> = {
+      phone: "phoneVerified",
+      liveness: "livenessPassed",
+      profile_basics: "hasBasics",
+      community_condition: "hasCommunity",
+      health_consent: "hasHealthConsent",
+      intention: "hasIntention",
+      quiz: "quizSettled",
+      photos: "hasPhoto",
+      radius: "radiusSet",
+    };
+    const facts = { ...NO_PROGRESS };
+    for (const s of upTo) {
+      const key = byStep[s];
+      if (key) facts[key] = true;
+    }
+    return facts;
+  };
+
+  it("sends a brand new member to the phone step", () => {
+    expect(resolveStep(NO_PROGRESS)).toBe("phone");
+  });
+
+  it("sends a fully settled member to done", () => {
+    expect(resolveStep(settledThrough(FINAL_STEP))).toBe(FINAL_STEP);
+  });
+
+  it.each(ONBOARDING_STEPS.filter((s) => s !== FINAL_STEP))(
+    "lands a member who stopped before %s back on it",
+    (step) => {
+      expect(resolveStep(settledThrough(step))).toBe(step);
+    },
+  );
+
+  // A member who takes a phone call mid-flow should not re-answer four screens.
+  // §7.2 targets under eight minutes and that is how the target gets missed.
+  it("does not send a member back past work they already did", () => {
+    const facts = settledThrough("photos");
+    expect(stepIndex(resolveStep(facts))).toBeGreaterThanOrEqual(stepIndex("photos"));
+  });
+
+  // The ordering is the gate: consent missing sends a member back to it even
+  // when everything after is already answered — which is exactly what happens
+  // when the wording changes and the old tick stops counting.
+  it("returns to consent when consent is missing, however far along they are", () => {
+    const facts: OnboardingFacts = { ...settledThrough(FINAL_STEP), hasHealthConsent: false };
+    expect(resolveStep(facts)).toBe("health_consent");
+  });
+
+  it("returns to the earliest gap, not the furthest step reached", () => {
+    const facts: OnboardingFacts = { ...settledThrough(FINAL_STEP), hasBasics: false };
+    expect(resolveStep(facts)).toBe("profile_basics");
+  });
+
+  it("agrees with unsettledSteps about what is left", () => {
+    const facts = settledThrough("intention");
+    expect(unsettledSteps(facts)[0]).toBe(resolveStep(facts));
+    expect(unsettledSteps(settledThrough(FINAL_STEP))).toEqual([]);
+  });
+
+  it("treats a skipped quiz as settled", () => {
+    const facts: OnboardingFacts = { ...settledThrough("quiz"), quizSettled: true };
+    expect(resolveStep(facts)).toBe("photos");
+  });
+
+  it("is pure — the facts it is given come back unchanged", () => {
+    const facts = settledThrough("intention");
+    const snapshot = structuredClone(facts);
+    resolveStep(facts);
+    unsettledSteps(facts);
+    expect(facts).toEqual(snapshot);
   });
 });
