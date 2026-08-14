@@ -4,9 +4,10 @@ A private, verified community for people with HSV and HIV.
 
 > Dating with the talk already handled. Real people, real privacy, nobody gets ghosted.
 
-Build specification: [`yourplusone-spec.md`](./yourplusone-spec.md). Decisions in §2 are
-locked. All user-facing copy is finalised in §3 and §9 and lives in
-`packages/config` — never invent a string in a component.
+Governed by the build specification (`yourplusone-spec.md`) and the LuxWeb design
+system (`luxweb-master/`). Both are kept **out of this repository** — ask Kevin for a
+copy. Decisions in §2 are locked. All user-facing copy is finalised in §3 and §9 and
+lives in `packages/config` — never invent a string in a component.
 
 ## Layout
 

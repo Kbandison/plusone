@@ -45,3 +45,9 @@ next-env.d.ts
 # supabase local
 supabase/.branches
 supabase/.temp
+
+# Governing documents — kept local, never pushed.
+# The build spec and the LuxWeb design system drive this work but are not
+# distributed with the code.
+yourplusone-spec.md
+luxweb-master/
