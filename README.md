@@ -49,6 +49,7 @@ pnpm dev
 | `pnpm check:db` | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
 | `pnpm check:admin` | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction |
 | `pnpm check:sweeps` | Expire a real fuse and assert it closes **with a note**; verify hard delete cascades |
+| `pnpm check:walls` | Act as real members across every wall, and attempt every third-party probe |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 

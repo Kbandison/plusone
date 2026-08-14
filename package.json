@@ -17,6 +17,7 @@
     "check:db": "node scripts/verify-schema.mjs",
     "check:admin": "node scripts/verify-admin.mjs",
     "check:sweeps": "node scripts/verify-sweeps.mjs",
+    "check:walls": "node scripts/verify-walls.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css,sql}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css,sql}\""
   },

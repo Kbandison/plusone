@@ -1,5 +1,70 @@
 # Project Updates
 
+## 2026-08-14 — The probe leak is closed
+
+Yesterday I documented a leak as an accepted cost: RLS helper predicates have to
+stay callable by `authenticated`, and most took a viewer argument, so a member
+could substitute any uuid and ask questions about other people. On a second look
+that framing was wrong. The leak was not the grant — it was the **argument**.
+
+Every one of those predicates was called with `auth.uid()` in practice. Taking
+the parameter away makes the question unaskable rather than merely discouraged.
+
+| Was askable about anyone | Now |
+|---|---|
+| `is_admin(uuid)` — who moderates | `is_admin()` — am I one |
+| `is_premium(uuid)` — who pays | revoked; only a trigger calls it |
+| `profile_mode(uuid)` — who is support-only | folded into `connect_permitted` |
+| `is_blocked_either_way(a, b)` — have two others blocked | `preview_permitted(other)` |
+| `has_accepted_connect(a, b)` — have two others connected | `i_have_connected_with(other)` |
+| `is_member_of_room(user, room)` — is someone else in a room | `i_am_in_room(room)` |
+| `is_chat_participant(chat, user)` | `i_am_in_chat(chat)` |
+| `can_view_profile(viewer, …)` — what can someone else see | `i_can_view(target, …)` |
+| `shares_room(a, b)` | dropped — nothing called it |
+
+The connects policy now calls one compound predicate,
+`connect_permitted(target, room)`, instead of three separately-askable facts. A
+false does not say *which* wall stopped it, and the initiator is implicit, so it
+can only be asked about the caller's own reach — which is what the connect
+button already tells them.
+
+The two-argument originals survive because SECURITY DEFINER functions call them
+internally and run with their own rights. They are revoked from `anon` and
+`authenticated`, so no session can reach them.
+
+### The order mattered more than the change
+
+This rewrote the walls. So `pnpm check:walls` was written **first**, against the
+existing behaviour — 19 checks covering the community wall, the mode wall,
+cross-community opt-in, verification, blocking, and the preview surface. It
+passed before the refactor and passed unchanged after it, which is the only
+reason to believe the rewrite was safe.
+
+Nine probe attempts were then added to it, each asserting a question about a
+third party is refused, plus four asserting the self-relative versions still
+answer. One of those four failed at first and the test was wrong, not the code —
+it expected `false` from `i_am_in_room` for a member who had joined that room
+earlier in the same test. Asserting the real answer is the better test.
+
+### What remains, honestly
+
+A member can still ask "can I see X", "may I connect to X", "am I blocked with
+X". Every one of those is answered by the interface anyway — a profile appears
+or does not, a button works or does not. **No predicate answers a question about
+two other people, and none reveals a fact with no counterpart in the UI.**
+
+The one thing I would still call a residue: repeated `connect_permitted` calls
+across many targets would let someone infer *something* about who is reachable.
+It is a compound answer over four walls, so what leaks is mixed and weak, and it
+is the same information as trying to connect and being refused.
+
+### A process note
+
+I appended the admin-RPC change to `20260814001000`, which had already been
+applied — so it would never have run, and the file on disk would have described
+a schema the database did not have, with nothing complaining. Split into
+`20260814001100`. Editing an applied migration is silent in a way that matters.
+
 ## 2026-08-14 — The sweeps, and a security hole they uncovered
 
 ### SECURITY: every SECURITY DEFINER function was callable by anyone

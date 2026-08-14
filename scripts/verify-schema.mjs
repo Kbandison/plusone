@@ -31,7 +31,7 @@ if (!DB_URL) {
 
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
-const EXPECT = { tables: 24, views: 3, functions: 42, enums: 17, rooms: 5, config: 16 };
+const EXPECT = { tables: 24, views: 3, functions: 48, enums: 17, rooms: 5, config: 16 };
 const INVOKER_VIEWS = ["visible_profiles", "preview_profiles", "visible_profile_photos"];
 const NO_UPDATE_PATH = ["connects", "chats"];
 
@@ -255,6 +255,15 @@ const SWEEPS = [
   "create_profile_for_new_user",
   "enforce_connect_rules",
   "assert_not_end_user",
+  // The two-argument originals. Self-relative wrappers replaced them in every
+  // policy; these stay only because definer functions call them internally.
+  "is_premium",
+  "profile_mode",
+  "is_blocked_either_way",
+  "has_accepted_connect",
+  "is_member_of_room",
+  "is_chat_participant",
+  "can_view_profile",
 ];
 for (const fn of SWEEPS) {
   const [row] = await q(
@@ -276,10 +285,12 @@ for (const fn of SWEEPS) {
 // expression runs as the querying role, so revoking them fails closed on
 // everything rather than on the thing you meant.
 const RLS_HELPERS = [
-  "can_view_profile",
-  "is_blocked_either_way",
-  "profile_mode",
-  "is_chat_participant",
+  "i_can_view",
+  "i_am_in_room",
+  "i_am_in_chat",
+  "i_have_connected_with",
+  "connect_permitted",
+  "preview_permitted",
   "chat_accepts_messages",
   "viewer_community",
 ];

@@ -24,7 +24,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect("/onboarding/phone");
 
-  const { data: isAdmin } = await supabase.rpc("is_admin", { p_user_id: data.user.id });
+  // No argument: is_admin() answers only about the caller, so the roster
+  // cannot be probed. See 20260814001000_self_relative_predicates.sql.
+  const { data: isAdmin } = await supabase.rpc("is_admin");
   if (!isAdmin) redirect("/");
 
   return (

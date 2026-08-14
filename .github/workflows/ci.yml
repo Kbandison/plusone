@@ -86,5 +86,12 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # The walls, exercised as real members: who can see whom, who can reach
+      # whom, and that no predicate answers a question about a third party.
+      - name: Verify walls
+        run: pnpm check:walls
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build
