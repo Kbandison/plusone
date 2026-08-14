@@ -2,7 +2,7 @@
 
 import { useActionState, useId } from "react";
 
-import { PENDING_COPY } from "@plusone/config";
+import { COPY } from "@plusone/config";
 
 import { grantHealthDataConsent, type ConsentActionState } from "./actions";
 
@@ -32,7 +32,7 @@ export function ConsentForm() {
           className="mt-[3px] size-[22px] shrink-0 accent-accent"
         />
         <label htmlFor={checkboxId} className="text-[15.5px] leading-[1.55]">
-          {PENDING_COPY.consent.checkboxLabel}
+          {COPY.consent.checkboxLabel}
         </label>
       </div>
 
@@ -47,7 +47,7 @@ export function ConsentForm() {
         disabled={pending}
         className="ease-brand mt-9 w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px]"
       >
-        {PENDING_COPY.consent.continueLabel}
+        {COPY.consent.continueLabel}
       </button>
     </form>
   );

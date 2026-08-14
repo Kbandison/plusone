@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { COPY, PENDING_COPY } from "@plusone/config";
+import { COPY, HEALTH_DATA_ANCHOR } from "@plusone/config";
 import { onboarding } from "@plusone/logic";
 
 import { ConsentForm } from "./consent-form";
@@ -55,7 +55,7 @@ export default function ConsentPage() {
       </div>
 
       <h1 className="mt-12 text-[clamp(2rem,6vw,2.6rem)] text-balance">
-        {PENDING_COPY.consent.heading}
+        {COPY.consent.heading}
       </h1>
 
       {/* §9.1, verbatim. This paragraph is the consent — it is not a summary of
@@ -64,10 +64,10 @@ export default function ConsentPage() {
 
       <p className="mt-6">
         <Link
-          href="/privacy#health-data"
+          href={`/privacy#${HEALTH_DATA_ANCHOR}`}
           className="ease-brand text-[15.5px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
         >
-          {PENDING_COPY.consent.policyLinkLabel}
+          {COPY.consent.policyLinkLabel}
         </Link>
       </p>
 

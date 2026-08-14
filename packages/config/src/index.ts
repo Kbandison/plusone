@@ -13,7 +13,6 @@ export {
   CONNECT_EXPIRY_NOTE,
   CONSENT_COPY_VERSION,
   CONSENT_COPY_DIGEST,
-  PENDING_COPY,
 } from "./copy";
 export type { ConsentKind } from "./copy";
 
@@ -55,3 +54,11 @@ export {
   parseServerEnv,
 } from "./env";
 export type { ClientEnv, ServerEnv } from "./env";
+
+export {
+  PRIVACY_POLICY,
+  PRIVACY_POLICY_INTRO,
+  PRIVACY_POLICY_EFFECTIVE,
+  HEALTH_DATA_ANCHOR,
+} from "./legal";
+export type { PolicySection } from "./legal";

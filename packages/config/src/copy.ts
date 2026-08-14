@@ -76,29 +76,18 @@ export const COPY = {
   },
 
   consent: {
-    /** §9.1 — own screen, unbundled checkbox, consent timestamp stored. */
-    healthData:
-      "Plus One stores the status you choose to share (your community, condition type, and optional U=U badge) to run matching and community features. We never collect medical records, test results, or diagnosis details. We never sell or share your health information. You can delete everything, permanently, at any time.",
-  },
-} as const;
-
-/**
- * PENDING KEVIN'S APPROVAL — these are NOT from the spec.
- *
- * §9.1 gives the consent body verbatim but no heading, no checkbox label, no
- * button and no link text, and a screen cannot be built without them. Per §12
- * copy is never invented, so these are drafts held in one place and flagged
- * rather than scattered through components pretending to be approved.
- *
- * The checkbox label is the one that carries legal weight: it has to state what
- * is being agreed to on its own, because that is what "unbundled" means.
- */
-export const PENDING_COPY = {
-  consent: {
     heading: "Your health information",
+    /**
+     * The tick itself. It has to state what is being agreed to on its own —
+     * that is what "unbundled" means — so it is part of the versioned consent
+     * text, not chrome around it.
+     */
     checkboxLabel: "I agree to Plus One storing the status I choose to share.",
     continueLabel: "Continue",
     policyLinkLabel: "Read how we handle health data",
+    /** §9.1 — own screen, unbundled checkbox, consent timestamp stored. */
+    healthData:
+      "Plus One stores the status you choose to share (your community, condition type, and optional U=U badge) to run matching and community features. We never collect medical records, test results, or diagnosis details. We never sell or share your health information. You can delete everything, permanently, at any time.",
   },
 } as const;
 
@@ -107,16 +96,18 @@ export const PENDING_COPY = {
  * tied to the words they actually agreed to. Bump this whenever the wording
  * changes — a changed policy re-asks rather than inheriting the old tick.
  *
- * CONSENT_COPY_DIGEST guards that: it is the SHA-256 prefix of the copy above,
- * checked by a unit test. Editing the copy without bumping the version fails
- * CI rather than silently carrying old consents forward.
+ * CONSENT_COPY_DIGEST guards that: it is the SHA-256 prefix of the consent body
+ * AND the checkbox label, joined by a newline, checked by a unit test. The label
+ * is in there because the label is what the member actually ticks; the heading
+ * and the button are chrome and are not. Editing either without bumping the
+ * version fails CI rather than silently carrying old consents forward.
  */
 export const CONSENT_COPY_VERSION = {
   health_data: "2026-08-14",
 } as const;
 
 export const CONSENT_COPY_DIGEST = {
-  health_data: "5a22d5c777b89cb9",
+  health_data: "eb80a79862defeb7",
 } as const;
 
 export type ConsentKind = keyof typeof CONSENT_COPY_VERSION;

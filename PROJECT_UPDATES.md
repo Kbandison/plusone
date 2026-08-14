@@ -1,5 +1,58 @@
 # Project Updates
 
+## 2026-08-14 — Consent copy approved · privacy policy drafted
+
+Kevin authorised writing the four consent-screen strings and drafting the privacy
+policy, so both copy gaps from the previous entry are closed. The policy is a
+**draft pending his review and counsel sign-off** (Decision #30).
+
+### The checkbox label is now part of the versioned consent
+
+`PENDING_COPY` is gone; the heading, checkbox label, button and link text moved
+into `COPY.consent` as approved copy.
+
+The digest widened while doing it. It now covers the §9.1 body **and the checkbox
+label**, joined by a newline — the label is what a member actually ticks, so a
+consent has to be bound to it. The heading and the button stay out: they are
+chrome, not agreement. Changing either of the two that matter fails CI with the
+correct replacement digest in the message.
+
+### The privacy policy — `packages/config/src/legal.ts`, rendered at `/privacy`
+
+Written against what the schema actually does rather than a template, so every
+claim is checkable in `supabase/migrations`. Fourteen plain-language sections;
+§9.1's consent screen deep-links to `#health-data`, and the anchor is a shared
+constant so the link cannot drift from the section.
+
+Points worth Kevin's eye:
+
+- **It says messages are not end-to-end encrypted, in those words**, and that we
+  could read them if compelled. §3.3 bans claiming "encrypted"; the honest move
+  is not silence but the denial. A unit test enforces the rule as written:
+  `encrypted`, `anonymous` and `guaranteed` may appear only in a sentence that
+  also negates them.
+- **It states plainly that our database never holds a legal name** — Stripe does,
+  because a payment processor must.
+- **It commits to the health-data standard globally**, naming WA My Health My
+  Data and Nevada, matching §9.2's no-geofencing posture.
+- **It describes the walls as enforced in the database, not the app**, which is
+  true and is the strongest privacy claim the product can actually make.
+- **Withdrawing health-data consent deletes the account.** Matching cannot run
+  without it, and pretending otherwise would be the dishonest option.
+
+Two things in it are assumptions, not facts, and need confirming: the data-export
+promise (§9.4 lists it, and it is not built yet) and the appeal wording under
+verification. There is also no contact address anywhere in the policy — that is a
+real gap for a privacy policy and needs an inbox that exists.
+
+Verified against the served HTML: all fourteen sections render, the consent
+screen's link resolves to a real anchor, and every substantive claim above is
+present in the output.
+
+### Next
+
+Profile basics and community + condition, then the `/onboarding` auth entry.
+
 ## 2026-08-14 — The §9.1 consent screen
 
 **Decision confirmed:** consent gets its own screen with an unbundled checkbox,
@@ -252,12 +305,11 @@ from the environment.)
 
 | # | Held | Blocks |
 |---|---|---|
-| 1 | **Four consent-screen strings** — heading, checkbox label, continue button, policy link text. Drafts in `PENDING_COPY` (`packages/config/src/copy.ts`). The checkbox label carries legal weight. | Milestone 2 sign-off |
-| 2 | **Privacy policy page.** §9.1 requires the consent screen to link to a health-data section; `/privacy#health-data` has no destination yet. Body copy is not in the spec and needs counsel (Decision #30). | launch |
-| 3 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 4 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 5 | **Resend API key.** | Milestone 7 |
-| 6 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| 1 | **Privacy policy review.** Drafted 2026-08-14 and live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). Open questions inside: the data-export promise is not built yet, and there is **no contact address** in it. | launch |
+| 2 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
+| 3 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
+| 4 | **Resend API key.** | Milestone 7 |
+| 5 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
 
 ### Next
 
