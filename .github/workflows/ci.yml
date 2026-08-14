@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # packages/logic must stay green independently of any surface that
+      # consumes it (§12). The token contrast suite and the content-blind
+      # notification suite run here too.
+      - name: Test
+        run: pnpm test
+
+      # NON-GATING while the project is on TypeScript 7.
+      #
+      # typescript-eslint throws on any TS >= 7 and no published version accepts
+      # it; support is tracked at typescript-eslint/typescript-eslint#10940 for
+      # TS >= 7.1. There is no config workaround here: `typescript` is a PEER of
+      # typescript-eslint, and node-linker=hoisted means exactly one copy exists
+      # in the tree, so neither pnpm overrides nor packageExtensions can hand
+      # the linter its own TS 6.
+      #
+      # Left in place and visibly failing rather than deleted, so it comes back
+      # the moment upstream ships. REMOVE continue-on-error then.
+      - name: Lint (non-gating — see typescript-eslint#10940)
+        run: pnpm lint
+        continue-on-error: true
+
+      # Parses every migration against the real PostgreSQL grammar, then
+      # cross-checks that each FK target, function call, policy target and grant
+      # resolves — and that no table is reachable without RLS and a policy.
+      - name: Validate migrations
+        run: pnpm check:sql
+
+      # Checks the APPLIED schema — security_invoker on the views, pinned
+      # search_path on every SECURITY DEFINER function, PostGIS resolving at
+      # call time. Skips silently unless SUPABASE_DB_URL is set, so this stays
+      # green until we decide to give CI a database credential.
+      - name: Verify applied schema
+        run: pnpm check:db
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Build
+        run: pnpm build
