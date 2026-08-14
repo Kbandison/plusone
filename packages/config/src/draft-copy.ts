@@ -44,7 +44,6 @@ export const DRAFT_COPY = {
     displayNameHint: "Up to 40 characters.",
     birthdateLabel: "Date of birth",
     birthdateHint: "Members see your age, never your date of birth.",
-    continueLabel: "Continue",
     errors: {
       nameRequired: "Choose a display name.",
       nameTooLong: "That is longer than 40 characters.",
@@ -63,7 +62,6 @@ export const DRAFT_COPY = {
     uEqualsULabel: "Show the U=U badge on my profile",
     uEqualsUHint:
       "Undetectable equals untransmittable. Only you decide whether this appears.",
-    continueLabel: "Continue",
     errors: {
       communityRequired: "Choose a community.",
       conditionRequired: "Choose one.",
@@ -91,7 +89,6 @@ export const DRAFT_COPY = {
   intention: {
     heading: "What you are here for",
     intro: "This shapes who you see. Be honest — everyone here is.",
-    continueLabel: "Continue",
     errors: { required: "Choose one." },
   },
 
@@ -103,7 +100,6 @@ export const DRAFT_COPY = {
     clearLabel: "Everyone who can see my profile",
     blurredLabel: "Blurred until we connect",
     blurredHint: "People see that you have photos, and see them properly once you have both said yes.",
-    continueLabel: "Continue",
     errors: {
       required: "Add at least one photo.",
       tooLarge: "That image is larger than 8 MB.",
@@ -119,6 +115,18 @@ export const DRAFT_COPY = {
     label: "Search radius",
     unit: (mi: number) => `${mi} miles`,
     continueLabel: "Finish",
+  },
+
+  app: {
+    dropEmptyHeading: "Nothing tonight",
+    navHome: "Tonight",
+    navBrowse: "Browse",
+    navInbox: "Inbox",
+    navChats: "Chats",
+    navRooms: "Rooms",
+    navProfile: "You",
+    connectLabel: "Connect",
+    previewCtaAria: "Switch to dating mode to connect",
   },
 } as const;
 

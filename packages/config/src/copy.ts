@@ -7,6 +7,15 @@
  */
 
 export const COPY = {
+  /**
+   * Shared action labels. One "Continue" for the whole product: four screens
+   * each declaring their own is four places for it to drift, and the draft-copy
+   * guard treats a duplicate as the beginning of two sources of truth.
+   */
+  actions: {
+    continueLabel: "Continue",
+  },
+
   marketing: {
     hero: "Dating with the talk already handled.",
     sub: "A private, verified community for people with HSV and HIV. Real people. Real privacy. Nobody gets ghosted.",
@@ -83,7 +92,6 @@ export const COPY = {
      * text, not chrome around it.
      */
     checkboxLabel: "I agree to Plus One storing the status I choose to share.",
-    continueLabel: "Continue",
     policyLinkLabel: "Read how we handle health data",
     /** §9.1 — own screen, unbundled checkbox, consent timestamp stored. */
     healthData:

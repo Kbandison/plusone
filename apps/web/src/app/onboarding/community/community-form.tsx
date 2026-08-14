@@ -6,6 +6,7 @@ import {
   COMMUNITY_LABELS,
   CONDITIONS_BY_COMMUNITY,
   CONDITION_LABELS,
+  COPY,
   DRAFT_COPY,
   allowsUEqualsU,
   type Community,
@@ -103,7 +104,7 @@ export function CommunityForm() {
         disabled={pending || !community}
         className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px] sm:self-start"
       >
-        {C.continueLabel}
+        {COPY.actions.continueLabel}
       </button>
     </form>
   );

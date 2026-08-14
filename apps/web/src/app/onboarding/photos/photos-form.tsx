@@ -3,7 +3,7 @@
 import { useActionState, useId } from "react";
 
 import { ACCEPTED_TYPES } from "@/lib/photo-limits";
-import { DRAFT_COPY } from "@plusone/config";
+import { COPY, DRAFT_COPY } from "@plusone/config";
 
 import { PHOTOS_INITIAL, savePhotoPrivacy, uploadPhoto } from "./actions";
 
@@ -92,7 +92,7 @@ export function PrivacyChoice({ canContinue }: { canContinue: boolean }) {
         disabled={pending || !canContinue}
         className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px] sm:self-start"
       >
-        {C.continueLabel}
+        {COPY.actions.continueLabel}
       </button>
 
       {!canContinue ? <p className="text-[14px] text-ink-3">{C.errors.required}</p> : null}

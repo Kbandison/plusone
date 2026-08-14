@@ -1,5 +1,68 @@
 # Project Updates
 
+## 2026-08-14 — The member app: Tonight's Drop, connect, mode toggle
+
+Onboarding redirected to `/app`, which did not exist. The member shell does now,
+and it enforces onboarding at the layout rather than per page — a member who has
+not finished is sent back to the step they stopped at, so no half-signed-up
+state can reach a surface.
+
+### The drop is computed once a day and stored
+
+Recomputing on every page load would hand back a different three whenever
+anyone's activity changed: reload, and someone is gone. "Tonight's Drop" has to
+be tonight's, so the chosen ids go into `drops` — unique on
+`(user_id, drop_date)`, keyed to the member's own local date — and are read back
+for the rest of the day.
+
+The stored ids are a record of what was chosen, never a bypass. The cards are
+re-read through `visible_profiles` on each load, so a member who blocks someone
+after the drop was built stops seeing them straight away.
+
+### SQL gathers, TypeScript scores
+
+`drop_candidates()` returns facts and no judgements — no ordering, no weighting,
+no limit. The ranking stays in `packages/logic/drop` where it is a pure function
+with 38 tests. Two implementations of the thing that decides who members see
+would drift apart quietly, and the drift would be invisible.
+
+It is deliberately **not** SECURITY DEFINER: it reads `visible_profiles`, which
+is security_invoker, so every wall in `can_view_profile()` still applies as the
+caller. A definer here would be a second path to profiles that skips the wall.
+
+**No quiz vector crosses the boundary.** `quiz_responses` is own-row-only under
+RLS, correctly — a trait vector is derived from someone's answers. With
+`QUIZ_QUESTIONS` empty the point is moot today, but the migration records what
+has to happen when the quiz ships: compute the similarity in SQL and return one
+number. Returning the vectors so the client can compare them would be the easy
+version and the wrong one.
+
+### A draft string had shadowed an approved one
+
+I wrote `DRAFT_COPY.app.dropHeading = "Tonight's Drop"` — which is already
+`COPY.drop.header`, spec copy from §3.4. Two sources of truth for a string the
+spec had already settled.
+
+There is now a test that flattens both trees and fails on any draft string
+identical to an approved one. It immediately found a second case: four screens
+each declaring `continueLabel: "Continue"` against the one Kevin approved for the
+consent screen. All five now use a single `COPY.actions.continueLabel`.
+
+### Enforcement stays in one place
+
+The connect route checks nothing. Every rule — community and mode walls, daily
+budget, the support-only restriction — lives in `create_connect` and the trigger
+behind it, which run whatever path the insert arrives by. A check in the handler
+would be a second, weaker statement of a rule already enforced where it cannot
+be bypassed. The mode toggle is the same: `switch_mode` holds the cooldown, and
+`packages/logic/modes` exists so a screen can grey out a control and say when it
+lifts, not to decide anything.
+
+### Next
+
+Browse, inbox, chats. The fuse and closure surfaces are the ones that matter
+most — they are what the product promises.
+
 ## 2026-08-14 — Milestone 3 logic: drop, connects, modes, referrals, tone
 
 All five §6 mechanics are pure modules with tests. 346 tests in `packages/logic`,

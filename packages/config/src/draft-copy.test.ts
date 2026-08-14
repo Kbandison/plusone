@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { COPY } from "./copy";
 import {
+  DRAFT_COPY,
   CONDITIONS_BY_COMMUNITY,
   CONDITION_LABELS,
   COMMUNITY_LABELS,
@@ -79,5 +81,24 @@ describe("the U=U badge", () => {
     const tables = read("20260813000200_tables.sql");
     expect(tables).toContain("constraint profiles_ueu_hiv_only");
     expect(tables).toMatch(/u_equals_u = false or community = 'hiv'/);
+  });
+});
+
+describe("drafts never shadow approved copy", () => {
+  /** Every string value in an object tree, flattened. */
+  function strings(value: unknown): string[] {
+    if (typeof value === "string") return [value];
+    if (Array.isArray(value)) return value.flatMap(strings);
+    if (value && typeof value === "object") return Object.values(value).flatMap(strings);
+    return [];
+  }
+
+  // §12: copy from §3 and §9 is used verbatim and never invented. A draft that
+  // happens to say the same thing as an approved string is the beginning of two
+  // sources of truth — and the approved one is the one that must win.
+  it("has no draft string identical to a spec string", () => {
+    const approved = new Set(strings(COPY));
+    const duplicated = strings(DRAFT_COPY).filter((s) => approved.has(s));
+    expect(duplicated, `drafts duplicating approved copy: ${duplicated.join(" | ")}`).toEqual([]);
   });
 });
