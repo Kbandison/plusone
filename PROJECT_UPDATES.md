@@ -1,5 +1,71 @@
 # Project Updates
 
+## 2026-08-14 — Referrals: the invite link, attribution and payout
+
+Milestone 6's growth half, which needs no Stripe. The invite landing is the
+piece with the most riding on it.
+
+### The landing page says nothing
+
+§3.4's copy is verbatim and every word of it was chosen to out nobody: *"You've
+been invited to Plus One" / "A private community built on trust and real
+connection."* This link gets posted in closed groups and forwarded between
+people, and anyone who sees it before tapping through learns only that a private
+community exists.
+
+The metadata matters as much as the page — a link preview is seen by more people
+than the page is — so `title`, `description` and Open Graph all carry the same
+neutral copy, and the route is noindex.
+
+The code goes to an httpOnly cookie rather than through the URL of the next
+page. It is attributed once the invitee has an account, which is the first
+moment there is anybody to attribute it to.
+
+### The conversion is the database's to notice
+
+§6.5 counts a conversion when the invitee reaches `verified`, not when they sign
+up. That is an event the database can see and the app cannot be trusted to
+notice, so a trigger on `verification_status` records it — covering onboarding,
+the admin queue, and whatever sets it next. An app that has to remember is an
+app that eventually forgets.
+
+### SQL records, TypeScript decides
+
+Same split as the Drop. The tier rules live in `packages/logic/referrals` with
+17 tests; the cron job replays that reducer against each unpaid conversion **in
+order**, so a job catching up on several pays each one what it was worth at the
+time rather than what the latest is worth.
+
+Idempotent by construction: `premium_grants.source` carries the conversion id,
+and `unrewarded_conversions()` only returns rows with no such grant. The job can
+run twice, or crash halfway, without paying anyone twice — verified.
+
+Grants **stack from the end of existing premium** rather than from now. Granting
+from now would quietly shorten the reward for whoever earns them fastest.
+
+Decision #25's ten-conversion tier is recorded `pending_approval` and **not**
+granted. Six months is worth a human look; auto-granting it is how a referral
+programme becomes a fraud target.
+
+### `pnpm check:referrals`
+
+Fifteen checks against a live database, rolled back: the code is permanent, a
+member cannot shop their signup to a second referrer, nobody refers themselves,
+an unknown code fails quietly, signing up converts nothing, verification
+converts it, the job sees each conversion exactly once, grants stack, and a
+signed-in member calling `grant_referral_premium` is refused.
+
+That last one caught the script rather than the code. `set_config` is
+transaction-local, so a member's claim persisted into what the test called a
+cron call — and `assert_not_end_user` correctly refused it. The guard was right
+and the test was lying about who was asking.
+
+### Still open
+
+Stripe. The three price IDs and the secret are placeholders, so subscriptions,
+the premium gates and the paid tier are unbuilt. Referral premium grants work
+without it, since a grant is a row rather than a payment.
+
 ## 2026-08-14 — The probe leak is closed
 
 Yesterday I documented a leak as an accepted cost: RLS helper predicates have to

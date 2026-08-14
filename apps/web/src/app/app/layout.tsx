@@ -30,6 +30,7 @@ const NAV = [
   { href: "/app/inbox", label: DRAFT_COPY.app.navInbox },
   { href: "/app/chats", label: DRAFT_COPY.app.navChats },
   { href: "/app/rooms", label: DRAFT_COPY.app.navRooms },
+  { href: "/app/invite", label: DRAFT_COPY.app.navInvite },
   { href: "/app/profile", label: DRAFT_COPY.app.navProfile },
 ];
 

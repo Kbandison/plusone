@@ -50,6 +50,7 @@ pnpm dev
 | `pnpm check:admin` | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction |
 | `pnpm check:sweeps` | Expire a real fuse and assert it closes **with a note**; verify hard delete cascades |
 | `pnpm check:walls` | Act as real members across every wall, and attempt every third-party probe |
+| `pnpm check:referrals` | Attribute, convert and pay a real referral; confirm the job is idempotent |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 
@@ -75,7 +76,7 @@ asserted in a comment.
 | 3 | Mechanics core — drop, connects, modes, referrals, tone | logic done |
 | 4 | Member app α | |
 | 5 | Community — rooms, preview drop, mode toggle | |
-| 6 | Money + growth — Stripe, premium gates, referrals | |
+| 6 | Money + growth — Stripe, premium gates, referrals | referrals done |
 | 7 | Admin + notifications + cron | sweeps + cron done |
 | 8 | Polish + launch | |
 

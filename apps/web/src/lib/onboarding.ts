@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { CONSENT_COPY_VERSION, QUIZ_QUESTIONS } from "@plusone/config";
@@ -79,6 +80,31 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
 }
 
 /**
+ * Attributes an invite, once, as soon as the member has an account.
+ *
+ * Not at the landing page: there is nobody to attribute it to yet. Not at
+ * verification either — §6.5 counts the conversion then, but the attribution
+ * has to already exist for the trigger to find. A bad or missing code is
+ * silently ignored, because a member who followed a link is not responsible for
+ * whether it resolved.
+ */
+async function attributeInviteOnce(): Promise<void> {
+  const store = await cookies();
+  const code = store.get("plusone_ref")?.value;
+  if (!code) return;
+
+  const supabase = await getServerSupabase();
+  await supabase.rpc("attribute_referral", { p_code: code });
+
+  try {
+    store.delete("plusone_ref");
+  } catch {
+    // Server Components cannot write cookies. The RPC is idempotent on
+    // invitee_id, so a cookie that outlives its use costs nothing.
+  }
+}
+
+/**
  * The guard every onboarding screen calls first.
  *
  * Typing a URL cannot skip a step. Without this, `/onboarding/intention` is
@@ -93,6 +119,8 @@ export async function requireStep(step: Step): Promise<{ userId: string }> {
   const { data } = await supabase.auth.getUser();
 
   if (!data.user) redirect(STEP_ROUTES.phone);
+
+  await attributeInviteOnce();
 
   const facts = await loadFacts(data.user.id);
   const actual = onboarding.resolveStep(facts);

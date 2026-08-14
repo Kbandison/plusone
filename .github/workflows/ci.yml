@@ -93,5 +93,12 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # A permanent code, one attribution per invitee forever, and a conversion
+      # that fires at verification rather than at signup.
+      - name: Verify referrals
+        run: pnpm check:referrals
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build
