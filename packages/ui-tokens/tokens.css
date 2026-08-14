@@ -1,0 +1,138 @@
+/**
+ * Plus One design tokens — Linen (light) / Dusk (dark).
+ *
+ * Import AFTER `@import "tailwindcss";` in an app's globals.css.
+ *
+ * Theme resolution has three states and all three are handled:
+ *   1. bare :root                  → Linen. The complete palette lives here.
+ *   2. prefers-color-scheme: dark  → Dusk, guarded so an explicit light choice wins.
+ *   3. [data-theme="dark"|"light"] → explicit choice wins in both directions.
+ *
+ * Components style through the tokens ONLY. Never declare a color inside a media
+ * or [data-theme] block — a color defined only there is invisible in the unstamped
+ * state and renders one theme's text on the other theme's ground.
+ */
+
+/* ── Linen · light ─────────────────────────────────────────────────────────── */
+:root {
+  --ground: #f4efe7;
+  --surface: #fbf8f3;
+  --surface-2: #efe8dc;
+
+  --ink: #1c1917;
+  --ink-2: #6b6259;
+  --ink-3: #766b60;
+
+  --accent: #9f5b41;
+  --accent-ink: #fbf8f3;
+  --plum: #5c4438;
+
+  --line: rgba(28, 25, 23, 0.13);
+  --line-2: rgba(28, 25, 23, 0.07);
+
+  --positive: #3f6b4a;
+  --caution: #8a6516;
+  --critical: #9b3b2f;
+
+  /* Paper grain sits heavier on dark, where it reads as film rather than paper. */
+  --grain-opacity: 0.032;
+
+  color-scheme: light;
+}
+
+/* ── Dusk · dark ───────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #14110f;
+    --surface: #1b1714;
+    --surface-2: #241e1a;
+
+    --ink: #ede7de;
+    --ink-2: #a79c90;
+    --ink-3: #8d8074;
+
+    --accent: #d69a4e;
+    --accent-ink: #14110f;
+    --plum: #4a3340;
+
+    --line: rgba(237, 231, 222, 0.12);
+    --line-2: rgba(237, 231, 222, 0.06);
+
+    --positive: #7fb08c;
+    --caution: #d2a63e;
+    --critical: #d97a6c;
+
+    --grain-opacity: 0.05;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #14110f;
+  --surface: #1b1714;
+  --surface-2: #241e1a;
+
+  --ink: #ede7de;
+  --ink-2: #a79c90;
+  --ink-3: #877a6e;
+
+  --accent: #d69a4e;
+  --accent-ink: #14110f;
+  --plum: #4a3340;
+
+  --line: rgba(237, 231, 222, 0.12);
+  --line-2: rgba(237, 231, 222, 0.06);
+
+  --positive: #7fb08c;
+  --caution: #d2a63e;
+  --critical: #d97a6c;
+
+  --grain-opacity: 0.05;
+
+  color-scheme: dark;
+}
+
+/**
+ * Register tokens with Tailwind so `bg-ground`, `text-ink-2`, `border-line`,
+ * `font-display` and `rounded-md` become real utilities.
+ */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-plum: var(--plum);
+
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+
+  --color-positive: var(--positive);
+  --color-caution: var(--caution);
+  --color-critical: var(--critical);
+
+  /* next/font supplies --font-instrument and --font-satoshi on <html>. */
+  --font-display: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-body: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xs: 3px;
+  --radius-sm: 7px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+
+  --ease-brand: cubic-bezier(0.22, 0.61, 0.24, 1);
+  --ease-brand-out: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+
+/**
+ * `dark:` variant for the rare case a token pair can't express the difference.
+ * Reach for tokens first — if you're writing `dark:` often, the token set is wrong.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
