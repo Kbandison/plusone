@@ -1,5 +1,60 @@
 # Project Updates
 
+## 2026-08-14 — Preview Drop, browse and rooms
+
+### A real bug in what I shipped yesterday
+
+The Drop loaded its cards from `visible_profiles` **even in preview mode**, and
+hid the name in the component. A support-only member's page therefore contained
+every name in its payload — readable in the page source, whatever the screen
+showed.
+
+That is precisely what `preview_profiles`' own comment warns about: *"a blurred
+image with the real name in the payload would not be a redaction at all"*. The
+redacting view existed from Milestone 1 and I did not route the surface through
+it.
+
+Fixed, and fixed so it cannot come back: `DropCard` and `PreviewCard` are
+**different types**, not one type rendered two ways. `PreviewCard` has no
+`displayName` and no exact distance, and `FullCard` will not accept one. The
+type checker caught two call sites the moment the split landed, which is the
+whole argument for making it a type rather than a flag.
+
+The preview placeholder is a plain shape, not a blurred image — there is no
+image in the payload to blur, which is the point.
+
+### Browse
+
+Reads `visible_profiles`, so every wall applies before a row exists. The filters
+narrow what is already permitted and cannot widen it, because nothing here
+queries `profiles` directly.
+
+The activity stat is derived from the rows on the page rather than from a
+separate, friendlier query. §3.4 calls it an honest stat, and that is how it
+stays one.
+
+### Rooms
+
+Community scoping is in RLS, so the page asks for every room and receives only
+the ones the member may see. An absent room and a room that is not theirs return
+the same 404, deliberately — a distinguishable "exists but not for you" would
+leak the shape of the other community.
+
+Room posts are tone-checked like every other member-written line. Rooms are
+where newly diagnosed people arrive and where a cruel message does the most
+damage, so the rule that protects a closure note protects this too.
+
+**No DM button** (§7.2). The way to reach someone from a room is a connect, and
+a note on the page says so rather than leaving the absence to be discovered.
+
+Slow mode is displayed but enforced in the database. A second clock in the
+action would be a clock that disagrees with the first one.
+
+### Next
+
+Milestone 6 — Stripe and premium gates — or Milestone 7's cron, which is what
+makes the fuse actually close. The cron is the one with a promise behind it.
+
 ## 2026-08-14 — Inbox and chats: the fuse and the closure note
 
 The surfaces the product is actually promising. Both are on the never-cut list.

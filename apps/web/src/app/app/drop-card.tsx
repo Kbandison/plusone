@@ -1,48 +1,73 @@
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import type { DropCard as Card } from "@/lib/drop";
+import type { DropCard as Card, PreviewCard } from "@/lib/drop";
 
 /**
- * One drop card.
+ * A full drop card, for a dating-mode member.
  *
- * The preview variant (§6.1 step 5, Decision #19) hides the name and shows an
- * age band and a distance bucket instead of an age and a distance. That
- * redaction happens in `preview_profiles` in SQL for the data path; here it is
- * about which fields are rendered, and the card is given only what it may show.
+ * Takes `DropCard` specifically. A `PreviewCard` will not typecheck here, which
+ * is how the redaction survives a refactor — the two are different shapes, not
+ * one shape rendered two ways.
  */
-export function DropCard({ card, preview }: { card: Card; preview: boolean }) {
+export function FullCard({ card }: { card: Card }) {
+  const meta = [card.age, card.distanceMi != null ? `${card.distanceMi} mi` : null]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <li className="rounded-xl border border-line-2 bg-surface p-6">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="text-[1.45rem]">
-          {preview ? (card.ageBand ?? "Someone nearby") : (card.displayName ?? "Someone")}
-        </h2>
-        <span className="text-[14.5px] text-ink-3">
-          {preview
-            ? null
-            : [card.age, card.distanceMi != null ? `${card.distanceMi} mi` : null]
-                .filter(Boolean)
-                .join(" · ")}
-        </span>
+        <h2 className="text-[1.45rem]">{card.displayName}</h2>
+        {meta ? <span className="text-[14.5px] text-ink-3">{meta}</span> : null}
       </div>
 
       {card.intention ? <p className="mt-3 text-[15px] text-ink-2">{card.intention}</p> : null}
 
-      {preview ? (
-        // §3.4, verbatim. A preview card's only action is the one that turns it
-        // into a real one.
-        <p className="mt-5 text-[14.5px] text-accent">{COPY.supportOnly.previewCta}</p>
-      ) : (
-        <form action="/app/connect" method="post" className="mt-5">
-          <input type="hidden" name="target_id" value={card.id} />
-          <button
-            type="submit"
-            className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
-          >
-            {DRAFT_COPY.app.connectLabel}
-          </button>
-        </form>
-      )}
+      <form action="/app/connect" method="post" className="mt-5">
+        <input type="hidden" name="target_id" value={card.id} />
+        <button
+          type="submit"
+          className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
+        >
+          {DRAFT_COPY.app.connectLabel}
+        </button>
+      </form>
+    </li>
+  );
+}
+
+/**
+ * A Preview Drop card (§6.1 step 5, Decision #19).
+ *
+ * Real local people, with the identifying parts removed before they ever left
+ * the database. The only action is the one that turns a preview into a real
+ * card — there is no connect button, because a support-only member cannot send
+ * one and offering it would be a door that opens onto a wall.
+ */
+export function PreviewDropCard({ card }: { card: PreviewCard }) {
+  const meta = [
+    card.ageBand,
+    card.distanceBucketMi != null ? `within ${card.distanceBucketMi} mi` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <li className="rounded-xl border border-line-2 bg-surface p-6">
+      <div className="flex items-center gap-4">
+        {/* Stands in for a photo the viewer is not entitled to. It is a shape,
+            not a blurred image — there is no image in the payload to blur. */}
+        <div aria-hidden className="size-14 shrink-0 rounded-full bg-surface-2" />
+        <div>
+          <p className="text-[1.1rem]">{meta || "Someone nearby"}</p>
+          {card.intention ? (
+            <p className="mt-1 text-[14.5px] text-ink-2">{card.intention}</p>
+          ) : null}
+        </div>
+      </div>
+
+      {/* §3.4, verbatim. */}
+      <p className="mt-5 text-[14.5px] text-accent">{COPY.supportOnly.previewCta}</p>
     </li>
   );
 }
