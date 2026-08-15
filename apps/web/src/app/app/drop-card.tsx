@@ -1,8 +1,18 @@
 import Link from "next/link";
 
-import { COPY, DRAFT_COPY } from "@plusone/config";
+import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/config";
 
 import type { DropCard as Card, PreviewCard } from "@/lib/drop";
+
+/**
+ * The enum is a database value, not something to show a member. Rendering
+ * `card.intention` raw put "long_term" on the card — readable, but obviously
+ * machine output, and the first thing anyone sees of another person.
+ */
+function intentionLabel(intention: string | null): string | null {
+  if (!intention) return null;
+  return INTENTION_LABELS[intention as Intention] ?? null;
+}
 
 /**
  * A full drop card, for a dating-mode member.
@@ -23,7 +33,9 @@ export function FullCard({ card }: { card: Card }) {
         {meta ? <span className="text-[14.5px] text-ink-3">{meta}</span> : null}
       </div>
 
-      {card.intention ? <p className="mt-3 text-[15px] text-ink-2">{card.intention}</p> : null}
+      {intentionLabel(card.intention) ? (
+        <p className="mt-3 text-[15px] text-ink-2">{intentionLabel(card.intention)}</p>
+      ) : null}
 
       {/* Decision #14 — a connect is a reply to a prompt, so this goes to a
           compose screen rather than sending anything. An earlier version POSTed
@@ -63,8 +75,8 @@ export function PreviewDropCard({ card }: { card: PreviewCard }) {
         <div aria-hidden className="size-14 shrink-0 rounded-full bg-surface-2" />
         <div>
           <p className="text-[1.1rem]">{meta || "Someone nearby"}</p>
-          {card.intention ? (
-            <p className="mt-1 text-[14.5px] text-ink-2">{card.intention}</p>
+          {intentionLabel(card.intention) ? (
+            <p className="mt-1 text-[14.5px] text-ink-2">{intentionLabel(card.intention)}</p>
           ) : null}
         </div>
       </div>

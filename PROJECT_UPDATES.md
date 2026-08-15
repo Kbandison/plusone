@@ -1,5 +1,40 @@
 # Project Updates
 
+## 2026-08-14 — A way in, and a near-duplicate the guard missed
+
+Every screen in the product was reachable only by typing a URL. The home page
+had no links at all — not to sign-in, not to the app, not even to the privacy
+page it was legally pointing at. Nine onboarding steps, eight member surfaces
+and an admin queue, all behind a front door with no handle.
+
+`/onboarding/phone` and `/privacy` are now on it. One link covers both signed-in
+and signed-out: the phone screen already redirects a member with a session to
+`/app`, so the page does not need to ask who is knocking — and does not need to
+become dynamic to find out.
+
+### The draft-copy guard was not strict enough
+
+Writing the call to action, I drafted *"Every profile is a verified human. Two
+minutes, no waiting, no fakes."* — which is §3.4's verification pitch with one
+word removed. It was already in `COPY` as `marketing.verificationPitch`, with
+"Every profile **here** is".
+
+The guard added yesterday compares strings for equality, so it saw two different
+strings and said nothing. **A one-word divergence is worse than an exact copy**:
+an exact duplicate is obviously redundant, while a near-duplicate reads as
+approved and is not, and drifts further every time someone edits the wrong one.
+
+The guard now also fails on any draft sharing 80% or more of its words with an
+approved string, reporting both and the score. Short strings are exempt —
+"Continue" and "Save" will always collide and mean nothing by it.
+
+The home page uses `COPY.marketing.verificationPitch` directly.
+
+### Still a holding page
+
+§7.1's marketing site — how-it-works, pricing, FAQ, community guidelines, legal
+— is Milestone 8, and its FAQ and guidelines copy is not in the spec.
+
 ## 2026-08-14 — Prompts: the connect button could never have worked
 
 Going to build profile editing surfaced a broken path.

@@ -12,6 +12,19 @@
  */
 
 export const DRAFT_COPY = {
+  /**
+   * The home page's way in.
+   *
+   * §3.4 gives the hero and the sub but no call to action, and §7.1's marketing
+   * site is Milestone 8. These three strings are the minimum that makes the
+   * product reachable at all — until they existed, every screen was reachable
+   * only by typing a URL.
+   */
+  home: {
+    getStarted: "Get started",
+    privacyLink: "How we handle your data",
+  },
+
   phone: {
     heading: "Your number",
     intro:

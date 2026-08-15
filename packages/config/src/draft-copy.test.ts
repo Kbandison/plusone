@@ -103,6 +103,45 @@ describe("drafts never shadow approved copy", () => {
     const duplicated = strings(DRAFT_COPY).filter((s) => approved.has(s));
     expect(duplicated, `drafts duplicating approved copy: ${duplicated.join(" | ")}`).toEqual([]);
   });
+
+  /** Words only — case, punctuation and spacing removed. */
+  const shape = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+
+  /** How many words two strings share, as a fraction of the longer one. */
+  function similarity(a: string, b: string): number {
+    const [x, y] = [shape(a), shape(b)];
+    if (x.length === 0 || y.length === 0) return 0;
+    const pool = [...y];
+    let shared = 0;
+    for (const word of x) {
+      const at = pool.indexOf(word);
+      if (at !== -1) {
+        shared += 1;
+        pool.splice(at, 1);
+      }
+    }
+    return shared / Math.max(x.length, y.length);
+  }
+
+  // The identical-string check missed a draft that differed from §3.4's
+  // verification pitch by one word — "Every profile is" against "Every profile
+  // here is". That is worse than an exact copy, because it reads as approved
+  // and is not, and nothing would ever have flagged it.
+  it("has no draft string that is nearly a spec string", () => {
+    const approved = strings(COPY).filter((s) => shape(s).length >= 5);
+    const near: string[] = [];
+
+    for (const draft of strings(DRAFT_COPY)) {
+      if (shape(draft).length < 5) continue;
+      for (const spec of approved) {
+        const score = similarity(draft, spec);
+        if (score >= 0.8) near.push(`${(score * 100).toFixed(0)}%: "${draft}" vs "${spec}"`);
+      }
+    }
+
+    expect(near, `drafts nearly duplicating approved copy:\n  ${near.join("\n  ")}`).toEqual([]);
+  });
 });
 
 // Decision #14 — a connect is a reply to a prompt. Without prompts nobody can
