@@ -1,5 +1,53 @@
 # Project Updates
 
+## 2026-08-15 — Config and metrics: Milestone 7 closes
+
+### "Hot-read by logic" was half true
+
+§7.3 says the config table is hot-read. The SQL functions were — budgets and
+cooldowns go through `config_int()`. The TypeScript was not: `selectDrop` was
+called with no config argument, so it used its compiled-in defaults, and **an
+administrator changing the Drop weights would have changed nothing**. Silently,
+which is the worst part — a settings screen that does nothing looks exactly like
+one that works.
+
+`tunable_config()` returns every key as one object, readable by members so the
+Drop can pick it up without a service client in a request path. The values are
+not secret; most of them are published in the FAQ.
+
+The weights were not seeded either, so even with the plumbing fixed they would
+have been uneditable — `admin_set_config` only accepts keys that already exist.
+Seeded now from the §6.1 launch values, with the compiled numbers still the
+fallback: a deleted row must not change how the Drop scores.
+
+### There is no key that sells an exemption
+
+§3.3 bans selling exemptions, and the way that stays true is that there is
+nothing to sell. `admin_set_config` refuses unknown keys, so nobody can add
+`drop.per_premium_member` today and wire it up next month. `check:config`
+asserts no key contains "extend", "exempt", "bypass", "unlimited" or "boost".
+
+Every change is audited **with its previous value**. A config change that cannot
+be read backwards is one nobody can undo at 3am.
+
+### The metric that is the product
+
+§7.3 asks for the "closure vs ghost-equivalent rate = 0 by construction". It has
+its own panel at the top of the dashboard, and it is **measured rather than
+asserted**: a count of chats closed with no note. It should be structurally
+impossible, and if it ever moves, the product's central promise has broken and
+this is the only screen that would say so.
+
+Everything else is counts. No member appears in the metrics by name or id — a
+dashboard is the easiest place for a product to start looking at individuals,
+because it is the one screen where doing so feels like analysis. A check asserts
+no uuid appears in the payload.
+
+### Milestone 7
+
+Admin, cron and notifications are done bar the Resend key. Eleven live gates
+now, and 594 tests.
+
 ## 2026-08-15 — Stripe, and proving money buys nothing
 
 Milestone 6's other half. The keys are still placeholders, so checkout fails

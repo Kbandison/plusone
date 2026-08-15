@@ -128,5 +128,12 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # §7.3 — config is hot-read and audited, and there is no key that sells
+      # an exemption because there is no key to sell.
+      - name: Verify config and metrics
+        run: pnpm check:config
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build

@@ -55,6 +55,7 @@ pnpm dev
 | `pnpm check:safety` | File a real report and confirm it reaches a moderator; block and confirm it is mutual |
 | `pnpm check:photos` | Confirm a blurred-until-connected member's clear path never reaches a viewer |
 | `pnpm check:premium` | Put a paying member and a free one against the real walls, and confirm money changed nothing |
+| `pnpm check:config` | Change a tunable and confirm it is hot-read, audited, and that no key can be invented |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 
@@ -81,7 +82,7 @@ asserted in a comment.
 | 4 | Member app α | |
 | 5 | Community — rooms, preview drop, mode toggle | |
 | 6 | Money + growth — Stripe, premium gates, referrals | done (keys pending) |
-| 7 | Admin + notifications + cron | sweeps + cron done |
+| 7 | Admin + notifications + cron | done (Resend pending) |
 | 8 | Polish + launch | |
 
 Never cut, whatever the timeline: verification, RLS and the walls, fuse + closure,

@@ -4,6 +4,7 @@ import { RADIUS } from "@plusone/config";
 import { drop as dropLogic } from "@plusone/logic";
 
 import { getServerSupabase } from "./supabase";
+import { dropConfig } from "./tunables";
 
 /**
  * Tonight's Drop.
@@ -136,6 +137,10 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
       : null,
   }));
 
+  // §7.3 — hot-read, not compiled in. An admin changing the weights should
+  // change tonight's Drop.
+  const config = await dropConfig();
+
   const result = dropLogic.selectDrop(
     {
       intention: (profile?.intention ?? "open_to_either") as never,
@@ -145,6 +150,7 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
     },
     candidates,
     now.getTime(),
+    config,
   );
 
   const servedIds = result.cards.map((c) => c.id);
