@@ -101,6 +101,25 @@ export interface ToneOptions {
 }
 
 /**
+ * How long a member's line is, for the purpose of the 140-character limit.
+ *
+ * Two things it settles, both of which were wrong in different places.
+ *
+ * It trims. checkTone measured `text.trim().length` and fuse's `close` measured
+ * `line.length`, so 140 characters followed by a space passed the check the UI
+ * runs and was then refused by the state machine — the app told a member their
+ * closing note was fine and then would not send it.
+ *
+ * And it counts CHARACTERS, not UTF-16 code units. `"🙂".repeat(80)` is eighty
+ * characters and 160 units, so eighty emoji were rejected against a
+ * 140-character limit. Anyone writing in a script outside the BMP hit the same
+ * thing, silently, at half the length everyone else gets.
+ */
+export function lineLength(text: string): number {
+  return [...text.trim()].length;
+}
+
+/**
  * Checks a member-written line.
  *
  * Returns every violation rather than the first, so someone rewriting is not
@@ -111,7 +130,7 @@ export function checkTone(text: string, options: ToneOptions = {}): ToneResult {
   const trimmed = text.trim();
   const violations: ToneViolation[] = [];
 
-  if (trimmed.length > maxChars) violations.push("too_long");
+  if (lineLength(text) > maxChars) violations.push("too_long");
   if (matchesAny(trimmed, CONTACT_PATTERNS)) violations.push("contact_info");
   if (!options.allowConditionWords && matchesAny(trimmed, CONDITION_PATTERNS)) {
     violations.push("condition_reference");

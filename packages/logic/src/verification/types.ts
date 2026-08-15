@@ -98,6 +98,15 @@ export type VerificationErrorCode =
   | "no_liveness_in_progress"
   | "liveness_already_in_progress"
   | "not_under_review"
+  /**
+   * The opposite of not_under_review, and it needed its own name.
+   *
+   * start_liveness returned "not_under_review" to a member who IS under review
+   * — flagged or rejected — so any screen keyed on the code told them the exact
+   * inverse of their situation. What is true is that a human has it now and
+   * grinding attempts is not the way out.
+   */
+  | "under_review"
   | "appeal_already_open"
   | "score_out_of_range";
 

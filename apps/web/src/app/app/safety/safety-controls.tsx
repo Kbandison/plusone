@@ -66,7 +66,14 @@ export function BlockButton({
   );
 }
 
-export function UnblockButton({ memberId }: { memberId: string }) {
+export function UnblockButton({
+  memberId,
+  describedBy,
+}: {
+  memberId: string;
+  /** Id of the row this button acts on — every one of these is named "Unblock". */
+  describedBy?: string;
+}) {
   const [, act, pending] = useActionState(unblockMember, SAFETY_INITIAL);
   return (
     <form action={act} className="inline">
@@ -74,6 +81,7 @@ export function UnblockButton({ memberId }: { memberId: string }) {
       <button
         type="submit"
         disabled={pending}
+        aria-describedby={describedBy}
         className="ease-brand text-[14px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent disabled:opacity-55"
       >
         {C.unblockLabel}

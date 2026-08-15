@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CLOSURE_TEMPLATES, CONNECTS, PROFILE_PROMPTS } from "@plusone/config";
 
-import { checkTone, isAcceptableClosureLine } from "./index";
+import { lineLength, checkTone, isAcceptableClosureLine } from "./index";
 
 // §3.5's closure notes are read by someone being turned down. A parting shot
 // about their status is the cruellest thing this product could carry, and the
@@ -167,5 +167,42 @@ describe("condition words in a room", () => {
     expect(checkTone("hit me on instagram", ROOM).violations).toContain("contact_info");
     expect(checkTone("send nudes", ROOM).violations).toContain("sexual_content");
     expect(checkTone("a".repeat(2001), ROOM).violations).toContain("too_long");
+  });
+});
+
+describe("one way to measure a line", () => {
+  // checkTone measured the trimmed string and fuse's close measured the raw
+  // one, so the app told a member their closing note was fine and then refused
+  // to send it.
+  const LIMIT = 140;
+
+  it("ignores surrounding whitespace, in both directions", () => {
+    expect(lineLength(`${"a".repeat(LIMIT)} `)).toBe(LIMIT);
+    expect(lineLength(`  ${"a".repeat(LIMIT)}\n`)).toBe(LIMIT);
+    expect(checkTone(`${"a".repeat(LIMIT)} `).ok).toBe(true);
+    expect(checkTone(`${"a".repeat(LIMIT + 1)}`).violations).toContain("too_long");
+  });
+
+  it("counts characters, not UTF-16 code units", () => {
+    // Eighty emoji is eighty characters and 160 units. Anyone writing outside
+    // the BMP was silently given half the length everyone else gets.
+    const eighty = "🙂".repeat(80);
+    expect(eighty.length).toBe(160);
+    expect(lineLength(eighty)).toBe(80);
+    expect(checkTone(eighty).violations).not.toContain("too_long");
+  });
+
+  it("agrees with the fuse on the same line", () => {
+    for (const line of [
+      "a".repeat(LIMIT),
+      `${"a".repeat(LIMIT)} `,
+      "a".repeat(LIMIT + 1),
+      "🙂".repeat(80),
+      "🙂".repeat(141),
+    ]) {
+      const toneSaysTooLong = checkTone(line).violations.includes("too_long");
+      const fuseSaysTooLong = lineLength(line) > LIMIT;
+      expect(fuseSaysTooLong, JSON.stringify(line.slice(0, 12))).toBe(toneSaysTooLong);
+    }
   });
 });

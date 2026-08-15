@@ -8,7 +8,14 @@ import { INBOX_INITIAL, acceptConnect, declineConnect } from "./actions";
 
 const C = DRAFT_COPY.app;
 
-export function AcceptForm({ connectId }: { connectId: string }) {
+export function AcceptForm({
+  connectId,
+  describedBy,
+}: {
+  connectId: string;
+  /** Id of the reply this decision is about — see the note in page.tsx. */
+  describedBy?: string;
+}) {
   const [state, act, pending] = useActionState(acceptConnect, INBOX_INITIAL);
   return (
     <form action={act} className="inline">
@@ -16,6 +23,7 @@ export function AcceptForm({ connectId }: { connectId: string }) {
       <button
         type="submit"
         disabled={pending}
+        aria-describedby={describedBy}
         className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
       >
         {C.acceptLabel}
@@ -36,7 +44,14 @@ export function AcceptForm({ connectId }: { connectId: string }) {
  * with no note is the ghosting this product exists to prevent. The optional
  * personal line is tone-checked on the server before it is sent.
  */
-export function DeclineForm({ connectId }: { connectId: string }) {
+export function DeclineForm({
+  connectId,
+  describedBy,
+}: {
+  connectId: string;
+  /** Id of the reply this decision is about — see the note in page.tsx. */
+  describedBy?: string;
+}) {
   const [state, act, pending] = useActionState(declineConnect, INBOX_INITIAL);
   const [open, setOpen] = useState(false);
 
@@ -49,6 +64,7 @@ export function DeclineForm({ connectId }: { connectId: string }) {
       type="button"
       onClick={() => setOpen((current) => !current)}
       aria-expanded={open}
+      aria-describedby={describedBy}
       className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-ink-3"
     >
       {C.declineLabel}

@@ -46,11 +46,16 @@ export default async function InboxPage() {
               className="flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6"
             >
               {/* The reply to a prompt is the whole of a connect (Decision #14).
-                  No name, no photo — you decide on what they said. */}
-              <p className="text-[16px] leading-[1.65]">{connect.prompt_reply}</p>
+                  No name, no photo — you decide on what they said. Which makes
+                  it the only thing that tells these apart, so the controls
+                  point at it: every Accept and Decline is otherwise identically
+                  named, and accepting the wrong one cannot be undone. */}
+              <p id={`reply-${connect.id}`} className="text-[16px] leading-[1.65]">
+                {connect.prompt_reply}
+              </p>
               <div className="flex flex-wrap items-center gap-3">
-                <AcceptForm connectId={connect.id} />
-                <DeclineForm connectId={connect.id} />
+                <AcceptForm connectId={connect.id} describedBy={`reply-${connect.id}`} />
+                <DeclineForm connectId={connect.id} describedBy={`reply-${connect.id}`} />
               </div>
             </li>
           ))}

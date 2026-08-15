@@ -9,6 +9,7 @@ import type {
   FuseResult,
   FuseState,
 } from "./types";
+import { lineLength } from "../tone/tone";
 import { TERMINAL_STATUSES } from "./types";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -125,7 +126,12 @@ export function transition(
         return fail("invalid_template");
       }
       const line = event.personalLine ?? null;
-      if (line !== null && line.length > config.personalLineMaxChars) {
+      // lineLength, not line.length. This measured the raw string while the
+      // tone check the UI runs measured the trimmed one, so a line of 140
+      // characters and a trailing space was green-lit on screen and then
+      // refused here — and both counted UTF-16 units, which rejected eighty
+      // emoji against a limit of a hundred and forty characters.
+      if (line !== null && lineLength(line) > config.personalLineMaxChars) {
         return fail("personal_line_too_long");
       }
       return ok({

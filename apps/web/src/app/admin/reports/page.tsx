@@ -28,7 +28,22 @@ export default async function ReportsPage() {
       ) : (
         <ul className="mt-10 flex flex-col gap-5">
           {reports.map((report) => (
-            <ReportCard key={report.queue_id} report={report} />
+            // Narrowed on purpose. admin_open_reports also returns reporter_id
+            // and subject ids, which this card does not render — and handing the
+            // whole row to a client component serialises every field of it into
+            // the page payload, so the reporter's id travelled to the browser
+            // for no reason. A moderator decides on what was said.
+            <ReportCard
+              key={report.queue_id}
+              report={{
+                queue_id: report.queue_id,
+                reason: report.reason,
+                detail: report.detail,
+                reported_display_name: report.reported_display_name,
+                reported_body: report.reported_body,
+                created_at: report.created_at,
+              }}
+            />
           ))}
         </ul>
       )}

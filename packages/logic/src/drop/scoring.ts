@@ -36,19 +36,38 @@ export function quizCompat(a: readonly number[] | null, b: readonly number[] | n
   let dot = 0;
   let magA = 0;
   let magB = 0;
+  let shared = 0;
   for (let i = 0; i < a.length; i++) {
     const x = a[i] ?? 0;
     const y = b[i] ?? 0;
     dot += x * y;
     magA += x * x;
     magB += y * y;
+    if (x !== 0 && y !== 0) shared += 1;
   }
   if (magA === 0 || magB === 0) return NEUTRAL_QUIZ_COMPAT;
 
   const cosine = dot / (Math.sqrt(magA) * Math.sqrt(magB));
   // clamp01, not Math.min/Math.max: those pass NaN straight through, and a NaN
   // score sorts ahead of every real one rather than behind them.
-  return clamp01((cosine + 1) / 2);
+  const raw = clamp01((cosine + 1) / 2);
+
+  // Pulled toward neutral by how little the two people actually have in common
+  // to compare.
+  //
+  // The header used to claim an unanswered trait "pulls a cosine comparison
+  // toward the middle". It does the opposite: cosine ignores dimensions where
+  // either side is zero, so ONE shared answer is a one-dimensional comparison,
+  // and one dimension is always either perfectly aligned or perfectly opposed.
+  // Two people who had answered a single question in common scored 1.0 —
+  // higher than a pair who answered all six and matched closely (0.9996) — and
+  // a single disagreement scored 0, the worst result the function can give.
+  //
+  // Confidence is the share of traits both of them answered, so a sparse
+  // comparison can no longer beat a thorough one, and a member who skipped the
+  // quiz is not thereby ranked above everyone who took it.
+  const confidence = shared / a.length;
+  return NEUTRAL_QUIZ_COMPAT + (raw - NEUTRAL_QUIZ_COMPAT) * confidence;
 }
 
 /**

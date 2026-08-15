@@ -82,13 +82,21 @@ export function resolveRadius(
     (a, b) => a - b,
   );
 
-  let last = { radiusMi: rungs[0] ?? viewerRadiusMi, pool: [] as readonly DropCandidate[] };
+  let best = { radiusMi: rungs[0] ?? viewerRadiusMi, pool: [] as readonly DropCandidate[] };
   for (const radiusMi of rungs) {
     const pool = eligible.filter((c) => c.distanceMi <= radiusMi);
-    last = { radiusMi, pool };
-    if (pool.length >= config.minPool) return last;
+    // The SMALLEST rung that produced this pool, not the last one tried.
+    //
+    // Returning the last rung meant three people all within four miles were
+    // reported as radiusUsedMi 250, radiusExpanded true — §6.1's honesty line
+    // ("we looked out to 250 miles") firing for a search that never left four.
+    // Climbing the ladder and finding nobody new is not the same as reaching
+    // further, and telling a member otherwise makes the one number they have
+    // for how empty their area is into a lie.
+    if (pool.length > best.pool.length) best = { radiusMi, pool };
+    if (pool.length >= config.minPool) return best;
   }
-  return last;
+  return best;
 }
 
 /**

@@ -83,9 +83,21 @@ describe("the radius ladder (§6.1 step 2)", () => {
     expect(found.length).toBeGreaterThanOrEqual(DEFAULT_DROP_CONFIG.minPool);
   });
 
-  it("stops at the widest rung rather than inventing distance", () => {
-    const { radiusMi } = resolveRadius(pool(2), 50);
-    expect(radiusMi).toBe(250);
+  it("reports the radius that found the pool, not the one it gave up at", () => {
+    // Two people, both inside the member's own 50 miles. The ladder climbs to
+    // 250 and finds nobody new, and the notice it drives reads "Not many people
+    // within 50 miles yet — showing within 250 miles." Both halves of that are
+    // false: the two people ARE within 50, and none of them is 250 away.
+    const { radiusMi, pool: found } = resolveRadius(pool(2), 50);
+    expect(radiusMi).toBe(50);
+    expect(found).toHaveLength(2);
+  });
+
+  it("does report a wider radius when the wider radius is what found people", () => {
+    const near = pool(2);
+    const far = pool(20, (i) => ({ id: `far${i}`, distanceMi: 120 }));
+    const { radiusMi } = resolveRadius([...near, ...far], 50);
+    expect(radiusMi).toBeGreaterThan(50);
   });
 
   it("never climbs below the member's own radius", () => {
@@ -93,9 +105,22 @@ describe("the radius ladder (§6.1 step 2)", () => {
     expect(radiusMi).toBeGreaterThanOrEqual(200);
   });
 
-  it("flags the expansion so the honesty line can show", () => {
-    const wide = selectDrop(viewer(), pool(2), NOW);
-    expect(wide.radiusExpanded).toBe(true);
+  it("flags the expansion only when expanding actually found somebody", () => {
+    // Thin AND local: nobody new was found further out, so the honesty line
+    // must stay quiet rather than claim a search that changed nothing.
+    const thinButLocal = selectDrop(viewer(), pool(2), NOW);
+    expect(thinButLocal.radiusExpanded).toBe(false);
+    expect(thinButLocal.radiusUsedMi).toBe(50);
+
+    // Thin locally, deep further out: this is what the line is for.
+    const reached = selectDrop(
+      viewer(),
+      [...pool(2), ...pool(20, (i) => ({ id: `far${i}`, distanceMi: 120 }))],
+      NOW,
+    );
+    expect(reached.radiusExpanded).toBe(true);
+    expect(reached.radiusUsedMi).toBeGreaterThan(50);
+
     const local = selectDrop(viewer(), pool(12), NOW);
     expect(local.radiusExpanded).toBe(false);
     expect(local.radiusUsedMi).toBe(50);

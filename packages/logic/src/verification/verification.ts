@@ -75,7 +75,11 @@ export function transition(
       // Under review, only an administrator moves a member. Letting them start
       // a fresh check here would let a flagged member grind attempts until one
       // passed, which is exactly what the flag exists to stop.
-      if (isUnderReview(state.status)) return fail("not_under_review");
+      //
+      // The code says under_review, not not_under_review. It said the latter
+      // for years' worth of a member's confusion in one line: told the opposite
+      // of their own situation by any screen that reads the code.
+      if (isUnderReview(state.status)) return fail("under_review");
       if (state.status !== "phone_verified") return fail("phone_not_verified");
       return ok({ ...state, status: "liveness_pending" });
     }

@@ -6,10 +6,29 @@ import { REPORT_REASONS, type ReportReason } from "@plusone/config";
 
 import { REPORT_DECISION_INITIAL, decideReport } from "./actions";
 
+/** What admin_open_reports returns. The page reads this; the card does not. */
 export interface OpenReport {
   queue_id: string;
   kind: string;
+  reporter_id: string | null;
   reported_user_id: string | null;
+  reported_display_name: string | null;
+  reason: ReportReason;
+  detail: string | null;
+  reported_body: string | null;
+  created_at: string;
+}
+
+/**
+ * What the card actually renders — deliberately narrower than OpenReport.
+ *
+ * This is a client component, so every field of whatever it is handed is
+ * serialised into the page payload. It used to take the whole row, which sent
+ * the reporter's id and the subject's id to the browser to be used by nothing.
+ * A moderator decides on what was said; the ids are the server's business.
+ */
+export interface ReportForCard {
+  queue_id: string;
   reported_display_name: string | null;
   reason: ReportReason;
   detail: string | null;
@@ -25,7 +44,7 @@ export interface OpenReport {
  * and judging whether a message was abusive does not need it. It is reachable
  * from member lookup, with a reason that gets written down.
  */
-export function ReportCard({ report }: { report: OpenReport }) {
+export function ReportCard({ report }: { report: ReportForCard }) {
   const [state, act, pending] = useActionState(decideReport, REPORT_DECISION_INITIAL);
 
   if (state.message) {

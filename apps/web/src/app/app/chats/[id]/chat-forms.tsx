@@ -108,6 +108,7 @@ export function ProposePlan({ chatId }: { chatId: string }) {
 export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm: boolean }) {
   const [confirmState, confirm, confirming] = useActionState(confirmPlan, CHAT_INITIAL);
   const [cancelState, cancel, cancelling] = useActionState(cancelPlan, CHAT_INITIAL);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   return (
     <div className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6">
@@ -128,16 +129,49 @@ export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm
         <p className="text-[15px] text-ink-2">{C.awaitingConfirmation}</p>
       )}
 
-      <form action={cancel}>
-        <input type="hidden" name="chat_id" value={chatId} />
+      {/* Asked first. This was a one-tap submit that discarded a plan both
+          people had confirmed — the single most valuable thing in the chat —
+          sitting a few pixels under the button that confirms it.
+          
+          Blocking is deliberately unguarded and this is deliberately not: a
+          block is reversible from Settings and is reached at the worst moment
+          someone will have here, where a cancelled plan means going back to the
+          other person and asking again. */}
+      {confirmingCancel ? (
+        <div className="flex flex-col gap-3">
+          <p role="status" className="text-[14.5px] text-ink-2">
+            {C.cancelPlanConfirm}
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <form action={cancel}>
+              <input type="hidden" name="chat_id" value={chatId} />
+              <button
+                type="submit"
+                disabled={cancelling}
+                className="ease-brand rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-55"
+              >
+                {C.cancelPlanConfirmLabel}
+              </button>
+            </form>
+            <button
+              type="button"
+              onClick={() => setConfirmingCancel(false)}
+              className="ease-brand text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            >
+              {C.cancelPlanKeepLabel}
+            </button>
+          </div>
+        </div>
+      ) : (
         <button
-          type="submit"
-          disabled={cancelling}
-          className="ease-brand text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+          type="button"
+          onClick={() => setConfirmingCancel(true)}
+          aria-expanded={false}
+          className="ease-brand self-start text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
         >
           {C.cancelPlanLabel}
         </button>
-      </form>
+      )}
 
       <Error message={confirmState.error ?? cancelState.error} />
     </div>

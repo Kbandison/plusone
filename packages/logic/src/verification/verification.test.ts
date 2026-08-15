@@ -142,8 +142,18 @@ describe("retries", () => {
     expect(attemptsRemaining(state)).toBe(0);
   });
 
-  it("will not start a fresh check once flagged", () => {
-    expect(transition(toFlagged(), start)).toEqual({ ok: false, code: "not_under_review" });
+  it("will not start a fresh check once flagged, and says why correctly", () => {
+    // The code used to be "not_under_review" — the exact inverse of the
+    // member's situation, told to them by any screen that reads it.
+    expect(transition(toFlagged(), start)).toEqual({ ok: false, code: "under_review" });
+  });
+
+  it("keeps not_under_review for the case that really is not under review", () => {
+    const fresh = drive(INITIAL_STATE, { type: "verify_phone", at: AT });
+    expect(transition(fresh, { type: "open_appeal", at: AT })).toEqual({
+      ok: false,
+      code: "not_under_review",
+    });
   });
 
   // Otherwise: fail three times, re-run the OTP, and walk straight back to a

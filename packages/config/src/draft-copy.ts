@@ -172,6 +172,10 @@ export const DRAFT_COPY = {
     proposeLabel: "Propose",
     confirmPlanLabel: "Confirm this plan",
     cancelPlanLabel: "Cancel the plan",
+    /** §6.2 — cancelling re-arms the fuse at 72 hours rather than closing the chat. */
+    cancelPlanConfirm: "Cancel this plan? The chat stays open and the timer restarts at 72 hours.",
+    cancelPlanConfirmLabel: "Yes, cancel it",
+    cancelPlanKeepLabel: "Keep the plan",
     awaitingConfirmation: "Waiting for them to confirm.",
     closeHeading: "Close this chat",
     closeTemplateLabel: "Choose a note",
