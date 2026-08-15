@@ -109,6 +109,14 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # The connect budget is the only thing between a member and unlimited
+      # unsolicited approaches. `source` arrives from the client and 'drop'
+      # costs nothing, so it has to be tried rather than read.
+      - name: Verify the connect economy
+        run: pnpm check:connects
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       # A permanent code, one attribution per invitee forever, and a conversion
       # that fires at verification rather than at signup.
       - name: Verify referrals

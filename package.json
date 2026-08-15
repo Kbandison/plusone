@@ -20,6 +20,7 @@
     "check:sweeps": "node scripts/verify-sweeps.mjs",
     "check:walls": "node scripts/verify-walls.mjs",
     "check:columns": "node scripts/verify-columns.mjs",
+    "check:connects": "node scripts/verify-connects.mjs",
     "check:referrals": "node scripts/verify-referrals.mjs",
     "check:safety": "node scripts/verify-safety.mjs",
     "check:photos": "node scripts/verify-photos.mjs",
