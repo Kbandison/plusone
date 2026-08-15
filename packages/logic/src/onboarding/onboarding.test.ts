@@ -357,3 +357,69 @@ describe("resuming where you left off", () => {
     expect(facts).toEqual(snapshot);
   });
 });
+
+describe("health_consent is not a trap", () => {
+  // Every event refused here except go_back, and walking forward re-entered it,
+  // so onboarding could never finish once a member walked back past consent.
+  const T0 = Date.UTC(2026, 0, 1);
+
+  const walkTo = (step: string): OnboardingState => {
+    let state = INITIAL_ONBOARDING_STATE;
+    for (let i = 0; i < 12 && state.step !== step; i += 1) {
+      const result = transition(state, { type: "complete", at: T0 });
+      if (!result.ok) break;
+      state = result.state;
+    }
+    return state;
+  };
+
+  it("lets a member walk back past consent and forward again", () => {
+    const atConsent = walkTo("health_consent");
+    const granted = transition(atConsent, { type: "grant_consent", at: T0 });
+    expect(granted.ok).toBe(true);
+    if (!granted.ok) return;
+
+    let state = granted.state;
+    for (let i = 0; i < 2; i += 1) {
+      const back = transition(state, { type: "go_back", at: T0 });
+      expect(back.ok).toBe(true);
+      if (!back.ok) return;
+      state = back.state;
+    }
+
+    // Forward again, all the way to the end.
+    for (let i = 0; i < 12 && state.step !== "done"; i += 1) {
+      const result = transition(state, { type: "complete", at: T0 });
+      if (!result.ok && state.step === "quiz") {
+        const skipped = transition(state, { type: "skip", at: T0 });
+        expect(skipped.ok).toBe(true);
+        if (!skipped.ok) return;
+        state = skipped.state;
+        continue;
+      }
+      expect(result.ok, `stuck on ${state.step}`).toBe(true);
+      if (!result.ok) return;
+      state = result.state;
+    }
+    expect(state.step).toBe("done");
+  });
+
+  it("still refuses to pass consent that was never given", () => {
+    const atConsent = walkTo("health_consent");
+    expect(atConsent.consentGrantedAt).toBeNull();
+    const result = transition(atConsent, { type: "complete", at: T0 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.code).toBe("consent_required");
+  });
+
+  it("keeps the original timestamp when consent is re-passed", () => {
+    const atConsent = walkTo("health_consent");
+    const granted = transition(atConsent, { type: "grant_consent", at: T0 });
+    if (!granted.ok) return;
+    const back = transition(granted.state, { type: "go_back", at: T0 });
+    if (!back.ok) return;
+    const forward = transition(back.state, { type: "complete", at: T0 + 99_999 });
+    expect(forward.ok).toBe(true);
+    if (forward.ok) expect(forward.state.consentGrantedAt).toBe(T0);
+  });
+});

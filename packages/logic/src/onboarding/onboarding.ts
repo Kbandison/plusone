@@ -61,10 +61,20 @@ export function transition(state: OnboardingState, event: OnboardingEvent): Onbo
 
   switch (event.type) {
     case "complete": {
-      // §9.1 wants an explicit, unbundled tick. A generic "next" is exactly the
-      // bundled consent the requirement exists to prevent, so it cannot pass
-      // this step — not even when consent was somehow granted already.
-      if (state.step === "health_consent") return fail("consent_required");
+      // §9.1 wants an explicit, unbundled tick, so a generic "next" cannot pass
+      // this step — that is exactly the bundled consent the requirement exists
+      // to prevent.
+      //
+      // It can pass a step whose tick has ALREADY happened, though, and it has
+      // to. Refusing unconditionally made health_consent a trap with no exit: a
+      // member who granted consent and then walked back two steps arrived at it
+      // again with consentGrantedAt set, where `complete` failed
+      // consent_required, `grant_consent` failed consent_already_granted, and
+      // `skip` failed step_not_skippable. Only go_back worked, and walking
+      // forward re-entered it. Onboarding could never finish.
+      if (state.step === "health_consent" && state.consentGrantedAt === null) {
+        return fail("consent_required");
+      }
       return ok(advance(state, "completed"));
     }
 

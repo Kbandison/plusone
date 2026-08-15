@@ -368,3 +368,51 @@ describe("purity", () => {
     expect(a).toEqual(b);
   });
 });
+
+describe("a closed chat stays closed, and a live one keeps its deadline", () => {
+  // Both of these were reachable through an "open" event that the terminal
+  // guard deliberately exempted. The event had no caller; it only had a hole.
+  const T0 = Date.UTC(2026, 0, 1);
+  const DAY = 86_400_000;
+
+  it("exposes no event at all that returns a chat to open", () => {
+    const swept = transition(openChat(T0), { type: "sweep", at: T0 + 8 * DAY });
+    expect(swept.ok).toBe(true);
+    if (!swept.ok) return;
+    expect(swept.state.status).toBe("closed_fuse");
+    expect(swept.state.closure).not.toBeNull();
+
+    // Every event in the union, against a closed chat.
+    const events: FuseEvent[] = [
+      { type: "sweep", at: T0 + 9 * DAY },
+      { type: "propose_plan", at: T0 + 9 * DAY, by: "a", plan: { date: "2026-01-11", time: "19:00", place: "The park" } },
+      { type: "confirm_plan", at: T0 + 9 * DAY, by: "b" },
+      { type: "close", at: T0 + 9 * DAY, by: "a", template: 0, personalLine: null },
+    ];
+    for (const event of events) {
+      const result = transition(swept.state, event);
+      expect(result.ok, `${event.type} reopened a closed chat`).toBe(false);
+      if (!result.ok) expect(result.code).toBe("already_closed");
+    }
+  });
+
+  it("refuses a non-finite time rather than acting on it", () => {
+    // NaN compares false against everything, so `NaN < expiresAt` read as
+    // "expired" and closed a chat six days early.
+    const live = openChat(T0);
+    for (const at of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      const result = transition(live, { type: "sweep", at });
+      expect(result.ok, `sweep at ${at} was allowed`).toBe(false);
+      if (!result.ok) expect(result.code).toBe("invalid_time");
+    }
+  });
+
+  it("agrees with needsSweep on the same input", () => {
+    const live = openChat(T0);
+    for (const at of [T0 + DAY, T0 + 7 * DAY, T0 + 8 * DAY, Number.NaN]) {
+      const swept = transition(live, { type: "sweep", at });
+      const closes = swept.ok && swept.state.status === "closed_fuse";
+      expect(closes, `disagreement at ${at}`).toBe(needsSweep(live, at));
+    }
+  });
+});

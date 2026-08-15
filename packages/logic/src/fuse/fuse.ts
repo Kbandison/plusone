@@ -74,15 +74,18 @@ export function transition(
   event: FuseEvent,
   config: FuseConfig = DEFAULT_FUSE_CONFIG,
 ): FuseResult {
-  // A closed chat is closed. Nothing reopens it, including a sweep or a new plan.
-  if (isTerminal(state.status) && event.type !== "open") {
-    return fail("already_closed");
-  }
+  // Every event carries a caller-supplied `at`, and NaN compares false against
+  // everything — so `sweep` with a non-finite time read as "not yet expired",
+  // fell through, and closed a live chat, while needsSweep() said no sweep was
+  // due. Two functions disagreeing about the same chat, and the one that acts
+  // is the one that destroys it. Refuse the input instead.
+  if (!Number.isFinite(event.at)) return fail("invalid_time");
+
+  // A closed chat is closed. Nothing reopens it — not a sweep, not a new plan,
+  // and there is deliberately no event that starts one over.
+  if (isTerminal(state.status)) return fail("already_closed");
 
   switch (event.type) {
-    case "open":
-      return ok(openChat(event.at, config));
-
     case "propose_plan": {
       if (state.status !== "open") return fail("not_open");
       if (!isPlanComplete(event.plan)) return fail("plan_incomplete");

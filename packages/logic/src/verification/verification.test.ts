@@ -60,6 +60,7 @@ describe("the clean path", () => {
     const state = drive(INITIAL_STATE, phone, start, pass);
     expect(state.lastScore).toBe(STUB_PASS.score);
     expect(Object.keys(state).sort()).toEqual([
+      "appealDecidedAt",
       "appealOpenedAt",
       "decidedAt",
       "lastScore",
@@ -175,6 +176,7 @@ describe("the appeal is never gated on the thing being appealed", () => {
       lastScore: 0,
       decidedAt: AT,
       appealOpenedAt: null,
+      appealDecidedAt: null,
     };
     expect(transition(state, { type: "open_appeal", at: AT }).ok).toBe(true);
   });
@@ -324,6 +326,7 @@ describe("structural guarantees", () => {
 
   it("has no field anywhere in the state that could hold raw media", () => {
     expect(fieldsOf("VerificationState")).toEqual([
+      "appealDecidedAt",
       "appealOpenedAt",
       "decidedAt",
       "lastScore",
@@ -350,5 +353,68 @@ describe("structural guarantees", () => {
     const block = /export type VerificationStatus =([\s\S]*?);/.exec(source)?.[1] ?? "";
     for (const status of statuses) expect(block).toContain(`"${status}"`);
     expect(block.match(/"/g)?.length).toBe(statuses.length * 2);
+  });
+});
+
+describe("no dead ends", () => {
+  it("lets a rejected member appeal the rejection", () => {
+    // Decision #21: "Appeal path never locked behind the thing being appealed."
+    // The guard used to ask whether an appeal had ever been opened, so the
+    // first one consumed a member's only appeal — including when the thing they
+    // wanted to appeal was the ruling on it.
+    const appealed = drive(toFlagged(), { type: "open_appeal", at: AT });
+    const rejected = drive(appealed, { type: "admin_decide", at: AT + 1, approve: false });
+    expect(rejected.status).toBe("rejected");
+    expect(rejected.appealOpenedAt).toBe(AT); // still on the record
+
+    const again = transition(rejected, { type: "open_appeal", at: AT + 2 });
+    expect(again.ok).toBe(true);
+    if (again.ok) expect(again.state.appealOpenedAt).toBe(AT + 2);
+  });
+
+  it("still refuses a second appeal while the first is undecided", () => {
+    const appealed = drive(toFlagged(), { type: "open_appeal", at: AT });
+    expect(transition(appealed, { type: "open_appeal", at: AT + 1 })).toEqual({
+      ok: false,
+      code: "appeal_already_open",
+    });
+  });
+
+  it("lets an administrator rescue a member whose liveness session never returned", () => {
+    // A provider outage left the member in liveness_pending, where every event
+    // refused — start_liveness said already_in_progress, verify_phone was a
+    // no-op, and admin_decide said not_under_review. Nobody could reach them.
+    const pending = drive(
+      drive(INITIAL_STATE, { type: "verify_phone", at: AT }),
+      { type: "start_liveness", at: AT },
+    );
+    expect(pending.status).toBe("liveness_pending");
+
+    const rescued = transition(pending, { type: "admin_decide", at: AT + 1, approve: true });
+    expect(rescued.ok).toBe(true);
+    if (rescued.ok) expect(rescued.state.status).toBe("verified");
+  });
+
+  it("gives every non-verified status some event that moves it", () => {
+    const states: VerificationState[] = [
+      INITIAL_STATE,
+      drive(INITIAL_STATE, { type: "verify_phone", at: AT }),
+      drive(drive(INITIAL_STATE, { type: "verify_phone", at: AT }), { type: "start_liveness", at: AT }),
+      toFlagged(),
+      drive(toFlagged(), { type: "admin_decide", at: AT + 1, approve: false }),
+    ];
+    for (const state of states) {
+      const events: VerificationEvent[] = [
+        { type: "verify_phone", at: AT + 5 },
+        { type: "start_liveness", at: AT + 5 },
+        { type: "open_appeal", at: AT + 5 },
+        { type: "admin_decide", at: AT + 5, approve: true },
+      ];
+      const moves = events.some((event) => {
+        const result = transition(state, event);
+        return result.ok && result.state !== state && result.state.status !== state.status;
+      });
+      expect(moves, `${state.status} is a dead end`).toBe(true);
+    }
   });
 });

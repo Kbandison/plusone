@@ -63,6 +63,7 @@ export async function runLivenessCheck(
     lastScore: null,
     decidedAt: null,
     appealOpenedAt: null,
+    appealDecidedAt: null,
   };
 
   const started = verification.transition(state, { type: "start_liveness", at: Date.now() });

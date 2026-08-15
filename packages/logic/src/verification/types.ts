@@ -72,6 +72,14 @@ export interface VerificationState {
   readonly decidedAt: number | null;
   /** Epoch ms. Non-null once the member has asked for human review. */
   readonly appealOpenedAt: number | null;
+  /**
+   * Epoch ms of the ruling on that appeal. Null while one is outstanding.
+   *
+   * Separate from `decidedAt`, which is also set when the machine flags a
+   * member — overloading the two made "an appeal is open" indistinguishable
+   * from "an appeal once happened", and a member got one appeal in their life.
+   */
+  readonly appealDecidedAt: number | null;
 }
 
 export type VerificationEvent =

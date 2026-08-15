@@ -56,8 +56,18 @@ export interface FuseState {
   readonly closure: ClosureState | null;
 }
 
+/**
+ * There is no "open" event. `openChat()` is the only way a fuse starts.
+ *
+ * There used to be one, and it was exempted from the terminal guard so that it
+ * could return a fresh chat — which meant it reopened a chat the sweep had
+ * already closed, discarding the closure note that §6.2 exists to guarantee,
+ * and pushed the deadline of a live chat seven days outward. An extension by
+ * another name, in the one module whose header forbids exactly that.
+ *
+ * Nothing ever dispatched it. It only existed to be a hole.
+ */
 export type FuseEvent =
-  | { readonly type: "open"; readonly at: number }
   | { readonly type: "propose_plan"; readonly by: string; readonly plan: DatePlan; readonly at: number }
   | { readonly type: "confirm_plan"; readonly by: string; readonly at: number }
   | { readonly type: "cancel_plan"; readonly at: number }
@@ -75,6 +85,7 @@ export type FuseEvent =
 
 export type FuseErrorCode =
   | "already_closed"
+  | "invalid_time"
   | "not_open"
   | "no_plan"
   | "plan_incomplete"

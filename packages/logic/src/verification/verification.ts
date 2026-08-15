@@ -26,6 +26,7 @@ export const INITIAL_STATE: VerificationState = {
   lastScore: null,
   decidedAt: null,
   appealOpenedAt: null,
+  appealDecidedAt: null,
 };
 
 const ok = (state: VerificationState): VerificationResult => ({ ok: true, state });
@@ -125,16 +126,39 @@ export function transition(
       // livenessAttempts, not lastScore. A member who never passed a check can
       // still ask a human to look.
       if (!isUnderReview(state.status)) return fail("not_under_review");
-      if (state.appealOpenedAt !== null) return fail("appeal_already_open");
+      // Open, not ever-opened. Those were the same test, which meant a member
+      // got exactly one appeal in their life: the first rejection consumed it,
+      // and the rejection itself could then never be appealed — the appeal path
+      // locked behind the thing being appealed, which is the one thing
+      // Decision #21 names. An appeal that an administrator has already ruled
+      // on is a closed appeal, and it stays on the record either way.
+      const appealPending =
+        state.appealOpenedAt !== null &&
+        (state.appealDecidedAt === null || state.appealDecidedAt < state.appealOpenedAt);
+      if (appealPending) return fail("appeal_already_open");
       return ok({ ...state, appealOpenedAt: event.at });
     }
 
     case "admin_decide": {
-      if (!isUnderReview(state.status)) return fail("not_under_review");
+      // liveness_pending is included deliberately. A provider session that
+      // never returns — abandoned, expired, or a provider outage — left the
+      // member in a state where every event refused: start_liveness said
+      // already_in_progress, verify_phone was a no-op, and admin_decide said
+      // not_under_review. Stuck, with no way for a human to reach them.
+      //
+      // There is no member-facing cancel for the same reason there is no retry
+      // from flagged: cancelling a check that is about to fail and starting
+      // another is how a member grinds attempts until one passes, and the
+      // attempt only counts on liveness_result. So the way out is a person.
+      if (!isUnderReview(state.status) && state.status !== "liveness_pending") {
+        return fail("not_under_review");
+      }
       return ok({
         ...state,
         status: event.approve ? "verified" : "rejected",
         decidedAt: event.at,
+        // Closes whatever appeal was outstanding, without erasing it.
+        appealDecidedAt: state.appealOpenedAt === null ? state.appealDecidedAt : event.at,
       });
     }
   }
