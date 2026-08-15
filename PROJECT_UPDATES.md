@@ -1505,9 +1505,26 @@ Mechanics are now namespaced in the `@plusone/logic` barrel (`fuse.transition`,
 `verification.transition`). Six more state machines are coming and they all want to
 call their reducer `transition`.
 
-### AWAITING KEVIN — held placeholders
+### AWAITING KEVIN
 
-Deliberately held on 2026-08-14. Nothing below blocks Milestone 2 except where noted.
+Two lists. The first is copy **I wrote and Kevin has not read** — it works, it is
+tested, and it is nobody's voice but mine until he says otherwise. He asked
+specifically to be reminded of these, so they lead.
+
+| # | Written by Claude, not yet reviewed | Where |
+|---|---|---|
+| A | **Compatibility quiz** — 12 questions, six traits. These shape who members are shown to each other, which makes them the highest-stakes of the three. | `packages/config/src/draft-copy.ts` → `QUIZ_QUESTIONS` |
+| B | **FAQ** — 12 answers. Every factual claim is asserted against the product by a test, so the risk is tone rather than accuracy. | `packages/config/src/guidelines.ts` → `FAQ`, live at `/faq` |
+| C | **Community guidelines** — 8 sections. Sets what gets someone removed, so it is the one most worth disagreeing with. | `packages/config/src/guidelines.ts` → `COMMUNITY_GUIDELINES`, live at `/guidelines` |
+| D | **Profile prompts** — 8. Load-bearing: Decision #14 makes a connect a reply to one, so without them nobody can be reached. | `packages/config/src/draft-copy.ts` → `PROFILE_PROMPTS` |
+| E | **Privacy policy** — 14 sections. Also needs counsel (Decision #30). | `packages/config/src/legal.ts`, live at `/privacy` |
+
+Everything in `DRAFT_COPY` is mine too — headings, labels, button text. Lower
+stakes, same status.
+
+### Held placeholders
+
+Nothing below blocks Milestone 2 except where noted.
 (The database password was supplied and the schema is applied — **rotate it**, it was
 sent in chat. It is in no file in this repo; `pnpm check:db` reads `SUPABASE_DB_URL`
 from the environment.)
@@ -1515,14 +1532,11 @@ from the environment.)
 | # | Held | Blocks |
 |---|---|---|
 | 1 | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Waiting on the domain being secured; `privacy@yourplusone.app` is the intended alias. Note Resend only *sends* — receiving needs mail hosting or a forwarding rule. | **launch** |
-| 2 | **Privacy policy review.** Drafted 2026-08-14, live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). | launch |
-| 3 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
-| 4 | **Onboarding draft copy.** Headings, field labels and intention option names for every step, in `DRAFT_COPY`. Not spec copy. | Milestone 2 sign-off |
-| 5 | ~~**Quiz questions.**~~ Written 2026-08-15 at Kevin's request. Twelve, six traits, reviewable. | — |
-| 6 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 7 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 8 | **Resend API key.** | Milestone 7 |
-| 9 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| 2 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
+| 3 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
+| 4 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
+| 5 | **Resend API key.** | Milestone 7 |
+| 6 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
 
 ### Next
 
@@ -1587,4 +1601,3 @@ unresolved references, missing RLS, and granted-but-policyless tables via
   a denormalised column, which cannot drift out of sync.
 - ~~**TypeScript held at 5.9.3.**~~ Moved to 7.0.2 on 2026-08-14. The tooling
   concern was well founded — see that entry.
-
