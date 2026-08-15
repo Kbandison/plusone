@@ -94,6 +94,55 @@ try {
     await c.query(`release savepoint q`);
   } catch { await c.query(`rollback to savepoint q`); }
   check(readRefused, "and sees nothing in it");
+
+  // ── a block reaches the rooms (20260815001200) ──────────────────────────────
+  // room_messages carried no block term, so someone a member had blocked kept
+  // appearing in their feed every day — while tables.sql says blocks are
+  // "checked in both directions on every visibility test". Own block scope so
+  // nothing here collides with the names above.
+  {
+    const alice = await member();
+    const bob = await member();
+    const carol = await member();
+    const [{ id: roomId }] = (await c.query(`select id from public.rooms where slug = 'general-lounge'`)).rows;
+
+    for (const who of [alice, bob, carol]) {
+      await c.query(`insert into public.room_members (room_id, user_id) values ($1,$2)`, [roomId, who]);
+      await c.query(`insert into public.room_messages (room_id, user_id, body) values ($1,$2,$3)`, [
+        roomId, who, `post-${who}`,
+      ]);
+    }
+
+    const feedOf = async (who) => {
+      const r = await as(who, `select body from public.room_messages where room_id = '${roomId}'`);
+      return r.rows.map((x) => x.body);
+    };
+
+    check((await feedOf(alice)).length === 3, "a room member reads every post before any block");
+
+    await c.query(`insert into public.blocks (blocker_id, blocked_id) values ($1,$2)`, [alice, bob]);
+
+    const aliceSees = await feedOf(alice);
+    const bobSees = await feedOf(bob);
+    const carolSees = await feedOf(carol);
+
+    check(!aliceSees.includes(`post-${bob}`), "a blocked member's room posts disappear for the blocker");
+    check(aliceSees.includes(`post-${alice}`), "and the blocker still sees their own");
+    check(!bobSees.includes(`post-${alice}`), "the block is mutual in the rooms too");
+    check(carolSees.length === 3, "and it changes nothing for anybody else");
+
+    // A block is one member's decision about their own view. If it removed
+    // someone's voice for the whole room it would be a moderation action
+    // wearing a safety control's clothes.
+    let canStillPost = false;
+    await c.query(`savepoint rb`);
+    try {
+      await as(bob, `insert into public.room_messages (room_id, user_id, body) values ('${roomId}','${bob}','again')`);
+      canStillPost = true;
+      await c.query(`release savepoint rb`);
+    } catch { await c.query(`rollback to savepoint rb`); }
+    check(canStillPost, "a blocked member can still post — a block is not a mute for everyone");
+  }
 } finally { await c.query("rollback"); }
 await c.end();
 console.log(problems.length ? `\n${problems.length} PROBLEM(S)\n` : "\nSafety paths hold.\n");
