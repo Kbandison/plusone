@@ -6,13 +6,14 @@
 -- not come from the spec verbatim. Update before beta.
 
 insert into public.rooms (slug, title, community_scope, slow_mode_seconds) values
-  -- The slug is a URL and the title is not: §8 keeps condition words out of
-  -- browser history and access logs, not off the screen. See 20260815000900.
-  ('starting-out', 'Newly diagnosed',    'all', 60),
-  ('stories',      'Disclosure stories', 'all', 30),
-  ('commons',      'HSV general',        'hsv', 30),
-  ('circle',       'U=U',                'hiv', 30),
-  ('lounge',       'General lounge',     'all', 15)
+  -- §5.2 names these five. They are identifiers, not URLs: rooms are addressed
+  -- by id, because §8 keeps condition words out of paths and two of these name
+  -- one. See 20260815001000.
+  ('newly-diagnosed',    'Newly diagnosed',    'all', 60),
+  ('disclosure-stories', 'Disclosure stories', 'all', 30),
+  ('hsv-general',        'HSV general',        'hsv', 30),
+  ('hiv-u-equals-u',     'U=U',                'hiv', 30),
+  ('general-lounge',     'General lounge',     'all', 15)
 on conflict (slug) do nothing;
 
 -- ── config defaults ───────────────────────────────────────────────────────────

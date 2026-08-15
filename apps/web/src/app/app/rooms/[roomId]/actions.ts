@@ -12,7 +12,6 @@ export const ROOM_INITIAL: RoomState = { error: null };
 
 export async function joinRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");
-  const slug = String(formData.get("slug") ?? "");
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
@@ -23,7 +22,7 @@ export async function joinRoom(_prev: RoomState, formData: FormData): Promise<Ro
   // Already a member is not a failure.
   if (error && error.code !== "23505") return { error: "That didn't work. Try again." };
 
-  revalidatePath(`/app/rooms/${slug}`);
+  revalidatePath(`/app/rooms/${roomId}`);
   return { error: null };
 }
 
@@ -44,7 +43,6 @@ export async function joinRoom(_prev: RoomState, formData: FormData): Promise<Ro
  */
 export async function postToRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");
-  const slug = String(formData.get("slug") ?? "");
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { error: null };
 
@@ -62,6 +60,6 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
 
   if (error) return { error: "That didn't post." };
 
-  revalidatePath(`/app/rooms/${slug}`);
+  revalidatePath(`/app/rooms/${roomId}`);
   return { error: null };
 }

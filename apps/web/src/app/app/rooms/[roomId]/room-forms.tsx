@@ -8,12 +8,11 @@ import { ROOM_INITIAL, joinRoom, postToRoom } from "./actions";
 
 const C = DRAFT_COPY.app;
 
-export function JoinRoom({ roomId, slug }: { roomId: string; slug: string }) {
+export function JoinRoom({ roomId }: { roomId: string }) {
   const [state, act, pending] = useActionState(joinRoom, ROOM_INITIAL);
   return (
     <form action={act} className="mt-6">
       <input type="hidden" name="room_id" value={roomId} />
-      <input type="hidden" name="slug" value={slug} />
       <button
         type="submit"
         disabled={pending}
@@ -30,12 +29,11 @@ export function JoinRoom({ roomId, slug }: { roomId: string; slug: string }) {
   );
 }
 
-export function RoomComposer({ roomId, slug }: { roomId: string; slug: string }) {
+export function RoomComposer({ roomId }: { roomId: string }) {
   const [state, act, pending] = useActionState(postToRoom, ROOM_INITIAL);
   return (
     <form action={act} className="mt-8 flex flex-col gap-3">
       <input type="hidden" name="room_id" value={roomId} />
-      <input type="hidden" name="slug" value={slug} />
       <div className="flex gap-3">
         <input
           name="body"

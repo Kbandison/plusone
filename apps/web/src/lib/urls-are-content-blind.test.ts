@@ -12,7 +12,12 @@ import { CONTENT_BLIND_BANNED_TERMS } from "@plusone/config";
  * how /app/rooms/hsv-general and /app/rooms/hiv-u-equals-u shipped — a
  * condition named in browser history, in address-bar autocomplete on a borrowed
  * phone, in our own access logs, and in the Referer of anything the page links
- * out to. Renamed in 20260815000900; this is the half that stops it recurring.
+ * out to.
+ *
+ * The slugs themselves are NOT the thing to fix: §5.2 names all five
+ * explicitly, so they stay. What was wrong is that the identifier and the URL
+ * were the same string by default and nobody chose that. Rooms are addressed by
+ * id now, and this asserts the link never goes back to the slug.
  *
  * A URL travels further than a screen does. The room is still titled "Newly
  * diagnosed" where a member can read it, because naming the subject on the page
@@ -54,13 +59,24 @@ describe("URLs are content-blind", () => {
     expect(offending(segment), `route segment "${segment}"`).toEqual([]);
   });
 
-  it("names no condition in any seeded room slug", () => {
+  it("keeps the §5.2 slugs, and keeps them out of the href", () => {
     const seed = readFileSync(SEED, "utf8");
     const slugs = [...seed.matchAll(/^\s*\('([a-z0-9-]+)',/gm)].map((m) => m[1]!);
-    expect(slugs.length, "no slugs found — the seed shape changed").toBeGreaterThanOrEqual(5);
-    for (const slug of slugs) {
-      expect(offending(slug), `room slug "${slug}"`).toEqual([]);
-    }
+    // The spec names these. They are identifiers; the URL is the thing §8
+    // constrains, and it is now the room id.
+    expect(slugs).toContain("hsv-general");
+    expect(slugs).toContain("hiv-u-equals-u");
+
+    const list = readFileSync(join(APP, "app/rooms/page.tsx"), "utf8");
+    expect(list, "the rooms list must not link by slug").not.toMatch(/\/app\/rooms\/\$\{room\.slug/);
+    expect(list).toMatch(/\/app\/rooms\/\$\{room\.id/);
+  });
+
+  it("has no route segment that takes a slug for a room", () => {
+    // The dynamic segment is the URL. Naming it [slug] is what made the slug
+    // the address in the first place.
+    expect(segments).toContain("[roomId]");
+    expect(segments).not.toContain("[slug]");
   });
 
   it("catches the slugs that actually shipped", () => {

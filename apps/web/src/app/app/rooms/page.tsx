@@ -33,7 +33,10 @@ export default async function RoomsPage() {
           {rooms.map((room) => (
             <li key={room.id as string}>
               <Link
-                href={`/app/rooms/${room.slug as string}`}
+                // By id, not slug. Two of the §5.2 slugs name a condition and
+                // §8 keeps those out of paths — history, autocomplete on a
+                // borrowed phone, our access logs, Referer headers.
+                href={`/app/rooms/${room.id as string}`}
                 className="ease-brand block rounded-xl border border-line-2 bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
               >
                 <h2 className="text-[1.15rem]">{room.title as string}</h2>

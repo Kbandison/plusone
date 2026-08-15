@@ -1,5 +1,117 @@
 # Project Updates
 
+## 2026-08-15 — A hardening pass, and what four reviews found
+
+I ran four parallel reviews — schema security, pure-logic correctness,
+accessibility, and privacy leaks — and then verified every finding myself before
+touching anything. Most were real. Everything below was reproduced first: the
+database ones by running the exploit as a normal member against the live project
+inside a rolled-back transaction, the logic ones by running the code.
+
+### The worst of it: RLS is row-level, and the grant was deciding columns
+
+Every policy in the schema scopes rows correctly. `grant select, insert, update
+on public.profiles to authenticated` then handed every member all 26 columns of
+every row their policy let them reach. As an ordinary member I could:
+
+  · `UPDATE profiles SET verification_status='verified' WHERE id=<self>` —
+    become verified without ever running a liveness check. Verification is the
+    wall the whole product rests on.
+  · `SELECT birthdate, location FROM profiles` — exact date of birth and a home
+    coordinate at ~1.1km for everyone in my pool. `tables.sql` says of location
+    "It is NEVER exposed".
+  · `UPDATE profile_photos SET storage_path='<victim>/<their>.webp'` — the
+    blurred path is public to anyone who can see the profile and the clear path
+    is that string minus "-blurred", so pointing my own row at it made the
+    server sign someone else's clear photo with the secret key.
+  · Clear the mode and intention cooldowns by writing the columns directly.
+
+**A cooldown enforced in an RPC while the column stays writable is not a
+cooldown, it is a suggestion with a nice error message.** `check:sql` would
+never have caught any of this: the grant is valid SQL and every policy was
+right. Only acting as a member and trying it finds it, which is what
+`check:columns` now does on every CI run.
+
+`visible_profiles` and `preview_profiles` had to become definer views, because
+both compute age from birthdate and distance from location and an invoker view
+cannot read a column its caller cannot. The views that exist to band and bucket
+those values are now the only things allowed to see them.
+
+### The purge job had never run
+
+All five crons exported only `POST`. Vercel Cron invokes with `GET`, so all five
+returned 405 on every fire — scheduled, monitored, and never once executed. For
+the purge that means §9.3 deletion requests were being recorded and never
+carried out, and **the failure mode of a job that does not run is silence.**
+
+### The rooms refused their own subject
+
+Room posts were tone-checked with the blocklist written for closure notes, which
+bans "hsv", "hiv", "diagnosed" and "u=u". So the room titled "Newly diagnosed"
+rejected the word "diagnosed" and the U=U room rejected "U=U". That rule exists
+because closure and decline notes are delivered as notifications and §8 keeps
+condition words off a lock screen — a room post never leaves the app.
+
+Separately, two room slugs named a condition in the URL (`/app/rooms/hsv-general`,
+`/app/rooms/hiv-u-equals-u`). §8 names URLs explicitly and the rule had only
+ever been applied to notification bodies. A URL travels further than a screen
+does: history, autocomplete on a borrowed phone, our access logs, Referer
+headers.
+
+**I fixed this the wrong way first and want it on the record.** I renamed the
+slugs — but §5.2 names all five explicitly, so that overrode a locked decision
+to satisfy another one. The two only conflict because the app routed on the
+slug. Rooms are addressed by id now, the §5.2 slugs are back, and the lint
+asserts the link never returns to the slug. **The identifier and the URL were
+the same string by default and nobody chose that**; §8 constrains one of them
+and §5.2 fixes the other.
+
+### Three state machines with no way out
+
+  · The fuse had an `open` event exempted from the terminal guard. It returned a
+    swept chat to open — discarding the closure note §6.2 exists to guarantee —
+    and pushed a live chat's deadline seven days outward. Nothing dispatched it;
+    it existed only to be a hole.
+  · `health_consent` was a trap. Grant consent, walk back two steps, walk
+    forward, and every event refused except `go_back`. Onboarding could never
+    finish.
+  · A liveness session that never returned left the member somewhere no event
+    could move them, including an admin's. And `open_appeal` asked whether an
+    appeal had ever been opened rather than whether one was outstanding, so a
+    member got one appeal in their life and the rejection could never be
+    appealed — Decision #21's exact failure.
+
+### Everything failed open on a bad number
+
+NaN compares false against everything, so every `if (x < limit) refuse` read as
+"allowed". The connect budget went unlimited, the intention cooldown unlocked
+permanently, and a NaN score sorted to the **front** of the Drop rather than out
+of it. Each one failed open in the direction of more contact.
+
+### A live microphone
+
+The voice recorder never cleaned up on unmount, so navigating away mid-recording
+left the interval ticking and the getUserMedia stream open — a live mic and a
+recording indicator on a member's phone after they had left the page.
+
+Its `send()` also awaited a server action with no try/catch, so a dropped
+connection pinned it at "sending" forever with no error and no way out but a
+reload. **A loading state that never resolves is worse than an error, because it
+looks like progress.**
+
+### Room posts were not as unattributed as they looked
+
+Posts render with no author, so a member writing in "Newly diagnosed" reasonably
+reads the room as unattributed. The page shipped the author's uuid to the client
+anyway, where any reader could lift it from the payload and open
+`/app/connect/<uuid>` for a name, a photo and prompts. Report and Block now
+resolve the author server-side from the message id.
+
+Also: the two most-used inputs in the product — the chat composer and the room
+composer — had no accessible name at all, and chat messages distinguished sender
+by colour and alignment alone.
+
+
 ## 2026-08-15 — Milestone 8: the marketing site
 
 `/how-it-works`, `/pricing` and `/terms` join the pages already there. Every

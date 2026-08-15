@@ -11,15 +11,15 @@ export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
 
 const C = DRAFT_COPY.app;
 
-export default async function RoomPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function RoomPage({ params }: { params: Promise<{ roomId: string }> }) {
+  const { roomId } = await params;
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
 
   const { data: room } = await supabase
     .from("rooms")
     .select("id, title, description, slow_mode_seconds, pinned_resource_card")
-    .eq("slug", slug)
+    .eq("id", roomId)
     .maybeSingle();
 
   // RLS scopes rooms by community, so an absent row here may mean "not yours"
@@ -96,9 +96,9 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
       </ul>
 
       {membership ? (
-        <RoomComposer roomId={room.id as string} slug={slug} />
+        <RoomComposer roomId={room.id as string} />
       ) : (
-        <JoinRoom roomId={room.id as string} slug={slug} />
+        <JoinRoom roomId={room.id as string} />
       )}
     </main>
   );
