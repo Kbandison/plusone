@@ -176,6 +176,42 @@ There was also no prettier config, so both format scripts ran at the 80-column
 default against a codebase hand-written at 100 — and globbed `.sql`, which
 prettier cannot parse. Neither had ever passed. `format:check` is in CI now.
 
+### The Drop was telling members the wrong things about itself
+
+`quizCompat` scored a single shared answer as a **perfect 1.0** — higher than a
+pair who answered all six questions and matched closely at 0.9996 — and a single
+disagreement as 0, the worst it can give. The header claimed an unanswered trait
+"pulls a cosine comparison toward the middle"; cosine ignores dimensions where
+either side is zero, so **one shared answer is a one-dimensional comparison, and
+one dimension is always either perfectly aligned or perfectly opposed.** Someone
+who skipped the quiz outranked everyone who took it.
+
+The radius ladder reported the rung it gave up at rather than the one that found
+people, so three candidates all within four miles produced "Not many people
+within 50 miles yet — showing within 250 miles", where both halves are false.
+
+The 140-character limit was measured two ways: `checkTone` trimmed and the fuse
+did not, so a line of 140 characters and a trailing space was green-lit on
+screen and then refused by the state machine. Both counted UTF-16 units, so
+eighty emoji were rejected against a hundred-and-forty-_character_ limit — and
+so was anyone writing outside the BMP, silently, at half the length.
+
+### Rows that were all the same row
+
+Every Accept and Decline in the inbox had the same accessible name with nothing
+to tell them apart, and accepting the wrong connect cannot be undone. The chats
+list showed a status word and a countdown, so **three open chats were three
+identical rows** — not just to a screen reader hearing "Open, Open, Open", but on
+screen, where nobody could tell which conversation they were about to open.
+
+And the blocked list showed "Blocked 14 August" with no name, because blocking is
+mutual and the blocked member fails `i_can_view`. Two blocks on one day were
+indistinguishable and undoing one was a guess. **A safety control you cannot read
+is one you cannot undo** — so `my_blocked_members()` is the one place that wall
+does not apply. It never returns blocks made _against_ you; that would be a probe,
+and a far more sensitive one. This reverses a comment I wrote earlier saying names
+should not be resolved there.
+
 ### Room posts were not as unattributed as they looked
 
 Posts render with no author, so a member writing in "Newly diagnosed" reasonably
