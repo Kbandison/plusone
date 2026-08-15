@@ -135,6 +135,47 @@ database. So the browser fetches Supabase directly, and a 320px card variant is
 written at upload to make that affordable: nothing here renders a photo above
 72px and the stored original is 1600.
 
+### The only navigation in the app was unusable on a phone
+
+Nine labels in `justify-between` came to roughly 360px of text inside the 312px
+a 360px screen leaves after the gutters, and `overflow-x: hidden` meant the
+overflow was clipped rather than scrollable. **The last items were simply
+unreachable, and nothing said so, because clipping never does.** The padding was
+also on the `<ul>` rather than the links, so each target was a bare 13px line
+box — about 21px, under WCAG 2.2's 24×24.
+
+### Raw database text was reaching members
+
+Eight actions returned `error.message` straight to the UI. Everything reachable
+today is about the caller, so nothing leaked — but the message that would is
+already written: `create_connect` raises "connect: target is support-only", and
+the connect action swallows it by hand for exactly that reason. **One
+hand-rolled exception is not a rule.** The default is inverted now, and a test
+reads every `raise exception` in the migrations and fails on any text nobody has
+classified.
+
+### Copy written and never wired
+
+After fixing a cluster of accessibility defects — disclosures that threw away
+focus, successes that were never announced, a slider that said "50" while the
+page said "50 miles", audio with no accessible name, three identically-named
+textareas, a clipboard button that failed silently — I wrote a test for the
+shape several of them shared: a string in `DRAFT_COPY` that nothing references.
+
+It found four more real gaps:
+
+· **The §9.1 consent screen had no link to the privacy policy**, though the
+policy's own comment says it does.
+· **The OTP screen had neither resend nor change-number**, so a phone number
+typed wrong by one digit was a dead end on step one of onboarding.
+· **`saveBio` existed and nothing called it** — the action, its tone check and
+its copy all in place, with no way to reach any of it.
+· `reportSent`, `dropEmptyHeading`, `photoNone` and `voiceTooLong` all unused.
+
+There was also no prettier config, so both format scripts ran at the 80-column
+default against a codebase hand-written at 100 — and globbed `.sql`, which
+prettier cannot parse. Neither had ever passed. `format:check` is in CI now.
+
 ### Room posts were not as unattributed as they looked
 
 Posts render with no author, so a member writing in "Newly diagnosed" reasonably
@@ -1828,7 +1869,11 @@ specifically to be reminded of these, so they lead.
 | G   | **How-it-works and pricing prose.** Quotes §3.4 for the mechanics; the connecting text is mine.                                                                        | `packages/config/src/marketing.ts`                                                  |
 
 Everything in `DRAFT_COPY` is mine too — headings, labels, button text. Lower
-stakes, same status.
+stakes, same status. The 2026-08-15 hardening pass added a few more: `bioHint`,
+`inviteCopyFailed`, `voiceNoteAria`, `promptRemoveLabel`, `saveLabel`, and the
+bio editor's screen. `blockConfirm` is still deliberately unwired — blocking
+asks nothing on purpose — and a test now records that as a decision rather than
+letting it look like an oversight.
 
 ### Held placeholders
 
