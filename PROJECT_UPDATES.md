@@ -1,5 +1,74 @@
 # Project Updates
 
+## 2026-08-15 — Blocking and reporting, and a regression I caused
+
+Going to build the safety UI turned up three problems, two of them mine.
+
+### REGRESSION: administrators could not read the moderation queue
+
+`20260814000900` revoked `is_admin(uuid)` from `authenticated`, and
+`20260814001000` introduced the no-argument `is_admin()`. The
+`moderation_queue` policy was never updated and still called the one-argument
+form. Postgres resolves overloads by arity, so a reachable `is_admin()` does not
+help a call written as `is_admin(uuid)` — every administrator got *"permission
+denied for function is_admin"* and the moderation queue was unreadable.
+
+Missed because `check:admin` exercises the admin RPCs, which are SECURITY
+DEFINER and never go through that policy. **The queue's own read path had no
+test.**
+
+`check:walls` now reads every member-facing table as a member and every
+admin-facing one as an administrator — 23 tables. A policy that cannot call what
+it references fails *closed*, which looks like "there is no data" rather than
+like a permissions error, so nothing complains at the time.
+
+### A report reached nobody
+
+`reports` and `moderation_queue` have both existed since Milestone 1 with
+nothing connecting them. A member could file a report and no moderator would
+ever see it — the same shape as the purge job that ran nightly with no way to
+ask for deletion. Verification flags had the same hole from the other side:
+`admin_decide_verification` resolved queue rows that were never created.
+
+Both now by trigger. A queue entry that depends on the caller remembering is a
+queue entry that goes missing on the path nobody tested.
+
+### And the trigger could not have worked
+
+```
+column "kind" is of type moderation_kind but expression is of type text
+```
+
+A `CASE` returning string literals is `text`, and Postgres will coerce a literal
+written directly into a column but not the result of an expression. Both
+triggers raised on every fire, so filing a report failed entirely.
+
+`check:sql` passed — the SQL is grammatically fine. The migration applied
+cleanly, because **creating a function does not run it**. This is the clearest
+case yet for behavioural tests over structural ones: it was found by filing a
+real report as a real member and watching it fail.
+
+### The UI
+
+Blocking asks nothing and explains nothing. A member reaching for it is often
+having the worst moment this product will give them, and a dialogue asking them
+to justify it is the wrong thing to put in the way. It is immediate and mutual —
+`is_blocked_either_way` is in every wall — and reversible from Settings, which
+is where the explaining belongs.
+
+Reporting offers blocking alongside but keeps it a separate tick. They are
+different asks: "I never want to see this person" and "somebody should look at
+this". Conflating them means a member who wants a moderator to act has to lose
+their own view of the evidence to ask.
+
+Reports are **deliberately not tone-checked**. A report describes something that
+happened, and the words for it are often the words that were used. Refusing one
+for its language would silence the person it exists to protect.
+
+The blocked list in Settings shows dates, not names. A blocked member is
+invisible through `visible_profiles` by construction, and reaching around that
+to show their name would be the one place the block does not hold.
+
 ## 2026-08-14 — A way in, and a near-duplicate the guard missed
 
 Every screen in the product was reachable only by typing a URL. The home page

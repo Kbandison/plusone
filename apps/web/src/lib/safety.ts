@@ -1,0 +1,104 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { REPORT_DETAIL_MAX_CHARS, REPORT_REASONS, type ReportReason } from "@plusone/config";
+
+import { getServerSupabase } from "./supabase";
+
+export type SafetyState = { readonly error: string | null; readonly message: string | null };
+export const SAFETY_INITIAL: SafetyState = { error: null, message: null };
+
+/**
+ * Blocking (§5.3).
+ *
+ * Immediate and mutual: `is_blocked_either_way` is in every wall, so the moment
+ * this row exists neither member appears to the other anywhere — drop, browse,
+ * rooms, or an existing chat.
+ *
+ * It asks nothing and explains nothing. A member blocking someone is often
+ * having the worst moment this product will give them, and a confirmation
+ * dialogue asking them to justify it is the wrong thing to put in the way. It
+ * is reversible from Settings, which is where the explaining belongs.
+ */
+export async function blockMember(_prev: SafetyState, formData: FormData): Promise<SafetyState> {
+  const blockedId = String(formData.get("blocked_id") ?? "");
+
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("blocks")
+    .insert({ blocker_id: auth.user!.id, blocked_id: blockedId });
+
+  // Already blocked is not a failure.
+  if (error && error.code !== "23505") return { error: "That didn't work.", message: null };
+
+  for (const path of ["/app", "/app/browse", "/app/chats", "/app/settings"]) revalidatePath(path);
+  return { error: null, message: "Blocked." };
+}
+
+export async function unblockMember(_prev: SafetyState, formData: FormData): Promise<SafetyState> {
+  const blockedId = String(formData.get("blocked_id") ?? "");
+
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("blocks")
+    .delete()
+    .eq("blocker_id", auth.user!.id)
+    .eq("blocked_id", blockedId);
+
+  if (error) return { error: "That didn't work.", message: null };
+
+  revalidatePath("/app/settings");
+  return { error: null, message: null };
+}
+
+/**
+ * Reporting (§7.3).
+ *
+ * A report is a row plus a moderation_queue entry, written together — a report
+ * nobody is queued to read is a complaint, not a report.
+ *
+ * Blocking is offered alongside but kept separate. They are different asks: one
+ * is "I never want to see this person", the other is "someone should look at
+ * this". Conflating them means a member who wants a moderator to act has to
+ * also lose their own view of the evidence.
+ */
+export async function reportMember(_prev: SafetyState, formData: FormData): Promise<SafetyState> {
+  const reason = String(formData.get("reason") ?? "") as ReportReason;
+  if (!(reason in REPORT_REASONS)) return { error: "Choose what happened.", message: null };
+
+  const reportedUserId = String(formData.get("reported_user_id") ?? "") || null;
+  const reportedMessageId = String(formData.get("reported_message_id") ?? "") || null;
+  const reportedRoomMessageId = String(formData.get("reported_room_message_id") ?? "") || null;
+  const detail = String(formData.get("detail") ?? "").trim().slice(0, REPORT_DETAIL_MAX_CHARS) || null;
+
+  if (!reportedUserId && !reportedMessageId && !reportedRoomMessageId) {
+    return { error: "That didn't work.", message: null };
+  }
+
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+
+  // Deliberately NOT tone-checked. A report describes something that happened,
+  // and the words for it are often the words that were used. Refusing a report
+  // for its language would silence the person it is meant to protect.
+  const { error } = await supabase.from("reports").insert({
+    reporter_id: auth.user!.id,
+    reported_user_id: reportedUserId,
+    reported_message_id: reportedMessageId,
+    reported_room_message_id: reportedRoomMessageId,
+    reason,
+    detail,
+  });
+
+  if (error) return { error: "That didn't send. Try again.", message: null };
+
+  if (formData.get("also_block") === "on" && reportedUserId) {
+    await supabase.from("blocks").insert({ blocker_id: auth.user!.id, blocked_id: reportedUserId });
+    for (const path of ["/app", "/app/browse", "/app/chats"]) revalidatePath(path);
+  }
+
+  return { error: null, message: "Sent. A moderator will look at it." };
+}

@@ -188,6 +188,44 @@ try {
   // this a test of the wrapper rather than of nothing.
   check(self.rows[0].d === true, "i_am_in_room(room) answers about me — correctly true");
 
+  // Every table an ordinary member or an administrator reads, read as one.
+  //
+  // A policy that calls a function its role cannot execute fails CLOSED, which
+  // looks like "there is no data" rather than like a permissions error. That is
+  // how the moderation_queue policy sat broken: it called is_admin(uuid) after
+  // that form was revoked, and nothing noticed because check:admin exercises
+  // the SECURITY DEFINER RPCs, which never go through a policy.
+  console.log("\n── every policy can call what it references ──");
+
+  const adminId = await member();
+  await c.query(`insert into public.admin_users (user_id) values ($1)`, [adminId]);
+
+  const MEMBER_TABLES = [
+    "profiles", "visible_profiles", "connects", "chats", "messages",
+    "rooms", "room_members", "room_messages", "blocks", "reports",
+    "referrals", "referral_conversions", "referral_rewards",
+    "premium_grants", "subscriptions", "consents", "quiz_responses",
+    "profile_photos", "drops", "connect_budgets", "deletion_requests",
+  ];
+  const ADMIN_TABLES = ["moderation_queue", "audit_log"];
+
+  for (const [who, id, tables] of [
+    ["a member", datingA, MEMBER_TABLES],
+    ["an administrator", adminId, ADMIN_TABLES],
+  ]) {
+    for (const table of tables) {
+      await c.query(`savepoint policy_probe`);
+      try {
+        await asMember(id, `select count(*) from public.${table}`);
+        await c.query(`release savepoint policy_probe`);
+        check(true, `${who} can read ${table}`);
+      } catch (error) {
+        await c.query(`rollback to savepoint policy_probe`);
+        check(false, `${who} reading ${table}: ${String(error.message).split("\n")[0]}`);
+      }
+    }
+  }
+
   console.log("\n── the preview surface is support-only ──");
   const { rows: previewForDating } = await asMember(datingA, `select id from public.preview_profiles limit 1`);
   check(previewForDating.length === 0, "a dating member gets no preview rows");

@@ -100,5 +100,12 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # Blocking and reporting: what a member reaches for on the worst day this
+      # product will give them.
+      - name: Verify safety paths
+        run: pnpm check:safety
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build

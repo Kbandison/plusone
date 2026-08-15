@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { JoinRoom, RoomComposer } from "./room-forms";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
@@ -69,6 +70,15 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
         {(messages ?? []).map((message) => (
           <li key={message.id as string} className="rounded-lg border border-line px-5 py-4">
             <p className="text-[15.5px] leading-[1.65]">{message.body as string}</p>
+            {message.user_id !== auth.user!.id ? (
+              <div className="mt-3 flex items-center gap-4">
+                <ReportControl
+                  roomMessageId={message.id as string}
+                  memberId={message.user_id as string}
+                />
+                <BlockButton memberId={message.user_id as string} />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>

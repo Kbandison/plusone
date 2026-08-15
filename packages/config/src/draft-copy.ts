@@ -185,6 +185,19 @@ export const DRAFT_COPY = {
     roomPostLabel: "Post",
     roomSlowMode: (seconds: number) => `Slow mode: one message every ${seconds} seconds.`,
     settingsHeading: "Settings",
+    blockLabel: "Block",
+    blockConfirm: "Block this member? They will not see you and you will not see them. You can undo this in Settings.",
+    blockedHeading: "Blocked",
+    blockedEmpty: "You have not blocked anyone.",
+    unblockLabel: "Unblock",
+    reportLabel: "Report",
+    reportHeading: "Report this",
+    reportIntro: "A moderator reads every report. Blocking is separate and immediate — you can do both.",
+    reportReasonLabel: "What happened",
+    reportDetailLabel: "Anything that would help (optional)",
+    reportSubmitLabel: "Send report",
+    reportSent: "Sent. A moderator will look at it.",
+    reportAlsoBlock: "Block them as well",
     promptsHeading: "Your prompts",
     promptsIntro:
       "People connect by replying to one of these. Answer up to three — the more specific, the better the replies.",
@@ -228,6 +241,24 @@ export const DRAFT_COPY = {
  * clever one, and never to ask about anyone's status — a prompt that fishes for
  * a diagnosis story would undo the point of the place.
  */
+/**
+ * §5.2's report_reason enum, in words. The enum values are database identifiers;
+ * a member choosing why they are reporting someone should not be reading
+ * `sexual_content`.
+ */
+export const REPORT_REASONS = {
+  fake_profile: "This profile is not a real person",
+  harassment: "Harassment or abuse",
+  sexual_content: "Unwanted sexual content",
+  spam_or_scam: "Spam or a scam",
+  underage: "This person is under 18",
+  other: "Something else",
+} as const;
+
+export type ReportReason = keyof typeof REPORT_REASONS;
+
+export const REPORT_DETAIL_MAX_CHARS = 1000;
+
 export const PROFILE_PROMPTS = [
   { id: "sunday", question: "A Sunday that went right looks like" },
   { id: "laugh", question: "The last thing that actually made me laugh" },

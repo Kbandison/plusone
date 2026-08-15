@@ -73,6 +73,8 @@ export {
   QUIZ_QUESTIONS,
   INTENTION_LABELS,
   PROFILE_PROMPTS,
+  REPORT_REASONS,
+  REPORT_DETAIL_MAX_CHARS,
   PROMPT_ANSWER_MAX_CHARS,
   MAX_PROMPTS,
   promptQuestion,
@@ -83,4 +85,5 @@ export type {
   Intention,
   ProfilePromptId,
   ProfilePromptAnswer,
+  ReportReason,
 } from "./draft-copy";

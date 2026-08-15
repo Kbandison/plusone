@@ -7,6 +7,7 @@ import { fuse } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
+import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
@@ -51,7 +52,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   // empty here is the wall working, not a missing record.
   const { data: chat } = await supabase
     .from("chats")
-    .select("id, status, fuse_expires_at, date_plan, closure_template, closure_personal_line, closed_by")
+    .select("id, connect_id, status, fuse_expires_at, date_plan, closure_template, closure_personal_line, closed_by")
     .eq("id", id)
     .maybeSingle();
 
@@ -68,6 +69,19 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .select("display_name")
     .eq("id", me)
     .maybeSingle();
+
+  // The other participant, for the safety controls. Read from the connect
+  // rather than the messages, so it is present even in a chat with none.
+  const { data: connect } = await supabase
+    .from("connects")
+    .select("initiator_id, target_id")
+    .eq("id", chat.connect_id as string)
+    .maybeSingle();
+  const other = connect
+    ? ((connect.initiator_id as string) === me
+        ? (connect.target_id as string)
+        : (connect.initiator_id as string))
+    : null;
 
   const plan = (chat.date_plan ?? null) as Plan | null;
   const countdown = fuse.countdown(
@@ -138,6 +152,15 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           ) : null}
 
           <CloseChat chatId={id} senderName={(profile?.display_name as string) ?? ""} />
+
+          {/* Always reachable, never prominent. Someone who needs this should
+              not have to hunt; nobody else should be nudged toward it. */}
+          {other ? (
+            <div className="mt-8 flex items-center gap-4 border-t border-line pt-6">
+              <ReportControl memberId={other} />
+              <BlockButton memberId={other} />
+            </div>
+          ) : null}
         </>
       )}
     </main>
