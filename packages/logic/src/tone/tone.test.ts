@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CLOSURE_TEMPLATES, CONNECTS } from "@plusone/config";
+import { CLOSURE_TEMPLATES, CONNECTS, PROFILE_PROMPTS } from "@plusone/config";
 
 import { checkTone, isAcceptableClosureLine } from "./index";
 
@@ -118,5 +118,22 @@ describe("reporting", () => {
   it("is deterministic", () => {
     const line = "not feeling it, sorry";
     expect(checkTone(line)).toEqual(checkTone(line));
+  });
+});
+
+// Decision #14 — a connect is a reply to a prompt, so every member reads these.
+// Asserted here rather than in packages/config, which cannot import this
+// module: config is the leaf and logic depends on it, not the other way round.
+describe("profile prompts meet the same bar", () => {
+  // A prompt that fishes for a diagnosis story would undo the point of the
+  // place.
+  it.each(PROFILE_PROMPTS)("$question", (prompt) => {
+    expect(checkTone(prompt.question)).toEqual({ ok: true, violations: [] });
+  });
+
+  it("never asks about anyone's status", () => {
+    for (const prompt of PROFILE_PROMPTS) {
+      expect(checkTone(prompt.question).violations).not.toContain("condition_reference");
+    }
   });
 });

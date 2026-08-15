@@ -172,6 +172,20 @@ export const DRAFT_COPY = {
     roomPostLabel: "Post",
     roomSlowMode: (seconds: number) => `Slow mode: one message every ${seconds} seconds.`,
     settingsHeading: "Settings",
+    promptsHeading: "Your prompts",
+    promptsIntro:
+      "People connect by replying to one of these. Answer up to three — the more specific, the better the replies.",
+    promptChoose: "Choose a prompt",
+    promptAnswerLabel: "Your answer",
+    promptSaveLabel: "Save",
+    promptsEmpty: "You have not answered any prompts yet. Until you do, nobody can send you a connect.",
+    bioHeading: "About you",
+    bioLabel: "A few words",
+    connectHeading: "Reply to a prompt",
+    connectIntro: "Pick one of their prompts and answer it. That is the whole connect — no openers, no swiping.",
+    connectSendLabel: "Send connect",
+    connectNoPrompts: "This member has not answered any prompts yet, so there is nothing to reply to.",
+    connectReplyLabel: "Your reply",
     navSettings: "Settings",
     crossCommunityHeading: "Other communities",
     deleteHeading: "Delete your account",
@@ -185,6 +199,47 @@ export const DRAFT_COPY = {
     previewCtaAria: "Switch to dating mode to connect",
   },
 } as const;
+
+/**
+ * Profile prompts (Decision #14).
+ *
+ * DRAFT — NOT FROM THE SPEC, and load-bearing in a way the other gaps are not.
+ *
+ * Decision #14 makes a connect "a reply to a specific prompt on the profile" —
+ * that is the mechanic that stops swipe-and-spray, and §5.2 gives profiles a
+ * `prompts` column. But the spec never writes the prompts themselves, and
+ * without any there is nothing to reply to and no connect can be sent at all.
+ *
+ * So these are drafted rather than deferred. They are chosen to be answerable
+ * by someone having a bad month, to invite a specific reply rather than a
+ * clever one, and never to ask about anyone's status — a prompt that fishes for
+ * a diagnosis story would undo the point of the place.
+ */
+export const PROFILE_PROMPTS = [
+  { id: "sunday", question: "A Sunday that went right looks like" },
+  { id: "laugh", question: "The last thing that actually made me laugh" },
+  { id: "know", question: "Something worth knowing about me early" },
+  { id: "good_at", question: "I am unreasonably good at" },
+  { id: "learning", question: "I am trying to get better at" },
+  { id: "together", question: "We would get on if you also" },
+  { id: "feel_seen", question: "I feel most myself when" },
+  { id: "small_thing", question: "A small thing that means a lot" },
+] as const;
+
+export type ProfilePromptId = (typeof PROFILE_PROMPTS)[number]["id"];
+
+/** §5.2 — profiles.prompts is a jsonb array of these. */
+export interface ProfilePromptAnswer {
+  readonly id: string;
+  readonly answer: string;
+}
+
+export const PROMPT_ANSWER_MAX_CHARS = 300;
+export const MAX_PROMPTS = 3;
+
+export function promptQuestion(id: string): string | null {
+  return PROFILE_PROMPTS.find((p) => p.id === id)?.question ?? null;
+}
 
 /**
  * The §7.2 compatibility quiz — 10 to 12 questions.

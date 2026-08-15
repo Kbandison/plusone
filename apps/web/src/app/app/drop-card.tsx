@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
 import type { DropCard as Card, PreviewCard } from "@/lib/drop";
@@ -23,15 +25,16 @@ export function FullCard({ card }: { card: Card }) {
 
       {card.intention ? <p className="mt-3 text-[15px] text-ink-2">{card.intention}</p> : null}
 
-      <form action="/app/connect" method="post" className="mt-5">
-        <input type="hidden" name="target_id" value={card.id} />
-        <button
-          type="submit"
-          className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
-        >
-          {DRAFT_COPY.app.connectLabel}
-        </button>
-      </form>
+      {/* Decision #14 — a connect is a reply to a prompt, so this goes to a
+          compose screen rather than sending anything. An earlier version POSTed
+          straight to an RPC with a null prompt_id, which the NOT NULL column
+          would have refused: the button could never have worked. */}
+      <Link
+        href={`/app/connect/${card.id}?source=drop`}
+        className="ease-brand mt-5 inline-block rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
+      >
+        {DRAFT_COPY.app.connectLabel}
+      </Link>
     </li>
   );
 }

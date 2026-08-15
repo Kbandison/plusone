@@ -1,5 +1,58 @@
 # Project Updates
 
+## 2026-08-14 — Prompts: the connect button could never have worked
+
+Going to build profile editing surfaced a broken path.
+
+### The bug
+
+`connects.prompt_id` and `prompt_reply` are both **NOT NULL**. The drop card's
+Connect button POSTed straight to `create_connect` with `p_prompt_id: null` — an
+insert the column would always have refused. That button has been dead since it
+was written.
+
+Underneath it, a larger gap: **the prompts feature did not exist**. No profile
+had prompts, so there was nothing to reply to and no connect could be sent by
+any route. Decision #14 makes "connect = reply to a specific prompt" the
+mechanic that stops swipe-and-spray, and it was the one mechanic with no
+implementation at all.
+
+### SPEC GAP — the prompts themselves
+
+§5.2 gives profiles a `prompts` column and Decision #14 requires replying to
+one, but the spec never writes the prompts. Unlike the quiz questions — which
+§10 explicitly allows deferring — **nothing works without these**: no prompts,
+no connects, no product.
+
+So eight are drafted in `PROFILE_PROMPTS`, chosen to be answerable by someone
+having a bad month, to invite a specific reply rather than a clever one, and
+never to ask about anyone's status. A prompt fishing for a diagnosis story would
+undo the point of the place. They are held to the same tone bar as a closure
+note, asserted in `packages/logic`'s tests — not `packages/config`'s, which
+cannot import the tone checker: config is the leaf and logic depends on it.
+
+### The connect is now a reply
+
+`/app/connect/[id]` shows the target's prompts, and the member picks one and
+answers it. That is the entire interaction — no openers, no swiping. It reads
+through `visible_profiles`, so someone who cannot see a member cannot reach the
+compose screen either: a 404 rather than a form that fails on submit.
+
+A refused connect gives a deliberately vague message. A specific one would say
+which wall was hit — the probe leak by another route.
+
+### Profile editing
+
+Prompts and bio, both tone-checked. A prompt answer is the one piece of free
+text on a profile and the first thing a stranger reads, which makes it the
+obvious place for something that should not be there.
+
+A member with no prompts **cannot receive connects**, and the editor says so
+plainly rather than letting them wonder why it is quiet. That is a real
+consequence of Decision #14 and worth stating: §7.2's onboarding order has no
+prompts step, so every member finishes signing up unreachable until they visit
+their profile. **Flagged — that may want a step in the flow.**
+
 ## 2026-08-14 — Notifications: content-blind by construction
 
 §8's templates and their test existed from Milestone 1. What did not exist was

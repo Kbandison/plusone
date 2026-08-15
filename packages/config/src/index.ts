@@ -72,5 +72,15 @@ export {
   isValidPair,
   QUIZ_QUESTIONS,
   INTENTION_LABELS,
+  PROFILE_PROMPTS,
+  PROMPT_ANSWER_MAX_CHARS,
+  MAX_PROMPTS,
+  promptQuestion,
 } from "./draft-copy";
-export type { Community, ConditionDetail, Intention } from "./draft-copy";
+export type {
+  Community,
+  ConditionDetail,
+  Intention,
+  ProfilePromptId,
+  ProfilePromptAnswer,
+} from "./draft-copy";

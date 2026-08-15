@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { COPY } from "./copy";
 import {
   DRAFT_COPY,
+  PROFILE_PROMPTS,
+  promptQuestion,
   CONDITIONS_BY_COMMUNITY,
   CONDITION_LABELS,
   COMMUNITY_LABELS,
@@ -100,5 +102,26 @@ describe("drafts never shadow approved copy", () => {
     const approved = new Set(strings(COPY));
     const duplicated = strings(DRAFT_COPY).filter((s) => approved.has(s));
     expect(duplicated, `drafts duplicating approved copy: ${duplicated.join(" | ")}`).toEqual([]);
+  });
+});
+
+// Decision #14 — a connect is a reply to a prompt. Without prompts nobody can
+// send one, which makes these the one set of draft strings the product cannot
+// run without.
+describe("profile prompts", () => {
+  it("has enough to choose from without being a chore", () => {
+    expect(PROFILE_PROMPTS.length).toBeGreaterThanOrEqual(6);
+    expect(PROFILE_PROMPTS.length).toBeLessThanOrEqual(12);
+  });
+
+  it("gives every prompt a unique id", () => {
+    const ids = PROFILE_PROMPTS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+
+  it("resolves a question from an id, and nothing from a bad one", () => {
+    expect(promptQuestion(PROFILE_PROMPTS[0]!.id)).toBe(PROFILE_PROMPTS[0]!.question);
+    expect(promptQuestion("not-a-prompt")).toBeNull();
   });
 });

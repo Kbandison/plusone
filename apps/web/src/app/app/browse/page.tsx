@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plusone/config";
 
@@ -114,17 +115,19 @@ export default async function BrowsePage({
         <ul className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {rows.map((row) => (
             <li key={row.id as string} className="rounded-xl border border-line-2 bg-surface p-5">
-              <h2 className="text-[1.2rem]">{(row.display_name as string) ?? "Someone"}</h2>
+              <Link href={`/app/connect/${row.id as string}?source=browse`} className="block">
+                <h2 className="text-[1.2rem]">{(row.display_name as string) ?? "Someone"}</h2>
               <p className="mt-1.5 text-[14px] text-ink-3">
                 {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              {row.intention ? (
-                <p className="mt-3 text-[14.5px] text-ink-2">
-                  {INTENTION_LABELS[row.intention as Intention]}
-                </p>
-              ) : null}
+                {row.intention ? (
+                  <p className="mt-3 text-[14.5px] text-ink-2">
+                    {INTENTION_LABELS[row.intention as Intention]}
+                  </p>
+                ) : null}
+              </Link>
             </li>
           ))}
         </ul>

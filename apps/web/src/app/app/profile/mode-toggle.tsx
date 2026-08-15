@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { COPY } from "@plusone/config";
 
-import { MODE_INITIAL, switchMode, type ModeState } from "./actions";
+import { PROFILE_INITIAL, switchMode, type ProfileState } from "./actions";
 
 /**
  * §3.4's support-only copy, verbatim. It explains what the mode does in the
@@ -12,7 +12,7 @@ import { MODE_INITIAL, switchMode, type ModeState } from "./actions";
  * between a shield someone trusts and a switch they are afraid to touch.
  */
 export function ModeToggle({ mode }: { mode: "dating" | "support_only" }) {
-  const [state, act, pending] = useActionState<ModeState, FormData>(switchMode, MODE_INITIAL);
+  const [state, act, pending] = useActionState<ProfileState, FormData>(switchMode, PROFILE_INITIAL);
   const target = mode === "dating" ? "support_only" : "dating";
 
   return (
