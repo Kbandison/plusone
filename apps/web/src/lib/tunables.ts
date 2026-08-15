@@ -3,6 +3,7 @@ import "server-only";
 import { DROP, RADIUS } from "@plusone/config";
 import { drop as dropLogic } from "@plusone/logic";
 
+import { configNumber } from "./config-coerce";
 import { getServerSupabase } from "./supabase";
 
 /**
@@ -19,11 +20,7 @@ import { getServerSupabase } from "./supabase";
 
 type ConfigRow = Record<string, unknown>;
 
-function num(config: ConfigRow, key: string, fallback: number): number {
-  const raw = config[key];
-  const value = typeof raw === "string" ? Number(raw) : raw;
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
+const num = configNumber;
 
 export async function dropConfig(): Promise<dropLogic.DropConfig> {
   const supabase = await getServerSupabase();
