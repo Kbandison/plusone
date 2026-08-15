@@ -1,5 +1,58 @@
 # Project Updates
 
+## 2026-08-14 — Notifications: content-blind by construction
+
+§8's templates and their test existed from Milestone 1. What did not exist was
+anything that sent them — the fuse warning cron computed exactly who to tell and
+threw the list away.
+
+### The check moved from the test to the code
+
+A test asserting the templates are clean proves *the templates* are clean. It
+does nothing about a future caller assembling a body from a chat, a display
+name, or a profile field — which is how content-blindness actually gets lost.
+
+So the rule is now enforced at runtime, in two places:
+
+- **`buildPayload` takes an event, not a body.** There is no parameter through
+  which a name, a preview or a profile field could arrive. That is the first
+  half.
+- **It re-checks its own output** against the banned terms before returning, and
+  throws `ContentBlindViolation` naming the field and the term. The check is on
+  the OUTPUT, so it holds regardless of how the text was assembled or from what.
+
+The stub notifier checks again before sending. That is not redundancy for its
+own sake: a provider is the last thing to touch a payload, so it is the last
+place a leak can be caught, and a real provider should do the same.
+
+It **throws rather than sanitising**. A payload that needed cleaning is a bug,
+and a quietly-cleaned one is a bug that ships.
+
+### The fuse warning sends
+
+`fuses_expiring_within` returns chat ids, member ids and expiry times and
+nothing about what any chat contains — so there is nothing in that path that
+could reach a payload even by accident. The body says "One of your chats closes
+tomorrow", which does not say which.
+
+Recipients are de-duplicated: someone with three chats closing tomorrow gets one
+notification. Three identical vague pushes are worse than one, because the count
+is itself information the member did not ask to broadcast to their lock screen.
+
+### One interface fix
+
+The stub's `send` threw synchronously from a `Promise`-returning method, so a
+caller would have needed both a `try/catch` and a `.catch` — and the one they
+forgot would be the one that fired. Now `async`, so a refusal is always a
+rejection.
+
+### Still a placeholder
+
+Resend's key. The seam is done and the stub refuses to construct in production,
+so a deploy that forgot to pick a real notifier fails loudly rather than
+silently sending nothing. A notifier that quietly discards is worse than none,
+because nothing looks broken.
+
 ## 2026-08-14 — The never-cut list: deletion and voice notes
 
 Two items on §10's never-cut list were not built, and one of them was worse than
