@@ -99,6 +99,42 @@ connection pinned it at "sending" forever with no error and no way out but a
 reload. **A loading state that never resolves is worse than an error, because it
 looks like progress.**
 
+### The connect budget was optional
+
+`source` arrives from the client and 'drop' costs nothing, and nothing checked
+that a drop had ever happened. Eight connects went out on a 3/day tier with the
+counter still reading zero. Decision #15 exempts drop-card connects to nudge
+toward curation; it does not exempt the word. The exemption is now spent per
+person rather than per send — **curation is the first reply, not an allowance
+attached to a name.**
+
+`created_at` and `expires_at` were settable too, so a support-only member could
+backdate out of the weekly window, and a pending ask could be given a hundred
+years. A connect that never expires never sends the §6.2 note, which made it the
+one way on this app to end something in silence.
+
+### A block did not reach the rooms
+
+Someone a member had blocked kept appearing in their room feed every day, while
+`tables.sql` says blocks are "checked in both directions on every visibility
+test". It filters reads, not writes: a block that removed someone's voice for
+the whole room would be a moderation action wearing a safety control's clothes.
+This is a widening — §5.3 requires blocks in `visible_profiles` and is silent on
+rooms — so it is one policy and one predicate, easy to take back out.
+
+### Photos travelled through our own domain
+
+Every photo rendered as `GET /_next/image?url=<full signed URL>`, putting a live
+ten-minute credential into our access logs and a CDN cache key.
+
+The obvious fix is worse than the bug. The bytes behind a photo URL differ by
+viewer — blurred for a stranger, clear for a connection — and **an optimiser
+that caches by URL would let the first connected viewer populate an entry a
+stranger then reads**, defeating Decision #19 through the CDN instead of the
+database. So the browser fetches Supabase directly, and a 320px card variant is
+written at upload to make that affordable: nothing here renders a photo above
+72px and the stored original is 1600.
+
 ### Room posts were not as unattributed as they looked
 
 Posts render with no author, so a member writing in "Newly diagnosed" reasonably
