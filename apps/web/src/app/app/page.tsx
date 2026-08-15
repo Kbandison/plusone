@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { COPY } from "@plusone/config";
 
 import { getTonightsDrop } from "@/lib/drop";
+import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { FullCard, PreviewDropCard } from "./drop-card";
 
@@ -13,6 +14,7 @@ export default async function TonightPage() {
   const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
   const drop = await getTonightsDrop(data.user!.id);
+  const photos = await photosFor(drop.cards.map((c) => c.id));
 
   return (
     <main id="main">
@@ -35,13 +37,13 @@ export default async function TonightPage() {
       ) : drop.preview ? (
         <ul className="mt-8 flex flex-col gap-5">
           {drop.cards.map((card) => (
-            <PreviewDropCard key={card.id} card={card} />
+            <PreviewDropCard key={card.id} card={card} photo={photos.get(card.id)} />
           ))}
         </ul>
       ) : (
         <ul className="mt-8 flex flex-col gap-5">
           {drop.cards.map((card) => (
-            <FullCard key={card.id} card={card} />
+            <FullCard key={card.id} card={card} photo={photos.get(card.id)} />
           ))}
         </ul>
       )}

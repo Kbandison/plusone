@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp"],
 
   images: {
+    // Signed photo URLs come from the Supabase project host. Narrow to that
+    // host and that path: a wildcard here would let any URL be proxied through
+    // our optimiser.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
+    ],
     // Caps the number of transformation variants Vercel bills for
     // (BACKEND.md → Scale & Cost Resilience, Layer 2).
     qualities: [75],

@@ -107,5 +107,12 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # Blurred-until-connected: the clear path must never reach a viewer who
+      # has not connected, by any route.
+      - name: Verify photo privacy
+        run: pnpm check:photos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build

@@ -3,7 +3,9 @@ import Link from "next/link";
 
 import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plusone/config";
 
+import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
+import { MemberPhotoFrame } from "../member-photo";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navBrowse };
 
@@ -44,6 +46,8 @@ export default async function BrowsePage({
 
   const { data } = await query;
   const rows = data ?? [];
+
+  const photos = await photosFor(rows.map((row) => row.id as string));
 
   const activeThisWeek = rows.filter(
     (row) => Date.parse(row.last_active_at as string) >= Date.now() - 7 * DAY,
@@ -116,7 +120,11 @@ export default async function BrowsePage({
           {rows.map((row) => (
             <li key={row.id as string} className="rounded-xl border border-line-2 bg-surface p-5">
               <Link href={`/app/connect/${row.id as string}?source=browse`} className="block">
-                <h2 className="text-[1.2rem]">{(row.display_name as string) ?? "Someone"}</h2>
+                <MemberPhotoFrame
+                  photo={photos.get(row.id as string)}
+                  size={56}
+                />
+                <h2 className="mt-3 text-[1.2rem]">{(row.display_name as string) ?? "Someone"}</h2>
               <p className="mt-1.5 text-[14px] text-ink-3">
                 {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
                   .filter(Boolean)

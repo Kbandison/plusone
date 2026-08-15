@@ -32,7 +32,8 @@ if (!DB_URL) {
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
 const EXPECT = { tables: 24, views: 3, functions: 56, enums: 17, rooms: 5, config: 16 };
-const INVOKER_VIEWS = ["visible_profiles", "preview_profiles", "visible_profile_photos"];
+const INVOKER_VIEWS = ["visible_profiles", "preview_profiles"];
+const DEFINER_VIEWS = ["visible_profile_photos"];
 const NO_UPDATE_PATH = ["connects", "chats"];
 
 const client = new pg.Client({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } });
@@ -73,6 +74,15 @@ const noPolicy = await q(`
       select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = t.tablename)`);
 check(noPolicy.length === 0, `every table has at least one policy${noPolicy.length ? ` — missing: ${noPolicy.map((r) => r.tablename).join(", ")}` : ""}`);
 
+// Two of the three views are projections over data the caller could already
+// read, so they run as the caller and the policies underneath still apply.
+//
+// visible_profile_photos is the exception, and it earns it: profile_photos is
+// own-rows-only, so an invoker view over it returns nothing but your own
+// photos — which is how blurred-until-connected sat decorative until
+// 20260815000400. It is the thing that decides, so it runs as its owner and
+// does its own authorisation. That exception is only safe while it actually
+// calls i_can_view, which is asserted below rather than trusted.
 console.log("\n── views run as the caller, not the owner ──");
 for (const view of INVOKER_VIEWS) {
   const [row] = await q(
@@ -83,6 +93,30 @@ for (const view of INVOKER_VIEWS) {
     [view],
   );
   check(row?.si === "true" || row?.si === "on", `${view}: security_invoker = ${row?.si ?? "MISSING VIEW"}`);
+}
+
+for (const view of DEFINER_VIEWS) {
+  const [row] = await q(
+    `select coalesce((select option_value from pg_options_to_table(c.reloptions)
+        where option_name = 'security_invoker'), 'off') si,
+       pg_get_viewdef(c.oid, true) def
+     from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relname = $1`,
+    [view],
+  );
+  check(row?.si === "false" || row?.si === "off", `${view}: runs as owner, deliberately`);
+  // The whole justification for that exception.
+  check(
+    String(row?.def ?? "").includes("i_can_view"),
+    `${view}: does its own authorisation with i_can_view()`,
+  );
+  // And it must never hand back both variants.
+  check(
+    !/blurred_path.*storage_path|storage_path.*blurred_path/s.test(
+      String(row?.def ?? "").split("FROM")[0] ?? "",
+    ) || String(row?.def ?? "").includes("CASE"),
+    `${view}: returns one resolved path, not both`,
+  );
 }
 
 console.log("\n── SECURITY DEFINER functions pin search_path ──");

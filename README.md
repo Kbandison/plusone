@@ -52,6 +52,7 @@ pnpm dev
 | `pnpm check:walls` | Act as real members across every wall, and attempt every third-party probe |
 | `pnpm check:referrals` | Attribute, convert and pay a real referral; confirm the job is idempotent |
 | `pnpm check:safety` | File a real report and confirm it reaches a moderator; block and confirm it is mutual |
+| `pnpm check:photos` | Confirm a blurred-until-connected member's clear path never reaches a viewer |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 

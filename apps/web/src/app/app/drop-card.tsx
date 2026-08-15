@@ -3,6 +3,8 @@ import Link from "next/link";
 import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/config";
 
 import type { DropCard as Card, PreviewCard } from "@/lib/drop";
+import type { MemberPhoto } from "@/lib/photo-urls";
+import { MemberPhotoFrame } from "./member-photo";
 
 /**
  * The enum is a database value, not something to show a member. Rendering
@@ -21,17 +23,24 @@ function intentionLabel(intention: string | null): string | null {
  * is how the redaction survives a refactor — the two are different shapes, not
  * one shape rendered two ways.
  */
-export function FullCard({ card }: { card: Card }) {
+export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | undefined }) {
   const meta = [card.age, card.distanceMi != null ? `${card.distanceMi} mi` : null]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <li className="rounded-xl border border-line-2 bg-surface p-6">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="text-[1.45rem]">{card.displayName}</h2>
-        {meta ? <span className="text-[14.5px] text-ink-3">{meta}</span> : null}
+      <div className="flex items-center gap-4">
+        <MemberPhotoFrame photo={photo} size={64} />
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-[1.45rem]">{card.displayName}</h2>
+          {meta ? <span className="text-[14.5px] text-ink-3">{meta}</span> : null}
+        </div>
       </div>
+
+      {photo?.isBlurred ? (
+        <p className="mt-3 text-[13.5px] text-ink-3">{DRAFT_COPY.app.photoBlurredNote}</p>
+      ) : null}
 
       {intentionLabel(card.intention) ? (
         <p className="mt-3 text-[15px] text-ink-2">{intentionLabel(card.intention)}</p>
@@ -59,7 +68,7 @@ export function FullCard({ card }: { card: Card }) {
  * card — there is no connect button, because a support-only member cannot send
  * one and offering it would be a door that opens onto a wall.
  */
-export function PreviewDropCard({ card }: { card: PreviewCard }) {
+export function PreviewDropCard({ card, photo }: { card: PreviewCard; photo?: MemberPhoto | undefined }) {
   const meta = [
     card.ageBand,
     card.distanceBucketMi != null ? `within ${card.distanceBucketMi} mi` : null,
@@ -70,9 +79,10 @@ export function PreviewDropCard({ card }: { card: PreviewCard }) {
   return (
     <li className="rounded-xl border border-line-2 bg-surface p-6">
       <div className="flex items-center gap-4">
-        {/* Stands in for a photo the viewer is not entitled to. It is a shape,
-            not a blurred image — there is no image in the payload to blur. */}
-        <div aria-hidden className="size-14 shrink-0 rounded-full bg-surface-2" />
+        {/* Whatever preview_profiles allowed. Where there is no entitled photo
+            this is a shape rather than a blurred one — there is no image in the
+            payload to blur. */}
+        <MemberPhotoFrame photo={photo} size={56} />
         <div>
           <p className="text-[1.1rem]">{meta || "Someone nearby"}</p>
           {intentionLabel(card.intention) ? (

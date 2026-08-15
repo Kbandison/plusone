@@ -20,6 +20,7 @@
     "check:walls": "node scripts/verify-walls.mjs",
     "check:referrals": "node scripts/verify-referrals.mjs",
     "check:safety": "node scripts/verify-safety.mjs",
+    "check:photos": "node scripts/verify-photos.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css,sql}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css,sql}\""
   },

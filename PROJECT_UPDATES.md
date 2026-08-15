@@ -1,5 +1,64 @@
 # Project Updates
 
+## 2026-08-15 — Photos, and Decision #19 had never worked
+
+Photos have been uploaded, processed and stored since the onboarding work. No
+surface rendered one. Going to fix that found something worse.
+
+### `visible_profile_photos` could never return another member's photo
+
+The view is `security_invoker`, so the `profile_photos` policy applies
+underneath it — and that policy is **own-rows-only**. The view written to be the
+one path to another member's photo, resolving blurred-until-connected
+server-side, returned nothing but your own.
+
+**Decision #19 has been decorative since Milestone 1.** Nothing leaked: it
+failed closed, and no surface rendered photos, so there was no symptom. It also
+did not work, and the comment in the RLS file confidently describing how it
+worked was written by me.
+
+### The obvious fix was the wrong one
+
+Adding a `profile_photos` select policy for members you can see would make the
+view work — and would let anyone query `profile_photos` directly and read
+**both** `storage_path` and `blurred_path`. The clear photo of someone who chose
+blurred-until-connected would be one query away. That is exactly what Decision
+#19 exists to prevent.
+
+So the view became the authority: SECURITY DEFINER, doing its own authorisation
+with `i_can_view()`, exposing only the variant it chose. `profile_photos` stays
+own-rows-only, so the direct path still sees nothing of anyone else.
+
+It is the only definer view in the schema. `check:db` now permits that exception
+**only with its justification asserted** — the view must call `i_can_view` and
+must return one resolved path rather than both. An exception that stops being
+safe stops passing.
+
+### `pnpm check:photos`
+
+Eleven checks: a clear profile returns the clear path; a blurred-until-connected
+profile returns the **blurred** path and the clear one never appears in the
+payload; connecting reveals it; someone in another community gets no row at all;
+`profile_photos` returns nothing for another member but still returns your own;
+and no storage policy grants read beyond your own folder.
+
+Those last two are the ones that matter most — they assert the obvious fix was
+not taken.
+
+### Rendering
+
+Signed URLs are minted **after** the view has decided, never before. Reading the
+view as the member is what applies the wall and picks the variant; the service
+client then signs the path it returned. Signing first would work, and would hand
+out clear photos of people who chose blurred.
+
+Members deliberately have no read policy on each other's storage objects, so
+this is the only route to another member's photo — one decision, one path.
+
+Photos now appear on drop cards, browse, the connect composer and the profile. A
+blurred card says so, because a blurred photo with no explanation reads as a
+broken image.
+
 ## 2026-08-15 — Blocking and reporting, and a regression I caused
 
 Going to build the safety UI turned up three problems, two of them mine.

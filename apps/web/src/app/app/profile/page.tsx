@@ -9,7 +9,9 @@ import {
   type ProfilePromptAnswer,
 } from "@plusone/config";
 
+import { ownPhotos } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
+import { MemberPhotoFrame } from "../member-photo";
 import { ModeToggle } from "./mode-toggle";
 import { PromptEditor } from "./prompt-editor";
 
@@ -28,10 +30,24 @@ export default async function ProfilePage() {
   const mode = profile?.mode === "support_only" ? "support_only" : "dating";
   const intention = profile?.intention as Intention | null;
   const prompts = (profile?.prompts ?? []) as ProfilePromptAnswer[];
+  const photos = await ownPhotos(auth.user!.id);
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{profile?.display_name ?? "You"}</h1>
+      <div className="flex items-center gap-4">
+        <MemberPhotoFrame photo={photos[0]} size={72} />
+        <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{profile?.display_name ?? "You"}</h1>
+      </div>
+
+      {photos.length > 1 ? (
+        <ul className="mt-6 flex flex-wrap gap-3">
+          {photos.slice(1).map((photo) => (
+            <li key={photo.url}>
+              <MemberPhotoFrame photo={photo} size={72} rounded="rounded-lg" />
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <dl className="mt-8 flex flex-col gap-5">
         <div>
