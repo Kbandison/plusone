@@ -16,7 +16,8 @@
     "./referrals": "./src/referrals/index.ts",
     "./drop": "./src/drop/index.ts",
     "./tone": "./src/tone/index.ts",
-    "./notify": "./src/notify/index.ts"
+    "./notify": "./src/notify/index.ts",
+    "./quiz": "./src/quiz/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

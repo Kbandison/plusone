@@ -40,6 +40,13 @@ export default function Home() {
         </Link>
 
         <Link
+          href="/faq"
+          className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+        >
+          Questions
+        </Link>
+
+        <Link
           href="/privacy"
           className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
         >

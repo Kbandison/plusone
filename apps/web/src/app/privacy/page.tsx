@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import {
   BRAND,
@@ -88,7 +89,22 @@ export default function PrivacyPage() {
         ))}
       </div>
 
-      <p className="mt-20 border-t border-line pt-6 text-[13.5px] text-ink-3">
+      <nav className="mt-20 flex flex-wrap gap-x-7 gap-y-3 border-t border-line pt-6">
+        {[
+          { href: "/faq", label: "Questions" },
+          { href: "/guidelines", label: "Community guidelines" },
+        ].map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="ease-brand text-[15px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      <p className="mt-8 text-[13.5px] text-ink-3">
         {BRAND.name} is in build. This policy is a draft and is pending legal review.
       </p>
     </main>

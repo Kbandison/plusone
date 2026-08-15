@@ -82,6 +82,16 @@ export const DRAFT_COPY = {
     },
   },
 
+  quiz: {
+    heading: "A few questions",
+    intro:
+      "Twelve quick ones. They shape who you see, and there are no right answers — only ways of being. You can skip this and it will not count against you.",
+    skipLabel: "Skip for now",
+    skipNudge: "Answering even a few makes your Drop better.",
+    finishLabel: "Done",
+    progress: (answered: number, total: number) => `${answered} of ${total}`,
+  },
+
   liveness: {
     heading: "A quick selfie",
     intro:
@@ -289,20 +299,191 @@ export function promptQuestion(id: string): string | null {
 }
 
 /**
- * The §7.2 compatibility quiz — 10 to 12 questions.
+ * The §7.2 compatibility quiz — 12 questions across six traits.
  *
- * DELIBERATELY EMPTY. The spec asks for the quiz but never writes the
- * questions, and §10's cut order says in as many words: "ship with
- * intention-weighting only, quiz in fast-follow". Ten to twelve invented
- * questions would shape who members are shown to each other, which is not a
- * thing to guess at.
+ * DRAFT — not from the spec, written at Kevin's request.
  *
- * The step stays in the §7.2 order. `quizSettled` treats an empty question set
- * as nothing to answer, so onboarding does not stall on a screen with no
- * content — and the step turns itself on the moment a question is added here.
+ * Three rules they are held to:
+ *
+ *   · Never about anyone's status. Not obliquely, not "how open are you about
+ *     health". The quiz shapes who members are shown to each other, and a
+ *     question that sorted people by how they feel about their diagnosis would
+ *     be the app doing the sorting nobody asked for.
+ *   · Answerable by someone having a bad month. Nothing that rewards being
+ *     interesting, nothing that punishes a quiet answer.
+ *   · No right answer. Every option is a way of being rather than a score, so
+ *     the weights run negative to positive on a trait rather than low to high
+ *     on a quality.
+ *
+ * The weights feed a trait vector in packages/logic/quiz, which feeds
+ * quizCompat in the Drop. §10 allows shipping without any of this — an empty
+ * array turns the step off and scores everyone neutral.
  */
-export const QUIZ_QUESTIONS: readonly { id: string; prompt: string; options: readonly string[] }[] =
-  [];
+export const QUIZ_TRAITS = [
+  "pace",
+  "social",
+  "plans",
+  "directness",
+  "steadiness",
+  "openness",
+] as const;
+
+export type QuizTrait = (typeof QUIZ_TRAITS)[number];
+
+export interface QuizOption {
+  readonly id: string;
+  readonly label: string;
+  /** -1 to 1 along this question's trait. No option is worth more than another. */
+  readonly weight: number;
+}
+
+export interface QuizQuestion {
+  readonly id: string;
+  readonly trait: QuizTrait;
+  readonly question: string;
+  readonly options: readonly QuizOption[];
+}
+
+const SCALE = [1, 0.34, -0.34, -1] as const;
+const opts = (...labels: [string, string, string, string]): readonly QuizOption[] =>
+  labels.map((label, i) => ({ id: String.fromCharCode(97 + i), label, weight: SCALE[i] as number }));
+
+export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
+  {
+    id: "pace_going_well",
+    trait: "pace",
+    question: "When something is going well, I want to",
+    options: opts(
+      "talk every day",
+      "check in most days",
+      "let it breathe a bit",
+      "let it find its own speed",
+    ),
+  },
+  {
+    id: "pace_next_plan",
+    trait: "pace",
+    question: "After a good first meeting, the next plan gets made",
+    options: opts(
+      "before we say goodbye",
+      "that evening",
+      "sometime in the next few days",
+      "when one of us thinks of it",
+    ),
+  },
+  {
+    id: "social_friday",
+    trait: "social",
+    question: "A free Friday night is best spent",
+    options: opts(
+      "out, with a crowd",
+      "with a few friends",
+      "with one person",
+      "on my own",
+    ),
+  },
+  {
+    id: "social_party",
+    trait: "social",
+    question: "At a party I usually",
+    options: opts(
+      "have talked to everyone by the end",
+      "find two or three good conversations",
+      "stay near whoever I came with",
+      "take a lot of trips to the kitchen",
+    ),
+  },
+  {
+    id: "plans_trip",
+    trait: "plans",
+    question: "A trip works best when it is",
+    options: opts(
+      "planned properly",
+      "roughly planned",
+      "a rough idea and a train ticket",
+      "decided that morning",
+    ),
+  },
+  {
+    id: "plans_sunday",
+    trait: "plans",
+    question: "Sunday morning, I am",
+    options: opts(
+      "up and already doing something",
+      "slow to start, then out",
+      "seeing what happens",
+      "still in bed, unrepentant",
+    ),
+  },
+  {
+    id: "direct_bothered",
+    trait: "directness",
+    question: "When something bothers me, I",
+    options: opts(
+      "say so at the time",
+      "say so once I have thought about it",
+      "wait to see if it matters",
+      "usually let it go",
+    ),
+  },
+  {
+    id: "direct_disagree",
+    trait: "directness",
+    question: "When we disagree, I would rather",
+    options: opts(
+      "talk it through now",
+      "take a minute, then talk",
+      "write it down first",
+      "let it settle on its own",
+    ),
+  },
+  {
+    id: "steady_week",
+    trait: "steadiness",
+    question: "My ideal week",
+    options: opts(
+      "has the same shape every week",
+      "is mostly steady",
+      "has a couple of surprises in it",
+      "looks nothing like the last one",
+    ),
+  },
+  {
+    id: "steady_holiday",
+    trait: "steadiness",
+    question: "Holidays: I go",
+    options: opts(
+      "back to the place I love",
+      "somewhere new, well researched",
+      "somewhere new, figured out on arrival",
+      "wherever is cheap on the day",
+    ),
+  },
+  {
+    id: "open_early",
+    trait: "openness",
+    question: "Early on, I tend to",
+    options: opts(
+      "say most of it quite quickly",
+      "open up steadily",
+      "take a while to get there",
+      "keep things close for a long time",
+    ),
+  },
+  {
+    id: "open_hard_things",
+    trait: "openness",
+    question: "The things I am working on, I talk about",
+    options: opts(
+      "openly, with most people",
+      "with the people I trust",
+      "rarely, and only when asked",
+      "almost never",
+    ),
+  },
+] as const;
+
+export const QUIZ_QUESTION_COUNT = QUIZ_QUESTIONS.length;
 
 /**
  * Labels for the intention enum. §3.4 gives the lock notice but not the option

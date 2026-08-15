@@ -71,6 +71,8 @@ export {
   allowsUEqualsU,
   isValidPair,
   QUIZ_QUESTIONS,
+  QUIZ_QUESTION_COUNT,
+  QUIZ_TRAITS,
   INTENTION_LABELS,
   PROFILE_PROMPTS,
   REPORT_REASONS,
@@ -86,4 +88,10 @@ export type {
   ProfilePromptId,
   ProfilePromptAnswer,
   ReportReason,
+  QuizTrait,
+  QuizQuestion,
+  QuizOption,
 } from "./draft-copy";
+
+export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
+export type { Section, FaqEntry } from "./guidelines";

@@ -1,5 +1,72 @@
 # Project Updates
 
+## 2026-08-15 — The quiz, the FAQ and the community guidelines
+
+Kevin authorised writing all three. They are drafts and he will say if they are
+wrong.
+
+### The quiz — 12 questions, six traits
+
+Held to three rules, in order of importance:
+
+- **Never about anyone's status.** Not obliquely, not "how open are you about
+  health". The quiz shapes who members are shown to each other, and a question
+  that sorted people by how they feel about their diagnosis would be the app
+  doing the sorting nobody asked for.
+- **Answerable by someone having a bad month.** Nothing that rewards being
+  interesting or punishes a quiet answer.
+- **No right answer.** Weights run negative to positive along a trait rather
+  than low to high along a quality, and a test asserts every question balances
+  to zero. There is no way to score well here, only to score like someone.
+
+Answers become a six-element trait vector in `packages/logic/quiz`. The raw
+answers stay in `quiz_responses`, which is own-rows-only: "which option did they
+pick for question nine" is a more revealing thing to hand around than a
+similarity score.
+
+**A partial quiz is a valid quiz.** Every trait averages only what was actually
+answered, so stopping at question four gives a real vector rather than a
+distorted one. §7.2 makes the whole thing skippable; making it all-or-nothing
+inside would be the same rule broken one level down.
+
+Adding questions turned the onboarding step **on** — `quizSettled` reads
+`QUIZ_QUESTIONS.length`, so `/onboarding/quiz` went from unreachable to a 404
+the moment the array filled. Built. A skip writes an **empty row** rather than
+no row: `resolveStep` reads presence, so no row means unanswered and a member
+who skipped would meet the screen forever.
+
+The skip is a plain button of equal weight — not hidden, not greyed, not behind
+a confirmation. §3.3 bans engagement-bait and a skip you have to fight for is
+exactly that.
+
+### The FAQ
+
+Written as the page someone reads while deciding whether to trust this, which
+makes it the worst possible place to round up. **Every claim in it is asserted
+against the product**: three in the Drop and the same for everyone, seven days on
+the fuse and no way to buy more, the selfie deleted as soon as the check
+finishes and no documents ever, deletion inside seven days and not a hidden
+account, leaving dating instantly and thirty days to come back, the blur
+happening before the photo leaves our servers.
+
+If one of those stops being true, a test fails.
+
+### The community guidelines
+
+Outing is first on the removable list and the only one described as permanent.
+It is the harm this community has actually experienced, often from people who
+thought it was harmless.
+
+"Nobody owes you their medical history" gets its own section, because the most
+likely way this app becomes unpleasant is not abuse but interrogation.
+
+Neither document explains what HSV or HIV are. Everyone here already knows, most
+of them better than we do, and a page of medical basics on a dating app reads as
+talking down to the people using it. A test rejects clinical vocabulary for the
+same reason.
+
+Both are checked against §3.2's banned terms and §3.3's banned claims.
+
 ## 2026-08-15 — The moderator's side of the queue
 
 Reports have reached the moderation queue since this morning and nothing
@@ -1451,7 +1518,7 @@ from the environment.)
 | 2 | **Privacy policy review.** Drafted 2026-08-14, live at `/privacy`. Needs Kevin's read plus counsel sign-off (Decision #30). | launch |
 | 3 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
 | 4 | **Onboarding draft copy.** Headings, field labels and intention option names for every step, in `DRAFT_COPY`. Not spec copy. | Milestone 2 sign-off |
-| 5 | **Quiz questions (10–12).** §7.2 asks for them and never writes them. `QUIZ_QUESTIONS` is empty and the step self-activates when populated. §10 permits shipping without it. | fast-follow |
+| 5 | ~~**Quiz questions.**~~ Written 2026-08-15 at Kevin's request. Twelve, six traits, reviewable. | — |
 | 6 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
 | 7 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
 | 8 | **Resend API key.** | Milestone 7 |

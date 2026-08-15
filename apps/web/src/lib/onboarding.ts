@@ -68,11 +68,10 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
     hasCommunity: Boolean(profile?.community && profile.condition),
     hasHealthConsent: Boolean(consent),
     hasIntention: Boolean(profile?.intention),
-    // §7.2 asks for 10-12 questions and never writes them, and §10 says to ship
-    // with intention-weighting only. With no questions there is nothing to
-    // answer, so the step does not stall onboarding — and it turns itself on
-    // the moment a question is added to QUIZ_QUESTIONS. A skip is recorded as
-    // an empty answer set rather than an absence, so skipping does not loop.
+    // The step turns itself on with the questions. A skip writes an EMPTY row
+    // rather than no row, so presence is the right thing to read: no row means
+    // unanswered, and a member who skipped would otherwise meet the screen
+    // forever.
     quizSettled: QUIZ_QUESTIONS.length === 0 || Boolean(quiz),
     hasPhoto: Boolean(photos && photos.length > 0),
     radiusSet: Boolean(profile?.search_radius_mi),
