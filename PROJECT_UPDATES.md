@@ -1,5 +1,66 @@
 # Project Updates
 
+## 2026-08-15 — Stripe, and proving money buys nothing
+
+Milestone 6's other half. The keys are still placeholders, so checkout fails
+with "Payments are not switched on yet" — everything else is real.
+
+### The webhook
+
+Three things it gets right deliberately:
+
+- **The signature is verified before anything is read**, against the raw text.
+  This endpoint is public by necessity and the body is the only thing telling us
+  somebody paid; an unverified body is a stranger's claim to be premium. The
+  failure response carries no detail, because a verification error that explains
+  itself is a forgery oracle.
+- **It is idempotent.** Stripe retries on any non-2xx and will deliver the same
+  event twice on a good day. Every write is an upsert keyed on the member, and
+  `current_period_end` comes **from the event** rather than from a clock — so
+  replaying a three-month-old event cannot push anybody's access three months
+  out.
+- **An unhandled event is acknowledged, not rejected.** Returning an error for
+  an event we do not care about teaches Stripe to retry it forever.
+
+An unattributable payment — no member id on the session — is acknowledged and
+logged loudly rather than retried. Stripe cannot fix it by trying again; a human
+has to.
+
+### §9.7 holds because there is nowhere to put a name
+
+Stripe knows who is paying, because a processor must. Our database stores a
+customer id, a subscription id, a status and a period end. `check:premium`
+asserts `subscriptions` has no column containing `name`, `email`, `address`,
+`card`, `last4` or `postal` — the promise is kept by the schema rather than by
+the code being careful.
+
+### The check that matters
+
+§3.3: *"No selling exemptions from mechanics. Never monetized. Ever."*
+
+`packages/logic` already asserts the pure functions cannot see who pays. But if
+premium ever starts buying an exemption it will be through a policy or an RPC,
+not through a reducer — so `pnpm check:premium` puts a **real paying member and
+a real free member side by side against the live walls**:
+
+- premium does not see a support-only member, and cannot connect to one;
+- premium does not see the other community;
+- premium does not see someone who blocked them;
+- premium cannot extend its own fuse — **and there is no UPDATE policy on
+  `chats` or `connects` for anyone to be exempted with**;
+- `drop.count` is one global value, and `drops` has no per-member count column
+  to raise;
+- premium raises the daily connect budget from 3 to 10 and it is still a cap.
+
+That last pair is the whole shape of it: the only thing money changes is a
+number that was already a limit.
+
+### And it says so on the page that sells it
+
+`PREMIUM_NEVER` is printed on `/app/premium`, under the plans, in the same
+weight as what premium does give. A promise made only in a spec is a promise
+nobody can hold you to.
+
 ## 2026-08-15 — The quiz, the FAQ and the community guidelines
 
 Kevin authorised writing all three. They are drafts and he will say if they are

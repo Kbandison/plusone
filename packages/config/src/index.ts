@@ -36,7 +36,7 @@ export {
   PREMIUM_INCLUDES,
   PREMIUM_NEVER,
 } from "./pricing";
-export type { Plan, PlanId } from "./pricing";
+export type { Plan, PlanId, PriceIdEnvKey } from "./pricing";
 
 export {
   NOTIFICATIONS,

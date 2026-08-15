@@ -5,6 +5,11 @@
 
 export type PlanId = "premium_1mo" | "premium_3mo" | "premium_6mo";
 
+export type PriceIdEnvKey =
+  | "STRIPE_PRICE_PREMIUM_1MO"
+  | "STRIPE_PRICE_PREMIUM_3MO"
+  | "STRIPE_PRICE_PREMIUM_6MO";
+
 export interface Plan {
   readonly id: PlanId;
   readonly months: number;
@@ -12,8 +17,13 @@ export interface Plan {
   readonly label: string;
   /** The 3-month tier is the highlighted default. */
   readonly highlighted: boolean;
-  /** Populated from Stripe at deploy time via env; never hardcoded per environment. */
-  readonly envPriceIdKey: string;
+  /**
+   * Populated from Stripe at deploy time via env; never hardcoded per
+   * environment. Typed as the exact keys rather than `string` so a plan cannot
+   * name an environment variable that does not exist — the alternative is
+   * finding out at checkout.
+   */
+  readonly envPriceIdKey: PriceIdEnvKey;
 }
 
 export const PLANS: readonly Plan[] = [

@@ -54,6 +54,7 @@ pnpm dev
 | `pnpm check:referrals` | Attribute, convert and pay a real referral; confirm the job is idempotent |
 | `pnpm check:safety` | File a real report and confirm it reaches a moderator; block and confirm it is mutual |
 | `pnpm check:photos` | Confirm a blurred-until-connected member's clear path never reaches a viewer |
+| `pnpm check:premium` | Put a paying member and a free one against the real walls, and confirm money changed nothing |
 | `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
 | `pnpm build` | Production build |
 
@@ -79,7 +80,7 @@ asserted in a comment.
 | 3 | Mechanics core — drop, connects, modes, referrals, tone | logic done |
 | 4 | Member app α | |
 | 5 | Community — rooms, preview drop, mode toggle | |
-| 6 | Money + growth — Stripe, premium gates, referrals | referrals done |
+| 6 | Money + growth — Stripe, premium gates, referrals | done (keys pending) |
 | 7 | Admin + notifications + cron | sweeps + cron done |
 | 8 | Polish + launch | |
 

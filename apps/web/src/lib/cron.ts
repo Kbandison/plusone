@@ -29,6 +29,13 @@ export function isAuthorisedCron(request: Request): boolean {
   return presented.length > 0 && constantTimeEquals(presented, CRON_SECRET);
 }
 
+/**
+ * The service client. BYPASSES RLS.
+ *
+ * Legitimate callers are the cron jobs and the Stripe webhook — paths that act
+ * across every member and have no member behind them. Anything in a request
+ * path should use the server client so the member's own walls apply.
+ */
 export function serviceClient() {
   const { NEXT_PUBLIC_SUPABASE_URL } = parseClientEnv(process.env);
   const { SUPABASE_SECRET_KEY } = parseServerEnv(process.env);

@@ -121,5 +121,12 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # §3.3 — "no selling exemptions from mechanics. Never monetized. Ever."
+      # A paying member and a free one against the real walls.
+      - name: Verify premium buys nothing it should not
+        run: pnpm check:premium
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Build
         run: pnpm build
