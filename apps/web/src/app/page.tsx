@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-import { BRAND, COPY, DRAFT_COPY } from "@plusone/config";
+import { COPY, DRAFT_COPY } from "@plusone/config";
+
+import { SiteFooter } from "./site-footer";
 
 /**
  * The front door.
@@ -40,17 +42,10 @@ export default function Home() {
         </Link>
 
         <Link
-          href="/faq"
+          href="/how-it-works"
           className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
         >
-          Questions
-        </Link>
-
-        <Link
-          href="/privacy"
-          className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
-        >
-          {DRAFT_COPY.home.privacyLink}
+          How it works
         </Link>
       </div>
 
@@ -60,7 +55,7 @@ export default function Home() {
         {COPY.marketing.verificationPitch}
       </p>
 
-      <p className="mt-6 text-[13px] text-ink-3">{BRAND.name} is in build.</p>
+      <SiteFooter />
     </main>
   );
 }

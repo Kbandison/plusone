@@ -1,5 +1,55 @@
 # Project Updates
 
+## 2026-08-15 — Milestone 8: the marketing site
+
+`/how-it-works`, `/pricing` and `/terms` join the pages already there. Every
+footer link resolves; a shared `SiteFooter` replaced the four hand-rolled navs I
+had accumulated, because the legal links are the ones that must not go stale.
+
+### How-it-works quotes the app rather than describing it
+
+The explainers members read inside the product — the fuse, support-only, the
+verification pitch — are §3.4 verbatim and pulled in from `COPY`, not rewritten
+in marketing voice. A test asserts it. **A marketing page that describes a
+mechanic differently from the screen that runs it is the beginning of two
+products**, and the difference always favours the marketing page.
+
+The order is the order someone experiences it — verify, Drop, connect, fuse,
+closure, step back — not the order it was built in and not the order that leads
+with the cleverest part.
+
+### Pricing gives the "never" list equal weight
+
+`PREMIUM_NEVER` sits under `PREMIUM_INCLUDES` in the same size, on the page that
+sells the thing. Every other app in this space sells exactly that list, which
+makes it the more interesting half of what is on offer — and burying it would
+make the pricing page the one place the product argues against itself.
+
+### The terms, and the one lie worth avoiding
+
+DRAFT, needs counsel like the privacy policy (Decision #30).
+
+Two positions in it are deliberate and worth Kevin's attention:
+
+- **Verification is a claim about identity, not about character.** The terms say
+  so in those words, and tell members to meet in public and tell someone where
+  they are going. For an app whose pitch is "every profile is a verified human",
+  implying that verified means safe would be the most consequential lie
+  available to it. A test asserts the sentence stays.
+- **No content licence.** A dating app taking a perpetual worldwide licence to
+  members' photos is standard, and standard is not a reason. The terms say
+  members own what they write, that we store it to show the people they chose,
+  and nothing more. A test rejects the words "perpetual", "irrevocable" and
+  "worldwide licence".
+
+The never-buy promise appears in the terms as well as on the pricing page, so it
+is contractual rather than marketing.
+
+### Where the build is
+
+Milestones 1–8 are built. What remains is credentials, the copy Kevin has not
+read, and counsel on two legal documents.
+
 ## 2026-08-15 — Config and metrics: Milestone 7 closes
 
 ### "Hot-read by logic" was half true
@@ -1627,6 +1677,8 @@ specifically to be reminded of these, so they lead.
 | C | **Community guidelines** — 8 sections. Sets what gets someone removed, so it is the one most worth disagreeing with. | `packages/config/src/guidelines.ts` → `COMMUNITY_GUIDELINES`, live at `/guidelines` |
 | D | **Profile prompts** — 8. Load-bearing: Decision #14 makes a connect a reply to one, so without them nobody can be reached. | `packages/config/src/draft-copy.ts` → `PROFILE_PROMPTS` |
 | E | **Privacy policy** — 14 sections. Also needs counsel (Decision #30). | `packages/config/src/legal.ts`, live at `/privacy` |
+| F | **Terms of service** — 9 sections. Needs counsel too. Takes two unusual positions on purpose: verification is identity not character, and there is no content licence. | `packages/config/src/terms.ts`, live at `/terms` |
+| G | **How-it-works and pricing prose.** Quotes §3.4 for the mechanics; the connecting text is mine. | `packages/config/src/marketing.ts` |
 
 Everything in `DRAFT_COPY` is mine too — headings, labels, button text. Lower
 stakes, same status.

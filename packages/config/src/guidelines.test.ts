@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  COPY,
+  HOW_IT_WORKS,
+  HOW_IT_WORKS_INTRO,
+  PRICING_INTRO,
+  PRICING_NEVER_NOTE,
+  TERMS,
+  TERMS_INTRO,
   BANNED_COPY_TERMS,
   BANNED_PRIVACY_CLAIMS,
   COMMUNITY_GUIDELINES,
@@ -113,6 +120,75 @@ describe("the FAQ matches what the product does", () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const section of COMMUNITY_GUIDELINES) {
       expect(section.body.length, section.id).toBeGreaterThan(0);
+    }
+  });
+});
+
+// The marketing site and the terms are held to the same bar as everything else
+// a member reads.
+describe("the marketing site and terms", () => {
+  const marketing = [
+    HOW_IT_WORKS_INTRO,
+    PRICING_INTRO,
+    PRICING_NEVER_NOTE,
+    ...HOW_IT_WORKS.flatMap((s) => [s.title, ...s.body]),
+  ];
+  const terms = [TERMS_INTRO, ...TERMS.flatMap((s) => [s.title, ...s.body])];
+  const everything = [...marketing, ...terms];
+
+  it.each(BANNED_COPY_TERMS)("never says %s", (term) => {
+    for (const text of everything) {
+      expect(text.toLowerCase(), text.slice(0, 60)).not.toContain(term.toLowerCase());
+    }
+  });
+
+  it.each(BANNED_PRIVACY_CLAIMS)("never claims %s", (claim) => {
+    for (const text of everything) {
+      expect(text.toLowerCase(), text.slice(0, 60)).not.toContain(claim.toLowerCase());
+    }
+  });
+
+  // A marketing page that describes a mechanic differently from the screen that
+  // runs it is the beginning of two products. The explainers members read in
+  // the app are §3.4 verbatim, quoted rather than rewritten.
+  it("quotes the app's own words for the mechanics", () => {
+    const quoted = HOW_IT_WORKS.map((s) => s.quoted).filter(Boolean);
+    expect(quoted).toContain(COPY.fuse.explainer);
+    expect(quoted).toContain(COPY.supportOnly.toggle);
+    expect(quoted).toContain(COPY.marketing.verificationPitch);
+  });
+
+  it("says on the pricing page what premium never buys", () => {
+    expect(PRICING_NEVER_NOTE).toMatch(/not at any price/i);
+  });
+
+  // §3.3 bans dark patterns, and the most consequential possible lie on a
+  // dating app for this community would be implying verification makes someone
+  // safe. It is a claim about identity.
+  it("does not confuse verification with safety", () => {
+    const provide = TERMS.find((s) => s.id === "what-we-provide")?.body.join(" ") ?? "";
+    expect(provide).toMatch(/identity, not about character/i);
+    expect(provide).toMatch(/meet in public/i);
+  });
+
+  it("does not take a licence over anyone's photos", () => {
+    const content = TERMS.find((s) => s.id === "your-content")?.body.join(" ") ?? "";
+    expect(content).toMatch(/you own what you write/i);
+    expect(content).toMatch(/do not licence your content/i);
+    expect(content.toLowerCase()).not.toMatch(/perpetual|irrevocable|worldwide licen[sc]e/);
+  });
+
+  it("puts the never-buy promise in the terms as well as the pricing page", () => {
+    const payment = TERMS.find((s) => s.id === "payment")?.body.join(" ") ?? "";
+    expect(payment).toMatch(/never buys an exemption/i);
+    expect(payment).toMatch(/part of these terms/i);
+  });
+
+  it("gives every section a unique id and a body", () => {
+    for (const collection of [HOW_IT_WORKS, TERMS]) {
+      const ids = collection.map((s) => s.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const section of collection) expect(section.body.length, section.id).toBeGreaterThan(0);
     }
   });
 });

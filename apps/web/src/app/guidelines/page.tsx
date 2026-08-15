@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { SiteFooter } from "../site-footer";
+
 import { COMMUNITY_GUIDELINES, GUIDELINES_INTRO } from "@plusone/config";
 
 export const metadata: Metadata = {
@@ -39,6 +41,7 @@ export default function GuidelinesPage() {
           </section>
         ))}
       </div>
+      <SiteFooter current="/guidelines" />
     </main>
   );
 }

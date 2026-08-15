@@ -83,7 +83,7 @@ asserted in a comment.
 | 5 | Community — rooms, preview drop, mode toggle | |
 | 6 | Money + growth — Stripe, premium gates, referrals | done (keys pending) |
 | 7 | Admin + notifications + cron | done (Resend pending) |
-| 8 | Polish + launch | |
+| 8 | Polish + launch | marketing site done |
 
 Never cut, whatever the timeline: verification, RLS and the walls, fuse + closure,
 content-blind notifications, hard delete, the consent screen, and chat voice notes.

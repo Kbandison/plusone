@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import { SiteFooter } from "../site-footer";
 
 import { FAQ } from "@plusone/config";
 
@@ -26,20 +27,7 @@ export default function FaqPage() {
         ))}
       </div>
 
-      <nav className="mt-20 flex flex-wrap gap-x-7 gap-y-3 border-t border-line pt-6">
-        {[
-          { href: "/guidelines", label: "Community guidelines" },
-          { href: "/privacy", label: "Privacy" },
-        ].map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="ease-brand text-[15px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
+      <SiteFooter current="/faq" />
     </main>
   );
 }

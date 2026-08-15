@@ -95,3 +95,14 @@ export type {
 
 export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
 export type { Section, FaqEntry } from "./guidelines";
+
+export {
+  HOW_IT_WORKS,
+  HOW_IT_WORKS_INTRO,
+  PRICING_INTRO,
+  PRICING_NEVER_NOTE,
+} from "./marketing";
+export type { HowItWorksStep } from "./marketing";
+
+export { TERMS, TERMS_INTRO, TERMS_EFFECTIVE } from "./terms";
+export type { TermsSection } from "./terms";

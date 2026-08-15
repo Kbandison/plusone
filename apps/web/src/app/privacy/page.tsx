@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import { SiteFooter } from "../site-footer";
 
 import {
-  BRAND,
   PRIVACY_POLICY,
   PRIVACY_POLICY_EFFECTIVE,
   PRIVACY_POLICY_INTRO,
@@ -89,23 +89,10 @@ export default function PrivacyPage() {
         ))}
       </div>
 
-      <nav className="mt-20 flex flex-wrap gap-x-7 gap-y-3 border-t border-line pt-6">
-        {[
-          { href: "/faq", label: "Questions" },
-          { href: "/guidelines", label: "Community guidelines" },
-        ].map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="ease-brand text-[15px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
+      <SiteFooter current="/privacy" />
 
       <p className="mt-8 text-[13.5px] text-ink-3">
-        {BRAND.name} is in build. This policy is a draft and is pending legal review.
+        This policy is a draft and is pending legal review.
       </p>
     </main>
   );
