@@ -43,17 +43,34 @@ const BLUR_SOURCE_EDGE = 24;
 /** What the blurred variant is scaled back up to, so it fills the same card. */
 const BLUR_OUTPUT_EDGE = 600;
 
+/**
+ * The card variant, which is what every surface in the app actually renders.
+ *
+ * Nothing displays a photo larger than 72px today, so serving the 1600px
+ * original to a browse grid meant tens of megabytes for a column of thumbnails.
+ * 320 covers 72px at 4x device pixel ratio with room to spare.
+ *
+ * It exists because these photos cannot go through a shared image optimiser:
+ * the bytes at a given URL differ per viewer — blurred for a stranger, clear
+ * for a connection — and an optimiser that caches by URL would let the first
+ * connected viewer populate a cache entry that a stranger then reads. That is a
+ * worse leak than the one optimisation was saving us bandwidth on.
+ */
+const CARD_EDGE = 320;
+
 export { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, isAcceptableUpload } from "./photo-limits";
 
 export interface ProcessedPhoto {
   readonly full: Buffer;
+  /** What cards render. See CARD_EDGE. */
+  readonly card: Buffer;
   readonly blurred: Buffer;
   readonly width: number;
   readonly height: number;
 }
 
 /**
- * Turns an uploaded image into the two objects that get stored.
+ * Turns an uploaded image into the three objects that get stored.
  *
  * Throws on anything sharp cannot decode, which is also the check that the file
  * really is an image rather than something wearing an image's content type.
@@ -69,6 +86,12 @@ export async function processPhoto(input: Buffer): Promise<ProcessedPhoto> {
     .webp({ quality: 82 })
     .toBuffer({ resolveWithObject: true });
 
+  const card = await base
+    .clone()
+    .resize({ width: CARD_EDGE, height: CARD_EDGE, fit: "cover" })
+    .webp({ quality: 78 })
+    .toBuffer();
+
   const blurred = await base
     .clone()
     // Down to a thumbnail FIRST. This is the step that makes the result
@@ -81,6 +104,7 @@ export async function processPhoto(input: Buffer): Promise<ProcessedPhoto> {
 
   return {
     full: full.data,
+    card,
     blurred,
     width: full.info.width,
     height: full.info.height,

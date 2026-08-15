@@ -43,7 +43,15 @@ export function MemberPhotoFrame({
         height={size}
         className={`${rounded} object-cover`}
         style={{ width: size, height: size }}
-        unoptimized={false}
+        // Never optimised, and this is a correctness rule rather than a
+        // preference. The bytes behind one of these URLs differ by viewer —
+        // blurred for a stranger, clear for a connection — and Vercel's image
+        // optimiser caches by URL, so the first connected viewer would populate
+        // an entry a stranger then reads. It also kept the signed URL out of
+        // our own access logs, where §9.6 wants opaque ids only: the browser
+        // now fetches Supabase directly and the credential never crosses our
+        // domain. The stored card variant is what makes this affordable.
+        unoptimized
       />
     </span>
   );

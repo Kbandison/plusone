@@ -99,6 +99,43 @@ try {
     where schemaname='storage' and tablename='objects' and cmd='SELECT'
       and qual like '%photos%' and qual not like '%foldername%'`);
   check(pol.rows[0].n === 0, "no storage policy grants read beyond your own folder");
+
+  // ── the card variant (20260815001300) ──────────────────────────────────────
+  // Every surface renders at 72px and the stored original is 1600. These cannot
+  // go through a shared image optimiser — the bytes behind one URL differ by
+  // viewer, so a connected viewer would populate a cache entry a stranger then
+  // reads — which is why the small variant exists and why the view must return
+  // it rather than the original.
+  {
+    console.log("\n── the view returns the card, never the original ──");
+    const seen = await member("clear");
+    await c.query(`update public.profile_photos set card_path = $2 where user_id = $1`, [
+      seen, `${seen}/card.webp`,
+    ]);
+    const looker = await member("clear");
+    const row = (await as(looker,
+      `select storage_path from public.visible_profile_photos where user_id=$1`, [seen])).rows[0];
+    check(String(row?.storage_path).endsWith("card.webp"), "a photo with a card variant returns the card");
+    check(!String(row?.storage_path).endsWith("clear.webp"), "and never the 1600px original");
+
+    // Nullable on purpose: a row written before the column existed still has to
+    // resolve to something rather than to null.
+    await c.query(`update public.profile_photos set card_path = null where user_id = $1`, [seen]);
+    const fallback = (await as(looker,
+      `select storage_path from public.visible_profile_photos where user_id=$1`, [seen])).rows[0];
+    check(String(fallback?.storage_path).endsWith("clear.webp"), "without one it falls back to the original");
+
+    // And the ownership constraint has to cover the new column too, or it is
+    // one more derivable path pointing at somebody else's folder.
+    let refused = false;
+    await c.query(`savepoint cardown`);
+    try {
+      await c.query(`update public.profile_photos set card_path = $2 where user_id = $1`,
+        [seen, `${looker}/stolen-card.webp`]);
+      await c.query(`release savepoint cardown`);
+    } catch { refused = true; await c.query(`rollback to savepoint cardown`); }
+    check(refused, "a card path under another member's prefix is refused");
+  }
 } finally { await c.query("rollback"); }
 await c.end();
 console.log(problems.length ? `\n${problems.length} PROBLEM(S)\n` : "\nPhoto privacy holds.\n");

@@ -52,19 +52,21 @@ export async function uploadPhoto(_previous: PhotosState, formData: FormData): P
   // check, so it is not decoration.
   const id = randomUUID();
   const fullPath = `${userId}/${id}.webp`;
+  const cardPath = `${userId}/${id}-card.webp`;
   const blurredPath = `${userId}/${id}-blurred.webp`;
 
   const uploads = await Promise.all([
     supabase.storage.from(BUCKET).upload(fullPath, processed.full, { contentType: "image/webp" }),
+    supabase.storage.from(BUCKET).upload(cardPath, processed.card, { contentType: "image/webp" }),
     supabase.storage
       .from(BUCKET)
       .upload(blurredPath, processed.blurred, { contentType: "image/webp" }),
   ]);
 
   if (uploads.some((u) => u.error)) {
-    // Never leave a half-uploaded pair behind: a full object with no blurred
+    // Never leave a half-uploaded set behind: a full object with no blurred
     // counterpart is a photo with no private variant to fall back to.
-    await supabase.storage.from(BUCKET).remove([fullPath, blurredPath]);
+    await supabase.storage.from(BUCKET).remove([fullPath, cardPath, blurredPath]);
     return { error: E.uploadFailed };
   }
 
@@ -76,6 +78,7 @@ export async function uploadPhoto(_previous: PhotosState, formData: FormData): P
   const { error } = await supabase.from("profile_photos").insert({
     user_id: userId,
     storage_path: fullPath,
+    card_path: cardPath,
     blurred_path: blurredPath,
     position: count ?? 0,
   });

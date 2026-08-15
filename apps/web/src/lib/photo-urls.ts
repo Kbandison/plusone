@@ -10,10 +10,10 @@ import { getServerSupabase } from "./supabase";
  *
  * The order here is the whole security model, so it is worth stating:
  *
- *   1. Read `visible_profile_photos` AS THE MEMBER. That view is
- *      security_invoker, so RLS decides whether they may see this person at
- *      all, and the view itself decides WHICH variant — clear or blurred —
- *      based on photo_privacy and whether a connect was accepted.
+ *   1. Read `visible_profile_photos` AS THE MEMBER. That view does its own
+ *      authorisation — it is SECURITY DEFINER, because profile_photos is
+ *      own-rows-only — and it decides WHICH variant, clear or blurred, from
+ *      photo_privacy and whether a connect was accepted.
  *   2. Only then sign the path it returned, with the service client.
  *
  * The service client is used because members deliberately have no read policy
@@ -89,7 +89,7 @@ export async function ownPhotos(userId: string): Promise<readonly MemberPhoto[]>
   const supabase = await getServerSupabase();
   const { data: rows } = await supabase
     .from("profile_photos")
-    .select("storage_path, position")
+    .select("storage_path, card_path, position")
     .eq("user_id", userId)
     .order("position", { ascending: true });
 
@@ -98,7 +98,12 @@ export async function ownPhotos(userId: string): Promise<readonly MemberPhoto[]>
   const service = serviceClient();
   const { data: signed } = await service.storage
     .from("photos")
-    .createSignedUrls(rows.map((r) => r.storage_path as string), TTL_SECONDS);
+    // The card variant, like every other surface. The profile page renders
+    // these at 72px and the original is 1600.
+    .createSignedUrls(
+      rows.map((r) => (r.card_path as string | null) ?? (r.storage_path as string)),
+      TTL_SECONDS,
+    );
 
   return (signed ?? [])
     .flatMap((s) => (s.signedUrl ? [{ url: s.signedUrl, isBlurred: false }] : []));

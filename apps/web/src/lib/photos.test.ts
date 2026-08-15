@@ -226,3 +226,48 @@ describe("output", () => {
     await expect(processPhoto(Buffer.from("<html>not a photo</html>"))).rejects.toThrow();
   });
 });
+
+describe("the card variant", () => {
+  /**
+   * Every surface renders a photo at 72px or less, and the stored original is
+   * 1600. These photos cannot go through a shared image optimiser — the bytes
+   * behind one URL differ by viewer, and an optimiser that caches by URL would
+   * let a connected viewer populate an entry a stranger then reads — so the
+   * small variant is what makes serving them directly affordable.
+   */
+  it("is much smaller than the original", async () => {
+    const source = await phonePhotoWithGps();
+    const { full, card } = await processPhoto(source);
+    expect(card.length).toBeLessThan(full.length);
+  });
+
+  it("is a square, so a round avatar never crops off a chin", async () => {
+    const source = await phonePhotoWithGps();
+    const { card } = await processPhoto(source);
+    const meta = await sharp(card).metadata();
+    expect(meta.width).toBe(meta.height);
+  });
+
+  it("is big enough for the largest thing that renders it", async () => {
+    // 72px at 4x device pixel ratio.
+    const source = await phonePhotoWithGps();
+    const { card } = await processPhoto(source);
+    const meta = await sharp(card).metadata();
+    expect(meta.width).toBeGreaterThanOrEqual(288);
+  });
+
+  it("is webp and carries no metadata", async () => {
+    const source = await phonePhotoWithGps();
+    const { card } = await processPhoto(source);
+    const meta = await sharp(card).metadata();
+    expect(meta.format).toBe("webp");
+    // The same rule as the full variant: a card is still a photo of a face.
+    expect(meta.exif).toBeUndefined();
+  });
+
+  it("is not the blurred one", async () => {
+    const source = await phonePhotoWithGps();
+    const { card, blurred } = await processPhoto(source);
+    expect(card.equals(blurred)).toBe(false);
+  });
+});

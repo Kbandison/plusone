@@ -90,9 +90,15 @@ try {
     `returns only ${cols.join(", ")}`);
 
   console.log("\n── pending connects expire ──");
-  await c.query(
-    `insert into public.connects (initiator_id, target_id, prompt_id, prompt_reply, source, expires_at)
-     values ($1,$2,'p3','anyone home','drop', now() - interval '1 day')`, [a, b]);
+  // Inserted at now(), then aged with an UPDATE. Passing a past expires_at to
+  // the INSERT stopped working in 20260815001100, which pins both timestamps in
+  // the BEFORE INSERT trigger — a member could otherwise give a pending ask a
+  // hundred years, and a connect that never expires never sends the §6.2 note.
+  // UPDATE is unaffected, and members hold no UPDATE grant on this table.
+  const { rows: [aged] } = await c.query(
+    `insert into public.connects (initiator_id, target_id, prompt_id, prompt_reply, source)
+     values ($1,$2,'p3','anyone home','drop') returning id`, [a, b]);
+  await c.query(`update public.connects set expires_at = now() - interval '1 day' where id = $1`, [aged.id]);
   const expiredN = await one(`select public.sweep_expired_connects() n`);
   check(expiredN.n >= 1, `expired ${expiredN.n} connect(s)`);
   const stillPending = await one(
