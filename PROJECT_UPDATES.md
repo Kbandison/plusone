@@ -1,5 +1,51 @@
 # Project Updates
 
+## 2026-08-15 — The moderator's side of the queue
+
+Reports have reached the moderation queue since this morning and nothing
+displayed them. The same half-built loop as the purge job with no delete button
+and the report with no reader: every piece present, nothing joined up.
+
+`/admin/reports` and `/admin/members` close it.
+
+### What a moderator sees, and what they do not
+
+`admin_open_reports()` returns the reported text, the reporter's account of what
+happened, the reason, and the subject's display name. It returns **no
+community, no condition and no U=U** — deciding whether a message was abusive
+does not require knowing anybody's diagnosis, and §7.3 says condition data is
+never shown by default.
+
+`admin_member_lookup()` is deliberately thin: no listing, no browse, and a query
+under two characters returns nothing rather than everyone. A moderator following
+a report needs to find one person. Anything more is a directory of members with
+a search box on it.
+
+Condition data stays behind `admin_reveal_condition`, which still writes the
+reason in the same statement as the read. That control now appears on both admin
+screens rather than only the verification queue.
+
+### Decisions are one-way
+
+`admin_resolve_report` accepts only `resolved` or `dismissed`. `open` and
+`in_review` are states a queue moves through, not decisions, and letting this
+call set them would make a resolved report reopenable by the same function — an
+audit trail of a decision that can be un-decided is not much of a trail. It also
+refuses a report already decided, so two moderators clicking at once produce one
+outcome and one audit entry.
+
+### `pnpm check:moderation`
+
+Eighteen checks: the report appears with its text and detail, carries no
+condition column, cannot be resolved by an ordinary member, cannot be reopened,
+leaves the queue when decided, is audited with the moderator's note, cannot be
+decided twice, and lookup returns nothing for a one-character query and nothing
+at all to a non-admin.
+
+Kept as its own script rather than folded into `check:admin`. I tried the merge;
+two scenarios in one file meant two sets of bindings fighting over `open`,
+`cols` and `after`, and five minutes of renaming variables bought nothing.
+
 ## 2026-08-15 — Photos, and Decision #19 had never worked
 
 Photos have been uploaded, processed and stored since the onboarding work. No

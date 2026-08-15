@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getServerSupabase } from "@/lib/supabase";
@@ -31,7 +32,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="mx-auto w-full max-w-[900px] px-6 py-12">
-      <p className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">Moderation</p>
+      <nav aria-label="Moderation" className="flex flex-wrap gap-6">
+        {[
+          { href: "/admin/reports", label: "Reports" },
+          { href: "/admin/verifications", label: "Verifications" },
+          { href: "/admin/members", label: "Members" },
+        ].map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="ease-brand text-[13px] tracking-[0.04em] text-ink-3 uppercase transition-colors duration-200 hover:text-ink"
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
       {children}
     </div>
   );

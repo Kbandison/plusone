@@ -48,6 +48,7 @@ pnpm dev
 | `pnpm check:sql` | Parse + cross-check every migration (no database needed) |
 | `pnpm check:db` | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
 | `pnpm check:admin` | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction |
+| `pnpm check:moderation` | Open a real report as a moderator, decide it, and confirm no condition data is exposed |
 | `pnpm check:sweeps` | Expire a real fuse and assert it closes **with a note**; verify hard delete cascades |
 | `pnpm check:walls` | Act as real members across every wall, and attempt every third-party probe |
 | `pnpm check:referrals` | Attribute, convert and pay a real referral; confirm the job is idempotent |
