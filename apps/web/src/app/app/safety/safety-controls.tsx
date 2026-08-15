@@ -16,19 +16,45 @@ const C = DRAFT_COPY.app;
  * them to justify it is the wrong thing to put in the way. Reversible from
  * Settings, which is where the explaining belongs.
  */
-export function BlockButton({ memberId }: { memberId: string }) {
+export function BlockButton({
+  memberId,
+  roomMessageId,
+  describedBy,
+}: {
+  memberId?: string;
+  /** Blocking a room post's author without the page ever holding their id. */
+  roomMessageId?: string;
+  /** Id of the text this button acts on, so repeated buttons are told apart. */
+  describedBy?: string;
+}) {
   const [state, act, pending] = useActionState(blockMember, SAFETY_INITIAL);
 
   if (state.message) {
-    return <span className="text-[14px] text-ink-3">{state.message}</span>;
+    // role="status" because the form that held the focused button is being
+    // unmounted underneath it. Without this a member presses Block, hears
+    // nothing at all, finds their focus back at the top of the page, and
+    // reasonably presses it again — at the moment in this product when someone
+    // is least able to absorb an ambiguous result.
+    return (
+      <span role="status" className="text-[14px] text-ink-3">
+        {state.message}
+      </span>
+    );
   }
 
   return (
     <form action={act} className="inline">
-      <input type="hidden" name="blocked_id" value={memberId} />
+      {memberId ? <input type="hidden" name="blocked_id" value={memberId} /> : null}
+      {roomMessageId ? (
+        <input type="hidden" name="room_message_id" value={roomMessageId} />
+      ) : null}
       <button
         type="submit"
         disabled={pending}
+        // Every one of these is named "Block". Pointing at the text it acts on
+        // is what tells a screen reader user which post they are blocking —
+        // and it uses the post itself rather than a label invented for it.
+        aria-describedby={describedBy}
         className="ease-brand text-[14px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical disabled:opacity-55"
       >
         {C.blockLabel}
@@ -65,16 +91,23 @@ export function ReportControl({
   memberId,
   messageId,
   roomMessageId,
+  describedBy,
 }: {
   memberId?: string;
   messageId?: string;
   roomMessageId?: string;
+  /** Id of the text this control acts on, so repeated buttons are told apart. */
+  describedBy?: string;
 }) {
   const [state, act, pending] = useActionState(reportMember, SAFETY_INITIAL);
   const [open, setOpen] = useState(false);
 
   if (state.message) {
-    return <p className="text-[14px] text-positive">{state.message}</p>;
+    return (
+      <p role="status" className="text-[14px] text-positive">
+        {state.message}
+      </p>
+    );
   }
 
   if (!open) {
@@ -82,6 +115,8 @@ export function ReportControl({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-describedby={describedBy}
+        aria-expanded={false}
         className="ease-brand text-[14px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
       >
         {C.reportLabel}

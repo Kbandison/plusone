@@ -69,14 +69,26 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
       <ul className="mt-8 flex flex-col gap-4">
         {(messages ?? []).map((message) => (
           <li key={message.id as string} className="rounded-lg border border-line px-5 py-4">
-            <p className="text-[15.5px] leading-[1.65]">{message.body as string}</p>
+            {/* The controls below point at this id, which is what tells a
+                screen reader user which post they are about to report — every
+                one of them is otherwise just "Report, button". */}
+            <p id={`post-${message.id as string}`} className="text-[15.5px] leading-[1.65]">
+              {message.body as string}
+            </p>
             {message.user_id !== auth.user!.id ? (
               <div className="mt-3 flex items-center gap-4">
+                {/* Neither control takes the author's id. Posts render with no
+                    author, so shipping one to the client turned an unattributed
+                    room into a name and a face for anyone reading the payload.
+                    Both resolve it server-side from the message. */}
                 <ReportControl
                   roomMessageId={message.id as string}
-                  memberId={message.user_id as string}
+                  describedBy={`post-${message.id as string}`}
                 />
-                <BlockButton memberId={message.user_id as string} />
+                <BlockButton
+                  roomMessageId={message.id as string}
+                  describedBy={`post-${message.id as string}`}
+                />
               </div>
             ) : null}
           </li>

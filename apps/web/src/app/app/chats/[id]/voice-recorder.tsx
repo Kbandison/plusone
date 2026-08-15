@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -31,12 +31,23 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
   const blob = useRef<Blob | null>(null);
   const ticker = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // The microphone must not outlive the component.
+  //
+  // cleanup() only ran from onstop and from the catch, so navigating away
+  // mid-recording left the interval ticking AND the getUserMedia stream open —
+  // a live mic and a recording indicator on a member's phone, after they had
+  // left the page. In a product for this community that is not a tidiness
+  // problem. The ref means this runs on unmount without re-running on state.
+  const cleanupRef = useRef<() => void>(() => {});
+  useEffect(() => () => cleanupRef.current(), []);
+
   function cleanup() {
     if (ticker.current) clearInterval(ticker.current);
     ticker.current = null;
     recorder.current?.stream.getTracks().forEach((track) => track.stop());
     recorder.current = null;
   }
+  cleanupRef.current = cleanup;
 
   async function start() {
     setError(null);
@@ -86,9 +97,19 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
     form.set("seconds", String(Math.max(1, seconds)));
     form.set("audio", new File([blob.current], "note", { type: blob.current.type }));
 
-    const result = await sendVoiceNote({ error: null }, form);
-    if (result.error) {
-      setError(result.error);
+    // Unguarded, this awaited a server action that can reject — a dropped
+    // connection left state pinned at "sending" with Send disabled and no error
+    // shown, and only a reload got out of it. A loading state that never
+    // resolves is worse than an error, because it looks like progress.
+    try {
+      const result = await sendVoiceNote({ error: null }, form);
+      if (result.error) {
+        setError(result.error);
+        setState("review");
+        return;
+      }
+    } catch {
+      setError(C.voiceFailed);
       setState("review");
       return;
     }
@@ -118,9 +139,11 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
       {state === "recording" ? (
         <div className="flex items-center gap-4">
           <span aria-hidden className="size-2.5 animate-pulse rounded-full bg-critical" />
-          <span className="text-[15px] tabular-nums" role="status" aria-live="polite">
-            {C.voiceRecording(seconds)}
-          </span>
+          {/* No live region. This changes every second, and announcing the
+              elapsed time once a second talks over everything else on the page.
+              The state change into recording is what is worth announcing, and
+              the button that replaces Record already says it. */}
+          <span className="text-[15px] tabular-nums">{C.voiceRecording(seconds)}</span>
           <button
             type="button"
             onClick={() => recorder.current?.stop()}
@@ -146,7 +169,11 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
           <button
             type="button"
             onClick={discard}
-            className="ease-brand text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            // Discarding mid-send nulls the blob, so if the send then failed the
+            // member landed back on review with no audio and a Send button that
+            // silently did nothing.
+            disabled={state === "sending"}
+            className="ease-brand text-[14.5px] text-ink-3 disabled:opacity-55 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
           >
             {C.voiceDiscardLabel}
           </button>

@@ -28,6 +28,10 @@ export function Composer({ chatId }: { chatId: string }) {
           type="text"
           maxLength={4000}
           placeholder={C.messagePlaceholder}
+          // A placeholder is not a label: it is gone the moment a character is
+          // typed, so a member who tabs back lands on an unnamed field. This is
+          // the primary messaging control of the product.
+          aria-label={C.messagePlaceholder}
           className="flex-1 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] focus:border-accent focus:outline-none"
         />
         <button

@@ -83,6 +83,16 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         : (connect.initiator_id as string))
     : null;
 
+  // The other person's name, for the heading and for attributing each message.
+  // visible_profiles rather than profiles: it applies the same wall the rest of
+  // the app does, so a member who has since blocked you or left dating simply
+  // has no name here rather than leaking one.
+  const { data: otherProfile } = other
+    ? await supabase.from("visible_profiles").select("display_name").eq("id", other).maybeSingle()
+    : { data: null };
+  const otherName = (otherProfile?.display_name as string | null) ?? null;
+  const myName = (profile?.display_name as string | null) ?? null;
+
   const plan = (chat.date_plan ?? null) as Plan | null;
   const countdown = fuse.countdown(
     {
@@ -98,6 +108,11 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main id="main">
+      {/* Every page needs one. Without it the first heading here was an h2 and
+          a member navigating by heading landed mid-hierarchy with no idea whose
+          chat they were in. */}
+      <h1 className="sr-only">{otherName ?? C.chatsHeading}</h1>
+
       {/* The fuse, visible (§7.2). A timer you have to go looking for is a
           deadline that surprises people. */}
       {countdown.isRunning ? (
@@ -118,6 +133,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 : "bg-surface text-ink"
             }`}
           >
+            {/* Who said it. Colour and alignment were the only signal, so a
+                screen reader heard an undifferentiated run of sentences with no
+                way to tell your own words from theirs. Names the page already
+                has, rather than a label invented for the purpose. */}
+            {(message.sender_id === me ? myName : otherName) ? (
+              <span className="sr-only">{message.sender_id === me ? myName : otherName}: </span>
+            ) : null}
             {message.voice_note_path ? (
               <VoiceNote
                 path={message.voice_note_path as string}

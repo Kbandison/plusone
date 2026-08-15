@@ -22,10 +22,29 @@ export const SAFETY_INITIAL: SafetyState = { error: null, message: null };
  * is reversible from Settings, which is where the explaining belongs.
  */
 export async function blockMember(_prev: SafetyState, formData: FormData): Promise<SafetyState> {
-  const blockedId = String(formData.get("blocked_id") ?? "");
-
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+
+  // A room post can be blocked by message id instead of author id.
+  //
+  // Room posts render with no author, so a member writing in "Newly diagnosed"
+  // reasonably reads the room as unattributed — and it shipped the author's
+  // uuid to the client anyway, where any reader could lift it out of the page
+  // payload and open /app/connect/<uuid> to get a name, a photo and prompts.
+  // A personal diagnosis story became a name and a face.
+  //
+  // Resolving it here means the id never leaves the server.
+  const roomMessageId = String(formData.get("room_message_id") ?? "");
+  let blockedId = String(formData.get("blocked_id") ?? "");
+  if (!blockedId && roomMessageId) {
+    const { data: message } = await supabase
+      .from("room_messages")
+      .select("user_id")
+      .eq("id", roomMessageId)
+      .maybeSingle();
+    blockedId = (message?.user_id as string | undefined) ?? "";
+  }
+  if (!blockedId) return { error: "That didn't work.", message: null };
   const { error } = await supabase
     .from("blocks")
     .insert({ blocker_id: auth.user!.id, blocked_id: blockedId });
