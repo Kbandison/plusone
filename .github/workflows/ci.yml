@@ -100,6 +100,15 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
+      # RLS is row-level; the grant decides columns. A table-wide grant let a
+      # member set their own verification_status and read everyone's date of
+      # birth, past every policy, all of which were correct. This runs those
+      # exploits rather than reading the ACL.
+      - name: Verify column grants
+        run: pnpm check:columns
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       # A permanent code, one attribution per invitee forever, and a conversion
       # that fires at verification rather than at signup.
       - name: Verify referrals

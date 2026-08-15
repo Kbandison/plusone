@@ -31,21 +31,31 @@ export const STEP_ROUTES: Record<Step, string> = {
  *
  * The mapping from row to booleans lives here rather than in `packages/logic`,
  * which stays free of database shapes. Everything is read as the member, so RLS
- * is what makes this their own row and not someone else's.
+ * — and, for the profile row, my_profile()'s own auth.uid() — is what makes
+ * this their own row and not someone else's.
  */
+/** The columns of your own row that decide where onboarding resumes. */
+interface OwnProfile {
+  readonly display_name: string | null;
+  readonly birthdate: string | null;
+  readonly community: string | null;
+  readonly condition: string | null;
+  readonly intention: string | null;
+  readonly search_radius_mi: number | null;
+  readonly liveness_passed_at: string | null;
+}
+
 export async function loadFacts(userId: string): Promise<onboarding.OnboardingFacts> {
   const supabase = await getServerSupabase();
 
   const [{ data: user }, { data: profile }, { data: consent }, { data: photos }, { data: quiz }] =
     await Promise.all([
       supabase.auth.getUser(),
-      supabase
-        .from("profiles")
-        .select(
-          "display_name, birthdate, community, condition, intention, search_radius_mi, liveness_passed_at",
-        )
-        .eq("id", userId)
-        .maybeSingle(),
+      // my_profile() rather than the table: birthdate is no longer in the
+      // members' column grant (20260815000800), because a table-wide grant was
+      // handing every member in your pool an exact date of birth. This is the
+      // one row you are allowed all of — your own.
+      supabase.rpc("my_profile").maybeSingle<OwnProfile>(),
       supabase
         .from("consents")
         .select("id")

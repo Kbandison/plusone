@@ -83,6 +83,25 @@ const matchesAny = (text: string, patterns: readonly RegExp[]) =>
 export interface ToneOptions {
   /** Closure lines carry the condition rule; a connect line carries it too. */
   readonly maxChars?: number;
+  /**
+   * Whether the member may name their own condition here.
+   *
+   * The condition rule exists because §8 forbids condition words in anything
+   * that leaves the app — a closure note and a decline note are both delivered
+   * as notifications, so a member naming their diagnosis in one would put it on
+   * someone else's lock screen.
+   *
+   * A room post never leaves. It is read inside a room the member chose to
+   * enter, by people the community wall already admitted. Applying the
+   * notification rule there made the rooms refuse their own subject: the room
+   * titled "Newly diagnosed" rejected the word "diagnosed", and the U=U room
+   * rejected "U=U". The rule that protects a closure note was breaking the one
+   * place on this app whose entire purpose is talking about this.
+   *
+   * Everything else in the check — contact details, sexual content, insults —
+   * still applies. This opts out of one rule, not out of moderation.
+   */
+  readonly allowConditionWords?: boolean;
 }
 
 /**
@@ -98,7 +117,9 @@ export function checkTone(text: string, options: ToneOptions = {}): ToneResult {
 
   if (trimmed.length > maxChars) violations.push("too_long");
   if (matchesAny(trimmed, CONTACT_PATTERNS)) violations.push("contact_info");
-  if (matchesAny(trimmed, CONDITION_PATTERNS)) violations.push("condition_reference");
+  if (!options.allowConditionWords && matchesAny(trimmed, CONDITION_PATTERNS)) {
+    violations.push("condition_reference");
+  }
   if (matchesAny(trimmed, SEXUAL_PATTERNS)) violations.push("sexual_content");
   if (matchesAny(trimmed, INSULT_PATTERNS)) violations.push("insult");
 

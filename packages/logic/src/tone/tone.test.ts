@@ -137,3 +137,32 @@ describe("profile prompts meet the same bar", () => {
     }
   });
 });
+
+describe("condition words in a room", () => {
+  // The rooms are the one surface whose purpose is this subject. Applying the
+  // notification rule to them made "Newly diagnosed" refuse "diagnosed".
+  const ROOM = { maxChars: 2000, allowConditionWords: true } as const;
+
+  it.each([
+    "I was diagnosed with HSV-2 last month and I'm scared.",
+    "Anyone else newly diagnosed?",
+    "U=U changed everything for me.",
+    "Undetectable since March.",
+    "First outbreak was the worst week of my life.",
+    "My status is not the most interesting thing about me.",
+  ])("lets a member say %j in a room", (line) => {
+    expect(checkTone(line, ROOM)).toEqual({ ok: true, violations: [] });
+  });
+
+  it("still refuses the same line in a closure note", () => {
+    const line = "Anyone else newly diagnosed?";
+    expect(checkTone(line).violations).toContain("condition_reference");
+  });
+
+  it("opts out of one rule, not out of moderation", () => {
+    expect(checkTone("you are disgusting", ROOM).violations).toContain("insult");
+    expect(checkTone("hit me on instagram", ROOM).violations).toContain("contact_info");
+    expect(checkTone("send nudes", ROOM).violations).toContain("sexual_content");
+    expect(checkTone("a".repeat(2001), ROOM).violations).toContain("too_long");
+  });
+});

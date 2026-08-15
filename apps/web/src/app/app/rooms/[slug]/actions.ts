@@ -30,9 +30,14 @@ export async function joinRoom(_prev: RoomState, formData: FormData): Promise<Ro
 /**
  * Posting to a room.
  *
- * Tone-checked like every other member-written line. Rooms are where newly
- * diagnosed people arrive, and they are the surface where a cruel message does
- * the most damage — so the same rule that protects a closure note protects this.
+ * Tone-checked like every other member-written line, minus one rule. Rooms are
+ * where newly diagnosed people arrive and where a cruel message does the most
+ * damage, so contact-scraping, sexual content and insults are all still caught.
+ *
+ * What does NOT apply here is the condition rule. It exists because closure and
+ * decline notes are delivered as notifications and §8 keeps condition words off
+ * anyone's lock screen — but a room post never leaves the app. Enforcing it
+ * here made every room refuse its own subject.
  *
  * Slow mode is enforced by the database. Checking it here as well would be a
  * second clock, and two clocks disagree.
@@ -43,7 +48,10 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { error: null };
 
-  const result = tone.checkTone(body, { maxChars: 2000 });
+  // A room post does not leave the app, so the condition rule that protects a
+  // closure note does not apply — see ToneOptions.allowConditionWords. Naming
+  // your own diagnosis in the room named for it is the point of the room.
+  const result = tone.checkTone(body, { maxChars: 2000, allowConditionWords: true });
   if (!result.ok) return { error: describeViolations(result.violations) };
 
   const supabase = await getServerSupabase();

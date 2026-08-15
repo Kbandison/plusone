@@ -35,6 +35,11 @@ export function isAuthorisedCron(request: Request): boolean {
  * Legitimate callers are the cron jobs and the Stripe webhook — paths that act
  * across every member and have no member behind them. Anything in a request
  * path should use the server client so the member's own walls apply.
+ *
+ * The one deliberate exception is the liveness verdict. It is written in a
+ * request path, but the value is the provider's rather than the member's, and
+ * the member must not be able to write down their own verification result —
+ * see onboarding/liveness/actions.ts.
  */
 export function serviceClient() {
   const { NEXT_PUBLIC_SUPABASE_URL } = parseClientEnv(process.env);

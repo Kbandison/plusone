@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY, VERIFICATION, parseServerEnv } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
+import { serviceClient } from "@/lib/cron";
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 
@@ -83,7 +84,19 @@ export async function runLivenessCheck(
   if (!decided.ok) return { ...previous, error: E.unavailable };
 
   const next = decided.state;
-  await supabase
+
+  // Written with the service client, not the member's session client.
+  //
+  // verification_status is no longer in the members' update grant
+  // (20260815000800) — it was, and that meant one PATCH to /rest/v1/profiles
+  // made anyone verified without ever running a liveness check. Verification is
+  // the wall the whole product rests on, so the member who is being verified
+  // must not be the one writing down the verdict.
+  //
+  // Safe here precisely because the value does not come from the member. It
+  // comes from the reducer above, which read it off the provider. A member can
+  // trigger this action; they cannot tell it what happened.
+  await serviceClient()
     .from("profiles")
     .update({
       verification_status: next.status,

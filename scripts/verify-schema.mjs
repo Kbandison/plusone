@@ -31,9 +31,9 @@ if (!DB_URL) {
 
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
-const EXPECT = { tables: 24, views: 3, functions: 62, enums: 17, rooms: 5, config: 20 };
-const INVOKER_VIEWS = ["visible_profiles", "preview_profiles"];
-const DEFINER_VIEWS = ["visible_profile_photos"];
+const EXPECT = { tables: 24, views: 3, functions: 63, enums: 17, rooms: 5, config: 20 };
+const INVOKER_VIEWS = [];
+const DEFINER_VIEWS = ["visible_profile_photos", "visible_profiles", "preview_profiles"];
 const NO_UPDATE_PATH = ["connects", "chats"];
 
 const client = new pg.Client({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } });
@@ -77,12 +77,22 @@ check(noPolicy.length === 0, `every table has at least one policy${noPolicy.leng
 // Two of the three views are projections over data the caller could already
 // read, so they run as the caller and the policies underneath still apply.
 //
-// visible_profile_photos is the exception, and it earns it: profile_photos is
-// own-rows-only, so an invoker view over it returns nothing but your own
-// photos — which is how blurred-until-connected sat decorative until
-// 20260815000400. It is the thing that decides, so it runs as its owner and
-// does its own authorisation. That exception is only safe while it actually
-// calls i_can_view, which is asserted below rather than trusted.
+// All three run as their owner now, and each earns it.
+//
+// visible_profile_photos: profile_photos is own-rows-only, so an invoker view
+// over it returns nothing but your own photos — which is how
+// blurred-until-connected sat decorative until 20260815000400.
+//
+// visible_profiles and preview_profiles: both compute age from birthdate and
+// distance from location, and 20260815000800 took those two columns out of the
+// members' grant because a table-wide grant was handing every member an exact
+// date of birth and a home coordinate for everyone in their pool. An invoker
+// view cannot read a column its caller cannot read, so the views that exist to
+// band and bucket those values had to become the ones allowed to see them.
+//
+// The exception is only safe while each view does its own authorisation, which
+// is asserted below rather than trusted — a definer view with a weak WHERE is
+// strictly worse than the grant it replaced.
 console.log("\n── views run as the caller, not the owner ──");
 for (const view of INVOKER_VIEWS) {
   const [row] = await q(
@@ -105,18 +115,50 @@ for (const view of DEFINER_VIEWS) {
     [view],
   );
   check(row?.si === "false" || row?.si === "off", `${view}: runs as owner, deliberately`);
-  // The whole justification for that exception.
-  check(
-    String(row?.def ?? "").includes("i_can_view"),
-    `${view}: does its own authorisation with i_can_view()`,
+  // A definer view must also be a barrier, or a caller-supplied qual can be
+  // evaluated ahead of the view's own WHERE and ask it leading questions.
+  const [bar] = await q(
+    `select coalesce((select option_value from pg_options_to_table(c.reloptions)
+        where option_name = 'security_barrier'), 'off') sb
+     from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relname = $1`,
+    [view],
   );
-  // And it must never hand back both variants.
+  check(bar?.sb === "true" || bar?.sb === "on", `${view}: security_barrier is on`);
+  // The whole justification for that exception. preview_profiles gates on
+  // preview_permitted instead, which is the same idea under a different name.
+  const def = String(row?.def ?? "");
   check(
-    !/blurred_path.*storage_path|storage_path.*blurred_path/s.test(
-      String(row?.def ?? "").split("FROM")[0] ?? "",
-    ) || String(row?.def ?? "").includes("CASE"),
-    `${view}: returns one resolved path, not both`,
+    def.includes("i_can_view") || def.includes("preview_permitted"),
+    `${view}: does its own authorisation rather than relying on RLS`,
   );
+  // A definer view that forgets this returns every row in the table.
+  check(def.toLowerCase().includes("where"), `${view}: has a WHERE clause at all`);
+  // And the photo view must never hand back both variants.
+  if (view === "visible_profile_photos") {
+    check(
+      !/blurred_path.*storage_path|storage_path.*blurred_path/s.test(def.split("FROM")[0] ?? "") ||
+        def.includes("CASE"),
+      `${view}: returns one resolved path, not both`,
+    );
+  }
+  // Neither profile view may hand back the raw columns it was made definer for.
+  //
+  // Asserted against the view's actual output columns, not its text: both views
+  // legitimately mention birthdate INSIDE age_from_birthdate(), and matching
+  // the definition would fail on the correct thing. What matters is what comes
+  // out — an age, a band, a bucketed distance, and never the raw value.
+  if (view !== "visible_profile_photos") {
+    const outputs = (
+      await q(
+        `select column_name from information_schema.columns
+         where table_schema = 'public' and table_name = $1`,
+        [view],
+      )
+    ).map((r) => r.column_name);
+    const raw = outputs.filter((col) => col === "birthdate" || col === "location");
+    check(raw.length === 0, `${view}: exposes no raw birthdate or location`, raw.join(", "));
+  }
 }
 
 console.log("\n── SECURITY DEFINER functions pin search_path ──");
