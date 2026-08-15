@@ -49,11 +49,28 @@ export function quizCompat(
   if (magA === 0 || magB === 0) return NEUTRAL_QUIZ_COMPAT;
 
   const cosine = dot / (Math.sqrt(magA) * Math.sqrt(magB));
-  return Math.min(1, Math.max(0, (cosine + 1) / 2));
+  // clamp01, not Math.min/Math.max: those pass NaN straight through, and a NaN
+  // score sorts ahead of every real one rather than behind them.
+  return clamp01((cosine + 1) / 2);
 }
+
+/**
+ * Clamps to [0, 1], and sends anything non-finite to a neutral value.
+ *
+ * Math.min(1, Math.max(0, NaN)) is NaN — the clamp does not clamp. That matters
+ * because `b.score - a.score` is then NaN, the comparator stops being a total
+ * order, and the poisoned candidate is served FIRST: one corrupt quiz vector or
+ * times-served counter took over the top of everyone's Drop.
+ */
+const clamp01 = (value: number, fallback = 0): number =>
+  Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+
+/** A counter we cannot read says nothing about exposure, so it says nothing. */
+const NEUTRAL_UNDEREXPOSURE = 0.5;
 
 /** 1 for someone active right now, falling to 0 at the activity cutoff. */
 export function recencyActive(lastActiveAt: number, now: number, withinDays: number): number {
+  if (!Number.isFinite(lastActiveAt) || !Number.isFinite(now)) return 0;
   const windowMs = withinDays * 24 * 60 * 60 * 1000;
   const age = now - lastActiveAt;
   if (age <= 0) return 1;
@@ -66,5 +83,6 @@ export function recencyActive(lastActiveAt: number, now: number, withinDays: num
  * every drop in a small city, and everyone else concludes the app is empty.
  */
 export function underexposure(timesServed: number): number {
+  if (!Number.isFinite(timesServed)) return NEUTRAL_UNDEREXPOSURE;
   return 1 / (1 + Math.max(0, timesServed));
 }

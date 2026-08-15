@@ -43,7 +43,11 @@ export function recordConversion(
   const tiersAwarded = [...state.tiersAwarded];
 
   for (const tier of config.tiers) {
-    if (conversions !== tier.conversions) continue;
+    // >= rather than ===. Exact equality meant a count that ever skipped a
+    // number — a state repair, a clawback re-count, a lost update — forfeited
+    // that tier permanently, and it also made the tiersAwarded guard below dead
+    // code, since a number can only be hit once on the way up anyway.
+    if (conversions < tier.conversions) continue;
     if (tiersAwarded.includes(tier.conversions)) continue;
     tiersAwarded.push(tier.conversions);
 

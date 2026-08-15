@@ -44,19 +44,36 @@ export function dailyAllowance(
   return state.isPremium ? config.premiumPerDay : config.freePerDay;
 }
 
+/**
+ * Whether a counter is a number of connects at all.
+ *
+ * Math.max(0, …) protected the OUTPUT and nothing validated the input, so
+ * spentToday: NaN made remainingToday NaN, `NaN < 1` false, and the budget
+ * unlimited — while spentToday: -100 inflated a 3/day allowance to 103.
+ *
+ * Both fail toward more unsolicited approaches, which in this community is a
+ * safety question rather than a billing one, so an untrusted counter is read as
+ * exhausted. A member wrongly told they are out of connects for the day can say
+ * so; the people on the other end of an unlimited budget cannot.
+ */
+const isCount = (value: number): boolean => Number.isFinite(value) && value >= 0;
+
+/** Budget units already spent. Anything we cannot read is all of them. */
+const spent = (value: number): number => (isCount(value) ? value : Infinity);
+
 /** Budget units left today. Never negative. */
 export function remainingToday(
   state: ConnectBudgetState,
   config: ConnectConfig = DEFAULT_CONNECT_CONFIG,
 ): number {
-  return Math.max(0, dailyAllowance(state, config) - state.spentToday);
+  return Math.max(0, dailyAllowance(state, config) - spent(state.spentToday));
 }
 
 export function remainingRoomConnectsThisWeek(
   state: ConnectBudgetState,
   config: ConnectConfig = DEFAULT_CONNECT_CONFIG,
 ): number {
-  return Math.max(0, config.supportOnlyPerWeek - state.roomSentThisWeek);
+  return Math.max(0, config.supportOnlyPerWeek - spent(state.roomSentThisWeek));
 }
 
 /**
@@ -103,9 +120,20 @@ export function spend(
   config: ConnectConfig = DEFAULT_CONNECT_CONFIG,
 ): ConnectBudgetState {
   if (state.mode === "support_only") {
-    return { ...state, roomSentThisWeek: state.roomSentThisWeek + 1 };
+    // Only a room connect is spendable here — canSendConnect refuses every
+    // other source outright, so charging the weekly budget for one would burn
+    // a support-only member's allowance on an ask that never went out.
+    if (source !== "room") return state;
+    // A corrupt counter is written back as exhausted rather than as Infinity —
+    // it has to survive a round trip through the database, and "you are out for
+    // this week" is the same answer remainingToday already gives.
+    const sent = isCount(state.roomSentThisWeek)
+      ? state.roomSentThisWeek
+      : config.supportOnlyPerWeek;
+    return { ...state, roomSentThisWeek: sent + 1 };
   }
-  return { ...state, spentToday: state.spentToday + costOf(source, config) };
+  const today = isCount(state.spentToday) ? state.spentToday : dailyAllowance(state, config);
+  return { ...state, spentToday: today + costOf(source, config) };
 }
 
 /** Epoch ms at which an unanswered connect expires (§6.3). */

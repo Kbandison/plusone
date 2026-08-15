@@ -110,11 +110,21 @@ export function selectDrop(
   now: number,
   config: DropConfig = DEFAULT_DROP_CONFIG,
 ): DropResult {
-  const eligible = candidates.filter((c) => isEligible(c, now, config));
+  // Nobody appears twice. Nothing upstream guarantees distinct rows, and a
+  // duplicate took two of the three cards — the member sees the same person
+  // twice and a real candidate is pushed out of a Drop that is only ever three.
+  const seen = new Set<string>();
+  const distinct = candidates.filter((c) => !seen.has(c.id) && seen.add(c.id));
+
+  const eligible = distinct.filter((c) => isEligible(c, now, config));
   const { radiusMi, pool } = resolveRadius(eligible, viewer.radiusMi, config);
 
   const ranked = pool
     .map((c) => score(viewer, c, now, config))
+    // A NaN score makes `b.score - a.score` NaN, which makes the comparator
+    // non-total — and the poisoned candidate ends up served first rather than
+    // last. Drop it instead of ranking it.
+    .filter((c) => Number.isFinite(c.score))
     // Ties break by id so the same inputs always give the same drop — a member
     // who reloads must not see a different three.
     .sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));

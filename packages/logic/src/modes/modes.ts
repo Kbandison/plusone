@@ -38,8 +38,14 @@ export function changeIntention(
   // trap rather than a lock.
   if (next === state.intention) return { ok: false, code: "already_that_intention" };
 
+  // NaN < anything is false, so a non-finite clock read as "cooldown passed"
+  // and then WROTE itself into intentionChangedAt — after which every later
+  // comparison against NaN was also false and the 30-day lock was gone for
+  // good. A cooldown that a bad timestamp permanently unlocks is not a cooldown.
   const unlocksAt = intentionUnlocksAt(state, config);
-  if (at < unlocksAt) return { ok: false, code: "intention_locked", unlocksAt };
+  if (!Number.isFinite(at) || at < unlocksAt) {
+    return { ok: false, code: "intention_locked", unlocksAt };
+  }
 
   return { ok: true, state: { ...state, intention: next, intentionChangedAt: at } };
 }
