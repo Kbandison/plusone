@@ -26,8 +26,8 @@
     "check:photos": "node scripts/verify-photos.mjs",
     "check:premium": "node scripts/verify-premium.mjs",
     "check:config": "node scripts/verify-config.mjs",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json,css,sql}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css,sql}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css}\""
   },
   "devDependencies": {
     "pg": "^8.23.0",

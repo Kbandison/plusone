@@ -1,8 +1,4 @@
-export {
-  createBrowserSupabase,
-  createServerSupabase,
-  createServiceSupabase,
-} from "./clients";
+export { createBrowserSupabase, createServerSupabase, createServiceSupabase } from "./clients";
 export type { CookieAdapter, SupabaseCredentials } from "./clients";
 
 /**

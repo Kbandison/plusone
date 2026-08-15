@@ -19,5 +19,7 @@ export const ACCEPTED_TYPES = [
 
 /** Whether a file looks acceptable before any bytes are decoded. */
 export function isAcceptableUpload(type: string, size: number): boolean {
-  return (ACCEPTED_TYPES as readonly string[]).includes(type) && size > 0 && size <= MAX_UPLOAD_BYTES;
+  return (
+    (ACCEPTED_TYPES as readonly string[]).includes(type) && size > 0 && size <= MAX_UPLOAD_BYTES
+  );
 }

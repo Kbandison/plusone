@@ -15,12 +15,7 @@
  *      note or is `graduated` — the outcome where two people actually met.
  */
 
-export type ChatStatus =
-  | "open"
-  | "date_planned"
-  | "closed_fuse"
-  | "closed_by_member"
-  | "graduated";
+export type ChatStatus = "open" | "date_planned" | "closed_fuse" | "closed_by_member" | "graduated";
 
 export const TERMINAL_STATUSES = ["closed_fuse", "closed_by_member", "graduated"] as const;
 
@@ -68,7 +63,12 @@ export interface FuseState {
  * Nothing ever dispatched it. It only existed to be a hole.
  */
 export type FuseEvent =
-  | { readonly type: "propose_plan"; readonly by: string; readonly plan: DatePlan; readonly at: number }
+  | {
+      readonly type: "propose_plan";
+      readonly by: string;
+      readonly plan: DatePlan;
+      readonly at: number;
+    }
   | { readonly type: "confirm_plan"; readonly by: string; readonly at: number }
   | { readonly type: "cancel_plan"; readonly at: number }
   | {

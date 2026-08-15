@@ -30,7 +30,14 @@ export function BasicsForm() {
           required
           maxLength={40}
           autoComplete="nickname"
-          aria-describedby={nameHintId}
+          // The error too, when there is one. It was given an id and then
+          // referenced by nothing, so a member who tabbed back to the field
+          // that failed was told only the hint.
+          //
+          // No aria-invalid: the error is form-level and does not say which
+          // field it is about, and marking a field invalid when we cannot tell
+          // is a claim rather than a fix.
+          aria-describedby={state.error ? `${nameHintId} ${errorId}` : nameHintId}
           className="ease-brand rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none"
         />
         <p id={nameHintId} className="text-[13.5px] text-ink-3">
@@ -47,7 +54,7 @@ export function BasicsForm() {
           name="birthdate"
           type="date"
           required
-          aria-describedby={dobHintId}
+          aria-describedby={state.error ? `${dobHintId} ${errorId}` : dobHintId}
           className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none sm:w-[260px]"
         />
         <p id={dobHintId} className="text-[13.5px] text-ink-3">

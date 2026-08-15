@@ -4,8 +4,14 @@ import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
 
-export type ReportDecisionState = { readonly error: string | null; readonly message: string | null };
-export const REPORT_DECISION_INITIAL: ReportDecisionState = { error: null, message: null };
+export type ReportDecisionState = {
+  readonly error: string | null;
+  readonly message: string | null;
+};
+export const REPORT_DECISION_INITIAL: ReportDecisionState = {
+  error: null,
+  message: null,
+};
 
 /**
  * Deciding a report.
@@ -32,5 +38,8 @@ export async function decideReport(
   if (error) return { error: error.message, message: null };
 
   revalidatePath("/admin/reports");
-  return { error: null, message: status === "resolved" ? "Resolved." : "Dismissed." };
+  return {
+    error: null,
+    message: status === "resolved" ? "Resolved." : "Dismissed.",
+  };
 }

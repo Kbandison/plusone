@@ -17,11 +17,7 @@ import { CONNECTS } from "@plusone/config";
  */
 
 export type ToneViolation =
-  | "too_long"
-  | "contact_info"
-  | "condition_reference"
-  | "sexual_content"
-  | "insult";
+  "too_long" | "contact_info" | "condition_reference" | "sexual_content" | "insult";
 
 export interface ToneResult {
   readonly ok: boolean;

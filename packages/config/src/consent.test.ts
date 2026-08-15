@@ -42,7 +42,9 @@ describe("consent copy versioning", () => {
   );
 
   it("has a version for every digest and a digest for every version", () => {
-    expect(Object.keys(CONSENT_COPY_VERSION).sort()).toEqual(Object.keys(CONSENT_COPY_DIGEST).sort());
+    expect(Object.keys(CONSENT_COPY_VERSION).sort()).toEqual(
+      Object.keys(CONSENT_COPY_DIGEST).sort(),
+    );
   });
 
   it("uses a version string the consents table can store", () => {
@@ -79,7 +81,10 @@ describe("the §9.1 copy itself", () => {
 });
 
 describe("the privacy policy draft", () => {
-  const all = [PRIVACY_POLICY_INTRO, ...PRIVACY_POLICY.flatMap((s) => [...s.body, ...(s.list ?? [])])];
+  const all = [
+    PRIVACY_POLICY_INTRO,
+    ...PRIVACY_POLICY.flatMap((s) => [...s.body, ...(s.list ?? [])]),
+  ];
 
   // §9.1's consent screen links to /privacy#health-data. If the section is
   // renamed, the link silently goes nowhere — so the anchor is asserted.

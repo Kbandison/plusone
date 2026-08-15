@@ -14,7 +14,11 @@ export default async function BasicsPage() {
   await requireStep("profile_basics");
 
   return (
-    <StepShell step="profile_basics" heading={DRAFT_COPY.basics.heading} intro={DRAFT_COPY.basics.intro}>
+    <StepShell
+      step="profile_basics"
+      heading={DRAFT_COPY.basics.heading}
+      intro={DRAFT_COPY.basics.intro}
+    >
       <BasicsForm />
     </StepShell>
   );

@@ -14,7 +14,11 @@ interface Conversion {
   referrer_conversion_count: number;
 }
 
-const TIER_ENUM: Record<number, string> = { 3: "tier1_3", 5: "tier2_5", 10: "tier3_10" };
+const TIER_ENUM: Record<number, string> = {
+  3: "tier1_3",
+  5: "tier2_5",
+  10: "tier3_10",
+};
 
 /**
  * Pays out conversions (§6.5).

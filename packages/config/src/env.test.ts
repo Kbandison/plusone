@@ -74,7 +74,11 @@ describe("client env", () => {
   it("names every offending key at once rather than one per boot", () => {
     let message = "";
     try {
-      parseClientEnv({ ...VALID_CLIENT, NEXT_PUBLIC_SITE_URL: "nope", NEXT_PUBLIC_APP_URL: "nope" });
+      parseClientEnv({
+        ...VALID_CLIENT,
+        NEXT_PUBLIC_SITE_URL: "nope",
+        NEXT_PUBLIC_APP_URL: "nope",
+      });
     } catch (error) {
       message = (error as Error).message;
     }

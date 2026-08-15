@@ -4,7 +4,14 @@ import { useActionState, useState } from "react";
 
 import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
 
-import { CHAT_INITIAL, cancelPlan, closeChat, confirmPlan, proposePlan, sendMessage } from "./actions";
+import {
+  CHAT_INITIAL,
+  cancelPlan,
+  closeChat,
+  confirmPlan,
+  proposePlan,
+  sendMessage,
+} from "./actions";
 
 const C = DRAFT_COPY.app;
 
@@ -26,6 +33,11 @@ export function Composer({ chatId }: { chatId: string }) {
         <input
           name="body"
           type="text"
+          // Pressing Send on an empty field did nothing at all: the action
+          // early-returned {error: null}, so there was no error, no message and
+          // no change. Sighted members saw nothing happen; everyone else heard
+          // nothing happen.
+          required
           maxLength={4000}
           placeholder={C.messagePlaceholder}
           // A placeholder is not a label: it is gone the moment a character is
@@ -57,7 +69,10 @@ export function Composer({ chatId }: { chatId: string }) {
 export function ProposePlan({ chatId }: { chatId: string }) {
   const [state, act, pending] = useActionState(proposePlan, CHAT_INITIAL);
   return (
-    <form action={act} className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6">
+    <form
+      action={act}
+      className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6"
+    >
       <h2 className="text-[1.15rem]">{C.proposeHeading}</h2>
       <input type="hidden" name="chat_id" value={chatId} />
 
@@ -141,72 +156,81 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
   const [template, setTemplate] = useState(0);
   const [line, setLine] = useState("");
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="ease-brand mt-10 self-start text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
-      >
-        {C.closeHeading}
-      </button>
-    );
-  }
+  // Mounted whether open or not — see the note on DeclineForm. Replacing the
+  // trigger with the form threw away the focused element and announced nothing.
+  const trigger = (
+    <button
+      type="button"
+      onClick={() => setOpen((current) => !current)}
+      aria-expanded={open}
+      className="ease-brand mt-10 self-start text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+    >
+      {C.closeHeading}
+    </button>
+  );
+
+  if (!open) return trigger;
 
   return (
-    <form action={act} className="mt-10 flex flex-col gap-5 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[1.15rem]">{C.closeHeading}</h2>
-      <input type="hidden" name="chat_id" value={chatId} />
+    <>
+      {trigger}
+      <form
+        action={act}
+        className="mt-6 flex flex-col gap-5 rounded-xl border border-line-2 bg-surface p-6"
+      >
+        <h2 className="text-[1.15rem]">{C.closeHeading}</h2>
+        <input type="hidden" name="chat_id" value={chatId} />
 
-      <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-[14px] text-ink-2">{C.closeTemplateLabel}</legend>
-        {CLOSURE_TEMPLATES.map((text, index) => (
-          <label
-            key={text}
-            className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[14.5px] transition-colors duration-200 has-checked:border-accent"
-          >
-            <input
-              type="radio"
-              name="template"
-              value={index}
-              checked={template === index}
-              onChange={() => setTemplate(index)}
-              className="mt-1 size-[16px] shrink-0 accent-accent"
-            />
-            {text}
-          </label>
-        ))}
-      </fieldset>
+        <fieldset className="flex flex-col gap-2.5">
+          <legend className="mb-2 text-[14px] text-ink-2">{C.closeTemplateLabel}</legend>
+          {CLOSURE_TEMPLATES.map((text, index) => (
+            <label
+              key={text}
+              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[14.5px] transition-colors duration-200 has-checked:border-accent"
+            >
+              <input
+                type="radio"
+                name="template"
+                value={index}
+                checked={template === index}
+                onChange={() => setTemplate(index)}
+                className="mt-1 size-[16px] shrink-0 accent-accent"
+              />
+              {text}
+            </label>
+          ))}
+        </fieldset>
 
-      <label className="flex flex-col gap-2 text-[14px] text-ink-2">
-        {C.closePersonalLineLabel}
-        <input
-          name="personal_line"
-          type="text"
-          maxLength={CONNECTS.personalLineMaxChars}
-          value={line}
-          onChange={(event) => setLine(event.target.value)}
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
-        />
-      </label>
+        <label className="flex flex-col gap-2 text-[14px] text-ink-2">
+          {C.closePersonalLineLabel}
+          <input
+            name="personal_line"
+            type="text"
+            maxLength={CONNECTS.personalLineMaxChars}
+            value={line}
+            onChange={(event) => setLine(event.target.value)}
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+          />
+        </label>
 
-      {/* Exactly what they will receive, before it is sent. Template one
+        {/* Exactly what they will receive, before it is sent. Template one
           carries the sender's name, so the preview substitutes it rather than
           showing a member a raw {name} placeholder. */}
-      <p className="rounded-lg bg-surface-2 px-4 py-3.5 text-[14.5px] leading-[1.6] text-ink-2">
-        {renderClosureTemplate(template, senderName)}
-        {line ? ` ${line}` : ""}
-      </p>
+        <p className="rounded-lg bg-surface-2 px-4 py-3.5 text-[14.5px] leading-[1.6] text-ink-2">
+          {renderClosureTemplate(template, senderName)}
+          {line ? ` ${line}` : ""}
+        </p>
 
-      <Error message={state.error} />
+        <Error message={state.error} />
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-      >
-        {C.closeLabel}
-      </button>
-    </form>
+        <button
+          type="submit"
+          disabled={pending}
+          className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+        >
+          {C.closeLabel}
+        </button>
+      </form>
+    </>
   );
 }

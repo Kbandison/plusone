@@ -26,10 +26,7 @@ const documented = new Set(
     .filter((key): key is string => Boolean(key)),
 );
 
-const required = [
-  ...Object.keys(clientEnvSchema.shape),
-  ...Object.keys(serverEnvSchema.shape),
-];
+const required = [...Object.keys(clientEnvSchema.shape), ...Object.keys(serverEnvSchema.shape)];
 
 describe(".env.example matches the schema", () => {
   it("finds keys in both", () => {
@@ -38,9 +35,10 @@ describe(".env.example matches the schema", () => {
   });
 
   it.each(required)("documents %s", (key) => {
-    expect(documented.has(key), `${key} is required by the schema but absent from .env.example`).toBe(
-      true,
-    );
+    expect(
+      documented.has(key),
+      `${key} is required by the schema but absent from .env.example`,
+    ).toBe(true);
   });
 
   it("documents nothing the schema does not want", () => {

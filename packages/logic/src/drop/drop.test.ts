@@ -179,7 +179,9 @@ describe("referrals cannot reach the drop", () => {
   /** Declared field names only — the comment saying there are none is not one. */
   function fieldsOf(interfaceName: string): string[] {
     const source = readFileSync(fileURLToPath(new URL("./types.ts", import.meta.url)), "utf8");
-    const block = new RegExp(`export interface ${interfaceName} \\{([\\s\\S]*?)\\n\\}`).exec(source)?.[1];
+    const block = new RegExp(`export interface ${interfaceName} \\{([\\s\\S]*?)\\n\\}`).exec(
+      source,
+    )?.[1];
     expect(block, `${interfaceName} not found`).toBeDefined();
     return [...(block ?? "").matchAll(/^\s*readonly (\w+)/gm)].map((m) => m[1] as string);
   }
@@ -234,7 +236,10 @@ describe("selecting the drop", () => {
   });
 
   it("never pads with a filtered-out profile", () => {
-    const one = [candidate({ id: "real" }), candidate({ id: "stale", lastActiveAt: NOW - 40 * DAY })];
+    const one = [
+      candidate({ id: "real" }),
+      candidate({ id: "stale", lastActiveAt: NOW - 40 * DAY }),
+    ];
     const result = selectDrop(viewer(), one, NOW);
     expect(result.cards.map((c) => c.id)).toEqual(["real"]);
   });
@@ -249,7 +254,11 @@ describe("selecting the drop", () => {
   });
 
   it("ranks higher scores first", () => {
-    const result = selectDrop(viewer(), pool(10, (i) => ({ timesServed: i })), NOW);
+    const result = selectDrop(
+      viewer(),
+      pool(10, (i) => ({ timesServed: i })),
+      NOW,
+    );
     const scores = result.cards.map((c) => c.score);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);
   });

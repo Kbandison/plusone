@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { memberFacingError } from "@/lib/rpc-error";
 
-export type SettingsState = { readonly error: string | null; readonly message: string | null };
+export type SettingsState = {
+  readonly error: string | null;
+  readonly message: string | null;
+};
 export const SETTINGS_INITIAL: SettingsState = { error: null, message: null };
 
 /**
@@ -24,13 +28,21 @@ export async function requestDeletion(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== "DELETE") {
+  if (
+    String(formData.get("confirm") ?? "")
+      .trim()
+      .toUpperCase() !== "DELETE"
+  ) {
     return { error: "Type DELETE to confirm.", message: null };
   }
 
   const supabase = await getServerSupabase();
   const { data, error } = await supabase.rpc("request_deletion");
-  if (error) return { error: error.message, message: null };
+  if (error)
+    return {
+      error: memberFacingError(error, "That didn't save. Try again."),
+      message: null,
+    };
 
   const purgeAfter = new Date(data as string);
   revalidatePath("/app/settings");
@@ -55,5 +67,7 @@ export async function setCrossCommunityOptIn(
 
   if (error) return { error: "That didn't save.", message: null };
   revalidatePath("/app/settings");
-  return { error: null, message: null };
+  // A checkbox looks identical whether the save landed or not, so silence here
+  // is indistinguishable from failure.
+  return { error: null, message: "Saved." };
 }

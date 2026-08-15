@@ -28,7 +28,12 @@ export type Reward =
       readonly reason: "conversion" | "tier";
       readonly tier?: number;
     }
-  | { readonly kind: "badge"; readonly badge: string; readonly status: "auto_granted"; readonly tier: number };
+  | {
+      readonly kind: "badge";
+      readonly badge: string;
+      readonly status: "auto_granted";
+      readonly tier: number;
+    };
 
 export interface ReferralState {
   /** Every invitee who has ever reached `verified`. Never capped. */

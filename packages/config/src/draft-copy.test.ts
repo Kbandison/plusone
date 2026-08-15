@@ -24,7 +24,8 @@ describe("the community/condition mapping matches the database", () => {
   // A mismatch here does not fail loudly. It offers a member a choice the
   // database then refuses, at the end of a form they already filled in.
   it("covers exactly the condition_detail enum, with no extras", () => {
-    const block = /create type public\.condition_detail as enum \(([\s\S]*?)\);/.exec(enums)?.[1] ?? "";
+    const block =
+      /create type public\.condition_detail as enum \(([\s\S]*?)\);/.exec(enums)?.[1] ?? "";
     const fromSql = [...block.matchAll(/'(\w+)'/g)].map((m) => m[1]).sort();
     const fromTs = Object.values(CONDITIONS_BY_COMMUNITY).flat().sort();
     expect(fromTs).toEqual(fromSql);
@@ -32,19 +33,23 @@ describe("the community/condition mapping matches the database", () => {
   });
 
   it("covers exactly the condition_community enum", () => {
-    const block = /create type public\.condition_community as enum \(([\s\S]*?)\);/.exec(enums)?.[1] ?? "";
+    const block =
+      /create type public\.condition_community as enum \(([\s\S]*?)\);/.exec(enums)?.[1] ?? "";
     const fromSql = [...block.matchAll(/'(\w+)'/g)].map((m) => m[1]).sort();
     expect(Object.keys(CONDITIONS_BY_COMMUNITY).sort()).toEqual(fromSql);
     expect(Object.keys(COMMUNITY_LABELS).sort()).toEqual(fromSql);
   });
 
   it("groups each condition exactly as the CHECK constraint does", () => {
-    const check = /constraint profiles_condition_matches_community check \(([\s\S]*?)\n  \)/.exec(tables)?.[1] ?? "";
+    const check =
+      /constraint profiles_condition_matches_community check \(([\s\S]*?)\n  \)/.exec(
+        tables,
+      )?.[1] ?? "";
     expect(check.length).toBeGreaterThan(0);
     for (const [community, conditions] of Object.entries(CONDITIONS_BY_COMMUNITY)) {
-      const clause = new RegExp(
-        `community = '${community}' and condition in \\(([^)]*)\\)`,
-      ).exec(check)?.[1];
+      const clause = new RegExp(`community = '${community}' and condition in \\(([^)]*)\\)`).exec(
+        check,
+      )?.[1];
       expect(clause, `no clause for ${community}`).toBeDefined();
       const fromSql = [...(clause ?? "").matchAll(/'(\w+)'/g)].map((m) => m[1]).sort();
       expect(fromSql).toEqual([...conditions].sort());
@@ -106,7 +111,11 @@ describe("drafts never shadow approved copy", () => {
 
   /** Words only — case, punctuation and spacing removed. */
   const shape = (text: string) =>
-    text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter(Boolean);
 
   /** How many words two strings share, as a fraction of the longer one. */
   function similarity(a: string, b: string): number {
@@ -157,7 +166,6 @@ describe("profile prompts", () => {
     const ids = PROFILE_PROMPTS.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
-
 
   it("resolves a question from an id, and nothing from a bad one", () => {
     expect(promptQuestion(PROFILE_PROMPTS[0]!.id)).toBe(PROFILE_PROMPTS[0]!.question);

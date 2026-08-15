@@ -31,7 +31,9 @@ export async function saveIntention(
   // Going through the RPC is what makes the cooldown real: the columns are no
   // longer in the members' update grant (20260815000800), so this is now the
   // only way to change an intention rather than the polite way.
-  const { error } = await supabase.rpc("change_intention", { p_intention: intention });
+  const { error } = await supabase.rpc("change_intention", {
+    p_intention: intention,
+  });
 
   if (error) return { error: "That didn't save. Try again." };
 

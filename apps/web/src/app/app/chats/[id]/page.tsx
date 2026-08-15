@@ -36,7 +36,15 @@ async function VoiceNote({ path, seconds }: { path: string; seconds: number | nu
 
   return (
     <span className="flex items-center gap-3">
-      <audio src={data.signedUrl} controls preload="none" className="max-w-full" />
+      {/* A bare <audio controls> is announced as "audio player" with no
+          indication of whose voice it is or how long it runs. */}
+      <audio
+        src={data.signedUrl}
+        controls
+        preload="none"
+        aria-label={C.voiceNoteAria(seconds)}
+        className="max-w-full"
+      />
       {seconds ? <span className="text-[13.5px] text-ink-3">{seconds}s</span> : null}
     </span>
   );
@@ -52,7 +60,9 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   // empty here is the wall working, not a missing record.
   const { data: chat } = await supabase
     .from("chats")
-    .select("id, connect_id, status, fuse_expires_at, date_plan, closure_template, closure_personal_line, closed_by")
+    .select(
+      "id, connect_id, status, fuse_expires_at, date_plan, closure_template, closure_personal_line, closed_by",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -78,9 +88,9 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .eq("id", chat.connect_id as string)
     .maybeSingle();
   const other = connect
-    ? ((connect.initiator_id as string) === me
-        ? (connect.target_id as string)
-        : (connect.initiator_id as string))
+    ? (connect.initiator_id as string) === me
+      ? (connect.target_id as string)
+      : (connect.initiator_id as string)
     : null;
 
   // The other person's name, for the heading and for attributing each message.

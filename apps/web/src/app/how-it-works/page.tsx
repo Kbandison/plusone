@@ -18,7 +18,9 @@ export default function HowItWorksPage() {
       <ol className="mt-16 flex flex-col gap-14">
         {HOW_IT_WORKS.map((step, index) => (
           <li key={step.id} id={step.id} className="scroll-mt-24">
-            <p className="font-display text-[15px] text-accent">{String(index + 1).padStart(2, "0")}</p>
+            <p className="font-display text-[15px] text-accent">
+              {String(index + 1).padStart(2, "0")}
+            </p>
             <h2 className="mt-2 text-[clamp(1.5rem,4vw,1.85rem)]">{step.title}</h2>
 
             {step.body.map((paragraph) => (

@@ -69,7 +69,13 @@ export async function POST(request: Request) {
       // Without a member this payment cannot be honoured. Acknowledged so
       // Stripe stops retrying, and logged so somebody notices.
       if (!userId || !customerId) {
-        console.error(JSON.stringify({ at: "stripe.webhook", event: event.type, problem: "unattributable" }));
+        console.error(
+          JSON.stringify({
+            at: "stripe.webhook",
+            event: event.type,
+            problem: "unattributable",
+          }),
+        );
         return NextResponse.json({ received: true });
       }
 
@@ -92,7 +98,13 @@ export async function POST(request: Request) {
       typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
     if (!userId) {
-      console.error(JSON.stringify({ at: "stripe.webhook", event: event.type, problem: "no user_id in metadata" }));
+      console.error(
+        JSON.stringify({
+          at: "stripe.webhook",
+          event: event.type,
+          problem: "no user_id in metadata",
+        }),
+      );
       return NextResponse.json({ received: true });
     }
 
@@ -123,7 +135,13 @@ export async function POST(request: Request) {
   } catch (error) {
     // A 500 asks Stripe to retry, which is right: the event was genuine and we
     // failed to record it.
-    console.error(JSON.stringify({ at: "stripe.webhook", event: event.type, error: String(error) }));
+    console.error(
+      JSON.stringify({
+        at: "stripe.webhook",
+        event: event.type,
+        error: String(error),
+      }),
+    );
     return NextResponse.json({ error: "could not record" }, { status: 500 });
   }
 }

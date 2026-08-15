@@ -2,7 +2,13 @@
 
 import { redirect } from "next/navigation";
 
-import { DRAFT_COPY, allowsUEqualsU, isValidPair, type Community, type ConditionDetail } from "@plusone/config";
+import {
+  DRAFT_COPY,
+  allowsUEqualsU,
+  isValidPair,
+  type Community,
+  type ConditionDetail,
+} from "@plusone/config";
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";

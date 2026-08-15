@@ -43,7 +43,9 @@ describe("§3.2 voice", () => {
   // people using it. Everyone here already knows.
   it("does not explain what anyone already lives with", () => {
     for (const text of allText) {
-      expect(text.toLowerCase()).not.toMatch(/\b(?:transmission rates?|antiviral|viral load|cd4)\b/);
+      expect(text.toLowerCase()).not.toMatch(
+        /\b(?:transmission rates?|antiviral|viral load|cd4)\b/,
+      );
     }
   });
 });

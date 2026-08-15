@@ -22,7 +22,10 @@ export const DRAFT_COPY = {
    */
   home: {
     getStarted: "Get started",
-    privacyLink: "How we handle your data",
+    // No privacy link here: SiteFooter carries one on every marketing page,
+    // and a second name for the same destination is a second thing to keep
+    // true. The consent screen uses COPY.consent.policyLinkLabel, which is
+    // spec copy and says what that particular link is for.
   },
 
   phone: {
@@ -73,8 +76,7 @@ export const DRAFT_COPY = {
     communityLabel: "Community",
     conditionLabel: "What you are living with",
     uEqualsULabel: "Show the U=U badge on my profile",
-    uEqualsUHint:
-      "Undetectable equals untransmittable. Only you decide whether this appears.",
+    uEqualsUHint: "Undetectable equals untransmittable. Only you decide whether this appears.",
     errors: {
       communityRequired: "Choose a community.",
       conditionRequired: "Choose one.",
@@ -99,7 +101,8 @@ export const DRAFT_COPY = {
     startLabel: "Take the selfie",
     checkingLabel: "Checking…",
     retryLabel: "Try again",
-    retriesLeft: (n: number) => `${n} ${n === 1 ? "attempt" : "attempts"} left before a person takes a look.`,
+    retriesLeft: (n: number) =>
+      `${n} ${n === 1 ? "attempt" : "attempts"} left before a person takes a look.`,
     flaggedHeading: "We will take a look",
     flaggedBody:
       "The automatic check could not decide. Someone on our team will review it, usually within a day. You do not need to do anything.",
@@ -122,7 +125,8 @@ export const DRAFT_COPY = {
     privacyLabel: "Who sees your photos",
     clearLabel: "Everyone who can see my profile",
     blurredLabel: "Blurred until we connect",
-    blurredHint: "People see that you have photos, and see them properly once you have both said yes.",
+    blurredHint:
+      "People see that you have photos, and see them properly once you have both said yes.",
     errors: {
       required: "Add at least one photo.",
       tooLarge: "That image is larger than 8 MB.",
@@ -182,6 +186,9 @@ export const DRAFT_COPY = {
     voiceTooLong: "Voice notes cap at two minutes.",
     voiceUnsupported: "Your browser will not let this page use the microphone.",
     voiceFailed: "That didn't send.",
+    /** A bare <audio controls> announces "audio player" and nothing else. */
+    voiceNoteAria: (seconds: number | null) =>
+      seconds ? `Voice note, ${seconds} seconds` : "Voice note",
     browseEmpty: "Nobody matches those filters right now.",
     filterDistance: "Within",
     filterIntention: "Looking for",
@@ -197,10 +204,12 @@ export const DRAFT_COPY = {
     settingsHeading: "Settings",
     premiumHeading: "Premium",
     navPremium: "Premium",
-    premiumIntro: "The free version is a real app. Premium raises how far you can reach — and there are things it will never buy.",
+    premiumIntro:
+      "The free version is a real app. Premium raises how far you can reach — and there are things it will never buy.",
     premiumIncludesHeading: "What it gives you",
     premiumNeverHeading: "What it will never buy",
-    premiumNeverNote: "Not at any price, not ever. These are the mechanics that make this place work, and selling exemptions from them would be selling the thing itself.",
+    premiumNeverNote:
+      "Not at any price, not ever. These are the mechanics that make this place work, and selling exemptions from them would be selling the thing itself.",
     premiumActive: "Premium is active.",
     premiumUntil: (date: string) => `Active until ${date}.`,
     premiumFromGrant: "You have premium from invites you sent.",
@@ -211,13 +220,15 @@ export const DRAFT_COPY = {
     photoAlt: "Profile photo",
     photoNone: "No photo yet",
     blockLabel: "Block",
-    blockConfirm: "Block this member? They will not see you and you will not see them. You can undo this in Settings.",
+    blockConfirm:
+      "Block this member? They will not see you and you will not see them. You can undo this in Settings.",
     blockedHeading: "Blocked",
     blockedEmpty: "You have not blocked anyone.",
     unblockLabel: "Unblock",
     reportLabel: "Report",
     reportHeading: "Report this",
-    reportIntro: "A moderator reads every report. Blocking is separate and immediate — you can do both.",
+    reportIntro:
+      "A moderator reads every report. Blocking is separate and immediate — you can do both.",
     reportReasonLabel: "What happened",
     reportDetailLabel: "Anything that would help (optional)",
     reportSubmitLabel: "Send report",
@@ -229,13 +240,22 @@ export const DRAFT_COPY = {
     promptChoose: "Choose a prompt",
     promptAnswerLabel: "Your answer",
     promptSaveLabel: "Save",
-    promptsEmpty: "You have not answered any prompts yet. Until you do, nobody can send you a connect.",
+    /** Every "Add another" needs a way back, or the row is permanent. */
+    promptRemoveLabel: "Remove",
+    /** For settings, where "Continue" is the wrong word for a control that saves. */
+    saveLabel: "Save",
+    promptsEmpty:
+      "You have not answered any prompts yet. Until you do, nobody can send you a connect.",
     bioHeading: "About you",
     bioLabel: "A few words",
+    bioHint: (max: number) =>
+      `Optional. Up to ${max} characters, and nobody has to explain themselves here.`,
     connectHeading: "Reply to a prompt",
-    connectIntro: "Pick one of their prompts and answer it. That is the whole connect — no openers, no swiping.",
+    connectIntro:
+      "Pick one of their prompts and answer it. That is the whole connect — no openers, no swiping.",
     connectSendLabel: "Send connect",
-    connectNoPrompts: "This member has not answered any prompts yet, so there is nothing to reply to.",
+    connectNoPrompts:
+      "This member has not answered any prompts yet, so there is nothing to reply to.",
     connectReplyLabel: "Your reply",
     navSettings: "Settings",
     crossCommunityHeading: "Other communities",
@@ -245,8 +265,11 @@ export const DRAFT_COPY = {
     inviteHeading: "Invite someone",
     inviteCopyLabel: "Copy your link",
     inviteCopied: "Copied.",
+    /** Clipboard access can simply be refused — an insecure context, a denied permission. */
+    inviteCopyFailed: "That didn't copy. You can select the link above instead.",
     navInvite: "Invite",
-    roomNoDmNote: "You can reach someone here through a connect — there are no direct messages in rooms.",
+    roomNoDmNote:
+      "You can reach someone here through a connect — there are no direct messages in rooms.",
     previewCtaAria: "Switch to dating mode to connect",
   },
 } as const;
@@ -358,7 +381,11 @@ export interface QuizQuestion {
 
 const SCALE = [1, 0.34, -0.34, -1] as const;
 const opts = (...labels: [string, string, string, string]): readonly QuizOption[] =>
-  labels.map((label, i) => ({ id: String.fromCharCode(97 + i), label, weight: SCALE[i] as number }));
+  labels.map((label, i) => ({
+    id: String.fromCharCode(97 + i),
+    label,
+    weight: SCALE[i] as number,
+  }));
 
 export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
   {
@@ -387,12 +414,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
     id: "social_friday",
     trait: "social",
     question: "A free Friday night is best spent",
-    options: opts(
-      "out, with a crowd",
-      "with a few friends",
-      "with one person",
-      "on my own",
-    ),
+    options: opts("out, with a crowd", "with a few friends", "with one person", "on my own"),
   },
   {
     id: "social_party",

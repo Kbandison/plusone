@@ -2,11 +2,7 @@ import type { Metadata } from "next";
 
 import { SiteFooter } from "../site-footer";
 
-import {
-  PRIVACY_POLICY,
-  PRIVACY_POLICY_EFFECTIVE,
-  PRIVACY_POLICY_INTRO,
-} from "@plusone/config";
+import { PRIVACY_POLICY, PRIVACY_POLICY_EFFECTIVE, PRIVACY_POLICY_INTRO } from "@plusone/config";
 
 /**
  * The privacy page (§7.1). Plain language: what we store, what we never store,

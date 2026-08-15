@@ -204,9 +204,9 @@ describe("closing by hand", () => {
 
   it("rejects a template index that does not exist", () => {
     for (const template of [-1, CLOSURE_TEMPLATES.length, 1.5]) {
-      expect(transition(openChat(T0), { type: "close", by: ALICE, template, at: T0 + DAY })).toEqual(
-        { ok: false, code: "invalid_template" },
-      );
+      expect(
+        transition(openChat(T0), { type: "close", by: ALICE, template, at: T0 + DAY }),
+      ).toEqual({ ok: false, code: "invalid_template" });
     }
   });
 
@@ -385,7 +385,12 @@ describe("a closed chat stays closed, and a live one keeps its deadline", () => 
     // Every event in the union, against a closed chat.
     const events: FuseEvent[] = [
       { type: "sweep", at: T0 + 9 * DAY },
-      { type: "propose_plan", at: T0 + 9 * DAY, by: "a", plan: { date: "2026-01-11", time: "19:00", place: "The park" } },
+      {
+        type: "propose_plan",
+        at: T0 + 9 * DAY,
+        by: "a",
+        plan: { date: "2026-01-11", time: "19:00", place: "The park" },
+      },
       { type: "confirm_plan", at: T0 + 9 * DAY, by: "b" },
       { type: "close", at: T0 + 9 * DAY, by: "a", template: 0, personalLine: null },
     ];

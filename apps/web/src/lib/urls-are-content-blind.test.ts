@@ -68,7 +68,9 @@ describe("URLs are content-blind", () => {
     expect(slugs).toContain("hiv-u-equals-u");
 
     const list = readFileSync(join(APP, "app/rooms/page.tsx"), "utf8");
-    expect(list, "the rooms list must not link by slug").not.toMatch(/\/app\/rooms\/\$\{room\.slug/);
+    expect(list, "the rooms list must not link by slug").not.toMatch(
+      /\/app\/rooms\/\$\{room\.slug/,
+    );
     expect(list).toMatch(/\/app\/rooms\/\$\{room\.id/);
   });
 

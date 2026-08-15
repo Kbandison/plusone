@@ -39,10 +39,7 @@ export interface ModeState {
 }
 
 export type ModeErrorCode =
-  | "intention_locked"
-  | "already_that_intention"
-  | "already_that_mode"
-  | "dating_reentry_locked";
+  "intention_locked" | "already_that_intention" | "already_that_mode" | "dating_reentry_locked";
 
 export type ModeResult =
   | { readonly ok: true; readonly state: ModeState }

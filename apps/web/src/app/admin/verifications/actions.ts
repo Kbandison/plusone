@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
 
-export type DecisionState = { readonly error: string | null; readonly message: string | null };
+export type DecisionState = {
+  readonly error: string | null;
+  readonly message: string | null;
+};
 export const DECISION_INITIAL: DecisionState = { error: null, message: null };
 
 /**
@@ -35,7 +38,11 @@ export async function decideVerification(
 
 export type RevealState = {
   readonly error: string | null;
-  readonly revealed: { community: string; condition: string; u_equals_u: boolean } | null;
+  readonly revealed: {
+    community: string;
+    condition: string;
+    u_equals_u: boolean;
+  } | null;
 };
 export const REVEAL_INITIAL: RevealState = { error: null, revealed: null };
 

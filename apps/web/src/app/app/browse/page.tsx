@@ -26,7 +26,11 @@ const DAY = 24 * 60 * 60 * 1000;
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams: Promise<{ distance?: string; intention?: string; active?: string }>;
+  searchParams: Promise<{
+    distance?: string;
+    intention?: string;
+    active?: string;
+  }>;
 }) {
   const filters = await searchParams;
   const distanceMi = Number(filters.distance) || RADIUS.maxMi;
@@ -120,16 +124,13 @@ export default async function BrowsePage({
           {rows.map((row) => (
             <li key={row.id as string} className="rounded-xl border border-line-2 bg-surface p-5">
               <Link href={`/app/connect/${row.id as string}?source=browse`} className="block">
-                <MemberPhotoFrame
-                  photo={photos.get(row.id as string)}
-                  size={56}
-                />
+                <MemberPhotoFrame photo={photos.get(row.id as string)} size={56} />
                 <h2 className="mt-3 text-[1.2rem]">{(row.display_name as string) ?? "Someone"}</h2>
-              <p className="mt-1.5 text-[14px] text-ink-3">
-                {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
+                <p className="mt-1.5 text-[14px] text-ink-3">
+                  {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
                 {row.intention ? (
                   <p className="mt-3 text-[14.5px] text-ink-2">
                     {INTENTION_LABELS[row.intention as Intention]}

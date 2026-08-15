@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 
 export function InviteLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   return (
     <div className="mt-8 flex flex-col gap-4">
@@ -15,13 +16,33 @@ export function InviteLink({ url }: { url: string }) {
       <button
         type="button"
         onClick={async () => {
-          await navigator.clipboard.writeText(url);
-          setCopied(true);
+          // Unhandled, this rejected on an insecure context or a denied
+          // permission and the member saw nothing happen at all — no copy, no
+          // error, no change. And `copied` never reset, so a button that had
+          // worked once read "Copied." forever afterwards.
+          try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 4000);
+          } catch {
+            setFailed(true);
+          }
         }}
         className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
       >
         {copied ? DRAFT_COPY.app.inviteCopied : DRAFT_COPY.app.inviteCopyLabel}
       </button>
+
+      {/* Announced, because the only other signal is a word on the button the
+          member has just moved their finger off. */}
+      <p role="status" className="sr-only">
+        {copied ? DRAFT_COPY.app.inviteCopied : ""}
+      </p>
+      {failed ? (
+        <p role="alert" className="text-[14px] text-critical">
+          {DRAFT_COPY.app.inviteCopyFailed}
+        </p>
+      ) : null}
     </div>
   );
 }

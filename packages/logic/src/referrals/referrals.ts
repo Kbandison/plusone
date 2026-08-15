@@ -1,21 +1,12 @@
 import { REFERRALS } from "@plusone/config";
 
-import type {
-  ConversionOutcome,
-  ReferralConfig,
-  ReferralState,
-  Reward,
-} from "./types";
+import type { ConversionOutcome, ReferralConfig, ReferralState, Reward } from "./types";
 
 export const DEFAULT_REFERRAL_CONFIG: ReferralConfig = {
   inviteeGrantDays: REFERRALS.inviteeGrantDays,
   referrerGrantDaysPerConversion: REFERRALS.referrerGrantDaysPerConversion,
   rewardCap: REFERRALS.rewardCap,
-  tiers: [
-    REFERRALS.tiers.tier1_3,
-    REFERRALS.tiers.tier2_5,
-    REFERRALS.tiers.tier3_10,
-  ],
+  tiers: [REFERRALS.tiers.tier1_3, REFERRALS.tiers.tier2_5, REFERRALS.tiers.tier3_10],
 };
 
 /**
@@ -78,7 +69,12 @@ export function recordConversion(
     state: { conversions, tiersAwarded },
     referrerRewards,
     inviteeRewards: [
-      { kind: "premium_days", days: config.inviteeGrantDays, status: "auto_granted", reason: "conversion" },
+      {
+        kind: "premium_days",
+        days: config.inviteeGrantDays,
+        status: "auto_granted",
+        reason: "conversion",
+      },
     ],
   };
 }

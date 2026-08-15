@@ -44,7 +44,12 @@ export function QuizForm() {
                 name={question.id}
                 value={option.id}
                 checked={answers[question.id] === option.id}
-                onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))}
+                onChange={() =>
+                  setAnswers((current) => ({
+                    ...current,
+                    [question.id]: option.id,
+                  }))
+                }
                 className="size-[17px] shrink-0 accent-accent"
               />
               {option.label}

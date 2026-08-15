@@ -81,7 +81,9 @@ describe("tiers", () => {
     const { rewards } = run(20);
     for (const threshold of [3, 5, 10]) {
       const awarded = rewards.filter((r) => "tier" in r && r.tier === threshold);
-      expect(awarded.length, `tier ${threshold} awarded ${awarded.length} times`).toBeGreaterThan(0);
+      expect(awarded.length, `tier ${threshold} awarded ${awarded.length} times`).toBeGreaterThan(
+        0,
+      );
       const grants = awarded.filter((r) => r.kind === "premium_days");
       expect(grants.length).toBeLessThanOrEqual(1);
     }

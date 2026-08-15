@@ -93,7 +93,11 @@ describe("the intention cooldown", () => {
 
 describe("drop scoring", () => {
   it("never returns a non-finite compatibility", () => {
-    for (const vector of [[Number.NaN, 1], [Number.POSITIVE_INFINITY, 0], [0, 0]]) {
+    for (const vector of [
+      [Number.NaN, 1],
+      [Number.POSITIVE_INFINITY, 0],
+      [0, 0],
+    ]) {
       expect(Number.isFinite(quizCompat(vector, [1, 1])), String(vector)).toBe(true);
     }
   });
@@ -155,7 +159,11 @@ describe("drop scoring", () => {
 
   it("never serves the same person twice", () => {
     const dupe = candidate({ id: "same" });
-    const result = selectDrop(viewer, [dupe, dupe, candidate({ id: "b" }), candidate({ id: "c" })], T0);
+    const result = selectDrop(
+      viewer,
+      [dupe, dupe, candidate({ id: "b" }), candidate({ id: "c" })],
+      T0,
+    );
     const ids = result.cards.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toContain("c");

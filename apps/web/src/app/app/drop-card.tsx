@@ -68,7 +68,13 @@ export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | un
  * card — there is no connect button, because a support-only member cannot send
  * one and offering it would be a door that opens onto a wall.
  */
-export function PreviewDropCard({ card, photo }: { card: PreviewCard; photo?: MemberPhoto | undefined }) {
+export function PreviewDropCard({
+  card,
+  photo,
+}: {
+  card: PreviewCard;
+  photo?: MemberPhoto | undefined;
+}) {
   const meta = [
     card.ageBand,
     card.distanceBucketMi != null ? `within ${card.distanceBucketMi} mi` : null,
@@ -91,8 +97,24 @@ export function PreviewDropCard({ card, photo }: { card: PreviewCard; photo?: Me
         </div>
       </div>
 
-      {/* §3.4, verbatim. */}
-      <p className="mt-5 text-[14.5px] text-accent">{COPY.supportOnly.previewCta}</p>
+      {/* §3.4, verbatim — and a link, because it reads as one.
+       *
+       * It was an accent-coloured <p>: it looked like a call to action, said
+       * "Switch to dating to see and connect", and did nothing at all. Not
+       * focusable, so a keyboard user never even met it.
+       *
+       * It goes to the profile rather than switching mode on the spot. Leaving
+       * support-only is a real decision with a thirty-day road back, and a
+       * one-tap version of it on a card is the kind of control people hit by
+       * accident. previewCtaAria has been sitting unused in DRAFT_COPY since
+       * this was designed. */}
+      <Link
+        href="/app/profile"
+        aria-label={DRAFT_COPY.app.previewCtaAria}
+        className="ease-brand mt-5 inline-block text-[14.5px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+      >
+        {COPY.supportOnly.previewCta}
+      </Link>
     </li>
   );
 }

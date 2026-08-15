@@ -39,10 +39,7 @@ function nextStep(step: OnboardingStep): OnboardingStep {
 }
 
 /** Advances past the current step, recording it as completed or skipped. */
-function advance(
-  state: OnboardingState,
-  outcome: "completed" | "skipped",
-): OnboardingState {
+function advance(state: OnboardingState, outcome: "completed" | "skipped"): OnboardingState {
   const current = state.step;
   const already = state[outcome].includes(current);
   return {
@@ -167,7 +164,5 @@ export function resolveStep(facts: OnboardingFacts): OnboardingStep {
 
 /** Every step still unsettled, in order. For a "what's left" summary. */
 export function unsettledSteps(facts: OnboardingFacts): readonly OnboardingStep[] {
-  return ONBOARDING_STEPS.filter(
-    (step) => step !== FINAL_STEP && !SETTLED_BY[step](facts),
-  );
+  return ONBOARDING_STEPS.filter((step) => step !== FINAL_STEP && !SETTLED_BY[step](facts));
 }

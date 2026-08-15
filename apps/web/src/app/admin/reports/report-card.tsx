@@ -29,8 +29,10 @@ export function ReportCard({ report }: { report: OpenReport }) {
   const [state, act, pending] = useActionState(decideReport, REPORT_DECISION_INITIAL);
 
   if (state.message) {
+    // The card that held focus is being replaced by this, so the outcome has to
+    // be announced or a moderator has no idea their decision landed.
     return (
-      <li className="rounded-lg border border-line px-6 py-5 text-[15px] text-ink-3">
+      <li role="status" className="rounded-lg border border-line px-6 py-5 text-[15px] text-ink-3">
         {state.message}
       </li>
     );
@@ -55,9 +57,7 @@ export function ReportCard({ report }: { report: OpenReport }) {
         </blockquote>
       ) : null}
 
-      {report.detail ? (
-        <p className="mt-4 text-[15px] leading-[1.65]">{report.detail}</p>
-      ) : null}
+      {report.detail ? <p className="mt-4 text-[15px] leading-[1.65]">{report.detail}</p> : null}
 
       <form action={act} className="mt-6 flex flex-col gap-3">
         <input type="hidden" name="queue_id" value={report.queue_id} />

@@ -13,6 +13,7 @@ import { ownPhotos } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
 import { ModeToggle } from "./mode-toggle";
+import { BioEditor } from "./bio-editor";
 import { PromptEditor } from "./prompt-editor";
 
 export const metadata: Metadata = { title: "You" };
@@ -35,7 +36,7 @@ export default async function ProfilePage() {
   return (
     <main id="main">
       <div className="flex items-center gap-4">
-        <MemberPhotoFrame photo={photos[0]} size={72} />
+        <MemberPhotoFrame photo={photos[0]} size={72} emptyLabel={DRAFT_COPY.app.photoNone} />
         <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{profile?.display_name ?? "You"}</h1>
       </div>
 
@@ -80,6 +81,8 @@ export default async function ProfilePage() {
       ) : null}
 
       <PromptEditor answers={prompts} />
+
+      <BioEditor bio={(profile?.bio as string | null) ?? null} />
       <ModeToggle mode={mode} />
     </main>
   );

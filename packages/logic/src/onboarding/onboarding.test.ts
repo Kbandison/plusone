@@ -99,10 +99,15 @@ describe("the §7.2 order", () => {
 
   it("does not record a step twice when it is revisited", () => {
     const atIntention = walkTo("intention");
-    const redone = drive(atIntention, { type: "go_back", at: AT }, { type: "go_back", at: AT }, {
-      type: "complete",
-      at: AT,
-    });
+    const redone = drive(
+      atIntention,
+      { type: "go_back", at: AT },
+      { type: "go_back", at: AT },
+      {
+        type: "complete",
+        at: AT,
+      },
+    );
     const occurrences = redone.completed.filter((s) => s === "community_condition").length;
     expect(occurrences).toBe(1);
   });
@@ -169,10 +174,15 @@ describe("consent is unbundled", () => {
 
   it("keeps the original timestamp when the member walks back and forward", () => {
     const granted = drive(walkTo("health_consent"), { type: "grant_consent", at: AT });
-    const roundTrip = drive(granted, { type: "go_back", at: AT + 5 }, { type: "go_back", at: AT + 6 }, {
-      type: "complete",
-      at: AT + 7,
-    });
+    const roundTrip = drive(
+      granted,
+      { type: "go_back", at: AT + 5 },
+      { type: "go_back", at: AT + 6 },
+      {
+        type: "complete",
+        at: AT + 7,
+      },
+    );
     expect(roundTrip.consentGrantedAt).toBe(AT);
   });
 });

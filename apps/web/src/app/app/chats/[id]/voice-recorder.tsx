@@ -77,8 +77,12 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
       ticker.current = setInterval(() => {
         setSeconds((current) => {
           // Stops itself at the cap rather than letting someone talk past it
-          // and lose the recording.
-          if (current + 1 >= MAX_SECONDS) mr.stop();
+          // and lose the recording — and says so, because a recorder that
+          // stops on its own with no explanation reads as a crash.
+          if (current + 1 >= MAX_SECONDS) {
+            mr.stop();
+            setError(C.voiceTooLong);
+          }
           return current + 1;
         });
       }, 1000);
@@ -157,7 +161,14 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
       {state === "review" || state === "sending" ? (
         <div className="flex flex-wrap items-center gap-3">
           {/* Heard before it is sent. A voice note cannot be unsaid. */}
-          {preview ? <audio src={preview} controls className="max-w-full" /> : null}
+          {preview ? (
+            <audio
+              src={preview}
+              controls
+              aria-label={C.voiceNoteAria(seconds)}
+              className="max-w-full"
+            />
+          ) : null}
           <button
             type="button"
             onClick={send}

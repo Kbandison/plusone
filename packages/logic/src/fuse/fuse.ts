@@ -1,9 +1,4 @@
-import {
-  CLOSURE_TEMPLATES,
-  CONNECTS,
-  DEFAULT_CLOSURE_TEMPLATE_INDEX,
-  FUSE,
-} from "@plusone/config";
+import { CLOSURE_TEMPLATES, CONNECTS, DEFAULT_CLOSURE_TEMPLATE_INDEX, FUSE } from "@plusone/config";
 
 import type {
   ClosureState,
@@ -41,9 +36,7 @@ function ok(state: FuseState): FuseResult {
 /** A plan is only a plan when all three parts are filled in (§6.2). */
 export function isPlanComplete(plan: DatePlan | null | undefined): boolean {
   if (!plan) return false;
-  return (
-    plan.date.trim().length > 0 && plan.time.trim().length > 0 && plan.place.trim().length > 0
-  );
+  return plan.date.trim().length > 0 && plan.time.trim().length > 0 && plan.place.trim().length > 0;
 }
 
 /** The state a chat is born in, the moment a connect is accepted. */
@@ -124,7 +117,11 @@ export function transition(
 
     case "close": {
       if (state.status !== "open" && state.status !== "date_planned") return fail("not_open");
-      if (!Number.isInteger(event.template) || event.template < 0 || event.template >= config.templateCount) {
+      if (
+        !Number.isInteger(event.template) ||
+        event.template < 0 ||
+        event.template >= config.templateCount
+      ) {
         return fail("invalid_template");
       }
       const line = event.personalLine ?? null;
@@ -141,7 +138,8 @@ export function transition(
 
     case "sweep": {
       if (state.status !== "open") return fail("not_open");
-      if (state.fuseExpiresAt === null || event.at < state.fuseExpiresAt) return fail("not_expired");
+      if (state.fuseExpiresAt === null || event.at < state.fuseExpiresAt)
+        return fail("not_expired");
       // Closes with the default template so the other person still gets a note.
       return ok({
         ...state,

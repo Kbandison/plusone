@@ -21,7 +21,11 @@
 
 export type ConnectSource = "drop" | "browse" | "room";
 
-export const CONNECT_SOURCES = ["drop", "browse", "room"] as const satisfies readonly ConnectSource[];
+export const CONNECT_SOURCES = [
+  "drop",
+  "browse",
+  "room",
+] as const satisfies readonly ConnectSource[];
 
 export interface ConnectBudgetState {
   readonly mode: "dating" | "support_only";
@@ -33,9 +37,7 @@ export interface ConnectBudgetState {
 }
 
 export type ConnectErrorCode =
-  | "source_unavailable_in_support_only"
-  | "daily_budget_exhausted"
-  | "weekly_room_budget_exhausted";
+  "source_unavailable_in_support_only" | "daily_budget_exhausted" | "weekly_room_budget_exhausted";
 
 export type ConnectCheck =
   | { readonly ok: true; readonly cost: number }

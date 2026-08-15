@@ -46,7 +46,10 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
   }
 
   return (
-    <main id="main" className="mx-auto flex min-h-[100dvh] max-w-[560px] flex-col justify-center px-6 py-24">
+    <main
+      id="main"
+      className="mx-auto flex min-h-[100dvh] max-w-[560px] flex-col justify-center px-6 py-24"
+    >
       <p className="font-display text-[30px] leading-none tracking-[-0.02em]">
         <span className="align-super text-[0.42em] text-accent">+</span>One
       </p>

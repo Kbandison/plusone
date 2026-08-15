@@ -14,17 +14,17 @@ Every policy in the schema scopes rows correctly. `grant select, insert, update
 on public.profiles to authenticated` then handed every member all 26 columns of
 every row their policy let them reach. As an ordinary member I could:
 
-  · `UPDATE profiles SET verification_status='verified' WHERE id=<self>` —
-    become verified without ever running a liveness check. Verification is the
-    wall the whole product rests on.
-  · `SELECT birthdate, location FROM profiles` — exact date of birth and a home
-    coordinate at ~1.1km for everyone in my pool. `tables.sql` says of location
-    "It is NEVER exposed".
-  · `UPDATE profile_photos SET storage_path='<victim>/<their>.webp'` — the
-    blurred path is public to anyone who can see the profile and the clear path
-    is that string minus "-blurred", so pointing my own row at it made the
-    server sign someone else's clear photo with the secret key.
-  · Clear the mode and intention cooldowns by writing the columns directly.
+· `UPDATE profiles SET verification_status='verified' WHERE id=<self>` —
+become verified without ever running a liveness check. Verification is the
+wall the whole product rests on.
+· `SELECT birthdate, location FROM profiles` — exact date of birth and a home
+coordinate at ~1.1km for everyone in my pool. `tables.sql` says of location
+"It is NEVER exposed".
+· `UPDATE profile_photos SET storage_path='<victim>/<their>.webp'` — the
+blurred path is public to anyone who can see the profile and the clear path
+is that string minus "-blurred", so pointing my own row at it made the
+server sign someone else's clear photo with the secret key.
+· Clear the mode and intention cooldowns by writing the columns directly.
 
 **A cooldown enforced in an RPC while the column stays writable is not a
 cooldown, it is a suggestion with a nice error message.** `check:sql` would
@@ -68,18 +68,18 @@ and §5.2 fixes the other.
 
 ### Three state machines with no way out
 
-  · The fuse had an `open` event exempted from the terminal guard. It returned a
-    swept chat to open — discarding the closure note §6.2 exists to guarantee —
-    and pushed a live chat's deadline seven days outward. Nothing dispatched it;
-    it existed only to be a hole.
-  · `health_consent` was a trap. Grant consent, walk back two steps, walk
-    forward, and every event refused except `go_back`. Onboarding could never
-    finish.
-  · A liveness session that never returned left the member somewhere no event
-    could move them, including an admin's. And `open_appeal` asked whether an
-    appeal had ever been opened rather than whether one was outstanding, so a
-    member got one appeal in their life and the rejection could never be
-    appealed — Decision #21's exact failure.
+· The fuse had an `open` event exempted from the terminal guard. It returned a
+swept chat to open — discarding the closure note §6.2 exists to guarantee —
+and pushed a live chat's deadline seven days outward. Nothing dispatched it;
+it existed only to be a hole.
+· `health_consent` was a trap. Grant consent, walk back two steps, walk
+forward, and every event refused except `go_back`. Onboarding could never
+finish.
+· A liveness session that never returned left the member somewhere no event
+could move them, including an admin's. And `open_appeal` asked whether an
+appeal had ever been opened rather than whether one was outstanding, so a
+member got one appeal in their life and the rejection could never be
+appealed — Decision #21's exact failure.
 
 ### Everything failed open on a bad number
 
@@ -146,7 +146,6 @@ resolve the author server-side from the message id.
 Also: the two most-used inputs in the product — the chat composer and the room
 composer — had no accessible name at all, and chat messages distinguished sender
 by colour and alignment alone.
-
 
 ## 2026-08-15 — Milestone 8: the marketing site
 
@@ -282,7 +281,7 @@ the code being careful.
 
 ### The check that matters
 
-§3.3: *"No selling exemptions from mechanics. Never monetized. Ever."*
+§3.3: _"No selling exemptions from mechanics. Never monetized. Ever."_
 
 `packages/logic` already asserts the pure functions cannot see who pays. But if
 premium ever starts buying an exemption it will be through a policy or an RPC,
@@ -489,8 +488,8 @@ Going to build the safety UI turned up three problems, two of them mine.
 `20260814001000` introduced the no-argument `is_admin()`. The
 `moderation_queue` policy was never updated and still called the one-argument
 form. Postgres resolves overloads by arity, so a reachable `is_admin()` does not
-help a call written as `is_admin(uuid)` — every administrator got *"permission
-denied for function is_admin"* and the moderation queue was unreadable.
+help a call written as `is_admin(uuid)` — every administrator got _"permission
+denied for function is_admin"_ and the moderation queue was unreadable.
 
 Missed because `check:admin` exercises the admin RPCs, which are SECURITY
 DEFINER and never go through that policy. **The queue's own read path had no
@@ -498,7 +497,7 @@ test.**
 
 `check:walls` now reads every member-facing table as a member and every
 admin-facing one as an administrator — 23 tables. A policy that cannot call what
-it references fails *closed*, which looks like "there is no data" rather than
+it references fails _closed_, which looks like "there is no data" rather than
 like a permissions error, so nothing complains at the time.
 
 ### A report reached nobody
@@ -562,8 +561,8 @@ become dynamic to find out.
 
 ### The draft-copy guard was not strict enough
 
-Writing the call to action, I drafted *"Every profile is a verified human. Two
-minutes, no waiting, no fakes."* — which is §3.4's verification pitch with one
+Writing the call to action, I drafted _"Every profile is a verified human. Two
+minutes, no waiting, no fakes."_ — which is §3.4's verification pitch with one
 word removed. It was already in `COPY` as `marketing.verificationPitch`, with
 "Every profile **here** is".
 
@@ -644,7 +643,7 @@ threw the list away.
 
 ### The check moved from the test to the code
 
-A test asserting the templates are clean proves *the templates* are clean. It
+A test asserting the templates are clean proves _the templates_ are clean. It
 does nothing about a future caller assembling a body from a chat, a display
 name, or a profile field — which is how content-blindness actually gets lost.
 
@@ -701,8 +700,8 @@ confirmation copy was written. **Nothing called any of it** — there was no
 surface, so hard delete was a promise the product could keep and had no way of
 being asked to.
 
-`/app/settings` now has it, with §3.4's copy verbatim: *"This cannot be undone —
-and we mean actually deleted."* A product that says that has to make the control
+`/app/settings` now has it, with §3.4's copy verbatim: _"This cannot be undone —
+and we mean actually deleted."_ A product that says that has to make the control
 match, so it asks the member to type DELETE rather than tap a red button they
 could hit by accident.
 
@@ -754,9 +753,9 @@ piece with the most riding on it.
 
 ### The landing page says nothing
 
-§3.4's copy is verbatim and every word of it was chosen to out nobody: *"You've
+§3.4's copy is verbatim and every word of it was chosen to out nobody: _"You've
 been invited to Plus One" / "A private community built on trust and real
-connection."* This link gets posted in closed groups and forwarded between
+connection."_ This link gets posted in closed groups and forwarded between
 people, and anyone who sees it before tapping through learns only that a private
 community exists.
 
@@ -823,21 +822,21 @@ that framing was wrong. The leak was not the grant — it was the **argument**.
 Every one of those predicates was called with `auth.uid()` in practice. Taking
 the parameter away makes the question unaskable rather than merely discouraged.
 
-| Was askable about anyone | Now |
-|---|---|
-| `is_admin(uuid)` — who moderates | `is_admin()` — am I one |
-| `is_premium(uuid)` — who pays | revoked; only a trigger calls it |
-| `profile_mode(uuid)` — who is support-only | folded into `connect_permitted` |
-| `is_blocked_either_way(a, b)` — have two others blocked | `preview_permitted(other)` |
-| `has_accepted_connect(a, b)` — have two others connected | `i_have_connected_with(other)` |
-| `is_member_of_room(user, room)` — is someone else in a room | `i_am_in_room(room)` |
-| `is_chat_participant(chat, user)` | `i_am_in_chat(chat)` |
-| `can_view_profile(viewer, …)` — what can someone else see | `i_can_view(target, …)` |
-| `shares_room(a, b)` | dropped — nothing called it |
+| Was askable about anyone                                    | Now                              |
+| ----------------------------------------------------------- | -------------------------------- |
+| `is_admin(uuid)` — who moderates                            | `is_admin()` — am I one          |
+| `is_premium(uuid)` — who pays                               | revoked; only a trigger calls it |
+| `profile_mode(uuid)` — who is support-only                  | folded into `connect_permitted`  |
+| `is_blocked_either_way(a, b)` — have two others blocked     | `preview_permitted(other)`       |
+| `has_accepted_connect(a, b)` — have two others connected    | `i_have_connected_with(other)`   |
+| `is_member_of_room(user, room)` — is someone else in a room | `i_am_in_room(room)`             |
+| `is_chat_participant(chat, user)`                           | `i_am_in_chat(chat)`             |
+| `can_view_profile(viewer, …)` — what can someone else see   | `i_can_view(target, …)`          |
+| `shares_room(a, b)`                                         | dropped — nothing called it      |
 
 The connects policy now calls one compound predicate,
 `connect_permitted(target, room)`, instead of three separately-askable facts. A
-false does not say *which* wall stopped it, and the initiator is implicit, so it
+false does not say _which_ wall stopped it, and the initiator is implicit, so it
 can only be asked about the caller's own reach — which is what the connect
 button already tells them.
 
@@ -867,7 +866,7 @@ or does not, a button works or does not. **No predicate answers a question about
 two other people, and none reveals a fact with no counterpart in the UI.**
 
 The one thing I would still call a residue: repeated `connect_permitted` calls
-across many targets would let someone infer *something* about who is reachable.
+across many targets would let someone infer _something_ about who is reachable.
 It is a compound answer over four walls, so what leaks is mixed and weak, and it
 is the same information as trying to connect and being refused.
 
@@ -891,14 +890,14 @@ something that was never true.
 All 33 definer functions were reachable by any signed-in member, and by anyone
 at all. Most check their caller and were unharmed. Four did not:
 
-| Function | What an arbitrary caller could do |
-|---|---|
-| `purge_due_deletions` | **Delete every account whose 7-day window had elapsed.** |
-| `sweep_expired_fuses` | Close chats across the whole system. |
-| `sweep_expired_connects` | Expire connects across the whole system. |
-| `audit` | Write arbitrary audit entries. A forgeable log is worse than none — it still looks intact. |
+| Function                 | What an arbitrary caller could do                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `purge_due_deletions`    | **Delete every account whose 7-day window had elapsed.**                                   |
+| `sweep_expired_fuses`    | Close chats across the whole system.                                                       |
+| `sweep_expired_connects` | Expire connects across the whole system.                                                   |
+| `audit`                  | Write arbitrary audit entries. A forgeable log is worse than none — it still looks intact. |
 
-Found by a check I wrote *while adding the sweeps*, asserting they were
+Found by a check I wrote _while adding the sweeps_, asserting they were
 service-role only. They were not, and neither was anything else.
 
 Fixed in two layers, because the grant is what failed:
@@ -912,7 +911,7 @@ Fixed in two layers, because the grant is what failed:
 RLS helper predicates — `can_view_profile`, `profile_mode`,
 `is_blocked_either_way` and the rest — must remain executable by
 `authenticated`, because a policy expression is evaluated as the querying role.
-Revoking them fails closed on *everything*.
+Revoking them fails closed on _everything_.
 
 The honest cost: a member who knows another member's uuid can call
 `profile_mode()` or `is_premium()` and learn a fact the UI would not show them —
@@ -969,8 +968,8 @@ hid the name in the component. A support-only member's page therefore contained
 every name in its payload — readable in the page source, whatever the screen
 showed.
 
-That is precisely what `preview_profiles`' own comment warns about: *"a blurred
-image with the real name in the payload would not be a redaction at all"*. The
+That is precisely what `preview_profiles`' own comment warns about: _"a blurred
+image with the real name in the payload would not be a redaction at all"_. The
 redacting view existed from Milestone 1 and I did not route the surface through
 it.
 
@@ -1023,7 +1022,7 @@ The surfaces the product is actually promising. Both are on the never-cut list.
 
 There is no "just decline" button and no "just leave" button. Declining opens a
 template picker with one already selected; closing a chat does the same. A
-member can choose *which* note is sent, never *whether* one is. The RPCs default
+member can choose _which_ note is sent, never _whether_ one is. The RPCs default
 to template 0 for the same reason — the default is a note, not an absence.
 
 The optional personal line is tone-checked before it goes anywhere, and the rule
@@ -1151,7 +1150,7 @@ initiation is the mechanic that produces the inbox nobody reads.
 no condition in it, asserted by a test that reads the branch for `if` and
 `ok: false`. A cooldown on the way out would hold someone in a dating pool they
 have asked to leave, and Decision #18 makes support-only a shield, not a
-privilege. Coming *back* is gated, and a test flicks modes five times to show
+privilege. Coming _back_ is gated, and a test flicks modes five times to show
 the clock never shortens.
 
 **Referrals cannot reach matching.** §6.5 asks for this in as many words —
@@ -1341,7 +1340,7 @@ screen; the quiz is deliberately inert (below).
 ### Two more places the schema assumed a finished profile
 
 `display_name` and `birthdate` were the last NOT NULLs, and liveness runs
-*before* basics — so a liveness result had nowhere to live. Migration
+_before_ basics — so a liveness result had nowhere to live. Migration
 `20260814000200` drops them and creates the profile row **by trigger on
 auth.users**, so it cannot be missed by a code path that signs someone in
 without going through onboarding. Every step is now an UPDATE.
@@ -1372,7 +1371,7 @@ not guarding. Chained verification now runs with `set -o pipefail`.
 ### The quiz is deliberately empty
 
 §7.2 asks for 10–12 questions and **never writes them**, and §10's cut order says
-in as many words: *"ship with intention-weighting only, quiz in fast-follow"*.
+in as many words: _"ship with intention-weighting only, quiz in fast-follow"_.
 Ten invented questions would shape who members are shown to each other, which is
 not a thing to guess at.
 
@@ -1698,8 +1697,8 @@ name resolves regardless of whether it hosts the project — so it was found by
 probing with the real credentials and reading the tenant-lookup error.
 
 The URL had been pasted from the "RESTful endpoint" field rather than the Project
-URL, so it carried a `/rest/v1/` path and every request 404'd with *"Invalid path
-specified in request URL"* — a long way from its cause. Corrected in `.env.local`,
+URL, so it carried a `/rest/v1/` path and every request 404'd with _"Invalid path
+specified in request URL"_ — a long way from its cause. Corrected in `.env.local`,
 and `clientEnvSchema` now rejects any Supabase/site/app URL carrying a path, query
 or fragment so the same paste fails loudly at boot instead. A lone trailing slash
 is normalised away rather than rejected: that one is a browser-bar artefact, not a
@@ -1714,7 +1713,7 @@ Two things came out of it:
   used, with `types: ["node"]` naming it explicitly.
 - **ESLint is blocked upstream.** typescript-eslint throws on any TS >= 7 and no
   published version accepts it (support tracked at typescript-eslint#10940 for
-  TS >= 7.1). There is no config workaround: `typescript` is a *peer* of
+  TS >= 7.1). There is no config workaround: `typescript` is a _peer_ of
   typescript-eslint and `node-linker=hoisted` means exactly one copy exists in the
   tree, so neither `pnpm.overrides` nor `packageExtensions` can hand the linter its
   own TS 6 — both were tried and neither takes effect. The CI step is left in place
@@ -1756,7 +1755,7 @@ defects: `round_location` takes one `geography`, not two numerics, and the seed 
 ### Spec correction — §4.2 "Stripe Identity selfie-only mode" does not exist
 
 Stripe Identity's selfie check is not standalone. Per Stripe's own docs it compares
-the face against *a government-issued photo ID*, and it is enabled as
+the face against _a government-issued photo ID_, and it is enabled as
 `options[document][require_matching_selfie]` on a `type=document` session. There is
 no document-free mode. §4.2 names a product that is not offered.
 
@@ -1804,7 +1803,7 @@ stub that always passes is precisely the fake-profile problem the pipeline exist
 prevent, so shipping one by accident has to be loud.
 
 `LIVENESS_PROVIDER` accepts `stub` and defaults to it; `LIVENESS_API_KEY` is now
-required for every provider *except* stub. The single-opaque-key shape will not
+required for every provider _except_ stub. The single-opaque-key shape will not
 survive the real choice — AWS needs an access key id, secret and region, and Stripe
 Identity has no key of its own — so it stays as-is rather than guessing a shape.
 
@@ -1818,15 +1817,15 @@ Two lists. The first is copy **I wrote and Kevin has not read** — it works, it
 tested, and it is nobody's voice but mine until he says otherwise. He asked
 specifically to be reminded of these, so they lead.
 
-| # | Written by Claude, not yet reviewed | Where |
-|---|---|---|
-| A | **Compatibility quiz** — 12 questions, six traits. These shape who members are shown to each other, which makes them the highest-stakes of the three. | `packages/config/src/draft-copy.ts` → `QUIZ_QUESTIONS` |
-| B | **FAQ** — 12 answers. Every factual claim is asserted against the product by a test, so the risk is tone rather than accuracy. | `packages/config/src/guidelines.ts` → `FAQ`, live at `/faq` |
-| C | **Community guidelines** — 8 sections. Sets what gets someone removed, so it is the one most worth disagreeing with. | `packages/config/src/guidelines.ts` → `COMMUNITY_GUIDELINES`, live at `/guidelines` |
-| D | **Profile prompts** — 8. Load-bearing: Decision #14 makes a connect a reply to one, so without them nobody can be reached. | `packages/config/src/draft-copy.ts` → `PROFILE_PROMPTS` |
-| E | **Privacy policy** — 14 sections. Also needs counsel (Decision #30). | `packages/config/src/legal.ts`, live at `/privacy` |
-| F | **Terms of service** — 9 sections. Needs counsel too. Takes two unusual positions on purpose: verification is identity not character, and there is no content licence. | `packages/config/src/terms.ts`, live at `/terms` |
-| G | **How-it-works and pricing prose.** Quotes §3.4 for the mechanics; the connecting text is mine. | `packages/config/src/marketing.ts` |
+| #   | Written by Claude, not yet reviewed                                                                                                                                    | Where                                                                               |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| A   | **Compatibility quiz** — 12 questions, six traits. These shape who members are shown to each other, which makes them the highest-stakes of the three.                  | `packages/config/src/draft-copy.ts` → `QUIZ_QUESTIONS`                              |
+| B   | **FAQ** — 12 answers. Every factual claim is asserted against the product by a test, so the risk is tone rather than accuracy.                                         | `packages/config/src/guidelines.ts` → `FAQ`, live at `/faq`                         |
+| C   | **Community guidelines** — 8 sections. Sets what gets someone removed, so it is the one most worth disagreeing with.                                                   | `packages/config/src/guidelines.ts` → `COMMUNITY_GUIDELINES`, live at `/guidelines` |
+| D   | **Profile prompts** — 8. Load-bearing: Decision #14 makes a connect a reply to one, so without them nobody can be reached.                                             | `packages/config/src/draft-copy.ts` → `PROFILE_PROMPTS`                             |
+| E   | **Privacy policy** — 14 sections. Also needs counsel (Decision #30).                                                                                                   | `packages/config/src/legal.ts`, live at `/privacy`                                  |
+| F   | **Terms of service** — 9 sections. Needs counsel too. Takes two unusual positions on purpose: verification is identity not character, and there is no content licence. | `packages/config/src/terms.ts`, live at `/terms`                                    |
+| G   | **How-it-works and pricing prose.** Quotes §3.4 for the mechanics; the connecting text is mine.                                                                        | `packages/config/src/marketing.ts`                                                  |
 
 Everything in `DRAFT_COPY` is mine too — headings, labels, button text. Lower
 stakes, same status.
@@ -1838,14 +1837,14 @@ Nothing below blocks Milestone 2 except where noted.
 sent in chat. It is in no file in this repo; `pnpm check:db` reads `SUPABASE_DB_URL`
 from the environment.)
 
-| # | Held | Blocks |
-|---|---|---|
-| 1 | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Waiting on the domain being secured; `privacy@yourplusone.app` is the intended alias. Note Resend only *sends* — receiving needs mail hosting or a forwarding rule. | **launch** |
-| 2 | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out. | fast-follow |
-| 3 | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim. | Milestone 5 |
-| 4 | **Stripe keys** — secret, webhook secret, and the three price IDs. | Milestone 6 |
-| 5 | **Resend API key.** | Milestone 7 |
-| 6 | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above. | before launch |
+| #   | Held                                                                                                                                                                                                                                                                                      | Blocks        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| 1   | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Waiting on the domain being secured; `privacy@yourplusone.app` is the intended alias. Note Resend only _sends_ — receiving needs mail hosting or a forwarding rule. | **launch**    |
+| 2   | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out.                                                                                                                                                     | fast-follow   |
+| 3   | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim.                                                         | Milestone 5   |
+| 4   | **Stripe keys** — secret, webhook secret, and the three price IDs.                                                                                                                                                                                                                        | Milestone 6   |
+| 5   | **Resend API key.**                                                                                                                                                                                                                                                                       | Milestone 7   |
+| 6   | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above.                                                                                                                | before launch |
 
 ### Next
 

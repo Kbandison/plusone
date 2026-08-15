@@ -52,8 +52,12 @@ export function CommunityForm() {
         ))}
       </fieldset>
 
+      {/* Announced, because it appears. Choosing a community injects a whole
+          second required question below, and a screen reader user arrowing
+          through the first group had no idea anything had changed — they would
+          reach Continue and be told the form was incomplete. */}
       {community ? (
-        <fieldset className="flex flex-col gap-3">
+        <fieldset role="group" aria-live="polite" className="flex flex-col gap-3">
           <legend className="mb-3 text-[15px]">{C.conditionLabel}</legend>
           {conditions.map((value) => (
             <label

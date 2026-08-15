@@ -83,7 +83,9 @@ describe("the dispatcher refuses to carry a condition word", () => {
 
   // "positively" is not "positive"; "shiv" is not "hsv".
   it("does not fire on a word that merely contains one", () => {
-    expect(() => assertContentBlind({ ...clean, body: "Things are going positively" })).not.toThrow();
+    expect(() =>
+      assertContentBlind({ ...clean, body: "Things are going positively" }),
+    ).not.toThrow();
     expect(() => assertContentBlind({ ...clean, body: "A new message" })).not.toThrow();
   });
 

@@ -2,12 +2,7 @@
 
 import { useActionState } from "react";
 
-import {
-  DECISION_INITIAL,
-  REVEAL_INITIAL,
-  decideVerification,
-  revealCondition,
-} from "./actions";
+import { DECISION_INITIAL, REVEAL_INITIAL, decideVerification, revealCondition } from "./actions";
 
 export interface FlaggedMember {
   user_id: string;
@@ -80,13 +75,15 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
             {decision.error}
           </p>
         ) : null}
-        {decision.message ? <p className="text-[14px] text-positive">{decision.message}</p> : null}
+        {decision.message ? (
+          <p role="status" className="text-[14px] text-positive">
+            {decision.message}
+          </p>
+        ) : null}
       </form>
 
       <details className="mt-6 border-t border-line pt-5">
-        <summary className="cursor-pointer text-[14.5px] text-ink-2">
-          Reveal condition data
-        </summary>
+        <summary className="cursor-pointer text-[14.5px] text-ink-2">Reveal condition data</summary>
         <p className="mt-3 text-[13.5px] text-ink-3">
           Deciding whether a selfie matches a face does not need this. Every reveal is logged
           against your account with the reason you give.
@@ -99,6 +96,7 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
             required
             minLength={10}
             placeholder="Why you need it"
+            aria-label="Why you need it"
             className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
           />
           <button

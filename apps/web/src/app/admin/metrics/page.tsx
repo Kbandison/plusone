@@ -25,10 +25,28 @@ interface Metrics {
 }
 
 const GROUPS: { title: string; keys: (keyof Metrics)[] }[] = [
-  { title: "Members", keys: ["verified_members", "onboarded_members", "active_this_week", "support_only_members"] },
-  { title: "Discovery", keys: ["drops_served", "connects_sent", "connects_accepted"] },
-  { title: "Chats", keys: ["chats_open", "chats_date_planned", "chats_graduated", "chats_closed_by_fuse", "chats_closed_by_member"] },
-  { title: "Money", keys: ["subscriptions_active", "premium_from_grants", "referral_conversions"] },
+  {
+    title: "Members",
+    keys: ["verified_members", "onboarded_members", "active_this_week", "support_only_members"],
+  },
+  {
+    title: "Discovery",
+    keys: ["drops_served", "connects_sent", "connects_accepted"],
+  },
+  {
+    title: "Chats",
+    keys: [
+      "chats_open",
+      "chats_date_planned",
+      "chats_graduated",
+      "chats_closed_by_fuse",
+      "chats_closed_by_member",
+    ],
+  },
+  {
+    title: "Money",
+    keys: ["subscriptions_active", "premium_from_grants", "referral_conversions"],
+  },
   { title: "Moderation", keys: ["open_reports"] },
 ];
 

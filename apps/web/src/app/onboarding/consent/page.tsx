@@ -51,15 +51,10 @@ export default async function ConsentPage() {
         aria-valuemax={total}
         aria-label="Onboarding progress"
       >
-        <div
-          className="h-px bg-accent"
-          style={{ width: `${((current + 1) / total) * 100}%` }}
-        />
+        <div className="h-px bg-accent" style={{ width: `${((current + 1) / total) * 100}%` }} />
       </div>
 
-      <h1 className="mt-12 text-[clamp(2rem,6vw,2.6rem)] text-balance">
-        {COPY.consent.heading}
-      </h1>
+      <h1 className="mt-12 text-[clamp(2rem,6vw,2.6rem)] text-balance">{COPY.consent.heading}</h1>
 
       {/* §9.1, verbatim. This paragraph is the consent — it is not a summary of
           one, and it is not shortened behind a "read more". */}

@@ -44,9 +44,7 @@ export async function runLivenessCheck(
   // Only the stub exists so far; the real adapter slots in behind the same
   // interface when a provider is chosen (see PROJECT_UPDATES.md).
   const provider =
-    env.LIVENESS_PROVIDER === "stub"
-      ? verification.createStubLivenessProvider()
-      : null;
+    env.LIVENESS_PROVIDER === "stub" ? verification.createStubLivenessProvider() : null;
 
   if (!provider) return { ...previous, error: E.unavailable };
 
@@ -66,7 +64,10 @@ export async function runLivenessCheck(
     appealDecidedAt: null,
   };
 
-  const started = verification.transition(state, { type: "start_liveness", at: Date.now() });
+  const started = verification.transition(state, {
+    type: "start_liveness",
+    at: Date.now(),
+  });
   if (!started.ok) return { ...previous, error: E.unavailable };
 
   let outcome: verification.LivenessOutcome;
@@ -102,7 +103,10 @@ export async function runLivenessCheck(
     .update({
       verification_status: next.status,
       ...(next.status === "verified"
-        ? { liveness_passed_at: new Date().toISOString(), verified_at: new Date().toISOString() }
+        ? {
+            liveness_passed_at: new Date().toISOString(),
+            verified_at: new Date().toISOString(),
+          }
         : {}),
     })
     .eq("id", userId);

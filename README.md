@@ -40,24 +40,24 @@ pnpm dev
 
 ## Common tasks
 
-| Command | What it does |
-|---|---|
-| `pnpm dev` | Run the web app |
-| `pnpm typecheck` | Typecheck every package |
-| `pnpm test` | Run all unit tests |
-| `pnpm check:sql` | Parse + cross-check every migration (no database needed) |
-| `pnpm check:db` | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
-| `pnpm check:admin` | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction |
-| `pnpm check:moderation` | Open a real report as a moderator, decide it, and confirm no condition data is exposed |
-| `pnpm check:sweeps` | Expire a real fuse and assert it closes **with a note**; verify hard delete cascades |
-| `pnpm check:walls` | Act as real members across every wall, and attempt every third-party probe |
-| `pnpm check:referrals` | Attribute, convert and pay a real referral; confirm the job is idempotent |
-| `pnpm check:safety` | File a real report and confirm it reaches a moderator; block and confirm it is mutual |
-| `pnpm check:photos` | Confirm a blurred-until-connected member's clear path never reaches a viewer |
-| `pnpm check:premium` | Put a paying member and a free one against the real walls, and confirm money changed nothing |
-| `pnpm check:config` | Change a tunable and confirm it is hot-read, audited, and that no key can be invented |
-| `pnpm lint` | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md |
-| `pnpm build` | Production build |
+| Command                 | What it does                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| `pnpm dev`              | Run the web app                                                                                   |
+| `pnpm typecheck`        | Typecheck every package                                                                           |
+| `pnpm test`             | Run all unit tests                                                                                |
+| `pnpm check:sql`        | Parse + cross-check every migration (no database needed)                                          |
+| `pnpm check:db`         | Verify the **applied** schema against a live database (needs `SUPABASE_DB_URL`; skips without it) |
+| `pnpm check:admin`      | Exercise the admin RPCs as a real admin and a real member, in a rolled-back transaction           |
+| `pnpm check:moderation` | Open a real report as a moderator, decide it, and confirm no condition data is exposed            |
+| `pnpm check:sweeps`     | Expire a real fuse and assert it closes **with a note**; verify hard delete cascades              |
+| `pnpm check:walls`      | Act as real members across every wall, and attempt every third-party probe                        |
+| `pnpm check:referrals`  | Attribute, convert and pay a real referral; confirm the job is idempotent                         |
+| `pnpm check:safety`     | File a real report and confirm it reaches a moderator; block and confirm it is mutual             |
+| `pnpm check:photos`     | Confirm a blurred-until-connected member's clear path never reaches a viewer                      |
+| `pnpm check:premium`    | Put a paying member and a free one against the real walls, and confirm money changed nothing      |
+| `pnpm check:config`     | Change a tunable and confirm it is hot-read, audited, and that no key can be invented             |
+| `pnpm lint`             | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md                                      |
+| `pnpm build`            | Production build                                                                                  |
 
 ## Design direction
 
@@ -74,16 +74,16 @@ asserted in a comment.
 
 ## Milestones
 
-| # | Milestone | Status |
-|---|---|---|
-| 1 | Foundation — monorepo, config/types/db/ui-tokens, schema + RLS + RPCs, CI | done |
-| 2 | Identity — phone OTP, liveness, verification pipeline, consent screen | done |
-| 3 | Mechanics core — drop, connects, modes, referrals, tone | logic done |
-| 4 | Member app α | |
-| 5 | Community — rooms, preview drop, mode toggle | |
-| 6 | Money + growth — Stripe, premium gates, referrals | done (keys pending) |
-| 7 | Admin + notifications + cron | done (Resend pending) |
-| 8 | Polish + launch | marketing site done |
+| #   | Milestone                                                                 | Status                |
+| --- | ------------------------------------------------------------------------- | --------------------- |
+| 1   | Foundation — monorepo, config/types/db/ui-tokens, schema + RLS + RPCs, CI | done                  |
+| 2   | Identity — phone OTP, liveness, verification pipeline, consent screen     | done                  |
+| 3   | Mechanics core — drop, connects, modes, referrals, tone                   | logic done            |
+| 4   | Member app α                                                              |                       |
+| 5   | Community — rooms, preview drop, mode toggle                              |                       |
+| 6   | Money + growth — Stripe, premium gates, referrals                         | done (keys pending)   |
+| 7   | Admin + notifications + cron                                              | done (Resend pending) |
+| 8   | Polish + launch                                                           | marketing site done   |
 
 Never cut, whatever the timeline: verification, RLS and the walls, fuse + closure,
 content-blind notifications, hard delete, the consent screen, and chat voice notes.

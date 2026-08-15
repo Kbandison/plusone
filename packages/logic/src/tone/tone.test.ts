@@ -40,7 +40,10 @@ describe("a closure line may not mention a condition", () => {
   });
 
   it("does not fire on words that merely contain one", () => {
-    for (const line of ["I responded positively to the whole thing", "the shiv reference was odd"]) {
+    for (const line of [
+      "I responded positively to the whole thing",
+      "the shiv reference was odd",
+    ]) {
       expect(checkTone(line).violations).not.toContain("condition_reference");
     }
   });

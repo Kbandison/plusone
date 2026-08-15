@@ -19,7 +19,10 @@ import { describe, expect, it } from "vitest";
 const WEB = join(import.meta.dirname, "../..");
 
 interface VercelConfig {
-  readonly crons?: readonly { readonly path: string; readonly schedule: string }[];
+  readonly crons?: readonly {
+    readonly path: string;
+    readonly schedule: string;
+  }[];
 }
 
 const config = JSON.parse(readFileSync(join(WEB, "vercel.json"), "utf8")) as VercelConfig;

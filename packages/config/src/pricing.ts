@@ -6,9 +6,7 @@
 export type PlanId = "premium_1mo" | "premium_3mo" | "premium_6mo";
 
 export type PriceIdEnvKey =
-  | "STRIPE_PRICE_PREMIUM_1MO"
-  | "STRIPE_PRICE_PREMIUM_3MO"
-  | "STRIPE_PRICE_PREMIUM_6MO";
+  "STRIPE_PRICE_PREMIUM_1MO" | "STRIPE_PRICE_PREMIUM_3MO" | "STRIPE_PRICE_PREMIUM_6MO";
 
 export interface Plan {
   readonly id: PlanId;

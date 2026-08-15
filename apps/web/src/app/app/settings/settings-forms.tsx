@@ -34,13 +34,24 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
           disabled={pending}
           className="ease-brand ml-auto rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
         >
-          {COPY.actions.continueLabel}
+          {/* Not "Continue". There is nothing to continue to on a settings
+              page, and a button whose name does not describe what it does
+              fails 2.4.6 for everyone reading a list of controls. */}
+          {DRAFT_COPY.app.saveLabel}
         </button>
       </form>
 
       {state.error ? (
         <p role="alert" className="mt-3 text-[14px] text-critical">
           {state.error}
+        </p>
+      ) : null}
+
+      {/* This rendered only errors, so a successful toggle produced nothing at
+          all — and the checkbox looks the same either way. */}
+      {state.message ? (
+        <p role="status" className="mt-3 text-[14px] text-positive">
+          {state.message}
         </p>
       ) : null}
     </section>

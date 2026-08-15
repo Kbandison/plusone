@@ -164,7 +164,10 @@ describe("returning to dating", () => {
 describe("switching to the mode you are already in", () => {
   it.each(["dating", "support_only"] as const)("is refused for %s", (mode) => {
     const state = mode === "dating" ? dating() : shielded();
-    expect(switchMode(state, mode, AT + 99 * DAY)).toEqual({ ok: false, code: "already_that_mode" });
+    expect(switchMode(state, mode, AT + 99 * DAY)).toEqual({
+      ok: false,
+      code: "already_that_mode",
+    });
   });
 
   // Otherwise "switch to support_only" while already there would re-arm the

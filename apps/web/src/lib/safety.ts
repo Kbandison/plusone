@@ -2,11 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 
-import { REPORT_DETAIL_MAX_CHARS, REPORT_REASONS, type ReportReason } from "@plusone/config";
+import {
+  DRAFT_COPY,
+  REPORT_DETAIL_MAX_CHARS,
+  REPORT_REASONS,
+  type ReportReason,
+} from "@plusone/config";
 
 import { getServerSupabase } from "./supabase";
 
-export type SafetyState = { readonly error: string | null; readonly message: string | null };
+export type SafetyState = {
+  readonly error: string | null;
+  readonly message: string | null;
+};
 export const SAFETY_INITIAL: SafetyState = { error: null, message: null };
 
 /**
@@ -91,7 +99,10 @@ export async function reportMember(_prev: SafetyState, formData: FormData): Prom
   const reportedUserId = String(formData.get("reported_user_id") ?? "") || null;
   const reportedMessageId = String(formData.get("reported_message_id") ?? "") || null;
   const reportedRoomMessageId = String(formData.get("reported_room_message_id") ?? "") || null;
-  const detail = String(formData.get("detail") ?? "").trim().slice(0, REPORT_DETAIL_MAX_CHARS) || null;
+  const detail =
+    String(formData.get("detail") ?? "")
+      .trim()
+      .slice(0, REPORT_DETAIL_MAX_CHARS) || null;
 
   if (!reportedUserId && !reportedMessageId && !reportedRoomMessageId) {
     return { error: "That didn't work.", message: null };
@@ -119,5 +130,5 @@ export async function reportMember(_prev: SafetyState, formData: FormData): Prom
     for (const path of ["/app", "/app/browse", "/app/chats"]) revalidatePath(path);
   }
 
-  return { error: null, message: "Sent. A moderator will look at it." };
+  return { error: null, message: DRAFT_COPY.app.reportSent };
 }

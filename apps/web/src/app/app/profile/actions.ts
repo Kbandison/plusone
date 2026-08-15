@@ -12,20 +12,31 @@ import { tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
+import { memberFacingError } from "@/lib/rpc-error";
 
-export type ProfileState = { readonly error: string | null; readonly message: string | null };
+export type ProfileState = {
+  readonly error: string | null;
+  readonly message: string | null;
+};
 export const PROFILE_INITIAL: ProfileState = { error: null, message: null };
 
 /**
  * §6.4 — the mode toggle. `switch_mode` holds the cooldown; this does not
  * re-check it, because one enforcement point is the point.
  */
-export async function switchMode(_previous: ProfileState, formData: FormData): Promise<ProfileState> {
+export async function switchMode(
+  _previous: ProfileState,
+  formData: FormData,
+): Promise<ProfileState> {
   const target = formData.get("mode") === "support_only" ? "support_only" : "dating";
 
   const supabase = await getServerSupabase();
   const { error } = await supabase.rpc("switch_mode", { p_mode: target });
-  if (error) return { error: error.message, message: null };
+  if (error)
+    return {
+      error: memberFacingError(error, "That didn't save. Try again."),
+      message: null,
+    };
 
   revalidatePath("/app/profile");
   revalidatePath("/app");
@@ -47,7 +58,10 @@ export async function switchMode(_previous: ProfileState, formData: FormData): P
  * select the client rendered, and a stale one after a prompt is retired should
  * not cost someone the rest of their answers.
  */
-export async function savePrompts(_previous: ProfileState, formData: FormData): Promise<ProfileState> {
+export async function savePrompts(
+  _previous: ProfileState,
+  formData: FormData,
+): Promise<ProfileState> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(String(formData.get("prompts") ?? "[]"));
@@ -67,7 +81,9 @@ export async function savePrompts(_previous: ProfileState, formData: FormData): 
       return { error: "One of those answers is too long.", message: null };
     }
 
-    const result = tone.checkTone(answer, { maxChars: PROMPT_ANSWER_MAX_CHARS });
+    const result = tone.checkTone(answer, {
+      maxChars: PROMPT_ANSWER_MAX_CHARS,
+    });
     if (!result.ok) return { error: describeViolations(result.violations), message: null };
 
     answers.push({ id, answer });

@@ -61,13 +61,33 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
             </select>
 
             <textarea
-              aria-label={C.promptAnswerLabel}
+              // The prompt's own question, not "Your answer" three times over.
+              // Three identically-named fields are three fields a screen reader
+              // user cannot tell apart, on the control that decides whether
+              // anyone can reach them at all.
+              aria-label={
+                PROFILE_PROMPTS.find((prompt) => prompt.id === row.id)?.question ??
+                C.promptAnswerLabel
+              }
               value={row.answer}
               maxLength={PROMPT_ANSWER_MAX_CHARS}
               rows={3}
               onChange={(event) => update(index, { answer: event.target.value })}
               className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
             />
+
+            {/* "Add another" had no way back, and savePrompts drops empty
+                answers silently — so a mistaken tap left a row that looked
+                permanent and then vanished on save with no explanation. */}
+            {rows.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
+                className="ease-brand self-start text-[13.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+              >
+                {C.promptRemoveLabel}
+              </button>
+            ) : null}
           </div>
         ))}
 
@@ -104,6 +124,15 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
         {state.error ? (
           <p role="alert" className="text-[14px] text-critical">
             {state.error}
+          </p>
+        ) : null}
+
+        {/* savePrompts has always returned "Saved." and this only ever rendered
+            state.error, so saving your prompts produced no feedback of any kind
+            — for anyone, not just a screen reader. */}
+        {state.message ? (
+          <p role="status" className="text-[14px] text-positive">
+            {state.message}
           </p>
         ) : null}
       </form>

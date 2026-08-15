@@ -18,42 +18,23 @@ export type MemberMode = "dating" | "support_only";
 export type PhotoPrivacy = "clear" | "blurred_until_connected";
 
 export type VerificationStatus =
-  | "unverified"
-  | "phone_verified"
-  | "liveness_pending"
-  | "verified"
-  | "flagged"
-  | "rejected";
+  "unverified" | "phone_verified" | "liveness_pending" | "verified" | "flagged" | "rejected";
 
 export type ConnectStatus = "pending" | "accepted" | "declined" | "expired";
 
 export type ConnectSource = "drop" | "browse" | "room";
 
-export type ChatStatus =
-  | "open"
-  | "date_planned"
-  | "closed_fuse"
-  | "closed_by_member"
-  | "graduated";
+export type ChatStatus = "open" | "date_planned" | "closed_fuse" | "closed_by_member" | "graduated";
 
 export type RoomScope = "all" | "hsv" | "hiv";
 
 export type ReferralTier = "tier1_3" | "tier2_5" | "tier3_10";
 
 export type RewardStatus =
-  | "auto_granted"
-  | "pending_approval"
-  | "approved"
-  | "denied"
-  | "clawed_back";
+  "auto_granted" | "pending_approval" | "approved" | "denied" | "clawed_back";
 
 export type ReportReason =
-  | "fake_profile"
-  | "harassment"
-  | "sexual_content"
-  | "spam_or_scam"
-  | "underage"
-  | "other";
+  "fake_profile" | "harassment" | "sexual_content" | "spam_or_scam" | "underage" | "other";
 
 export type ModerationStatus = "open" | "in_review" | "resolved" | "dismissed";
 

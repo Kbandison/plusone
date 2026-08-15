@@ -38,7 +38,11 @@ export function ConfigRow({ configKey, value }: { configKey: string; value: stri
           {state.error}
         </span>
       ) : null}
-      {state.message ? <span className="text-[13.5px] text-positive">Saved</span> : null}
+      {state.message ? (
+        <span role="status" className="text-[13.5px] text-positive">
+          Saved
+        </span>
+      ) : null}
     </li>
   );
 }

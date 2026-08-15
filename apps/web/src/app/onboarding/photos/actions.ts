@@ -29,7 +29,10 @@ export const PHOTOS_INITIAL: PhotosState = { error: null };
  * Every check runs again on this side. The file input's `accept` and the
  * bucket's own limits are conveniences, not controls.
  */
-export async function uploadPhoto(_previous: PhotosState, formData: FormData): Promise<PhotosState> {
+export async function uploadPhoto(
+  _previous: PhotosState,
+  formData: FormData,
+): Promise<PhotosState> {
   const { userId } = await requireStep("photos");
 
   const file = formData.get("photo");

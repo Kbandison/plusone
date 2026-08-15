@@ -23,7 +23,11 @@ export function RadiusForm() {
           {C.label}
         </label>
 
+        {/* aria-hidden because the slider itself now announces this value
+            through aria-valuetext. <output> carries an implicit role="status",
+            so without this every drag step was announced twice. */}
         <output
+          aria-hidden
           htmlFor={sliderId}
           className="font-display text-[clamp(2.4rem,8vw,3.2rem)] leading-none"
         >
@@ -38,6 +42,9 @@ export function RadiusForm() {
           max={250}
           step={5}
           value={radius}
+          // Without this a screen reader announces the bare number while the
+          // page says "50 miles". The unit is the part that matters.
+          aria-valuetext={C.unit(radius)}
           onChange={(event) => setRadius(Number(event.target.value))}
           className="accent-accent"
         />

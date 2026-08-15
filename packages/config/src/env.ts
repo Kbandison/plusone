@@ -59,51 +59,53 @@ export const clientEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: origin,
 });
 
-export const serverEnvSchema = z.object({
-  /** Server-only Supabase key. Bypasses RLS — used solely by cron and admin paths. */
-  SUPABASE_SECRET_KEY: secretKey,
+export const serverEnvSchema = z
+  .object({
+    /** Server-only Supabase key. Bypasses RLS — used solely by cron and admin paths. */
+    SUPABASE_SECRET_KEY: secretKey,
 
-  STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
-  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
-  STRIPE_PRICE_PREMIUM_1MO: z.string().startsWith("price_"),
-  STRIPE_PRICE_PREMIUM_3MO: z.string().startsWith("price_"),
-  STRIPE_PRICE_PREMIUM_6MO: z.string().startsWith("price_"),
+    STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
+    STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
+    STRIPE_PRICE_PREMIUM_1MO: z.string().startsWith("price_"),
+    STRIPE_PRICE_PREMIUM_3MO: z.string().startsWith("price_"),
+    STRIPE_PRICE_PREMIUM_6MO: z.string().startsWith("price_"),
 
-  RESEND_API_KEY: z.string().startsWith("re_"),
+    RESEND_API_KEY: z.string().startsWith("re_"),
 
-  /**
-   * Phone OTP provider (§7.2). Twilio credentials live in the Supabase
-   * dashboard, not here — Supabase Auth talks to Twilio on our behalf, so this
-   * only records WHICH provider is live. `stub` accepts a fixed code and
-   * refuses to construct in production.
-   */
-  OTP_PROVIDER: z.enum(["stub", "supabase_twilio"]),
+    /**
+     * Phone OTP provider (§7.2). Twilio credentials live in the Supabase
+     * dashboard, not here — Supabase Auth talks to Twilio on our behalf, so this
+     * only records WHICH provider is live. `stub` accepts a fixed code and
+     * refuses to construct in production.
+     */
+    OTP_PROVIDER: z.enum(["stub", "supabase_twilio"]),
 
-  /**
-   * Swappable liveness adapter (§4.2). The provider choice is still open — see
-   * PROJECT_UPDATES.md — so `stub` is a legal value here and is the default for
-   * development. The stub itself refuses to construct in production, so a
-   * forgotten `stub` fails loudly at boot rather than verifying everyone.
-   *
-   * The single-opaque-key shape below will not survive the real choice: AWS
-   * needs an access key id, a secret and a region, and Stripe Identity has no
-   * key of its own (it reuses STRIPE_SECRET_KEY). Widen this when we pick,
-   * rather than guessing a shape now.
-   */
-  LIVENESS_PROVIDER: z.enum(["stub", "stripe_identity", "facetec", "aws_rekognition"]),
-  LIVENESS_API_KEY: z.string().optional(),
+    /**
+     * Swappable liveness adapter (§4.2). The provider choice is still open — see
+     * PROJECT_UPDATES.md — so `stub` is a legal value here and is the default for
+     * development. The stub itself refuses to construct in production, so a
+     * forgotten `stub` fails loudly at boot rather than verifying everyone.
+     *
+     * The single-opaque-key shape below will not survive the real choice: AWS
+     * needs an access key id, a secret and a region, and Stripe Identity has no
+     * key of its own (it reuses STRIPE_SECRET_KEY). Widen this when we pick,
+     * rather than guessing a shape now.
+     */
+    LIVENESS_PROVIDER: z.enum(["stub", "stripe_identity", "facetec", "aws_rekognition"]),
+    LIVENESS_API_KEY: z.string().optional(),
 
-  /** Shared secret so only Vercel Cron can invoke /api/cron/*. */
-  CRON_SECRET: z.string().min(32),
-}).refine(
-  // Only the stub runs without a credential. Any real provider missing its key
-  // would otherwise fail on the first member to reach the selfie step.
-  (env) => env.LIVENESS_PROVIDER === "stub" || (env.LIVENESS_API_KEY ?? "").length > 0,
-  {
-    path: ["LIVENESS_API_KEY"],
-    message: "required for every provider except stub",
-  },
-);
+    /** Shared secret so only Vercel Cron can invoke /api/cron/*. */
+    CRON_SECRET: z.string().min(32),
+  })
+  .refine(
+    // Only the stub runs without a credential. Any real provider missing its key
+    // would otherwise fail on the first member to reach the selfie step.
+    (env) => env.LIVENESS_PROVIDER === "stub" || (env.LIVENESS_API_KEY ?? "").length > 0,
+    {
+      path: ["LIVENESS_API_KEY"],
+      message: "required for every provider except stub",
+    },
+  );
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

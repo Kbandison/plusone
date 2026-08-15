@@ -30,6 +30,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Formatting
+        # There was no prettier config, so both format scripts ran at the 80
+        # column default against a codebase hand-written at 100 — and they
+        # globbed .sql, which prettier cannot parse at all, so every run errored.
+        # Neither had ever passed.
+        run: pnpm format:check
+
       - name: Typecheck
         run: pnpm typecheck
 

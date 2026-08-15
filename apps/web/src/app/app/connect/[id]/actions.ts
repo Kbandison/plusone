@@ -25,7 +25,10 @@ const MAX_REPLY = 500;
  * whatever path the insert arrives by. This checks the reply, not the right to
  * send it.
  */
-export async function sendConnect(_previous: ConnectState, formData: FormData): Promise<ConnectState> {
+export async function sendConnect(
+  _previous: ConnectState,
+  formData: FormData,
+): Promise<ConnectState> {
   const targetId = String(formData.get("target_id") ?? "");
   const promptId = String(formData.get("prompt_id") ?? "");
   const reply = String(formData.get("reply") ?? "").trim();

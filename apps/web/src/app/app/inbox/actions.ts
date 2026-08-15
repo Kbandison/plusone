@@ -7,6 +7,7 @@ import { tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
+import { memberFacingError } from "@/lib/rpc-error";
 
 export type InboxState = { readonly error: string | null };
 export const INBOX_INITIAL: InboxState = { error: null };
@@ -16,7 +17,7 @@ export async function acceptConnect(_prev: InboxState, formData: FormData): Prom
   const { error } = await supabase.rpc("accept_connect", {
     p_connect_id: String(formData.get("connect_id") ?? ""),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
   revalidatePath("/app/inbox");
   revalidatePath("/app/chats");
   return { error: null };
@@ -48,8 +49,7 @@ export async function declineConnect(_prev: InboxState, formData: FormData): Pro
     p_personal_line: line || null,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
   revalidatePath("/app/inbox");
   return { error: null };
 }
-

@@ -45,9 +45,7 @@ export async function startCheckout(
       mode: "subscription",
       line_items: [{ price: priceIdFor(planId), quantity: 1 }],
       client_reference_id: auth.user.id,
-      ...(existing?.stripe_customer_id
-        ? { customer: existing.stripe_customer_id as string }
-        : {}),
+      ...(existing?.stripe_customer_id ? { customer: existing.stripe_customer_id as string } : {}),
       // Read back by the webhook. client_reference_id alone is not on every
       // event type, and a subscription that cannot be attributed to a member is
       // a payment we took and cannot honour.

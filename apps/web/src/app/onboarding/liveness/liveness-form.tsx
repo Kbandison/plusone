@@ -16,7 +16,16 @@ export function LivenessForm() {
   // side: told plainly, asked to do nothing.
   if (state.attemptsLeft === 0 && !state.error) {
     return (
-      <div className="mt-10 rounded-lg border border-line-2 bg-surface p-6">
+      // role="status" and focusable. This replaces the whole form, including
+      // the button the member just pressed — so without it they press Start,
+      // the button vanishes, focus lands on <body>, and the news that they have
+      // been flagged for human review is never announced at all.
+      <div
+        role="status"
+        tabIndex={-1}
+        ref={(node) => node?.focus()}
+        className="mt-10 rounded-lg border border-line-2 bg-surface p-6 focus:outline-none"
+      >
         <h2 className="text-[clamp(1.3rem,3.5vw,1.55rem)]">{C.flaggedHeading}</h2>
         <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{C.flaggedBody}</p>
       </div>

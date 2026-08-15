@@ -14,8 +14,8 @@ export default async function VerificationsPage() {
     <main id="main">
       <h1 className="mt-4 text-[clamp(1.9rem,5vw,2.4rem)]">Flagged verifications</h1>
       <p className="mt-4 max-w-[52ch] text-[16px] leading-[1.7] text-ink-2">
-        Members whose automatic check could not decide, oldest first. Manual review happens only
-        on a risk flag.
+        Members whose automatic check could not decide, oldest first. Manual review happens only on
+        a risk flag.
       </p>
 
       {error ? (

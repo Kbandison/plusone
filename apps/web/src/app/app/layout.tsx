@@ -52,19 +52,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </Link>
       </header>
 
-      <div className="flex-1 pb-28">{children}</div>
+      {/* Clears the nav, which is two rows on a narrow screen. */}
+      <div className="flex-1 pb-36 sm:pb-28">{children}</div>
 
-      {/* Bottom nav: thumb-reachable, and the only chrome on the page. */}
+      {/* Bottom nav: thumb-reachable, and the only chrome on the page.
+       *
+       * It wraps. Nine labels in `justify-between` came to roughly 360px of
+       * text inside the 312px a 360px phone leaves after the gutters, and
+       * `body { overflow-x: hidden }` meant the overflow was clipped rather
+       * than scrollable — so the last items were simply unreachable, on the
+       * only navigation in the app. Nothing said so, because clipping never
+       * does.
+       *
+       * The padding is on the links rather than the list, which is what makes
+       * each target 24×24 CSS px (WCAG 2.2 SC 2.5.8). It was on the <ul>, so
+       * the tappable area was the bare 13px line box — about 21px tall — with
+       * `justify-between` leaving no spacing to claim the exception. That is
+       * exactly the one-handed-in-a-hurry case this nav exists for. */}
       <nav
         aria-label="Sections"
         className="fixed inset-x-0 bottom-0 border-t border-line bg-ground/95 backdrop-blur"
       >
-        <ul className="mx-auto flex max-w-[680px] justify-between px-6 py-3.5">
+        <ul className="mx-auto flex max-w-[680px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
           {NAV.map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="ease-brand text-[13px] text-ink-2 transition-colors duration-200 hover:text-ink"
+                className="ease-brand flex min-h-[44px] items-center px-2.5 text-[13px] text-ink-2 transition-colors duration-200 hover:text-ink"
               >
                 {item.label}
               </Link>

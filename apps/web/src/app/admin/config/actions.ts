@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
 
-export type ConfigState = { readonly error: string | null; readonly message: string | null };
+export type ConfigState = {
+  readonly error: string | null;
+  readonly message: string | null;
+};
 export const CONFIG_INITIAL: ConfigState = { error: null, message: null };
 
 /**
@@ -23,7 +26,10 @@ export async function setConfig(_previous: ConfigState, formData: FormData): Pro
   if (!Number.isFinite(value)) return { error: "That needs to be a number.", message: null };
 
   const supabase = await getServerSupabase();
-  const { error } = await supabase.rpc("admin_set_config", { p_key: key, p_value: value });
+  const { error } = await supabase.rpc("admin_set_config", {
+    p_key: key,
+    p_value: value,
+  });
 
   if (error) return { error: error.message, message: null };
 

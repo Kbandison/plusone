@@ -58,23 +58,22 @@ export async function photosFor(userIds: readonly string[]): Promise<Map<string,
   if (!rows?.length) return found;
 
   const service = serviceClient();
-  const { data: signed } = await service.storage
-    .from("photos")
-    .createSignedUrls(
-      rows.map((row) => row.storage_path as string),
-      TTL_SECONDS,
-    );
+  const { data: signed } = await service.storage.from("photos").createSignedUrls(
+    rows.map((row) => row.storage_path as string),
+    TTL_SECONDS,
+  );
 
   const urlByPath = new Map(
-    (signed ?? [])
-      .filter((s) => s.signedUrl && s.path)
-      .map((s) => [s.path as string, s.signedUrl]),
+    (signed ?? []).filter((s) => s.signedUrl && s.path).map((s) => [s.path as string, s.signedUrl]),
   );
 
   for (const row of rows) {
     const url = urlByPath.get(row.storage_path as string);
     if (url) {
-      found.set(row.user_id as string, { url, isBlurred: Boolean(row.is_blurred) });
+      found.set(row.user_id as string, {
+        url,
+        isBlurred: Boolean(row.is_blurred),
+      });
     }
   }
 
@@ -105,6 +104,7 @@ export async function ownPhotos(userId: string): Promise<readonly MemberPhoto[]>
       TTL_SECONDS,
     );
 
-  return (signed ?? [])
-    .flatMap((s) => (s.signedUrl ? [{ url: s.signedUrl, isBlurred: false }] : []));
+  return (signed ?? []).flatMap((s) =>
+    s.signedUrl ? [{ url: s.signedUrl, isBlurred: false }] : [],
+  );
 }

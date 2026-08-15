@@ -1,11 +1,6 @@
 import { CONNECTS } from "@plusone/config";
 
-import type {
-  ConnectBudgetState,
-  ConnectCheck,
-  ConnectConfig,
-  ConnectSource,
-} from "./types";
+import type { ConnectBudgetState, ConnectCheck, ConnectConfig, ConnectSource } from "./types";
 
 export const DEFAULT_CONNECT_CONFIG: ConnectConfig = {
   freePerDay: CONNECTS.freePerDay,
@@ -23,7 +18,10 @@ export const DEFAULT_CONNECT_CONFIG: ConnectConfig = {
  * member. A drop connect cannot cost more for a free member or less for a
  * paying one because neither fact is in scope here.
  */
-export function costOf(source: ConnectSource, config: ConnectConfig = DEFAULT_CONNECT_CONFIG): number {
+export function costOf(
+  source: ConnectSource,
+  config: ConnectConfig = DEFAULT_CONNECT_CONFIG,
+): number {
   switch (source) {
     case "drop":
       return config.dropConnectCost;

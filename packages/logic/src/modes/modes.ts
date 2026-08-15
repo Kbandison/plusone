@@ -1,12 +1,6 @@
 import { COOLDOWNS } from "@plusone/config";
 
-import type {
-  Intention,
-  MemberMode,
-  ModeConfig,
-  ModeResult,
-  ModeState,
-} from "./types";
+import type { Intention, MemberMode, ModeConfig, ModeResult, ModeState } from "./types";
 
 export const DEFAULT_MODE_CONFIG: ModeConfig = {
   intentionChangeDays: COOLDOWNS.intentionChangeDays,
@@ -18,7 +12,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const days = (n: number) => n * DAY_MS;
 
 /** When the member may next change intention. */
-export function intentionUnlocksAt(state: ModeState, config: ModeConfig = DEFAULT_MODE_CONFIG): number {
+export function intentionUnlocksAt(
+  state: ModeState,
+  config: ModeConfig = DEFAULT_MODE_CONFIG,
+): number {
   return state.intentionChangedAt + days(config.intentionChangeDays);
 }
 
@@ -71,7 +68,11 @@ export function switchMode(
   if (target === "support_only") {
     return {
       ok: true,
-      state: { ...state, mode: "support_only", datingReentryAt: at + days(config.datingReentryDays) },
+      state: {
+        ...state,
+        mode: "support_only",
+        datingReentryAt: at + days(config.datingReentryDays),
+      },
     };
   }
 
@@ -84,7 +85,9 @@ export function switchMode(
 
 /** Whether dating can be re-entered right now. */
 export function canReturnToDating(state: ModeState, at: number): boolean {
-  return state.mode === "support_only" && (state.datingReentryAt === null || at >= state.datingReentryAt);
+  return (
+    state.mode === "support_only" && (state.datingReentryAt === null || at >= state.datingReentryAt)
+  );
 }
 
 /** Whether this member is hidden from all dating surfaces (Decision #18). */

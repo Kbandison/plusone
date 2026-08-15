@@ -21,7 +21,8 @@ export function PlanChooser() {
           }`}
         >
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h3 className="text-[1.2rem]">{plan.label}</h3>
+            {/* h2: the page heading is the h1 and there is nothing between. */}
+            <h2 className="text-[1.2rem]">{plan.label}</h2>
             <span className="text-[15px] text-ink-2">{formatPriceCents(plan.priceCents)}</span>
           </div>
 
@@ -35,9 +36,7 @@ export function PlanChooser() {
             value={plan.id}
             disabled={pending}
             className={`ease-brand mt-5 rounded-lg px-5 py-2.5 text-[15px] transition-opacity duration-200 hover:opacity-90 disabled:opacity-55 ${
-              plan.highlighted
-                ? "bg-accent text-accent-ink"
-                : "border border-line-2 text-ink"
+              plan.highlighted ? "bg-accent text-accent-ink" : "border border-line-2 text-ink"
             }`}
           >
             {C.choosePlanLabel}

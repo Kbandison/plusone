@@ -30,10 +30,7 @@ export function intentionCompat(a: Intention, b: Intention): number {
  */
 export const NEUTRAL_QUIZ_COMPAT = 0.5;
 
-export function quizCompat(
-  a: readonly number[] | null,
-  b: readonly number[] | null,
-): number {
+export function quizCompat(a: readonly number[] | null, b: readonly number[] | null): number {
   if (!a || !b || a.length === 0 || a.length !== b.length) return NEUTRAL_QUIZ_COMPAT;
 
   let dot = 0;

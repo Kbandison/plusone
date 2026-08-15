@@ -1,9 +1,4 @@
-export {
-  BRAND,
-  PITCH,
-  BANNED_COPY_TERMS,
-  BANNED_PRIVACY_CLAIMS,
-} from "./brand";
+export { BRAND, PITCH, BANNED_COPY_TERMS, BANNED_PRIVACY_CLAIMS } from "./brand";
 
 export {
   COPY,
@@ -47,12 +42,7 @@ export {
 } from "./notifications";
 export type { NotificationEvent, NotificationTemplate } from "./notifications";
 
-export {
-  clientEnvSchema,
-  serverEnvSchema,
-  parseClientEnv,
-  parseServerEnv,
-} from "./env";
+export { clientEnvSchema, serverEnvSchema, parseClientEnv, parseServerEnv } from "./env";
 export type { ClientEnv, ServerEnv } from "./env";
 
 export {
@@ -96,12 +86,7 @@ export type {
 export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
 export type { Section, FaqEntry } from "./guidelines";
 
-export {
-  HOW_IT_WORKS,
-  HOW_IT_WORKS_INTRO,
-  PRICING_INTRO,
-  PRICING_NEVER_NOTE,
-} from "./marketing";
+export { HOW_IT_WORKS, HOW_IT_WORKS_INTRO, PRICING_INTRO, PRICING_NEVER_NOTE } from "./marketing";
 export type { HowItWorksStep } from "./marketing";
 
 export { TERMS, TERMS_INTRO, TERMS_EFFECTIVE } from "./terms";

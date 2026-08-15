@@ -7,9 +7,7 @@ import { NEUTRAL_VECTOR, TRAIT_COUNT, answeredCount, hasAnswers, traitVector } f
 
 /** Picks option `index` for every question. */
 const answerAll = (index: number) =>
-  Object.fromEntries(
-    QUIZ_QUESTIONS.map((q) => [q.id, q.options[index]?.id ?? q.options[0]!.id]),
-  );
+  Object.fromEntries(QUIZ_QUESTIONS.map((q) => [q.id, q.options[index]?.id ?? q.options[0]!.id]));
 
 describe("the questions themselves", () => {
   // §7.2 asks for 10-12.

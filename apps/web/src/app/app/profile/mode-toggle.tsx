@@ -36,7 +36,13 @@ export function ModeToggle({ mode }: { mode: "dating" | "support_only" }) {
           {state.error}
         </p>
       ) : null}
-      {state.message ? <p className="mt-4 text-[14.5px] text-positive">{state.message}</p> : null}
+      {/* role="status" — switching mode is one of the biggest changes a member
+          can make here, and it produced no announcement at all. */}
+      {state.message ? (
+        <p role="status" className="mt-4 text-[14.5px] text-positive">
+          {state.message}
+        </p>
+      ) : null}
     </section>
   );
 }

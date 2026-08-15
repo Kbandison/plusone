@@ -42,7 +42,10 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       .limit(100),
   ]);
 
-  const pinned = room.pinned_resource_card as { title?: string; body?: string } | null;
+  const pinned = room.pinned_resource_card as {
+    title?: string;
+    body?: string;
+  } | null;
 
   return (
     <main id="main">

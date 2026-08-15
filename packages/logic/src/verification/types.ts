@@ -21,12 +21,7 @@
 
 /** Mirrors public.verification_status in the SQL exactly. */
 export type VerificationStatus =
-  | "unverified"
-  | "phone_verified"
-  | "liveness_pending"
-  | "verified"
-  | "flagged"
-  | "rejected";
+  "unverified" | "phone_verified" | "liveness_pending" | "verified" | "flagged" | "rejected";
 
 /** States a member cannot leave without an administrator. */
 export const REVIEW_STATUSES = ["flagged", "rejected"] as const;

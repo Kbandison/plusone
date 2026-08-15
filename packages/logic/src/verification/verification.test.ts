@@ -384,10 +384,10 @@ describe("no dead ends", () => {
     // A provider outage left the member in liveness_pending, where every event
     // refused — start_liveness said already_in_progress, verify_phone was a
     // no-op, and admin_decide said not_under_review. Nobody could reach them.
-    const pending = drive(
-      drive(INITIAL_STATE, { type: "verify_phone", at: AT }),
-      { type: "start_liveness", at: AT },
-    );
+    const pending = drive(drive(INITIAL_STATE, { type: "verify_phone", at: AT }), {
+      type: "start_liveness",
+      at: AT,
+    });
     expect(pending.status).toBe("liveness_pending");
 
     const rescued = transition(pending, { type: "admin_decide", at: AT + 1, approve: true });
@@ -399,7 +399,10 @@ describe("no dead ends", () => {
     const states: VerificationState[] = [
       INITIAL_STATE,
       drive(INITIAL_STATE, { type: "verify_phone", at: AT }),
-      drive(drive(INITIAL_STATE, { type: "verify_phone", at: AT }), { type: "start_liveness", at: AT }),
+      drive(drive(INITIAL_STATE, { type: "verify_phone", at: AT }), {
+        type: "start_liveness",
+        at: AT,
+      }),
       toFlagged(),
       drive(toFlagged(), { type: "admin_decide", at: AT + 1, approve: false }),
     ];

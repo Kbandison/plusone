@@ -7,6 +7,7 @@ import { fuse, tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
+import { memberFacingError } from "@/lib/rpc-error";
 
 export type ChatState = { readonly error: string | null };
 export const CHAT_INITIAL: ChatState = { error: null };
@@ -103,12 +104,17 @@ export async function proposePlan(_prev: ChatState, formData: FormData): Promise
   };
 
   if (!fuse.isPlanComplete(plan)) {
-    return { error: "A plan needs a day, a rough time, and a place — or video." };
+    return {
+      error: "A plan needs a day, a rough time, and a place — or video.",
+    };
   }
 
   const supabase = await getServerSupabase();
-  const { error } = await supabase.rpc("propose_date_plan", { p_chat_id: chatId, p_plan: plan });
-  if (error) return { error: error.message };
+  const { error } = await supabase.rpc("propose_date_plan", {
+    p_chat_id: chatId,
+    p_plan: plan,
+  });
+  if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
 
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };
@@ -117,8 +123,10 @@ export async function proposePlan(_prev: ChatState, formData: FormData): Promise
 export async function confirmPlan(_prev: ChatState, formData: FormData): Promise<ChatState> {
   const chatId = String(formData.get("chat_id") ?? "");
   const supabase = await getServerSupabase();
-  const { error } = await supabase.rpc("confirm_date_plan", { p_chat_id: chatId });
-  if (error) return { error: error.message };
+  const { error } = await supabase.rpc("confirm_date_plan", {
+    p_chat_id: chatId,
+  });
+  if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };
 }
@@ -127,8 +135,10 @@ export async function confirmPlan(_prev: ChatState, formData: FormData): Promise
 export async function cancelPlan(_prev: ChatState, formData: FormData): Promise<ChatState> {
   const chatId = String(formData.get("chat_id") ?? "");
   const supabase = await getServerSupabase();
-  const { error } = await supabase.rpc("cancel_date_plan", { p_chat_id: chatId });
-  if (error) return { error: error.message };
+  const { error } = await supabase.rpc("cancel_date_plan", {
+    p_chat_id: chatId,
+  });
+  if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };
 }
@@ -157,7 +167,7 @@ export async function closeChat(_prev: ChatState, formData: FormData): Promise<C
     p_personal_line: line || null,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
   revalidatePath(`/app/chats/${chatId}`);
   revalidatePath("/app/chats");
   return { error: null };

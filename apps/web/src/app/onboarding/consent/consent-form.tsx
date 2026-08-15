@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useId } from "react";
 
 import { COPY } from "@plusone/config";
@@ -35,6 +36,22 @@ export function ConsentForm() {
           {COPY.consent.checkboxLabel}
         </label>
       </div>
+
+      {/* §9.1 asks the member to agree to health-data processing, and the
+          privacy page's own comment says this screen links to the health-data
+          section. It did not — the string had been written and never used. A
+          consent screen with no route to what is being consented to is the
+          bundled consent the requirement exists to prevent.
+
+          Opens in a new tab so reading it does not lose a half-filled form. */}
+      <Link
+        href="/privacy#health-data"
+        target="_blank"
+        rel="noreferrer"
+        className="ease-brand mt-6 self-start text-[14.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+      >
+        {COPY.consent.policyLinkLabel}
+      </Link>
 
       {state.error ? (
         <p id={errorId} role="alert" className="mt-4 text-[14.5px] text-critical">

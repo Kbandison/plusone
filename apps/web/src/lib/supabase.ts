@@ -19,7 +19,10 @@ export async function getServerSupabase() {
   const store = await cookies();
 
   return createServerSupabase(
-    { url: env.NEXT_PUBLIC_SUPABASE_URL, publishableKey: env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
+    {
+      url: env.NEXT_PUBLIC_SUPABASE_URL,
+      publishableKey: env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    },
     {
       getAll: () => store.getAll().map(({ name, value }) => ({ name, value })),
       setAll: (toSet) => {

@@ -1,13 +1,7 @@
 import { DROP, RADIUS } from "@plusone/config";
 
 import { intentionCompat, quizCompat, recencyActive, underexposure } from "./scoring";
-import type {
-  DropCandidate,
-  DropConfig,
-  DropResult,
-  DropViewer,
-  ScoredCandidate,
-} from "./types";
+import type { DropCandidate, DropConfig, DropResult, DropViewer, ScoredCandidate } from "./types";
 
 export const DEFAULT_DROP_CONFIG: DropConfig = {
   count: DROP.count,

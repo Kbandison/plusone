@@ -19,15 +19,27 @@ export function MemberPhotoFrame({
   photo,
   size = 64,
   rounded = "rounded-full",
+  emptyLabel,
 }: {
   photo: MemberPhoto | undefined;
   size?: number;
   rounded?: string;
+  /**
+   * What the empty slot means, where that is worth saying.
+   *
+   * On someone else's card the absence is decoration and stays aria-hidden —
+   * "no photo" is not information a viewer needs about a stranger. On your own
+   * profile it is the difference between "nothing loaded" and "you have not
+   * added one", which is the whole point of the screen.
+   */
+  emptyLabel?: string;
 }) {
   if (!photo) {
     return (
       <div
-        aria-hidden
+        aria-hidden={emptyLabel ? undefined : true}
+        role={emptyLabel ? "img" : undefined}
+        aria-label={emptyLabel}
         className={`${rounded} shrink-0 bg-surface-2`}
         style={{ width: size, height: size }}
       />

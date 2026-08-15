@@ -17,18 +17,34 @@ import { processPhoto } from "./photos";
  */
 async function phonePhotoWithGps(): Promise<Buffer> {
   const plain = await sharp({
-    create: { width: 900, height: 1200, channels: 3, background: { r: 180, g: 90, b: 60 } },
+    create: {
+      width: 900,
+      height: 1200,
+      channels: 3,
+      background: { r: 180, g: 90, b: 60 },
+    },
   })
     .jpeg()
     .toBuffer();
 
   const exif = {
-    "0th": { [piexif.ImageIFD.Make]: "Apple", [piexif.ImageIFD.Model]: "iPhone 15 Pro" },
+    "0th": {
+      [piexif.ImageIFD.Make]: "Apple",
+      [piexif.ImageIFD.Model]: "iPhone 15 Pro",
+    },
     GPS: {
       [piexif.GPSIFD.GPSLatitudeRef]: "N",
-      [piexif.GPSIFD.GPSLatitude]: [[37, 1], [46, 1], [2988, 100]],
+      [piexif.GPSIFD.GPSLatitude]: [
+        [37, 1],
+        [46, 1],
+        [2988, 100],
+      ],
       [piexif.GPSIFD.GPSLongitudeRef]: "W",
-      [piexif.GPSIFD.GPSLongitude]: [[122, 1], [25, 1], [600, 100]],
+      [piexif.GPSIFD.GPSLongitude]: [
+        [122, 1],
+        [25, 1],
+        [600, 100],
+      ],
     },
   };
 
@@ -74,7 +90,10 @@ describe("no metadata survives", () => {
 
     const { full, blurred } = await processPhoto(source);
 
-    for (const [label, buffer] of [["full", full], ["blurred", blurred]] as const) {
+    for (const [label, buffer] of [
+      ["full", full],
+      ["blurred", blurred],
+    ] as const) {
       const meta = await sharp(buffer).metadata();
       expect(meta.exif, `${label} kept EXIF`).toBeUndefined();
       expect(meta.iptc, `${label} kept IPTC`).toBeUndefined();
@@ -87,7 +106,10 @@ describe("no metadata survives", () => {
     await expectsGps(source);
 
     const { full, blurred } = await processPhoto(source);
-    for (const [label, buffer] of [["full", full], ["blurred", blurred]] as const) {
+    for (const [label, buffer] of [
+      ["full", full],
+      ["blurred", blurred],
+    ] as const) {
       const text = buffer.toString("latin1");
       for (const trace of ["GPS", "iPhone", "Apple", "Exif"]) {
         expect(text, `${label} still contains ${trace}`).not.toContain(trace);
@@ -103,7 +125,12 @@ describe("no metadata survives", () => {
     // withMetadata sets a real orientation tag; withExif writes it as a string
     // that sharp reads back as 1, which would make this test pass vacuously.
     const rotated = await sharp({
-      create: { width: 400, height: 800, channels: 3, background: { r: 10, g: 10, b: 10 } },
+      create: {
+        width: 400,
+        height: 800,
+        channels: 3,
+        background: { r: 10, g: 10, b: 10 },
+      },
     })
       .withMetadata({ orientation: 6 })
       .jpeg()
@@ -131,7 +158,9 @@ async function detailedPhoto(edge = 600, cell = 4): Promise<Buffer> {
       raw[i] = raw[i + 1] = raw[i + 2] = on ? 255 : 0;
     }
   }
-  return sharp(raw, { raw: { width: edge, height: edge, channels: 3 } }).jpeg().toBuffer();
+  return sharp(raw, { raw: { width: edge, height: edge, channels: 3 } })
+    .jpeg()
+    .toBuffer();
 }
 
 describe("the blur is not reversible", () => {
@@ -206,7 +235,12 @@ describe("output", () => {
 
   it("caps the long edge and never enlarges a small photo", async () => {
     const big = await sharp({
-      create: { width: 4000, height: 3000, channels: 3, background: { r: 1, g: 2, b: 3 } },
+      create: {
+        width: 4000,
+        height: 3000,
+        channels: 3,
+        background: { r: 1, g: 2, b: 3 },
+      },
     })
       .jpeg()
       .toBuffer();
@@ -214,7 +248,12 @@ describe("output", () => {
     expect(Math.max(width, height)).toBe(1600);
 
     const small = await sharp({
-      create: { width: 320, height: 240, channels: 3, background: { r: 1, g: 2, b: 3 } },
+      create: {
+        width: 320,
+        height: 240,
+        channels: 3,
+        background: { r: 1, g: 2, b: 3 },
+      },
     })
       .jpeg()
       .toBuffer();

@@ -125,9 +125,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
   {
     id: "who-else-touches-it",
     title: "Who else touches your data",
-    body: [
-      "As few companies as we can manage, each doing one job:",
-    ],
+    body: ["As few companies as we can manage, each doing one job:"],
     list: [
       "Our hosting and database provider, which stores the data described above.",
       "A messaging provider, which sends the sign-in code to your phone.",
@@ -169,7 +167,9 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
   {
     id: "children",
     title: "Age",
-    body: ["Plus One is for adults. You have to be 18 or over, and the app enforces that at sign-up."],
+    body: [
+      "Plus One is for adults. You have to be 18 or over, and the app enforces that at sign-up.",
+    ],
   },
   {
     id: "changes",

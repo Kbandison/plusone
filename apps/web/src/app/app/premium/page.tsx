@@ -57,7 +57,10 @@ export default async function PremiumPage() {
         <h2 className="text-[1.2rem]">{C.premiumIncludesHeading}</h2>
         <ul className="mt-5 flex flex-col gap-3">
           {PREMIUM_INCLUDES.map((item) => (
-            <li key={item} className="border-l border-line-2 pl-5 text-[15.5px] leading-[1.65] text-ink-2">
+            <li
+              key={item}
+              className="border-l border-line-2 pl-5 text-[15.5px] leading-[1.65] text-ink-2"
+            >
               {item}
             </li>
           ))}
@@ -72,7 +75,10 @@ export default async function PremiumPage() {
         <p className="mt-4 text-[15.5px] leading-[1.7] text-ink-2">{C.premiumNeverNote}</p>
         <ul className="mt-5 flex flex-col gap-3">
           {PREMIUM_NEVER.map((item) => (
-            <li key={item} className="border-l border-critical/40 pl-5 text-[15.5px] leading-[1.65] text-ink-2">
+            <li
+              key={item}
+              className="border-l border-critical/40 pl-5 text-[15.5px] leading-[1.65] text-ink-2"
+            >
               {item}
             </li>
           ))}

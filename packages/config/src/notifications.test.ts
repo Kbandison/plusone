@@ -19,7 +19,9 @@ function containsBannedTerm(text: string): string | null {
   const haystack = text.toLowerCase();
   for (const term of CONTENT_BLIND_BANNED_TERMS) {
     // Word-boundary match so "statuses" trips but "sta" inside another word doesn't.
-    const pattern = new RegExp(`(^|[^a-z])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z]|$)`);
+    const pattern = new RegExp(
+      `(^|[^a-z])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z]|$)`,
+    );
     if (pattern.test(haystack)) return term;
   }
   return null;

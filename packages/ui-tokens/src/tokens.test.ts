@@ -131,7 +131,7 @@ describe("tokens.css stays in sync with the TypeScript palette", () => {
   });
 
   it("guards the dark media query against an explicit light choice", () => {
-    expect(css).toContain('(prefers-color-scheme: dark)');
+    expect(css).toContain("(prefers-color-scheme: dark)");
     expect(css).toContain(':root:not([data-theme="light"])');
   });
 });

@@ -1,0 +1,69 @@
+"use client";
+
+import { useActionState, useId } from "react";
+
+import { DRAFT_COPY } from "@plusone/config";
+
+import { PROFILE_INITIAL, saveBio } from "./actions";
+
+const C = DRAFT_COPY.app;
+
+/** Matches the tone check in saveBio, so the counter and the server agree. */
+const MAX_CHARS = 500;
+
+/**
+ * Editing your bio.
+ *
+ * `saveBio` has existed since the profile actions were written and nothing
+ * called it: the action, its tone check and its copy were all in place, and
+ * there was no way to reach any of it. The same half-built shape as the purge
+ * job with no delete button and the reports with no reader.
+ */
+export function BioEditor({ bio }: { bio: string | null }) {
+  const [state, act, pending] = useActionState(saveBio, PROFILE_INITIAL);
+  const fieldId = useId();
+  const hintId = useId();
+
+  return (
+    <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+      <h2 className="text-[1.2rem]">{C.bioHeading}</h2>
+
+      <form action={act} className="mt-5 flex flex-col gap-3">
+        <label htmlFor={fieldId} className="text-[15px]">
+          {C.bioLabel}
+        </label>
+        <textarea
+          id={fieldId}
+          name="bio"
+          rows={4}
+          maxLength={MAX_CHARS}
+          defaultValue={bio ?? ""}
+          aria-describedby={hintId}
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+        />
+        <p id={hintId} className="text-[13.5px] text-ink-3">
+          {C.bioHint(MAX_CHARS)}
+        </p>
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+        >
+          {C.saveLabel}
+        </button>
+
+        {state.error ? (
+          <p role="alert" className="text-[14px] text-critical">
+            {state.error}
+          </p>
+        ) : null}
+        {state.message ? (
+          <p role="status" className="text-[14px] text-positive">
+            {state.message}
+          </p>
+        ) : null}
+      </form>
+    </section>
+  );
+}

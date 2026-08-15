@@ -19,8 +19,7 @@ export const COPY = {
   marketing: {
     hero: "Dating with the talk already handled.",
     sub: "A private, verified community for people with HSV and HIV. Real people. Real privacy. Nobody gets ghosted.",
-    verificationPitch:
-      "Every profile here is a verified human. Two minutes, no waiting, no fakes.",
+    verificationPitch: "Every profile here is a verified human. Two minutes, no waiting, no fakes.",
   },
 
   drop: {
@@ -144,7 +143,11 @@ export function renderClosureTemplate(index: number, senderName?: string | null)
   // Without a name, the signature goes with it. A note ending in a bare em dash
   // reads as unfinished, and this note is the last thing one member says to
   // another — it does not get to look like a bug.
-  if (!name) return template.replace(/\s*—\s*\{name\}/, "").replace("{name}", "").trim();
+  if (!name)
+    return template
+      .replace(/\s*—\s*\{name\}/, "")
+      .replace("{name}", "")
+      .trim();
 
   return template.replace("{name}", name);
 }

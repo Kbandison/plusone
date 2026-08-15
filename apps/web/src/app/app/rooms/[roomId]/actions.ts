@@ -49,7 +49,10 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   // A room post does not leave the app, so the condition rule that protects a
   // closure note does not apply — see ToneOptions.allowConditionWords. Naming
   // your own diagnosis in the room named for it is the point of the room.
-  const result = tone.checkTone(body, { maxChars: 2000, allowConditionWords: true });
+  const result = tone.checkTone(body, {
+    maxChars: 2000,
+    allowConditionWords: true,
+  });
   if (!result.ok) return { error: describeViolations(result.violations) };
 
   const supabase = await getServerSupabase();

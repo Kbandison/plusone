@@ -73,7 +73,11 @@ const themeScript = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${instrument.variable} ${satoshi.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${instrument.variable} ${satoshi.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

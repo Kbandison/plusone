@@ -82,7 +82,12 @@ export async function processPhoto(input: Buffer): Promise<ProcessedPhoto> {
 
   const full = await base
     .clone()
-    .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true })
+    .resize({
+      width: MAX_EDGE,
+      height: MAX_EDGE,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
     .webp({ quality: 82 })
     .toBuffer({ resolveWithObject: true });
 
@@ -96,8 +101,17 @@ export async function processPhoto(input: Buffer): Promise<ProcessedPhoto> {
     .clone()
     // Down to a thumbnail FIRST. This is the step that makes the result
     // irreversible — everything after it is cosmetic.
-    .resize({ width: BLUR_SOURCE_EDGE, height: BLUR_SOURCE_EDGE, fit: "inside" })
-    .resize({ width: BLUR_OUTPUT_EDGE, height: BLUR_OUTPUT_EDGE, fit: "inside", kernel: "cubic" })
+    .resize({
+      width: BLUR_SOURCE_EDGE,
+      height: BLUR_SOURCE_EDGE,
+      fit: "inside",
+    })
+    .resize({
+      width: BLUR_OUTPUT_EDGE,
+      height: BLUR_OUTPUT_EDGE,
+      fit: "inside",
+      kernel: "cubic",
+    })
     .blur(18)
     .webp({ quality: 60 })
     .toBuffer();
@@ -110,4 +124,3 @@ export async function processPhoto(input: Buffer): Promise<ProcessedPhoto> {
     height: full.info.height,
   };
 }
-

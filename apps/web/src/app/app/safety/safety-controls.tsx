@@ -2,7 +2,12 @@
 
 import { useActionState, useState } from "react";
 
-import { DRAFT_COPY, REPORT_DETAIL_MAX_CHARS, REPORT_REASONS, type ReportReason } from "@plusone/config";
+import {
+  DRAFT_COPY,
+  REPORT_DETAIL_MAX_CHARS,
+  REPORT_REASONS,
+  type ReportReason,
+} from "@plusone/config";
 
 import { SAFETY_INITIAL, blockMember, reportMember, unblockMember } from "@/lib/safety";
 
@@ -45,9 +50,7 @@ export function BlockButton({
   return (
     <form action={act} className="inline">
       {memberId ? <input type="hidden" name="blocked_id" value={memberId} /> : null}
-      {roomMessageId ? (
-        <input type="hidden" name="room_message_id" value={roomMessageId} />
-      ) : null}
+      {roomMessageId ? <input type="hidden" name="room_message_id" value={roomMessageId} /> : null}
       <button
         type="submit"
         disabled={pending}
@@ -110,74 +113,89 @@ export function ReportControl({
     );
   }
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-describedby={describedBy}
-        aria-expanded={false}
-        className="ease-brand text-[14px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
-      >
-        {C.reportLabel}
-      </button>
-    );
-  }
+  // Mounted whether open or not. Replacing it with the form unmounted the
+  // focused button and left the revealed heading unannounced — on a control
+  // someone reaches when something has already gone wrong.
+  const trigger = (
+    <button
+      type="button"
+      onClick={() => setOpen((current) => !current)}
+      aria-describedby={describedBy}
+      aria-expanded={open}
+      className="ease-brand text-[14px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+    >
+      {C.reportLabel}
+    </button>
+  );
+
+  if (!open) return trigger;
 
   return (
-    <form action={act} className="mt-4 flex flex-col gap-4 rounded-lg border border-line-2 bg-surface p-5">
-      <h3 className="text-[1.05rem]">{C.reportHeading}</h3>
-      <p className="text-[14px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
-
-      {memberId ? <input type="hidden" name="reported_user_id" value={memberId} /> : null}
-      {messageId ? <input type="hidden" name="reported_message_id" value={messageId} /> : null}
-      {roomMessageId ? (
-        <input type="hidden" name="reported_room_message_id" value={roomMessageId} />
-      ) : null}
-
-      <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2 text-[14px] text-ink-2">{C.reportReasonLabel}</legend>
-        {(Object.keys(REPORT_REASONS) as ReportReason[]).map((reason) => (
-          <label
-            key={reason}
-            className="ease-brand flex cursor-pointer items-center gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[14.5px] transition-colors duration-200 has-checked:border-accent"
-          >
-            <input type="radio" name="reason" value={reason} required className="size-[16px] accent-accent" />
-            {REPORT_REASONS[reason]}
-          </label>
-        ))}
-      </fieldset>
-
-      <label className="flex flex-col gap-2 text-[14px] text-ink-2">
-        {C.reportDetailLabel}
-        <textarea
-          name="detail"
-          rows={3}
-          maxLength={REPORT_DETAIL_MAX_CHARS}
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
-        />
-      </label>
-
-      {memberId ? (
-        <label className="flex items-center gap-3 text-[14.5px]">
-          <input type="checkbox" name="also_block" className="size-[18px] accent-accent" />
-          {C.reportAlsoBlock}
-        </label>
-      ) : null}
-
-      {state.error ? (
-        <p role="alert" className="text-[14px] text-critical">
-          {state.error}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+    <>
+      {trigger}
+      <form
+        action={act}
+        className="mt-4 flex flex-col gap-4 rounded-lg border border-line-2 bg-surface p-5"
       >
-        {C.reportSubmitLabel}
-      </button>
-    </form>
+        <h3 className="text-[1.05rem]">{C.reportHeading}</h3>
+        <p className="text-[14px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
+
+        {memberId ? <input type="hidden" name="reported_user_id" value={memberId} /> : null}
+        {messageId ? <input type="hidden" name="reported_message_id" value={messageId} /> : null}
+        {roomMessageId ? (
+          <input type="hidden" name="reported_room_message_id" value={roomMessageId} />
+        ) : null}
+
+        <fieldset className="flex flex-col gap-2.5">
+          <legend className="mb-2 text-[14px] text-ink-2">{C.reportReasonLabel}</legend>
+          {(Object.keys(REPORT_REASONS) as ReportReason[]).map((reason) => (
+            <label
+              key={reason}
+              className="ease-brand flex cursor-pointer items-center gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[14.5px] transition-colors duration-200 has-checked:border-accent"
+            >
+              <input
+                type="radio"
+                name="reason"
+                value={reason}
+                required
+                className="size-[16px] accent-accent"
+              />
+              {REPORT_REASONS[reason]}
+            </label>
+          ))}
+        </fieldset>
+
+        <label className="flex flex-col gap-2 text-[14px] text-ink-2">
+          {C.reportDetailLabel}
+          <textarea
+            name="detail"
+            rows={3}
+            maxLength={REPORT_DETAIL_MAX_CHARS}
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+          />
+        </label>
+
+        {memberId ? (
+          <label className="flex items-center gap-3 text-[14.5px]">
+            <input type="checkbox" name="also_block" className="size-[18px] accent-accent" />
+            {C.reportAlsoBlock}
+          </label>
+        ) : null}
+
+        {state.error ? (
+          <p role="alert" className="text-[14px] text-critical">
+            {state.error}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+        >
+          {C.reportSubmitLabel}
+        </button>
+      </form>
+    </>
   );
 }

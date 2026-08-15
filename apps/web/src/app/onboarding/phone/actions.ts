@@ -41,7 +41,10 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
 
   if (error) {
     const unconfigured = /provider|not enabled|disabled|unsupported/i.test(error.message);
-    return { error: unconfigured ? E.notConfigured : E.sendFailed, sentTo: null };
+    return {
+      error: unconfigured ? E.notConfigured : E.sendFailed,
+      sentTo: null,
+    };
   }
 
   return { error: null, sentTo: phone };
@@ -55,7 +58,11 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
   if (!token) return { error: E.codeRequired, sentTo: phone };
 
   const supabase = await getServerSupabase();
-  const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+  const { error } = await supabase.auth.verifyOtp({
+    phone,
+    token,
+    type: "sms",
+  });
 
   // Wrong code and expired code are deliberately one message. Distinguishing
   // them tells someone guessing which half they got right.
