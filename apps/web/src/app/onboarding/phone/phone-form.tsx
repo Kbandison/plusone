@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -123,10 +123,22 @@ export function PhoneForm() {
   );
 }
 
+/** Seconds between resends. One SMS is one charge, and people do tap twice. */
+const RESEND_COOLDOWN_SECONDS = 45;
+
 function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: () => void }) {
   const [state, verify, verifying] = useActionState(verifyCode, sent);
   const [resendState, resend, resending] = useActionState(sendCode, sent);
   const codeId = useId();
+
+  // Starts already counting: arriving on this screen means a code was just
+  // sent, so the first resend should not be available instantly either.
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((current) => current - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
 
   return (
     <div className="mt-10">
@@ -157,14 +169,19 @@ function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: 
           typed wrong by one digit, left a member with nothing to press. It is
           step one of onboarding, so there is nowhere to go back to either. */}
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <form action={resend}>
+        <form
+          action={(formData) => {
+            setCooldown(RESEND_COOLDOWN_SECONDS);
+            resend(formData);
+          }}
+        >
           <input type="hidden" name="phone" value={sent.sentTo ?? ""} />
           <button
             type="submit"
-            disabled={resending}
+            disabled={resending || cooldown > 0}
             className="ease-brand text-[14.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
           >
-            {C.resendLabel}
+            {cooldown > 0 ? C.resendWait(cooldown) : C.resendLabel}
           </button>
         </form>
 

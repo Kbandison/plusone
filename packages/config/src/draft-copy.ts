@@ -51,6 +51,15 @@ export const DRAFT_COPY = {
     codeLabel: "Code",
     verifyLabel: "Verify",
     resendLabel: "Send it again",
+    /**
+     * The cooldown between resends.
+     *
+     * Every press is a paid message, and a member waiting on a slow SMS will
+     * press it — so the wait is shown rather than the button silently doing
+     * nothing. Supabase enforces its own limit server-side; this is the half
+     * that costs nothing to hit.
+     */
+    resendWait: (seconds: number) => `Send it again in ${seconds}s`,
     changeNumberLabel: "Use a different number",
     errors: {
       phoneRequired: "Enter your mobile number.",
