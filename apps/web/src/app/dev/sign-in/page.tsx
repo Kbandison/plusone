@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { parseServerEnv } from "@plusone/config";
-
 import { DevSignInForm } from "./form";
 import { devSignInAllowed } from "./guard";
+
+// Never prerendered. A route that exists only outside production has no
+// business being generated at build time, where NODE_ENV is always production.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Development sign-in",
@@ -25,8 +27,17 @@ export const metadata: Metadata = {
  * and an action guard protect different things.
  */
 export default function DevSignInPage() {
-  const env = parseServerEnv(process.env);
-  if (!devSignInAllowed(process.env["NODE_ENV"], env.OTP_PROVIDER)) notFound();
+  // Read straight from process.env rather than parseServerEnv.
+  //
+  // The guard needs two variables; parseServerEnv validates the whole server
+  // environment and throws when anything is missing — which it is during a
+  // Vercel build, where no server env is bound. So the page threw at prerender
+  // BEFORE it could decide it should not exist, and took the build with it. A
+  // guard that has to be fully configured in order to say "absent" is the wrong
+  // way round.
+  if (!devSignInAllowed(process.env["NODE_ENV"], process.env["OTP_PROVIDER"] ?? "")) {
+    notFound();
+  }
 
   return (
     <main id="main" className="mx-auto w-full max-w-[560px] px-6 py-16">

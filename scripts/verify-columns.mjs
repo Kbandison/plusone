@@ -120,6 +120,35 @@ console.log("\nWhat must still work:");
   const r = await attempt(viewer, `update public.profiles set bio='hello', prompts='[]'::jsonb where id=$1`, [viewer]);
   check(r.ok, "a member can edit their own bio and prompts", r.ok ? "" : r.err.message.slice(0, 60));
 }
+
+// Every write onboarding makes, in the order the member makes them.
+//
+// The gate above tested that the columns a member SHOULD write are writable and
+// stopped there, so it passed while the very first screen of onboarding was
+// failing: the basics step used an upsert, which compiles to ON CONFLICT DO
+// UPDATE over every column it is given — including `id`, which is deliberately
+// not updatable. Testing the columns is not the same as testing the statements.
+for (const [label, sql] of [
+  ["basics — name and birthdate", `update public.profiles set display_name='K', birthdate='1991-05-28' where id=$1`],
+  ["community and condition", `update public.profiles set community='hiv', condition='hiv', u_equals_u=true where id=$1`],
+  ["photo privacy", `update public.profiles set photo_privacy='blurred_until_connected' where id=$1`],
+  ["radius, and finishing", `update public.profiles set search_radius_mi=75, onboarded_at=now() where id=$1`],
+  ["timezone", `update public.profiles set timezone='America/New_York' where id=$1`],
+]) {
+  const r = await attempt(viewer, sql, [viewer]);
+  check(r.ok, `onboarding can write: ${label}`, r.ok ? "" : r.err.message.slice(0, 60));
+}
+
+// And the shape that actually broke, so it cannot come back.
+{
+  const r = await attempt(
+    viewer,
+    `insert into public.profiles (id, display_name, birthdate) values ($1,'K','1991-05-28')
+     on conflict (id) do update set id = excluded.id, display_name = excluded.display_name`,
+    [viewer],
+  );
+  check(!r.ok, "an upsert that rewrites `id` is still refused", r.ok ? "IT WROTE ITS OWN KEY" : "permission denied");
+}
 {
   const r = await attempt(viewer, `select key, value from public.app_config limit 1`, []);
   check(r.ok, "members still hot-read the tunables", r.ok ? "" : r.err.message.slice(0, 60));

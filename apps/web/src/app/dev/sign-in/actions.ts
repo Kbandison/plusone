@@ -39,11 +39,15 @@ export async function devSignIn(
   _previous: DevSignInState,
   formData: FormData,
 ): Promise<DevSignInState> {
-  const server = parseServerEnv(process.env);
-
-  if (!devSignInAllowed(process.env["NODE_ENV"], server.OTP_PROVIDER)) {
+  // The guard first, on raw process.env. parseServerEnv validates everything
+  // and throws when anything is missing, so putting it first makes a missing
+  // Stripe key the reason this refuses — which is true but useless, and it is
+  // what broke the Vercel build from the page.
+  if (!devSignInAllowed(process.env["NODE_ENV"], process.env["OTP_PROVIDER"] ?? "")) {
     throw new Error(DEV_SIGN_IN_REFUSED);
   }
+
+  const server = parseServerEnv(process.env);
 
   const raw = String(formData.get("phone") ?? "").trim();
   const phone = verification.normalizePhone(raw);

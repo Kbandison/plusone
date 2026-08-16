@@ -37,9 +37,19 @@ export async function saveBasics(_previous: BasicsState, formData: FormData): Pr
   if (!profile.isAdult(birthdate, today)) return { error: E.tooYoung };
 
   const supabase = await getServerSupabase();
+  // UPDATE, not upsert. create_profile_on_signup makes the row the moment the
+  // auth user exists, so there has never been anything to insert — and the
+  // upsert compiled to ON CONFLICT DO UPDATE setting every column it was given,
+  // including `id`. Since 20260815000800 took `id` out of the members' update
+  // grant, that was a permission error on the first screen of onboarding, and
+  // it read as "That didn't save."
+  //
+  // The grant is right: nobody should be able to write their own primary key.
+  // The upsert was papering over a row it already had.
   const { error } = await supabase
     .from("profiles")
-    .upsert({ id: userId, display_name: displayName, birthdate }, { onConflict: "id" });
+    .update({ display_name: displayName, birthdate })
+    .eq("id", userId);
 
   if (error) return { error: "That didn't save. Try again." };
 
