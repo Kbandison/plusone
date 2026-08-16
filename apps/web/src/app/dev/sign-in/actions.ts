@@ -60,7 +60,9 @@ export async function devSignIn(
   // no real inbox. It is never shown and never sent to.
   const email = `${phone.replace(/\D/g, "")}@dev.invalid`;
 
-  const { data: created, error: createError } = await service.auth.admin.createUser({
+  // Create if absent. "Already registered" is the normal case — signing in
+  // again as the same test member — so it is not an error here.
+  const { error: createError } = await service.auth.admin.createUser({
     phone,
     email,
     // Both confirmed: the point is to arrive past the OTP with the same shape a
@@ -68,26 +70,31 @@ export async function devSignIn(
     phone_confirm: true,
     email_confirm: true,
   });
-
-  // Already exists is not a failure — signing in again as the same test member
-  // is the normal case.
   if (createError && !/already|exists|registered/i.test(createError.message)) {
     return { error: createError.message };
   }
 
-  if (!created?.user) {
-    // Find the existing one so a second sign-in works.
-    const { data: list } = await service.auth.admin.listUsers();
-    const found = list?.users.find((user) => user.phone === phone.replace("+", ""));
-    if (!found) return { error: "Could not find or create that test member." };
-  }
-
+  // generateLink both mints the token AND hands back the user, which is why
+  // there is no lookup here any more.
+  //
+  // There was one, through auth.admin.listUsers(), and it destructured only
+  // `data` — so when that call started returning "Database error finding users"
+  // with an empty list, the code saw no users and told the member "Could not
+  // find or create that test member". An ignored error reported as absence:
+  // exactly the shape this session has spent its time removing, written four
+  // messages ago by me.
   const { data: link, error: linkError } = await service.auth.admin.generateLink({
     type: "magiclink",
     email,
   });
-  if (linkError || !link?.properties?.hashed_token) {
+  if (linkError || !link?.properties?.hashed_token || !link.user) {
     return { error: linkError?.message ?? "Could not mint a session." };
+  }
+
+  // A member created by an earlier, broken run may predate phone_confirm.
+  // Without this they would land back on the phone step with no way through.
+  if (!link.user.phone_confirmed_at) {
+    await service.auth.admin.updateUserById(link.user.id, { phone, phone_confirm: true });
   }
 
   const supabase = await getServerSupabase();

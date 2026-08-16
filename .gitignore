@@ -51,3 +51,4 @@ supabase/.temp
 # distributed with the code.
 yourplusone-spec.md
 luxweb-master/
+.env*

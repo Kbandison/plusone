@@ -60,9 +60,15 @@ export default async function ConsentPage() {
           one, and it is not shortened behind a "read more". */}
       <p className="mt-7 text-[16.5px] leading-[1.7] text-ink-2">{COPY.consent.healthData}</p>
 
+      {/* A new tab, because this is the one screen where following a link
+          would cost the member their place. §9.1 wants the policy readable at
+          the moment of consent, and a member who has to come back and start the
+          step again will simply not read it. */}
       <p className="mt-6">
         <Link
           href={`/privacy#${HEALTH_DATA_ANCHOR}`}
+          target="_blank"
+          rel="noreferrer"
           className="ease-brand text-[15.5px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
         >
           {COPY.consent.policyLinkLabel}
