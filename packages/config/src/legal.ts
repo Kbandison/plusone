@@ -107,6 +107,31 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     ],
   },
   {
+    id: "text-messages",
+    title: "Text messages",
+    /**
+     * Carrier-required, and written to be true rather than to satisfy a form.
+     *
+     * A2P 10DLC campaign registration requires the linked privacy policy to
+     * state three things: that mobile numbers are not shared, how often
+     * messages are sent, and that message and data rates may apply. None of the
+     * three was here — the app said "message and data rates may apply" on the
+     * phone screen and the policy the campaign points at said nothing.
+     *
+     * The last paragraph is the one a template would not include: on an app
+     * where the only way in is a texted code, opting out of texts means losing
+     * the account. Saying so is the difference between a disclosure and a
+     * formality.
+     */
+    body: [
+      "We text you a one-time code when you sign in. That is the only thing we ever text you — no marketing, no reminders, no announcements.",
+      "How often: only when you ask for one. For most people that is once, when they first join, and again if they sign in on a new phone.",
+      "Message and data rates may apply.",
+      "We never sell your mobile number, and we never share it with anyone for their own marketing. It goes to the messaging provider that delivers your code, in order to deliver your code, and nowhere else.",
+      "You can reply STOP to any message to stop receiving them. Because a texted code is the only way into this app, replying STOP means you will not be able to sign in again — so it is closer to closing the door than to turning off a notification. Reply START if you change your mind.",
+    ],
+  },
+  {
     id: "notifications",
     title: "Notifications",
     body: [
