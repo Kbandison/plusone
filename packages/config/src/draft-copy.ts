@@ -34,6 +34,17 @@ export const DRAFT_COPY = {
       "We text you a code to sign in. Your number is never shown to anyone, and it is not used to find you.",
     phoneLabel: "Mobile number",
     phoneHint: "Include your country code, like +1.",
+    /**
+     * The SMS opt-in disclosure (carrier A2P requirement).
+     *
+     * Campaign review wants to see the consent moment itself, so this sits
+     * under the number field rather than in the terms. It says codes only,
+     * because that is true and because it is the thing a person is agreeing to.
+     */
+    smsConsent:
+      "By continuing you agree to receive a one-time sign-in code by text. Codes only — we never text anything else. Message and data rates may apply.",
+    smsConsentPrivacy: "Privacy",
+    smsConsentTerms: "Terms",
     sendLabel: "Send code",
     codeHeading: "Enter the code",
     codeIntro: "We sent a six-digit code. It is good for ten minutes.",
@@ -206,6 +217,10 @@ export const DRAFT_COPY = {
     roomPostLabel: "Post",
     roomSlowMode: (seconds: number) => `Slow mode: one message every ${seconds} seconds.`,
     settingsHeading: "Settings",
+    signOutHeading: "Sign out",
+    signOutBody:
+      "Signs you out on this device. Your account and everything in it stay exactly as they are.",
+    signOutLabel: "Sign out",
     premiumHeading: "Premium",
     navPremium: "Premium",
     premiumIntro:

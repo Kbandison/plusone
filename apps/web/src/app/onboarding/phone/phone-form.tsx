@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
@@ -89,6 +90,34 @@ export function PhoneForm() {
         placeholder="+1 555 123 4567"
         error={sendState.error}
       />
+
+      {/* The consent moment, at the consent moment.
+       *
+       * A2P campaign review generally wants to SEE this — a reachable page
+       * showing what a member agrees to when they press the button that sends
+       * the text. Putting it in the terms instead is the version that gets a
+       * campaign rejected, and it is also the version nobody reads. */}
+      <p className="text-[13.5px] leading-[1.6] text-ink-3">
+        {C.smsConsent}{" "}
+        <Link
+          href="/privacy"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-line-2 underline-offset-4 hover:text-ink"
+        >
+          {C.smsConsentPrivacy}
+        </Link>{" "}
+        ·{" "}
+        <Link
+          href="/terms"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-line-2 underline-offset-4 hover:text-ink"
+        >
+          {C.smsConsentTerms}
+        </Link>
+      </p>
+
       <Submit label={C.sendLabel} pending={sending} />
     </form>
   );

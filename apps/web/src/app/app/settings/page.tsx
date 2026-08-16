@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { signOut } from "./sign-out";
 import { UnblockButton } from "@/app/app/safety/safety-controls";
 import { CrossCommunityToggle, DeleteAccount } from "./settings-forms";
 
@@ -52,6 +53,21 @@ export default async function SettingsPage() {
       <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{DRAFT_COPY.app.settingsHeading}</h1>
 
       <CrossCommunityToggle optIn={Boolean(profile?.cross_community_opt_in)} />
+
+      {/* Above the block list and well above deletion. Signing out is the
+          ordinary thing; deleting is not, and they should not sit together. */}
+      <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+        <h2 className="text-[1.2rem]">{DRAFT_COPY.app.signOutHeading}</h2>
+        <p className="mt-3 text-[15px] leading-[1.65] text-ink-2">{DRAFT_COPY.app.signOutBody}</p>
+        <form action={signOut} className="mt-5">
+          <button
+            type="submit"
+            className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent"
+          >
+            {DRAFT_COPY.app.signOutLabel}
+          </button>
+        </form>
+      </section>
 
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
         <h2 className="text-[1.2rem]">{DRAFT_COPY.app.blockedHeading}</h2>
