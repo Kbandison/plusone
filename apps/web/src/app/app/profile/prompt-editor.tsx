@@ -10,7 +10,8 @@ import {
   type ProfilePromptAnswer,
 } from "@plusone/config";
 
-import { PROFILE_INITIAL, savePrompts } from "./actions";
+import { savePrompts } from "./actions";
+import { PROFILE_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

@@ -8,9 +8,7 @@ import { tone } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
-
-export type InboxState = { readonly error: string | null };
-export const INBOX_INITIAL: InboxState = { error: null };
+import type { InboxState } from "./state";
 
 export async function acceptConnect(_prev: InboxState, formData: FormData): Promise<InboxState> {
   const supabase = await getServerSupabase();

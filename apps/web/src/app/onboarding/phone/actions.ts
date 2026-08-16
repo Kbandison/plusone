@@ -6,16 +6,9 @@ import { DRAFT_COPY } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
+import type { PhoneState } from "./state";
 
 const E = DRAFT_COPY.phone.errors;
-
-export type PhoneState = {
-  readonly error: string | null;
-  /** Set once a code is in flight, which is what swaps the form to the code step. */
-  readonly sentTo: string | null;
-};
-
-export const PHONE_INITIAL: PhoneState = { error: null, sentTo: null };
 
 /**
  * Supabase Auth is the identity provider — it mints the session, so the OTP

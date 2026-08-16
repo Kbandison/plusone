@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { ROOM_INITIAL, joinRoom, postToRoom } from "./actions";
+import { joinRoom, postToRoom } from "./actions";
+import { ROOM_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

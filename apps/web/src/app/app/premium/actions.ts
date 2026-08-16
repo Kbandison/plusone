@@ -6,9 +6,7 @@ import { PLANS, parseClientEnv, type PlanId } from "@plusone/config";
 
 import { priceIdFor, stripe } from "@/lib/stripe";
 import { getServerSupabase } from "@/lib/supabase";
-
-export type CheckoutState = { readonly error: string | null };
-export const CHECKOUT_INITIAL: CheckoutState = { error: null };
+import type { CheckoutState } from "./state";
 
 /**
  * Starts a checkout.

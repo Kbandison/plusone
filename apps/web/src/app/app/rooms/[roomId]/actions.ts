@@ -6,9 +6,7 @@ import { tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
-
-export type RoomState = { readonly error: string | null };
-export const ROOM_INITIAL: RoomState = { error: null };
+import type { RoomState } from "./state";
 
 export async function joinRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");

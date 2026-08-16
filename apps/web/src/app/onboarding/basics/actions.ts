@@ -7,11 +7,10 @@ import { profile } from "@plusone/logic";
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
+import type { BasicsState } from "./state";
 
 const E = DRAFT_COPY.basics.errors;
 const MAX_NAME = 40;
-
-export type BasicsState = { readonly error: string | null };
 
 /**
  * Saves display name and date of birth, creating the profile row.

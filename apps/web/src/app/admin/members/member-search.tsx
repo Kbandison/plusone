@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 
 import { RevealCondition } from "./reveal";
-import { LOOKUP_INITIAL, lookupMembers } from "./actions";
+import { lookupMembers } from "./actions";
+import { LOOKUP_INITIAL } from "./state";
 
 /**
  * The search box and its results.

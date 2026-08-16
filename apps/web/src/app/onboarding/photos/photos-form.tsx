@@ -5,7 +5,8 @@ import { useActionState, useId } from "react";
 import { ACCEPTED_TYPES } from "@/lib/photo-limits";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { PHOTOS_INITIAL, savePhotoPrivacy, uploadPhoto } from "./actions";
+import { savePhotoPrivacy, uploadPhoto } from "./actions";
+import { PHOTOS_INITIAL } from "./state";
 
 const C = DRAFT_COPY.photos;
 

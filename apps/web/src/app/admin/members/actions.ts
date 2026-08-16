@@ -1,21 +1,7 @@
 "use server";
 
 import { getServerSupabase } from "@/lib/supabase";
-
-export interface Hit {
-  readonly user_id: string;
-  readonly display_name: string | null;
-  readonly verification_status: string;
-  readonly created_at: string;
-  readonly open_reports: number;
-}
-
-export type LookupState = {
-  readonly hits: readonly Hit[];
-  readonly searched: boolean;
-};
-
-export const LOOKUP_INITIAL: LookupState = { hits: [], searched: false };
+import type { Hit, LookupState } from "./state";
 
 /**
  * Member lookup (§7.3), as a POST rather than a query string.

@@ -7,9 +7,7 @@ import { quiz } from "@plusone/logic";
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
-
-export type QuizState = { readonly error: string | null };
-export const QUIZ_INITIAL: QuizState = { error: null };
+import type { QuizState } from "./state";
 
 /**
  * Saves the quiz.

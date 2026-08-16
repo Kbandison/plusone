@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 
 import { DRAFT_COPY, QUIZ_QUESTIONS } from "@plusone/config";
 
-import { QUIZ_INITIAL, saveQuiz } from "./actions";
+import { saveQuiz } from "./actions";
+import { QUIZ_INITIAL } from "./state";
 
 const C = DRAFT_COPY.quiz;
 

@@ -13,12 +13,7 @@ import { tone } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
-
-export type ProfileState = {
-  readonly error: string | null;
-  readonly message: string | null;
-};
-export const PROFILE_INITIAL: ProfileState = { error: null, message: null };
+import type { ProfileState } from "./state";
 
 /**
  * §6.4 — the mode toggle. `switch_mode` holds the cooldown; this does not

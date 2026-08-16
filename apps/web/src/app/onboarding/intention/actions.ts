@@ -6,8 +6,7 @@ import { DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/config";
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
-
-export type IntentionState = { readonly error: string | null };
+import type { IntentionState } from "./state";
 
 const VALID = Object.keys(INTENTION_LABELS) as Intention[];
 

@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 
-import { REVEAL_INITIAL, revealCondition } from "../verifications/actions";
+import { revealCondition } from "../verifications/actions";
+import { REVEAL_INITIAL } from "../verifications/state";
 
 /**
  * §7.3 — "reveal requires explicit reason logged".

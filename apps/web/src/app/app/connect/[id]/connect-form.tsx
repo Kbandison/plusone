@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 
 import { DRAFT_COPY, promptQuestion, type ProfilePromptAnswer } from "@plusone/config";
 
-import { CONNECT_INITIAL, sendConnect } from "./actions";
+import { sendConnect } from "./actions";
+import { CONNECT_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

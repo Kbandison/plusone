@@ -7,9 +7,7 @@ import { tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
-
-export type ConnectState = { readonly error: string | null };
-export const CONNECT_INITIAL: ConnectState = { error: null };
+import type { ConnectState } from "./state";
 
 const MAX_REPLY = 500;
 
@@ -63,5 +61,3 @@ export async function sendConnect(
 
   redirect("/app/inbox");
 }
-
-export const PERSONAL_LINE_MAX = CONNECTS.personalLineMaxChars;

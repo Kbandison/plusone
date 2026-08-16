@@ -4,12 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { memberFacingError } from "@/lib/rpc-error";
-
-export type SettingsState = {
-  readonly error: string | null;
-  readonly message: string | null;
-};
-export const SETTINGS_INITIAL: SettingsState = { error: null, message: null };
+import type { SettingsState } from "./state";
 
 /**
  * Requesting deletion (§9.3, on the never-cut list).

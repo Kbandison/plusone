@@ -3,12 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
-
-export type ConfigState = {
-  readonly error: string | null;
-  readonly message: string | null;
-};
-export const CONFIG_INITIAL: ConfigState = { error: null, message: null };
+import type { ConfigState } from "./state";
 
 /**
  * Changing a tunable.

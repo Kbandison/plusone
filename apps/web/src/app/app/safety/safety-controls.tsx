@@ -9,7 +9,8 @@ import {
   type ReportReason,
 } from "@plusone/config";
 
-import { SAFETY_INITIAL, blockMember, reportMember, unblockMember } from "@/lib/safety";
+import { blockMember, reportMember, unblockMember } from "@/lib/safety";
+import { SAFETY_INITIAL } from "@/lib/safety-state";
 
 const C = DRAFT_COPY.app;
 

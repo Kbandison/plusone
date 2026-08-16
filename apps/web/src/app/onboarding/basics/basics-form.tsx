@@ -4,7 +4,8 @@ import { useActionState, useId } from "react";
 
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { saveBasics, type BasicsState } from "./actions";
+import { saveBasics } from "./actions";
+import { type BasicsState } from "./state";
 
 const C = DRAFT_COPY.basics;
 const INITIAL: BasicsState = { error: null };

@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { REPORT_REASONS, type ReportReason } from "@plusone/config";
 
-import { REPORT_DECISION_INITIAL, decideReport } from "./actions";
+import { decideReport } from "./actions";
+import { REPORT_DECISION_INITIAL } from "./state";
 
 /** What admin_open_reports returns. The page reads this; the card does not. */
 export interface OpenReport {

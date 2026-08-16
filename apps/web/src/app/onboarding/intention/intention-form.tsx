@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/config";
 
-import { saveIntention, type IntentionState } from "./actions";
+import { saveIntention } from "./actions";
+import { type IntentionState } from "./state";
 
 const C = DRAFT_COPY.intention;
 const INITIAL: IntentionState = { error: null };

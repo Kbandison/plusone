@@ -12,10 +12,9 @@ import {
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
+import type { CommunityState } from "./state";
 
 const E = DRAFT_COPY.community.errors;
-
-export type CommunityState = { readonly error: string | null };
 
 const COMMUNITIES: readonly string[] = ["hsv", "hiv"];
 

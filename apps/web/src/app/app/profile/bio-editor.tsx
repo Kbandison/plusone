@@ -4,7 +4,8 @@ import { useActionState, useId } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { PROFILE_INITIAL, saveBio } from "./actions";
+import { saveBio } from "./actions";
+import { PROFILE_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

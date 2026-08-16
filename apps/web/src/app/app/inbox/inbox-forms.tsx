@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 
 import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY } from "@plusone/config";
 
-import { INBOX_INITIAL, acceptConnect, declineConnect } from "./actions";
+import { acceptConnect, declineConnect } from "./actions";
+import { INBOX_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

@@ -6,8 +6,7 @@ import { RADIUS } from "@plusone/config";
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
-
-export type RadiusState = { readonly error: string | null };
+import type { RadiusState } from "./state";
 
 const MIN = 5;
 const MAX = 250;

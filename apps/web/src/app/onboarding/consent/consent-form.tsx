@@ -5,7 +5,8 @@ import { useActionState, useId } from "react";
 
 import { COPY } from "@plusone/config";
 
-import { grantHealthDataConsent, type ConsentActionState } from "./actions";
+import { grantHealthDataConsent } from "./actions";
+import { type ConsentActionState } from "./state";
 
 const INITIAL: ConsentActionState = { error: null };
 

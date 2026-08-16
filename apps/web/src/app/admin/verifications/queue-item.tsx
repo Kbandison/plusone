@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 
-import { DECISION_INITIAL, REVEAL_INITIAL, decideVerification, revealCondition } from "./actions";
+import { decideVerification, revealCondition } from "./actions";
+import { DECISION_INITIAL, REVEAL_INITIAL } from "./state";
 
 export interface FlaggedMember {
   user_id: string;

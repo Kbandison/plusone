@@ -10,12 +10,10 @@ import { requireStep } from "@/lib/onboarding";
 import { MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
 import { processPhoto } from "@/lib/photos";
 import { getServerSupabase } from "@/lib/supabase";
+import type { PhotosState } from "./state";
 
 const E = DRAFT_COPY.photos.errors;
 const BUCKET = "photos";
-
-export type PhotosState = { readonly error: string | null };
-export const PHOTOS_INITIAL: PhotosState = { error: null };
 
 /**
  * Uploads one photo, storing a full and a blurred object.

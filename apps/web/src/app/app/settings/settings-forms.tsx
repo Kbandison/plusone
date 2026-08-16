@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { SETTINGS_INITIAL, requestDeletion, setCrossCommunityOptIn } from "./actions";
+import { requestDeletion, setCrossCommunityOptIn } from "./actions";
+import { SETTINGS_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

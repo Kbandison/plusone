@@ -4,7 +4,8 @@ import { useActionState, useId, useState } from "react";
 
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
-import { saveRadius, type RadiusState } from "./actions";
+import { saveRadius } from "./actions";
+import { type RadiusState } from "./state";
 
 const C = DRAFT_COPY.radius;
 const INITIAL: RadiusState = { error: null };

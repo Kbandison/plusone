@@ -5,7 +5,9 @@ import { useActionState, useEffect, useId, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { PHONE_INITIAL, sendCode, verifyCode, type PhoneState } from "./actions";
+import { sendCode, verifyCode } from "./actions";
+import { type PhoneState } from "./state";
+import { PHONE_INITIAL } from "./state";
 
 const C = DRAFT_COPY.phone;
 

@@ -6,8 +6,7 @@ import { CONSENT_COPY_VERSION } from "@plusone/config";
 
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
-
-export type ConsentActionState = { readonly error: string | null };
+import type { ConsentActionState } from "./state";
 
 /**
  * Records the §9.1 health-data consent.

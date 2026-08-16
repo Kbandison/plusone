@@ -3,12 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
-
-export type DecisionState = {
-  readonly error: string | null;
-  readonly message: string | null;
-};
-export const DECISION_INITIAL: DecisionState = { error: null, message: null };
+import type { DecisionState, RevealState } from "./state";
 
 /**
  * Both actions go through RPCs that check `is_admin()` themselves and write
@@ -35,16 +30,6 @@ export async function decideVerification(
   revalidatePath("/admin/verifications");
   return { error: null, message: approve ? "Verified." : "Rejected." };
 }
-
-export type RevealState = {
-  readonly error: string | null;
-  readonly revealed: {
-    community: string;
-    condition: string;
-    u_equals_u: boolean;
-  } | null;
-};
-export const REVEAL_INITIAL: RevealState = { error: null, revealed: null };
 
 /**
  * §7.3 — condition data is never shown by default, and a reveal requires a

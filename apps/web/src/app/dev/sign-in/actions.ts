@@ -8,9 +8,7 @@ import { verification } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { DEV_SIGN_IN_REFUSED, devSignInAllowed } from "./guard";
-
-export type DevSignInState = { readonly error: string | null };
-export const DEV_SIGN_IN_INITIAL: DevSignInState = { error: null };
+import type { DevSignInState } from "./state";
 
 /**
  * Signing in without an SMS, in development only.

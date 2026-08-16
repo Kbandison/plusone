@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { LIVENESS_INITIAL, runLivenessCheck } from "./actions";
+import { runLivenessCheck } from "./actions";
+import { LIVENESS_INITIAL } from "./state";
 
 const C = DRAFT_COPY.liveness;
 

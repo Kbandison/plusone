@@ -8,18 +8,9 @@ import { verification } from "@plusone/logic";
 import { serviceClient } from "@/lib/cron";
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
+import type { LivenessState } from "./state";
 
 const E = DRAFT_COPY.liveness.errors;
-
-export type LivenessState = {
-  readonly error: string | null;
-  readonly attemptsLeft: number;
-};
-
-export const LIVENESS_INITIAL: LivenessState = {
-  error: null,
-  attemptsLeft: VERIFICATION.livenessMaxRetries,
-};
 
 /**
  * Runs one liveness attempt.

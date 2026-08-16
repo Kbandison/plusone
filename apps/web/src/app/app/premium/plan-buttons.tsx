@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { DRAFT_COPY, PLANS, formatPriceCents } from "@plusone/config";
 
-import { CHECKOUT_INITIAL, openBillingPortal, startCheckout } from "./actions";
+import { openBillingPortal, startCheckout } from "./actions";
+import { CHECKOUT_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

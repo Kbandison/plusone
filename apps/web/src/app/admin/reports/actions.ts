@@ -3,15 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
-
-export type ReportDecisionState = {
-  readonly error: string | null;
-  readonly message: string | null;
-};
-export const REPORT_DECISION_INITIAL: ReportDecisionState = {
-  error: null,
-  message: null,
-};
+import type { ReportDecisionState } from "./state";
 
 /**
  * Deciding a report.

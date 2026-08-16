@@ -4,7 +4,9 @@ import { useActionState } from "react";
 
 import { COPY } from "@plusone/config";
 
-import { PROFILE_INITIAL, switchMode, type ProfileState } from "./actions";
+import { switchMode } from "./actions";
+import { type ProfileState } from "./state";
+import { PROFILE_INITIAL } from "./state";
 
 /**
  * §3.4's support-only copy, verbatim. It explains what the mode does in the

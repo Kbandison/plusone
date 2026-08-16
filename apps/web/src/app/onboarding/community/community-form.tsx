@@ -12,7 +12,8 @@ import {
   type Community,
 } from "@plusone/config";
 
-import { saveCommunity, type CommunityState } from "./actions";
+import { saveCommunity } from "./actions";
+import { type CommunityState } from "./state";
 
 const C = DRAFT_COPY.community;
 const INITIAL: CommunityState = { error: null };

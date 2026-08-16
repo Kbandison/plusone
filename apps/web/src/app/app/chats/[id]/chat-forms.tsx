@@ -4,14 +4,8 @@ import { useActionState, useState } from "react";
 
 import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
 
-import {
-  CHAT_INITIAL,
-  cancelPlan,
-  closeChat,
-  confirmPlan,
-  proposePlan,
-  sendMessage,
-} from "./actions";
+import { cancelPlan, closeChat, confirmPlan, proposePlan, sendMessage } from "./actions";
+import { CHAT_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
 

@@ -10,12 +10,7 @@ import {
 } from "@plusone/config";
 
 import { getServerSupabase } from "./supabase";
-
-export type SafetyState = {
-  readonly error: string | null;
-  readonly message: string | null;
-};
-export const SAFETY_INITIAL: SafetyState = { error: null, message: null };
+import type { SafetyState } from "./safety-state";
 
 /**
  * Blocking (§5.3).

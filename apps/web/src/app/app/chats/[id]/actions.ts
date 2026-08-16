@@ -8,9 +8,7 @@ import { fuse, tone } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
-
-export type ChatState = { readonly error: string | null };
-export const CHAT_INITIAL: ChatState = { error: null };
+import type { ChatState } from "./state";
 
 export async function sendMessage(_prev: ChatState, formData: FormData): Promise<ChatState> {
   const chatId = String(formData.get("chat_id") ?? "");

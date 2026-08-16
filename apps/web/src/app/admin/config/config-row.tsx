@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 
-import { CONFIG_INITIAL, setConfig } from "./actions";
+import { setConfig } from "./actions";
+import { CONFIG_INITIAL } from "./state";
 
 export function ConfigRow({ configKey, value }: { configKey: string; value: string }) {
   const [state, act, pending] = useActionState(setConfig, CONFIG_INITIAL);
