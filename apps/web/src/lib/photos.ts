@@ -31,7 +31,7 @@ import sharp from "sharp";
  */
 
 /** Longest edge of the stored photo. Enough for a full-bleed phone screen. */
-const MAX_EDGE = 1600;
+const MAX_EDGE = MAX_EDGE_PX;
 
 /**
  * Longest edge of the intermediate thumbnail the blurred variant is built from.
@@ -58,7 +58,9 @@ const BLUR_OUTPUT_EDGE = 600;
  */
 const CARD_EDGE = 320;
 
-export { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, isAcceptableUpload } from "./photo-limits";
+import { MAX_EDGE_PX } from "./photo-limits";
+
+export { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, MAX_EDGE_PX, isAcceptableUpload } from "./photo-limits";
 
 export interface ProcessedPhoto {
   readonly full: Buffer;

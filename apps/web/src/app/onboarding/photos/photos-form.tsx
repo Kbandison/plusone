@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 
+import { downscalePhoto, isTooLargeToSend } from "@/lib/downscale";
 import { ACCEPTED_TYPES } from "@/lib/photo-limits";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
@@ -12,10 +13,44 @@ const C = DRAFT_COPY.photos;
 
 export function PhotoUploader({ count }: { count: number }) {
   const [state, action, pending] = useActionState(uploadPhoto, PHOTOS_INITIAL);
+  const [preparing, setPreparing] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const inputId = useId();
 
+  /**
+   * Shrink first, then send.
+   *
+   * The server resizes to 1600px regardless, so uploading the original meant
+   * carrying 10–20MB of phone camera across someone's mobile data to have it
+   * discarded at the other end — and it could not even arrive: a modern photo
+   * passes our own 8MB check and then exceeds the Server Action body cap.
+   *
+   * The downscale is a convenience, not a check. The server still validates the
+   * type and the size and still strips the metadata; if the browser cannot do
+   * this, the original goes as before and the server decides.
+   */
+  async function onPick(file: File) {
+    setLocalError(null);
+    setPreparing(true);
+    try {
+      const { file: prepared } = await downscalePhoto(file);
+      if (isTooLargeToSend(prepared)) {
+        setLocalError(C.errors.tooLargeToShrink);
+        return;
+      }
+      const formData = new FormData();
+      formData.set("photo", prepared);
+      action(formData);
+    } finally {
+      setPreparing(false);
+    }
+  }
+
   return (
-    <form action={action} className="mt-10 flex flex-col gap-5">
+    // Not a <form>. onPick dispatches the action itself after shrinking the
+    // file, so a form action here would be a second submit carrying the
+    // original.
+    <div className="mt-10 flex flex-col gap-5">
       <label
         htmlFor={inputId}
         // focus-within, because the real input is sr-only. A keyboard user
@@ -30,28 +65,31 @@ export function PhotoUploader({ count }: { count: number }) {
         name="photo"
         type="file"
         accept={ACCEPTED_TYPES.join(",")}
-        required
         className="sr-only"
-        onChange={(event) => event.currentTarget.form?.requestSubmit()}
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = "";
+          if (file) void onPick(file);
+        }}
       />
 
       {/* The form auto-submits on change, so picking a file starts an upload
           with no button press and no announcement — total silence from choosing
           the file through to the result. */}
       <p role="status" className="text-[14.5px] text-ink-3">
-        {pending ? "Uploading…" : ""}
+        {preparing ? C.errors.preparing : pending ? "Uploading…" : ""}
       </p>
 
-      {state.error ? (
+      {state.error || localError ? (
         <p role="alert" className="text-[14.5px] text-critical">
-          {state.error}
+          {localError ?? state.error}
         </p>
       ) : null}
 
       <p role="status" className="text-[14.5px] text-ink-3">
         {count > 0 ? `${count} ${count === 1 ? "photo" : "photos"} added.` : ""}
       </p>
-    </form>
+    </div>
   );
 }
 

@@ -9,6 +9,16 @@
 
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
+/**
+ * Longest edge of the stored photo, and of the browser-side downscale.
+ *
+ * It lives here rather than in photos.ts because both sides need it and
+ * photos.ts imports sharp — a client component cannot go anywhere near it. Two
+ * copies of this number would mean the browser shrinking to one size and the
+ * server to another, and only the second one being true.
+ */
+export const MAX_EDGE_PX = 1600;
+
 export const ACCEPTED_TYPES = [
   "image/jpeg",
   "image/png",

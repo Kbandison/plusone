@@ -156,6 +156,10 @@ export const DRAFT_COPY = {
     errors: {
       required: "Add at least one photo.",
       tooLarge: "That image is larger than 8 MB.",
+      /** Shown only when the browser could not shrink it and it is still too big. */
+      tooLargeToShrink:
+        "That image is too large to send, and this browser could not shrink it. Try a JPEG or a smaller version.",
+      preparing: "Getting your photo ready…",
       wrongType: "Photos have to be JPEG, PNG, WebP or HEIC.",
       uploadFailed: "That did not upload. Try again.",
     },
