@@ -129,6 +129,12 @@ export const DRAFT_COPY = {
     errors: {
       failed: "That did not pass. Make sure your face is well lit and fills the frame.",
       unavailable: "The check is unavailable right now. Try again in a moment.",
+      /**
+       * Distinct from `unavailable`. Collapsing every failure into one message
+       * is how a missing phone_verified transition looked like a provider
+       * outage for the whole of this build.
+       */
+      phoneFirst: "Your number needs verifying first. Go back a step and we will send you a code.",
     },
   },
 

@@ -93,5 +93,21 @@ export async function devSignIn(
   });
   if (verifyError) return { error: verifyError.message };
 
+  // The same thing verifyCode records, because this path skips it.
+  //
+  // phone_confirm on the admin API sets auth.users.phone_confirmed_at, which is
+  // what the onboarding resolver reads — but the liveness step reads
+  // profiles.verification_status, and without this it stays 'unverified' and
+  // the next screen refuses. Anything that stands in for a completed OTP has to
+  // leave behind everything a completed OTP leaves behind.
+  const { data: signedIn } = await supabase.auth.getUser();
+  if (signedIn.user) {
+    await service
+      .from("profiles")
+      .update({ verification_status: "phone_verified" })
+      .eq("id", signedIn.user.id)
+      .eq("verification_status", "unverified");
+  }
+
   redirect("/onboarding");
 }

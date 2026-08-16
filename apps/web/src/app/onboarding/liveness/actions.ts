@@ -59,7 +59,15 @@ export async function runLivenessCheck(
     type: "start_liveness",
     at: Date.now(),
   });
-  if (!started.ok) return { ...previous, error: E.unavailable };
+  if (!started.ok) {
+    // The reducer knows why. Reporting all of it as "unavailable" is what hid a
+    // missing phone_verified transition behind what looked like a provider
+    // outage — the same failure as telling a flagged member "not_under_review".
+    return {
+      ...previous,
+      error: started.code === "phone_not_verified" ? E.phoneFirst : E.unavailable,
+    };
+  }
 
   let outcome: verification.LivenessOutcome;
   try {

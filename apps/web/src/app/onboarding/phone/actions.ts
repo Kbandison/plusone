@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
+import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
 
@@ -60,6 +61,29 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
   // Wrong code and expired code are deliberately one message. Distinguishing
   // them tells someone guessing which half they got right.
   if (error) return { error: E.codeInvalid, sentTo: phone };
+
+  // Record on the profile what the OTP just proved.
+  //
+  // Nothing did this, and the two halves of the app disagreed about it: the
+  // onboarding resolver reads auth.users.phone_confirmed_at, while the liveness
+  // step reads profiles.verification_status. So every member reached the
+  // liveness screen with a profile still marked 'unverified', start_liveness
+  // refused with phone_not_verified, and the action reported "unavailable" —
+  // which is why liveness had never worked for anyone and looked like a
+  // provider problem.
+  //
+  // Service client because verification_status is no longer in the members'
+  // update grant (20260815000800). The condition is the guard: this only ever
+  // moves someone off 'unverified', so it can never walk a verified, flagged or
+  // rejected member backwards.
+  const { data: auth } = await supabase.auth.getUser();
+  if (auth.user) {
+    await serviceClient()
+      .from("profiles")
+      .update({ verification_status: "phone_verified" })
+      .eq("id", auth.user.id)
+      .eq("verification_status", "unverified");
+  }
 
   redirect("/onboarding");
 }
