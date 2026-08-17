@@ -81,29 +81,52 @@ export const serverEnvSchema = z
     OTP_PROVIDER: z.enum(["stub", "supabase_twilio"]),
 
     /**
-     * Swappable liveness adapter (§4.2). The provider choice is still open — see
-     * PROJECT_UPDATES.md — so `stub` is a legal value here and is the default for
-     * development. The stub itself refuses to construct in production, so a
+     * Swappable liveness adapter (§4.2). `stub` is legal here and is the default
+     * for development; the stub itself refuses to construct in production, so a
      * forgotten `stub` fails loudly at boot rather than verifying everyone.
      *
-     * The single-opaque-key shape below will not survive the real choice: AWS
-     * needs an access key id, a secret and a region, and Stripe Identity has no
-     * key of its own (it reuses STRIPE_SECRET_KEY). Widen this when we pick,
-     * rather than guessing a shape now.
+     * §4.2 listed three candidates. `stripe_identity` is GONE, and it is worth
+     * writing down why so nobody re-proposes it: Stripe Identity has no
+     * selfie-only mode. Its `Selfie` report carries a `document` field — "the
+     * File holding the image of the identity document used in this check" —
+     * because the check is face-MATCHING against an ID, not liveness. Using it
+     * would mean every member hands a government ID to a third party to join a
+     * dating app for people with HSV or HIV, which is a different product.
+     *
+     * `facetec` stays: same category as AWS, not evaluated, still open.
+     *
+     * The old single-opaque-key shape is gone too. It was always a placeholder —
+     * AWS needs a region and a key pair, not one string.
      */
-    LIVENESS_PROVIDER: z.enum(["stub", "stripe_identity", "facetec", "aws_rekognition"]),
-    LIVENESS_API_KEY: z.string().optional(),
+    LIVENESS_PROVIDER: z.enum(["stub", "facetec", "aws_rekognition"]),
+
+    /**
+     * AWS, for Face Liveness. Optional at the schema level and required by the
+     * refine below, so the message names the provider that needs them rather
+     * than reading as "always required".
+     *
+     * Face Liveness is not in every region. Pinning it here rather than letting
+     * the SDK read AWS_DEFAULT_REGION means an unsupported region fails on our
+     * terms, at boot.
+     */
+    AWS_REGION: z.string().optional(),
+    AWS_ACCESS_KEY_ID: z.string().optional(),
+    AWS_SECRET_ACCESS_KEY: z.string().optional(),
 
     /** Shared secret so only Vercel Cron can invoke /api/cron/*. */
     CRON_SECRET: z.string().min(32),
   })
   .refine(
-    // Only the stub runs without a credential. Any real provider missing its key
-    // would otherwise fail on the first member to reach the selfie step.
-    (env) => env.LIVENESS_PROVIDER === "stub" || (env.LIVENESS_API_KEY ?? "").length > 0,
+    // Only the stub runs without credentials. A real provider missing them would
+    // otherwise fail on the first member to reach the selfie step — which is the
+    // worst place to discover it, because that member is already mid-signup.
+    (env) =>
+      env.LIVENESS_PROVIDER !== "aws_rekognition" ||
+      Boolean(env.AWS_REGION && env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY),
     {
-      path: ["LIVENESS_API_KEY"],
-      message: "required for every provider except stub",
+      path: ["AWS_REGION"],
+      message:
+        "AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are all required when LIVENESS_PROVIDER=aws_rekognition",
     },
   );
 

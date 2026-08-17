@@ -38,7 +38,12 @@ export interface LivenessOutcome {
   readonly score: number;
 }
 
-export type LivenessProviderName = "aws_rekognition" | "stripe_identity" | "facetec" | "stub";
+/**
+ * `stripe_identity` was here and is deliberately gone: Stripe Identity has no
+ * selfie-only mode — its selfie check is face-matching against an uploaded ID
+ * document, which is identity verification, not liveness. See env.ts.
+ */
+export type LivenessProviderName = "aws_rekognition" | "facetec" | "stub";
 
 /** An in-flight check. The id is opaque and carries no member identity. */
 export interface LivenessSession {

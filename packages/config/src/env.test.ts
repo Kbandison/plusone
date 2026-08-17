@@ -19,7 +19,9 @@ const VALID_SERVER = {
   RESEND_API_KEY: "re_abc123",
   OTP_PROVIDER: "stub",
   LIVENESS_PROVIDER: "stub",
-  LIVENESS_API_KEY: "abc123",
+  AWS_REGION: "us-west-2",
+  AWS_ACCESS_KEY_ID: "AKIAEXAMPLEEXAMPLE",
+  AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMIexampleKEYexampleEXAMPLEKEY",
   CRON_SECRET: "x".repeat(32),
 };
 
@@ -119,22 +121,45 @@ describe("server env", () => {
     );
   });
 
-  // The provider choice is still open (§4.2 defers it), so `stub` is legal —
-  // but only the stub is allowed to run without a credential.
-  it("lets the stub provider run without a key", () => {
-    const { LIVENESS_API_KEY: _omitted, ...withoutKey } = VALID_SERVER;
-    expect(parseServerEnv({ ...withoutKey, LIVENESS_PROVIDER: "stub" }).LIVENESS_PROVIDER).toBe(
-      "stub",
-    );
+  // `stub` is legal and is the development default — but only the stub is
+  // allowed to run without credentials.
+  it("lets the stub provider run without AWS credentials", () => {
+    const {
+      AWS_REGION: _r,
+      AWS_ACCESS_KEY_ID: _k,
+      AWS_SECRET_ACCESS_KEY: _s,
+      ...bare
+    } = VALID_SERVER;
+    expect(parseServerEnv({ ...bare, LIVENESS_PROVIDER: "stub" }).LIVENESS_PROVIDER).toBe("stub");
   });
 
-  it.each(["aws_rekognition", "stripe_identity", "facetec"])(
-    "requires a key for %s",
-    (provider) => {
-      const { LIVENESS_API_KEY: _omitted, ...withoutKey } = VALID_SERVER;
-      expect(() => parseServerEnv({ ...withoutKey, LIVENESS_PROVIDER: provider })).toThrow(
-        /LIVENESS_API_KEY/,
-      );
-    },
-  );
+  it.each([
+    ["AWS_REGION", { AWS_REGION: undefined }],
+    ["AWS_ACCESS_KEY_ID", { AWS_ACCESS_KEY_ID: undefined }],
+    ["AWS_SECRET_ACCESS_KEY", { AWS_SECRET_ACCESS_KEY: undefined }],
+  ])("refuses aws_rekognition with %s missing", (_label, missing) => {
+    // All three or none. A partial set fails on the first member to reach the
+    // selfie step, which is the worst place to find out — they are mid-signup.
+    expect(() =>
+      parseServerEnv({ ...VALID_SERVER, ...missing, LIVENESS_PROVIDER: "aws_rekognition" }),
+    ).toThrow(/AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY/);
+  });
+
+  it("accepts aws_rekognition with all three", () => {
+    expect(
+      parseServerEnv({ ...VALID_SERVER, LIVENESS_PROVIDER: "aws_rekognition" }).LIVENESS_PROVIDER,
+    ).toBe("aws_rekognition");
+  });
+
+  /**
+   * Stripe Identity was a §4.2 candidate and is now unrepresentable. Its selfie
+   * check carries a `document` field — it is face-matching against an uploaded
+   * ID, not liveness — so choosing it would silently turn signup into government
+   * ID verification.
+   */
+  it("no longer accepts stripe_identity", () => {
+    expect(() => parseServerEnv({ ...VALID_SERVER, LIVENESS_PROVIDER: "stripe_identity" })).toThrow(
+      /Invalid server environment/,
+    );
+  });
 });
