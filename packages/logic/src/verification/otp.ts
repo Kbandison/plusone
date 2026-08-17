@@ -1,8 +1,9 @@
 /**
  * Phone OTP (§7.2, Decision #21) — the first step of onboarding.
  *
- * Supabase Auth talks to Twilio Verify in production. This is the seam around
- * it, so
+ * Supabase Auth talks to Twilio in production — Verify or plain Programmable
+ * Messaging, whichever the dashboard is set to; this app cannot tell and does
+ * not need to. This is the seam around that, so
  * the flow is buildable and testable before those credentials exist, and so the
  * phone step never has to be switched off to get work done. The step stays
  * required in the onboarding machine; only the provider changes.
@@ -15,7 +16,7 @@
  *   so there is nowhere to put it.
  */
 
-export type OtpProviderName = "supabase_twilio_verify" | "stub";
+export type OtpProviderName = "supabase_twilio" | "supabase_twilio_verify" | "stub";
 
 /** An OTP send that is now in flight. Deliberately carries no code. */
 export interface OtpChallenge {
@@ -77,7 +78,8 @@ export function createStubOtpProvider(options: StubOtpOptions = {}): OtpProvider
   if (!allowInProduction && process.env["NODE_ENV"] === "production") {
     throw new Error(
       "The stub OTP provider accepts a fixed code and must never run in production. " +
-        "Configure Twilio Verify in the Supabase dashboard and set OTP_PROVIDER=supabase_twilio_verify.",
+        "Configure a phone provider in the Supabase dashboard and set OTP_PROVIDER to " +
+        "supabase_twilio_verify or supabase_twilio.",
     );
   }
 

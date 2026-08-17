@@ -78,18 +78,32 @@ export const serverEnvSchema = z
      * records WHICH one is live. `stub` accepts a fixed code and refuses to
      * construct in production.
      *
-     * `supabase_twilio_verify` replaced `supabase_twilio`, and the difference is
-     * not cosmetic. Sending our own OTPs over a 10DLC number means registering
-     * an A2P brand and campaign with the carriers and waiting on their review.
-     * Twilio Verify sends over Twilio's own registered infrastructure, so that
-     * whole process does not apply — Twilio's docs say it plainly: if you are
-     * registering solely for OTP, use Verify and you do not need A2P
-     * registration at all.
+     * BOTH real providers are legal, and switching between them is a dashboard
+     * change with no deploy.
      *
-     * Everything above this line is unchanged by that: signInWithOtp and
-     * verifyOtp are the same calls, because Supabase owns the provider seam.
+     *   supabase_twilio_verify — Twilio Verify. Sends over Twilio's OWN
+     *     registered infrastructure, so no A2P brand or campaign registration
+     *     is needed and it works the day you configure it. $0.05 a verification,
+     *     no fixed monthly cost.
+     *
+     *   supabase_twilio — plain Programmable Messaging over a 10DLC number we
+     *     rent and register. About $0.0125 a message, but it needs an A2P brand
+     *     and campaign approved by the carriers first, and carries roughly
+     *     $3/month of fixed cost. Cheaper only above ~84 verifications a month.
+     *
+     * The app cannot tell them apart and MUST NOT try: signInWithOtp and
+     * verifyOtp are the same calls either way, because Supabase owns the
+     * provider seam and talks to Twilio on our behalf. This value records which
+     * one is live so the stub guard can refuse when a real one is, and for no
+     * other purpose — otp-provider.test.ts fails if any code starts branching
+     * on which.
+     *
+     * One operational difference that is NOT the app's business but is worth
+     * knowing: Verify owns the code's lifetime in the Verify Service, while
+     * plain Twilio uses Supabase's own OTP expiry setting. The copy says ten
+     * minutes; whichever is live has to agree with it.
      */
-    OTP_PROVIDER: z.enum(["stub", "supabase_twilio_verify"]),
+    OTP_PROVIDER: z.enum(["stub", "supabase_twilio", "supabase_twilio_verify"]),
 
     /**
      * Swappable liveness adapter (§4.2). `stub` is legal here and is the default
