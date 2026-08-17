@@ -52,8 +52,22 @@ export async function GET(request: NextRequest) {
   // `next` lets Settings send the member back where they were. Only ever a path
   // on this origin: an absolute URL here would be an open redirect, and one on
   // a sign-in callback is a credential-phishing hop.
+  //
+  // Parsed rather than pattern-matched. The previous guard tested startsWith("/")
+  // and !startsWith("//"), which lets "/\evil.example" through — and the WHATWG
+  // parser treats a backslash as a solidus for special schemes, so that resolves
+  // to https://evil.example/ with the host replaced. Comparing the parsed origin
+  // cannot be fooled by a separator this app does not know about.
   const next = searchParams.get("next");
-  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/onboarding";
+  let safeNext = "/onboarding";
+  if (next) {
+    try {
+      const target = new URL(next, origin);
+      if (target.origin === origin) safeNext = target.pathname + target.search + target.hash;
+    } catch {
+      /* unparseable is not a path we will follow */
+    }
+  }
 
   return NextResponse.redirect(new URL(safeNext, origin));
 }

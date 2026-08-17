@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
 import { getTonightsDrop } from "@/lib/drop";
-import { photosFor } from "@/lib/photo-urls";
+import { photosFor, previewPhotosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { FullCard, PreviewDropCard } from "./drop-card";
 
@@ -14,7 +14,11 @@ export default async function TonightPage() {
   const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
   const drop = await getTonightsDrop(data.user!.id);
-  const photos = await photosFor(drop.cards.map((c) => c.id));
+  // The preview reads a different view, one that cannot return a clear path.
+  // Calling photosFor() for both variants is what put a fully identifiable
+  // photograph above "30–39 · within 10 mi" on a screen that promised blurred.
+  const ids = drop.cards.map((c) => c.id);
+  const photos = drop.preview ? await previewPhotosFor(ids) : await photosFor(ids);
 
   return (
     <main id="main">

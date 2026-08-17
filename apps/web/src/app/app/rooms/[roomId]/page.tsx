@@ -38,7 +38,14 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       .select("id, user_id, body, created_at, deleted_at")
       .eq("room_id", room.id as string)
       .is("deleted_at", null)
-      .order("created_at", { ascending: true })
+      // Descending, then reversed for display.
+      //
+      // This ordered ASCENDING with the same limit, which is the OLDEST hundred
+      // rows — so every room froze permanently on its first hundred posts. The
+      // composer kept accepting writes and the rows kept landing; members simply
+      // never saw their own message appear. Descending also uses
+      // room_messages_room_ix the way it was built.
+      .order("created_at", { ascending: false })
       .limit(100),
   ]);
 
@@ -70,7 +77,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       <p className="mt-2 text-[13.5px] text-ink-3">{C.roomNoDmNote}</p>
 
       <ul className="mt-8 flex flex-col gap-4">
-        {(messages ?? []).map((message) => (
+        {[...(messages ?? [])].reverse().map((message) => (
           <li key={message.id as string} className="rounded-lg border border-line px-5 py-4">
             {/* The controls below point at this id, which is what tells a
                 screen reader user which post they are about to report — every

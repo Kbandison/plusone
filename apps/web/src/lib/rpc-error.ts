@@ -25,6 +25,9 @@
  */
 const SAFE_PREFIXES: readonly string[] = [
   "a plan needs a date",
+  // Slow mode. Tells the member exactly how long is left, which is the whole
+  // point of raising it rather than silently dropping the post.
+  "slow mode: wait ",
   // The appeal refusals (Decision #21). Both are about the member's own
   // situation and both are actionable by them, so they are safe to show — and
   // openAppeal maps them to reviewed copy rather than passing them through raw.

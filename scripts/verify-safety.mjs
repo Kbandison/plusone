@@ -134,6 +134,13 @@ try {
     // A block is one member's decision about their own view. If it removed
     // someone's voice for the whole room it would be a moderation action
     // wearing a safety control's clothes.
+    //
+    // Slow mode is switched off for this room first (20260817000800 enforces it
+    // now, and this fixture posts several times in a row). Testing the block
+    // means testing the block — a cooldown refusing the post would look exactly
+    // like a mute and pass the assertion for the wrong reason.
+    await c.query(`update public.rooms set slow_mode_seconds = 0 where id = '${roomId}'`);
+
     let canStillPost = false;
     await c.query(`savepoint rb`);
     try {

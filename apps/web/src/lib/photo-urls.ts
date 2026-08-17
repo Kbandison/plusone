@@ -45,13 +45,42 @@ function serviceClient() {
  * not sixty-three.
  */
 export async function photosFor(userIds: readonly string[]): Promise<Map<string, MemberPhoto>> {
+  return photosFrom("visible_profile_photos", "storage_path", userIds);
+}
+
+/**
+ * The Preview Drop's photos, which are blurred by construction.
+ *
+ * Decision #19 and §6.1 step 5 both specify blurred photos for a support-only
+ * member's preview, and the page called photosFor() for both variants.
+ * visible_profile_photos keys its CASE on photo_privacy and
+ * i_have_connected_with() and knows nothing about the viewer's MODE —
+ * photo_privacy defaults to 'clear', and can_view_profile's mode wall passes any
+ * target for a support-only viewer. So preview_profiles correctly returned only
+ * an age band, an intention and a distance bucket, and the card rendered them
+ * above a fully identifiable photograph of somebody who had been told otherwise.
+ *
+ * preview_profile_photos (20260817000800) has no column that could return a
+ * clear path, so this cannot regress by someone passing the wrong flag.
+ */
+export async function previewPhotosFor(
+  userIds: readonly string[],
+): Promise<Map<string, MemberPhoto>> {
+  return photosFrom("preview_profile_photos", "path", userIds);
+}
+
+async function photosFrom(
+  view: "visible_profile_photos" | "preview_profile_photos",
+  pathColumn: "storage_path" | "path",
+  userIds: readonly string[],
+): Promise<Map<string, MemberPhoto>> {
   const found = new Map<string, MemberPhoto>();
   if (userIds.length === 0) return found;
 
   const supabase = await getServerSupabase();
   const { data: rows } = await supabase
-    .from("visible_profile_photos")
-    .select("user_id, position, storage_path, is_blurred")
+    .from(view)
+    .select(`user_id, position, ${pathColumn}, is_blurred`)
     .in("user_id", [...userIds])
     .eq("position", 0);
 
@@ -59,7 +88,7 @@ export async function photosFor(userIds: readonly string[]): Promise<Map<string,
 
   const service = serviceClient();
   const { data: signed } = await service.storage.from("photos").createSignedUrls(
-    rows.map((row) => row.storage_path as string),
+    rows.map((row) => (row as Record<string, unknown>)[pathColumn] as string),
     TTL_SECONDS,
   );
 
@@ -68,7 +97,7 @@ export async function photosFor(userIds: readonly string[]): Promise<Map<string,
   );
 
   for (const row of rows) {
-    const url = urlByPath.get(row.storage_path as string);
+    const url = urlByPath.get((row as Record<string, unknown>)[pathColumn] as string);
     if (url) {
       found.set(row.user_id as string, {
         url,

@@ -101,8 +101,6 @@ export function ProposePlan({ chatId }: { chatId: string }) {
 
 export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm: boolean }) {
   const [confirmState, confirm, confirming] = useActionState(confirmPlan, CHAT_INITIAL);
-  const [cancelState, cancel, cancelling] = useActionState(cancelPlan, CHAT_INITIAL);
-  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   return (
     <div className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6">
@@ -123,10 +121,31 @@ export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm
         <p className="text-[15px] text-ink-2">{C.awaitingConfirmation}</p>
       )}
 
+      <Error message={confirmState.error} />
+    </div>
+  );
+}
+
+/**
+ * Cancelling a plan both people confirmed (§6.2).
+ *
+ * Split out of ConfirmPlan, which is the only reason it never worked. The
+ * cancel control lived inside that component, and ConfirmPlan rendered only
+ * when the chat was NOT date_planned — while cancel_date_plan refuses unless it
+ * IS. Exact complements: the control was mounted precisely where the RPC always
+ * refused, and absent from the one state where it succeeds. §6.2 says a
+ * cancelled plan returns the chat to the fuse; there was no way to reach it.
+ */
+export function CancelPlan({ chatId }: { chatId: string }) {
+  const [cancelState, cancel, cancelling] = useActionState(cancelPlan, CHAT_INITIAL);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
+  return (
+    <div className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6">
       {/* Asked first. This was a one-tap submit that discarded a plan both
           people had confirmed — the single most valuable thing in the chat —
           sitting a few pixels under the button that confirms it.
-          
+
           Blocking is deliberately unguarded and this is deliberately not: a
           block is reversible from Settings and is reached at the worst moment
           someone will have here, where a cancelled plan means going back to the
@@ -167,7 +186,7 @@ export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm
         </button>
       )}
 
-      <Error message={confirmState.error ?? cancelState.error} />
+      <Error message={cancelState.error} />
     </div>
   );
 }

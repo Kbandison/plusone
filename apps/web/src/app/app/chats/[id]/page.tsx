@@ -5,7 +5,7 @@ import { DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
 import { fuse } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
-import { CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
+import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 
@@ -13,12 +13,25 @@ export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
 const C = DRAFT_COPY.app;
 
+/**
+ * The shape propose_date_plan actually stores.
+ *
+ * This was declared flat and camelCase — date, time, place, proposedBy,
+ * confirmedBy — while the RPC writes jsonb_build_object('plan', p_plan,
+ * 'proposed_by', ..., 'confirmed_by', null): snake_case, with the three fields
+ * nested one level down. date_plan is untyped jsonb passed through an `as`, so
+ * TypeScript could not see it, and EVERY field read as undefined at runtime.
+ *
+ * Two things followed. `canConfirm={plan.proposedBy !== me}` was
+ * `undefined !== me`, always true, so the proposer was offered a Confirm button
+ * that the RPC then refused. And the plan itself — the day, the time, the place
+ * — was never rendered to either member, so a chat could reach date_planned
+ * without anyone being shown what had been agreed.
+ */
 interface Plan {
-  date?: string;
-  time?: string;
-  place?: string;
-  proposedBy?: string;
-  confirmedBy?: string | null;
+  plan: { date: string; time: string; place: string };
+  proposed_by: string;
+  confirmed_by: string | null;
 }
 
 /**
@@ -179,9 +192,29 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
           {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
 
-          {plan && chat.status !== "date_planned" ? (
-            <ConfirmPlan chatId={id} canConfirm={plan.proposedBy !== me} />
+          {/* The plan itself, which nothing rendered. A chat could reach
+              date_planned with neither member ever shown what was agreed. */}
+          {plan ? (
+            <section className="mt-8 rounded-xl border border-line-2 bg-surface p-5">
+              <h2 className="text-[1.05rem]">{C.datePlannedLabel}</h2>
+              <p className="mt-2 text-[15.5px] leading-[1.65] text-ink-2">
+                {plan.plan.date} · {plan.plan.time} · {plan.plan.place}
+              </p>
+            </section>
           ) : null}
+
+          {/* Confirm and cancel are independent states, and were one flag.
+              ConfirmPlan carried the cancel control inside it and rendered only
+              when status !== 'date_planned' — while cancel_date_plan refuses
+              unless status IS 'date_planned'. The two conditions are exact
+              complements, so cancel was mounted precisely where it always
+              failed and absent from the only state where it works. §6.2 says a
+              cancelled plan returns the chat to the fuse; there was no path. */}
+          {plan && chat.status !== "date_planned" ? (
+            <ConfirmPlan chatId={id} canConfirm={plan.proposed_by !== me} />
+          ) : null}
+
+          {chat.status === "date_planned" ? <CancelPlan chatId={id} /> : null}
 
           <CloseChat chatId={id} senderName={(profile?.display_name as string) ?? ""} />
 
