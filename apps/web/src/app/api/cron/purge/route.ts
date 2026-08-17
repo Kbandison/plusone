@@ -8,6 +8,9 @@ export const dynamic = "force-dynamic";
 /** storage-js defaults to 100 per page; naming it makes the short-page test honest. */
 const PAGE = 100;
 
+/** 10,000 objects for one member in one bucket is not a real folder; it is a loop. */
+const MAX_PAGES = 100;
+
 /** What the cascade is about to destroy, read while it still exists. */
 interface PurgeTarget {
   readonly user_id: string;
@@ -68,8 +71,12 @@ export async function POST(request: Request) {
       // so this saw at most the first hundred objects in a folder and removed
       // only those — while remove() succeeded on the hundred it was given, so
       // nothing was reported and the response said the member was purged.
+      // Bounded. Each pass removes a full page, so the folder shrinks and the
+      // offset deliberately stays at zero — but a remove() that reports success
+      // without removing anything would spin forever, and a cron job that never
+      // returns is worse than one that gives up loudly.
       let offset = 0;
-      for (;;) {
+      for (let page = 0; page < MAX_PAGES; page += 1) {
         const { data: files, error: listError } = await supabase.storage
           .from(bucket)
           .list(userId, { limit: PAGE, offset });

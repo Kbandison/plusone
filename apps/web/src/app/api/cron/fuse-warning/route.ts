@@ -53,7 +53,23 @@ export async function POST(request: Request) {
   const deliveries = notify.planDeliveries("fuse_warning", recipients);
   const result = await notifier().send(deliveries);
 
-  return NextResponse.json({ notified: result.sent, failed: result.failed });
+  // A TRADE-OFF, stated rather than assumed.
+  //
+  // The stamp happens when the rows are claimed, before the send. So a delivery
+  // that fails loses that member's warning entirely — the chat is marked warned
+  // and the next run skips it. The alternative is to stamp afterwards, which
+  // double-sends whenever the job crashes between the two, and §8's posture is
+  // that a duplicate push about a closing chat is worse than a missed one: the
+  // count on a lock screen is itself information nobody asked to broadcast.
+  //
+  // The notifier reports only totals, not which delivery failed, so there is
+  // nothing finer to un-stamp. The claimed count is returned so a run that sent
+  // fewer than it claimed is visible rather than silent.
+  return NextResponse.json({
+    claimed: recipients.length,
+    notified: result.sent,
+    failed: result.failed,
+  });
 }
 
 /**
