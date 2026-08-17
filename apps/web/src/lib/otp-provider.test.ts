@@ -44,10 +44,20 @@ describe("either Twilio product may be live", () => {
     expect(parseServerEnv({ ...VALID, OTP_PROVIDER: provider }).OTP_PROVIDER).toBe(provider);
   });
 
-  it("still refuses a provider that does not exist", () => {
-    expect(() => parseServerEnv({ ...VALID, OTP_PROVIDER: "twilio_direct" })).toThrow(
-      /Invalid server environment/,
-    );
+  /**
+   * A provider that does not exist falls back rather than throwing, and the
+   * fallback direction is what matters: everything except "stub" closes the
+   * development sign-in, so a typo leaves that door shut.
+   *
+   * It used to throw, and that threw out of parseServerEnv — which every server
+   * route calls — so one wrong string in the deployment environment 500'd the
+   * phone step, the liveness step and all five crons together, from a variable
+   * that decides nothing.
+   */
+  it("falls back safely for a provider that does not exist", () => {
+    const parsed = parseServerEnv({ ...VALID, OTP_PROVIDER: "twilio_direct" });
+    expect(parsed.OTP_PROVIDER).toBe("supabase_twilio_verify");
+    expect(parsed.OTP_PROVIDER, "a typo must never open the dev sign-in").not.toBe("stub");
   });
 });
 

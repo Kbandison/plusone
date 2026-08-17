@@ -103,7 +103,34 @@ export const serverEnvSchema = z
      * plain Twilio uses Supabase's own OTP expiry setting. The copy says ten
      * minutes; whichever is live has to agree with it.
      */
-    OTP_PROVIDER: z.enum(["stub", "supabase_twilio", "supabase_twilio_verify"]),
+    OTP_PROVIDER: z
+      .enum(["stub", "supabase_twilio", "supabase_twilio_verify"])
+      /**
+       * An unrecognised value must NOT take the site down, and it did.
+       *
+       * A strict enum here meant one wrong string in the deployment environment
+       * threw out of parseServerEnv — which every server route calls — so
+       * /onboarding/phone, /onboarding/liveness and all five cron jobs returned
+       * 500 together. 159 errors across 155 people, from a variable that
+       * controls nothing: the phone send goes straight to Supabase, and this
+       * only records which provider is configured there.
+       *
+       * So it falls back, and the fallback is the SAFE direction. Everything
+       * except "stub" closes the development sign-in — that guard tests
+       * `!== "stub"` — so an unrecognised value leaves the door shut rather
+       * than open. A typo now costs a log line instead of an outage, and it
+       * cannot cost a way in.
+       */
+      .catch((ctx) => {
+        console.error(
+          JSON.stringify({
+            at: "env.OTP_PROVIDER",
+            problem: "unrecognised value, falling back to a setting that closes the dev sign-in",
+            saw: String(ctx.value),
+          }),
+        );
+        return "supabase_twilio_verify";
+      }),
 
     /**
      * Swappable liveness adapter (§4.2). `stub` is legal here and is the default

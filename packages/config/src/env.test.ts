@@ -109,9 +109,19 @@ describe("server env", () => {
     );
   });
 
-  it("rejects an OTP provider outside the known adapters", () => {
-    expect(() => parseServerEnv({ ...VALID_SERVER, OTP_PROVIDER: "twilio_direct" })).toThrow(
-      /Invalid server environment/,
+  /**
+   * This used to assert a throw, and the throw was wrong.
+   *
+   * OTP_PROVIDER controls nothing — the phone send goes straight to Supabase,
+   * which holds the actual provider — so it records a fact rather than making a
+   * decision. Throwing on it meant one wrong string in the deployment
+   * environment took out every server route at once, because parseServerEnv is
+   * on all of them. A LIVENESS provider outside the known adapters still throws,
+   * and should: that one does decide something.
+   */
+  it("does not reject an OTP provider outside the known adapters — it falls back", () => {
+    expect(parseServerEnv({ ...VALID_SERVER, OTP_PROVIDER: "twilio_direct" }).OTP_PROVIDER).toBe(
+      "supabase_twilio_verify",
     );
   });
 
@@ -157,6 +167,37 @@ describe("server env", () => {
    * ID, not liveness — so choosing it would silently turn signup into government
    * ID verification.
    */
+  /**
+   * A wrong OTP_PROVIDER took production down. parseServerEnv is called by every
+   * server route, so one bad string in the deployment environment 500'd
+   * /onboarding/phone, /onboarding/liveness and all five crons at once — from a
+   * variable that controls nothing, since the phone send goes straight to
+   * Supabase and this only records what is configured there.
+   */
+  it("falls back rather than throwing on an unrecognised provider", () => {
+    const parsed = parseServerEnv({ ...VALID_SERVER, OTP_PROVIDER: "twilio_verify" });
+    expect(parsed.OTP_PROVIDER).toBe("supabase_twilio_verify");
+  });
+
+  /**
+   * And the fallback has to be the SAFE direction. The dev sign-in guard tests
+   * `!== "stub"`, so anything other than "stub" keeps that door shut — a typo
+   * must never be the thing that opens a sign-in-as-anyone page.
+   */
+  it("never falls back to stub, which would open the dev sign-in", () => {
+    for (const wrong of ["", "twilio", "verify", "STUB", "stub ", "nonsense"]) {
+      expect(parseServerEnv({ ...VALID_SERVER, OTP_PROVIDER: wrong }).OTP_PROVIDER).not.toBe(
+        "stub",
+      );
+    }
+  });
+
+  it("still takes the three real values exactly", () => {
+    for (const good of ["stub", "supabase_twilio", "supabase_twilio_verify"]) {
+      expect(parseServerEnv({ ...VALID_SERVER, OTP_PROVIDER: good }).OTP_PROVIDER).toBe(good);
+    }
+  });
+
   it("no longer accepts stripe_identity", () => {
     expect(() => parseServerEnv({ ...VALID_SERVER, LIVENESS_PROVIDER: "stripe_identity" })).toThrow(
       /Invalid server environment/,
