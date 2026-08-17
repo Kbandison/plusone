@@ -5,6 +5,9 @@ import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
+/** storage-js defaults to 100 per page; naming it makes the short-page test honest. */
+const PAGE = 100;
+
 /** What the cascade is about to destroy, read while it still exists. */
 interface PurgeTarget {
   readonly user_id: string;
@@ -61,12 +64,33 @@ export async function POST(request: Request) {
 
   for (const userId of purged) {
     for (const bucket of ["photos", "verification-selfies"]) {
-      const { data: files } = await supabase.storage.from(bucket).list(userId);
-      if (!files?.length) continue;
-      const { error: removeError } = await supabase.storage
-        .from(bucket)
-        .remove(files.map((f) => `${userId}/${f.name}`));
-      if (removeError) orphaned.push(`${bucket}/${userId}`);
+      // Paginated. list() defaults to { limit: 100, offset: 0 } in storage-js,
+      // so this saw at most the first hundred objects in a folder and removed
+      // only those — while remove() succeeded on the hundred it was given, so
+      // nothing was reported and the response said the member was purged.
+      let offset = 0;
+      for (;;) {
+        const { data: files, error: listError } = await supabase.storage
+          .from(bucket)
+          .list(userId, { limit: PAGE, offset });
+        if (listError) {
+          orphaned.push(`${bucket}/${userId}`);
+          break;
+        }
+        if (!files?.length) break;
+
+        const { error: removeError } = await supabase.storage
+          .from(bucket)
+          .remove(files.map((f) => `${userId}/${f.name}`));
+        if (removeError) {
+          orphaned.push(`${bucket}/${userId}`);
+          break;
+        }
+
+        // A short page is the last one. Removal shrinks the folder, so the
+        // offset deliberately does not advance.
+        if (files.length < PAGE) break;
+      }
     }
 
     const target = byUser.get(userId);

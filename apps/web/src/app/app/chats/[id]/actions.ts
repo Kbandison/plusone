@@ -2,13 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 
-import { DEFAULT_CLOSURE_TEMPLATE_INDEX } from "@plusone/config";
+import { DEFAULT_CLOSURE_TEMPLATE_INDEX, DRAFT_COPY } from "@plusone/config";
 import { fuse, tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
 import type { ChatState } from "./state";
+
+const C = DRAFT_COPY.app;
 
 export async function sendMessage(_prev: ChatState, formData: FormData): Promise<ChatState> {
   const chatId = String(formData.get("chat_id") ?? "");
@@ -24,7 +26,22 @@ export async function sendMessage(_prev: ChatState, formData: FormData): Promise
     .from("messages")
     .insert({ chat_id: chatId, sender_id: auth.user!.id, body });
 
-  if (error) return { error: "That didn't send." };
+  if (error) {
+    // A closed chat is not a failed send, and saying so leaves the member
+    // typing into a screen that will never accept anything. The wall itself is
+    // right — the RLS with-check refuses the insert — but every failure
+    // collapsed to one string AND returned before revalidatePath, so the page
+    // kept rendering the composer, the recorder and the close control against a
+    // chat that had already ended and had a closure note waiting.
+    //
+    // 42501 is a policy refusal. Revalidating swaps the whole surface for the
+    // closed state on the next render.
+    if (error.code === "42501") {
+      revalidatePath(`/app/chats/${chatId}`);
+      return { error: C.chatClosedMidSend };
+    }
+    return { error: "That didn't send." };
+  }
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };
 }

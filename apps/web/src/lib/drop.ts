@@ -66,6 +66,8 @@ interface CandidateRow {
   age_band: string | null;
   intention: string | null;
   photo_privacy: string | null;
+  /** The candidate's own mode. A preview pool is dating members only. */
+  target_mode: string | null;
   last_active_at: string;
   distance_mi: number | null;
   times_served: number;
@@ -119,7 +121,18 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
     p_max_radius_mi: RADIUS.maxMi,
   });
 
-  const candidateRows = (rows ?? []) as CandidateRow[];
+  // A preview is a preview OF DATING MEMBERS.
+  //
+  // visible_profiles returns both modes to a support-only viewer — deliberately,
+  // so support-only members can find each other (Decision #18) — and those
+  // profiles could take the top three slots. loadPreviewCards then reads
+  // preview_profiles, which requires mode = 'dating', so each support-only id
+  // returned no row and was quietly dropped by a .filter(Boolean). Nothing
+  // refilled the slot, so a Preview Drop came back short, or empty, while real
+  // dating members sat unranked. Filtering the POOL is what keeps the count
+  // honest; filtering the render never could.
+  const allRows = (rows ?? []) as CandidateRow[];
+  const candidateRows = preview ? allRows.filter((r) => r.target_mode === "dating") : allRows;
 
   // The quiz reaches the Drop.
   //

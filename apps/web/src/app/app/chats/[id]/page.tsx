@@ -181,7 +181,17 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         <section className="mt-8 rounded-xl border border-line-2 bg-surface p-6">
           <h2 className="text-[1.15rem]">{C.closedNoteHeading}</h2>
           <p className="mt-4 text-[15.5px] leading-[1.7] text-ink-2">
-            {renderClosureTemplate((chat.closure_template as number | null) ?? 0)}
+            {/* Signed, which it was not.
+                renderClosureTemplate strips the "— {name}" line entirely when no
+                name is given, so the delivered note lost the signature the
+                composer's preview showed — under a comment in chat-forms.tsx
+                reading "Exactly what they will receive, before it is sent". A
+                fuse close has no closer, and null there keeps it correctly
+                unsigned. */}
+            {renderClosureTemplate(
+              (chat.closure_template as number | null) ?? 0,
+              chat.closed_by === me ? myName : chat.closed_by ? otherName : null,
+            )}
             {chat.closure_personal_line ? ` ${chat.closure_personal_line as string}` : ""}
           </p>
         </section>

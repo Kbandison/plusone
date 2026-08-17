@@ -12,6 +12,9 @@ interface Conversion {
   referrer_id: string;
   invitee_id: string;
   referrer_conversion_count: number;
+  /** Whether each SIDE has been paid. One flag for both was the bug. */
+  referrer_paid: boolean;
+  invitee_paid: boolean;
 }
 
 const TIER_ENUM: Record<number, string> = {
@@ -45,6 +48,10 @@ export async function POST(request: Request) {
   const pending = (data ?? []) as Conversion[];
   let granted = 0;
   let held = 0;
+  // A payout that fails leaves the conversion outstanding for the next run.
+  // Reported, because a silently forfeited reward is indistinguishable from one
+  // that was never earned.
+  const failures: string[] = [];
 
   for (const conversion of pending) {
     // Replay the reducer at this conversion's position in the referrer's run,
@@ -59,11 +66,23 @@ export async function POST(request: Request) {
 
     for (const reward of outcome.inviteeRewards) {
       if (reward.kind !== "premium_days") continue;
-      await supabase.rpc("grant_referral_premium", {
+      // Skipped if this side is already paid. The settled-check used to have no
+      // user predicate, so the invitee's grant alone marked the whole conversion
+      // done — and a failure between the two payouts forfeited the referrer's
+      // reward permanently, with nothing left to replay it from.
+      if (conversion.invitee_paid) continue;
+      const { error: inviteeError } = await supabase.rpc("grant_referral_premium", {
         p_conversion_id: conversion.conversion_id,
         p_user_id: conversion.invitee_id,
         p_days: reward.days,
+        p_role: "invitee",
       });
+      if (inviteeError) {
+        // Reported, not swallowed. The conversion stays outstanding, so the next
+        // run picks it up rather than it vanishing.
+        failures.push(`invitee:${conversion.conversion_id}`);
+        continue;
+      }
       granted += 1;
     }
 
@@ -89,11 +108,17 @@ export async function POST(request: Request) {
         continue;
       }
 
-      await supabase.rpc("grant_referral_premium", {
+      if (conversion.referrer_paid) continue;
+      const { error: referrerError } = await supabase.rpc("grant_referral_premium", {
         p_conversion_id: conversion.conversion_id,
         p_user_id: conversion.referrer_id,
         p_days: reward.days,
+        p_role: "referrer",
       });
+      if (referrerError) {
+        failures.push(`referrer:${conversion.conversion_id}`);
+        continue;
+      }
       granted += 1;
 
       if (reward.reason === "tier" && reward.tier) {
@@ -106,7 +131,7 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ conversions: pending.length, granted, held });
+  return NextResponse.json({ conversions: pending.length, granted, held, failures });
 }
 
 const REFERRALS_TIERS = Object.values(REFERRALS.tiers).map((t) => t.conversions);

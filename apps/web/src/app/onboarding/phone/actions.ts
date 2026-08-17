@@ -78,11 +78,26 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
   // rejected member backwards.
   const { data: auth } = await supabase.auth.getUser();
   if (auth.user) {
-    await serviceClient()
+    // The result is checked. It was discarded, and this write is what unlocks
+    // step 2 — if it failed, the OTP had still succeeded, so phone_confirmed_at
+    // was set, the resolver advanced the member to liveness, and the liveness
+    // step read verification_status = 'unverified' and refused with a message
+    // about the phone. A member bounced between two screens, each blaming the
+    // other, with nothing to press.
+    //
+    // A zero-row result is NOT a failure: the .eq('unverified') guard means a
+    // member who is already phone_verified matches nothing, which is correct
+    // and idempotent.
+    const { error: promoteError } = await serviceClient()
       .from("profiles")
       .update({ verification_status: "phone_verified" })
       .eq("id", auth.user.id)
       .eq("verification_status", "unverified");
+
+    if (promoteError) {
+      console.error(JSON.stringify({ at: "phone.verify", problem: promoteError.message }));
+      return { error: E.sendFailed, sentTo: phone };
+    }
   }
 
   redirect("/onboarding");

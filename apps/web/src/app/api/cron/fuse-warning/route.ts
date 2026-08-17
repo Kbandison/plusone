@@ -27,12 +27,27 @@ export async function POST(request: Request) {
   }
 
   const supabase = serviceClient();
-  const { data, error } = await supabase.rpc("fuses_expiring_within", {
+
+  // CLAIM, not query.
+  //
+  // This asked fuses_expiring_within for every chat closing inside 24 hours and
+  // wrote nothing back — and the job runs hourly. So a member whose chat closed
+  // tomorrow got the same warning twenty-four times. §8's whole posture is that
+  // a notification here is a rare, careful thing, and the count on a lock screen
+  // is itself information nobody asked to broadcast.
+  //
+  // claim_fuse_warnings selects and stamps fuse_warned_at in one statement, so
+  // the query is self-consuming: a second run finds nothing. A narrower time
+  // window would not have done it — a job that missed one tick would then skip
+  // the warning altogether.
+  const { data, error } = await supabase.rpc("claim_fuse_warnings", {
     p_hours: FUSE.warningHoursBeforeExpiry,
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const recipients = [...new Set(((data ?? []) as { user_id: string }[]).map((r) => r.user_id))];
+  const recipients = [
+    ...new Set(((data ?? []) as { member_id: string }[]).map((r) => r.member_id)),
+  ];
   if (recipients.length === 0) return NextResponse.json({ notified: 0 });
 
   const deliveries = notify.planDeliveries("fuse_warning", recipients);

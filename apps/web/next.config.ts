@@ -58,19 +58,23 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    // Signed photo URLs come from the Supabase project host. Narrow to that
-    // host and that path: a wildcard here would let any URL be proxied through
-    // our optimiser.
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/sign/**",
-      },
-    ],
-    // Caps the number of transformation variants Vercel bills for
-    // (BACKEND.md → Scale & Cost Resilience, Layer 2).
-    qualities: [75],
+    /**
+     * The optimiser is OFF, which is what this app already assumed.
+     *
+     * Every image renders with `unoptimized` on the component (member-photo.tsx)
+     * — deliberately, because Vercel's optimiser caches by URL and these are
+     * per-viewer signed objects. But the route still existed, and its
+     * remotePatterns entry was `hostname: "*.supabase.co"` with `search`
+     * omitted, which the Next docs call out by name: a single-subdomain wildcard
+     * plus an implied `**` search "may allow malicious actors to optimize urls
+     * you did not intend". So /_next/image would happily fetch and cache a
+     * signed object from ANY Supabase project on the internet, on our bandwidth.
+     *
+     * Nothing renders an optimised image, so the door is closed rather than
+     * narrowed. If the optimiser is ever wanted, pin the hostname to this
+     * project's exact ref.
+     */
+    unoptimized: true,
   },
 };
 

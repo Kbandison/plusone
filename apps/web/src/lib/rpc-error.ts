@@ -65,6 +65,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "connect: profile not found",
   "connect: support-only outbound requires a shared room",
   "no such member",
+  // Admin-only paths. A member can never call the RPCs that raise these, and
+  // none of them describes anything a member did.
+  "no such reward",
+  "that reward is already decided",
+  "a referral grant is for the referrer or the invitee",
   "profile not found",
   "connect not found",
   "member is not under review",

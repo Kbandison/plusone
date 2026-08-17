@@ -305,6 +305,15 @@ export const DRAFT_COPY = {
     fuseDaysLeft: (days: number) => `${days} ${days === 1 ? "day" : "days"} left`,
     fuseExpiringSoon: "Closes tomorrow",
     datePlannedLabel: "Date planned",
+    /**
+     * The chat closed while they were typing.
+     *
+     * Distinct from a failed send, because it is not one: the RLS with-check
+     * refused the insert because the fuse ran out or the other member closed it.
+     * "That didn't send." left people retrying into a surface that would never
+     * accept anything again.
+     */
+    chatClosedMidSend: "This chat closed while you were writing. There is a note waiting for you.",
     messagePlaceholder: "Say something",
     sendLabel: "Send",
     proposeHeading: "Propose a plan",

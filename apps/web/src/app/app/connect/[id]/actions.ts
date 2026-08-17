@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { CONNECTS, promptQuestion } from "@plusone/config";
+import { promptQuestion } from "@plusone/config";
 import { tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";

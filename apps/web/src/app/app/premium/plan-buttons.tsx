@@ -23,8 +23,12 @@ export function PlanChooser() {
         >
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             {/* h2: the page heading is the h1 and there is nothing between. */}
-            <h2 className="text-[1.2rem]">{plan.label}</h2>
-            <span className="text-[15px] text-ink-2">{formatPriceCents(plan.priceCents)}</span>
+            <h2 id={`${plan.id}-label`} className="text-[1.2rem]">
+              {plan.label}
+            </h2>
+            <span id={`${plan.id}-price`} className="text-[15px] text-ink-2">
+              {formatPriceCents(plan.priceCents)}
+            </span>
           </div>
 
           <p className="mt-1.5 text-[13.5px] text-ink-3">
@@ -36,6 +40,12 @@ export function PlanChooser() {
             name="plan"
             value={plan.id}
             disabled={pending}
+            /* Three buttons all read "Choose" otherwise. The plan travels in the
+               name/value pair, which assistive technology never sees, so a
+               screen-reader user listing the controls on this page heard the
+               same word three times with no way to tell which was which — and
+               this is the page where the wrong choice costs money. */
+            aria-labelledby={`${plan.id}-label ${plan.id}-price`}
             className={`ease-brand mt-5 rounded-lg px-5 py-2.5 text-[15px] transition-opacity duration-200 hover:opacity-90 disabled:opacity-55 ${
               plan.highlighted ? "bg-accent text-accent-ink" : "border border-line-2 text-ink"
             }`}

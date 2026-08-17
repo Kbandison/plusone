@@ -97,10 +97,29 @@ try {
   check(mine.length === 1, `one unrewarded conversion (${mine.length})`);
   check(Number(mine[0].referrer_conversion_count) === 1, "it is the referrer's first");
 
-  await asCron(`select public.grant_referral_premium($1,$2,14)`, [mine[0].conversion_id, referrer]);
+  // Each SIDE settles independently (20260817001000). The settled-check used to
+  // have no user predicate, so the invitee's grant alone marked the conversion
+  // done — and a failure between the two payouts forfeited the referrer's
+  // reward forever, with nothing left to replay it from.
+  await asCron(`select public.grant_referral_premium($1,$2,14,'referrer')`, [mine[0].conversion_id, referrer]);
+  pending = await asCron(`select * from public.unrewarded_conversions()`);
+  const halfPaid = pending.rows.filter((r) => r.referrer_id === referrer);
+  check(halfPaid.length === 1, "paying one side leaves the conversion outstanding");
+  check(halfPaid[0]?.referrer_paid === true && halfPaid[0]?.invitee_paid === false,
+    "and says which side is still owed");
+
+  await asCron(`select public.grant_referral_premium($1,$2,14,'invitee')`, [mine[0].conversion_id, invitee]);
   pending = await asCron(`select * from public.unrewarded_conversions()`);
   check(pending.rows.filter((r) => r.referrer_id === referrer).length === 0,
-    "once granted it is not offered again — the job is idempotent");
+    "once BOTH sides are paid it is not offered again — the job is idempotent");
+
+  // Replaying a payout must not stack a second grant on the same side.
+  const before = await one(`select count(*)::int as n from public.premium_grants where source like $1`,
+    [`referral:${mine[0].conversion_id}%`]);
+  await asCron(`select public.grant_referral_premium($1,$2,14,'referrer')`, [mine[0].conversion_id, referrer]);
+  const after = await one(`select count(*)::int as n from public.premium_grants where source like $1`,
+    [`referral:${mine[0].conversion_id}%`]);
+  check(before.n === after.n, "a replayed payout does not grant twice");
 
   console.log("\n── grants stack rather than overwrite ──");
   const grant = await one(`select expires_at from public.premium_grants where user_id=$1`, [referrer]);
