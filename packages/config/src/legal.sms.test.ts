@@ -42,8 +42,23 @@ describe("the privacy policy, as A2P registration requires it", () => {
     expect(text).toMatch(/Message and data rates may apply\./);
   });
 
-  it("explains STOP, and what STOP costs on an app you can only enter by text", () => {
+  it("explains STOP, and what STOP costs when a text is the only way in", () => {
     expect(text).toMatch(/reply STOP/i);
-    expect(text).toMatch(/will not be able to sign in/i);
+    expect(text).toMatch(/reply START/i);
+    // The cost is now conditional — a member who added an email keeps a way in,
+    // and one who did not does not. Both halves have to be stated, because
+    // stating only the mild one understates what STOP does to most members and
+    // stating only the severe one is no longer true.
+    expect(text).toMatch(/still sign in with a code sent there/i);
+    expect(text).toMatch(/unable to sign in/i);
+  });
+
+  /**
+   * Added when email sign-in shipped. The policy claimed a text was "the only
+   * way into this app" — true when it was written, false the day Settings could
+   * take an email, and it is a document a carrier reviewer reads.
+   */
+  it("no longer claims a text is the only way in", () => {
+    expect(text).not.toMatch(/the only way into this app/i);
   });
 });

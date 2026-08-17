@@ -22,6 +22,14 @@ export const DRAFT_COPY = {
    */
   home: {
     getStarted: "Get started",
+    /**
+     * Added with /sign-in. The front door had one link, and the comment above
+     * it reasoned that one was enough because `/onboarding/phone` forwards a
+     * signed-in member to /app. That is true of a member with a live SESSION —
+     * and not of one whose session lapsed, who was sent to step one of signing
+     * up and charged a text to get back into an account they already had.
+     */
+    signIn: "Sign in",
     // No privacy link here: SiteFooter carries one on every marketing page,
     // and a second name for the same destination is a second thing to keep
     // true. The consent screen uses COPY.consent.policyLinkLabel, which is
@@ -69,6 +77,67 @@ export const DRAFT_COPY = {
       sendFailed: "We could not send a code just now. Try again in a moment.",
       notConfigured:
         "Phone sign-in is not switched on yet. This is a setup step on our side, not something you did.",
+    },
+  },
+
+  /**
+   * Coming back (as opposed to `phone`, which is arriving).
+   *
+   * Decision #21 makes the phone how an account is MADE. It does not make SMS
+   * the only way back into one, and treating it that way charged a message for
+   * every returning member on every new device — and left anyone whose number
+   * changed with no route to their own photos and chats.
+   *
+   * One field takes either credential. A member returning after months does not
+   * remember which they used, and a phone/email toggle makes them guess before
+   * there is any reason to make them.
+   */
+  signIn: {
+    heading: "Welcome back",
+    intro: "Enter your number or your email and we will send you a code.",
+    identifierLabel: "Mobile number or email",
+    identifierHint: "Whichever you have on your account. Numbers need a country code, like +1.",
+    sendLabel: "Send code",
+    codeHeading: "Enter the code",
+    codeIntro: "We sent a six-digit code. It is good for ten minutes.",
+    codeLabel: "Code",
+    verifyLabel: "Sign in",
+    resendLabel: "Send it again",
+    resendWait: (seconds: number) => `Send it again in ${seconds}s`,
+    changeLabel: "Use something else",
+    /**
+     * Shown when someone arrives from a link that no longer works — the common
+     * ending for an emailed link, since they expire and are single-use. Says
+     * what to do rather than what went wrong, because there is nothing the
+     * member did and nothing for them to fix.
+     */
+    linkExpired: "That link has expired. Enter your number or email for a fresh code.",
+    newHere: "New here?",
+    newHereLink: "Start with your number",
+    /**
+     * Shown under the field because this screen can still send an SMS, and the
+     * A2P disclosure belongs at the moment the message is sent rather than in a
+     * document. Shorter than the onboarding one: a returning member agreed to
+     * this when they joined, so this is a reminder rather than an opt-in.
+     */
+    smsConsent:
+      "If you use your number, we text you a one-time code. Codes only. Message and data rates may apply.",
+    errors: {
+      identifierRequired: "Enter your mobile number or your email.",
+      /**
+       * ONE message for both malformed shapes, on purpose. Saying "that is not
+       * a valid email" to something with an @ in it and "that is not a valid
+       * number" to something without confirms which field a stranger is
+       * probing.
+       */
+      identifierInvalid:
+        "That does not look like a mobile number or an email address. Numbers need a country code, like +1.",
+      codeRequired: "Enter the code we sent.",
+      codeInvalid: "That code is not right, or it has expired.",
+      sendFailed: "We could not send a code just now. Try again in a moment.",
+      rateLimited: "That is a lot of codes. Wait a few minutes and try again.",
+      notConfigured:
+        "Sign-in is not switched on yet. This is a setup step on our side, not something you did.",
     },
   },
 
@@ -295,6 +364,33 @@ export const DRAFT_COPY = {
     connectNoPrompts:
       "This member has not answered any prompts yet, so there is nothing to reply to.",
     connectReplyLabel: "Your reply",
+    /**
+     * The second way in (Settings).
+     *
+     * Phrased as what it does rather than as "add an email", because members
+     * reasonably assume an email on file means email FROM us. It does not —
+     * §8's notification rules are unchanged and this address is used for one
+     * thing.
+     */
+    emailHeading: "A second way to sign in",
+    emailBody:
+      "Add an email and you can get your sign-in code there instead of by text — useful if you change your number or lose your phone. It is only ever used to send you a code. We do not email you anything else, and it is never shown to anyone.",
+    emailLabel: "Email",
+    emailAddLabel: "Send a confirmation",
+    emailChangeLabel: "Use a different email",
+    emailPending: (email: string) =>
+      `Check ${email} and open the link to confirm it. Until you do, your number is still the only way in.`,
+    emailConfirmed: (email: string) => `You can sign in with ${email} or with your number.`,
+    emailNone: "Right now your number is the only way in.",
+    emailErrors: {
+      required: "Enter an email address.",
+      invalid: "That does not look like an email address.",
+      unchanged: "That is already the email on your account.",
+      phoneNotConfirmed:
+        "Confirm your number first. An email is a second way into your account, not a first one.",
+      taken: "That email is already on another account.",
+      failed: "We could not save that just now. Try again in a moment.",
+    },
     navSettings: "Settings",
     crossCommunityHeading: "Other communities",
     deleteHeading: "Delete your account",

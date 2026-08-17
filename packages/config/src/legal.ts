@@ -41,6 +41,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     ],
     list: [
       "Your phone number, used to sign you in.",
+      "An email address, if you choose to add one as a second way to sign in. It is used to send you a code and nothing else, and it is never shown to other members.",
       "The name you choose to display. It does not have to be your legal name, and we never ask for one.",
       "Your date of birth. Other members see an age, never the date.",
       "Your community and condition type, and the U=U badge if you turn it on.",
@@ -125,10 +126,10 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
      */
     body: [
       "We text you a one-time code when you sign in. That is the only thing we ever text you — no marketing, no reminders, no announcements.",
-      "How often: only when you ask for one. For most people that is once, when they first join, and again if they sign in on a new phone.",
+      "How often: only when you ask for one. For most people that is once, when they first join, and again if they sign in on a new phone. You can add an email in your settings and get the code there instead.",
       "Message and data rates may apply.",
       "We never sell your mobile number, and we never share it with anyone for their own marketing. It goes to the messaging provider that delivers your code, in order to deliver your code, and nowhere else.",
-      "You can reply STOP to any message to stop receiving them. Because a texted code is the only way into this app, replying STOP means you will not be able to sign in again — so it is closer to closing the door than to turning off a notification. Reply START if you change your mind.",
+      "You can reply STOP to any message to stop receiving them. If you have added an email to your account, you can still sign in with a code sent there. If you have not, a text is the only way in — so replying STOP would leave you unable to sign in, which is closer to closing the door than to turning off a notification. Reply START if you change your mind.",
     ],
   },
   {

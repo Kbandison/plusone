@@ -25,7 +25,7 @@ export async function startCheckout(
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/onboarding/phone");
+  if (!auth.user) redirect("/sign-in");
 
   const { NEXT_PUBLIC_APP_URL } = parseClientEnv(process.env);
 
@@ -76,7 +76,7 @@ export async function openBillingPortal(
 ): Promise<CheckoutState> {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/onboarding/phone");
+  if (!auth.user) redirect("/sign-in");
 
   const { data: subscription } = await supabase
     .from("subscriptions")

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { requestDeletion, setCrossCommunityOptIn } from "./actions";
+import { addSignInEmail, requestDeletion, setCrossCommunityOptIn } from "./actions";
 import { SETTINGS_INITIAL } from "./state";
 
 const C = DRAFT_COPY.app;
@@ -110,6 +110,66 @@ export function DeleteAccount() {
           {C.deleteButton}
         </button>
       </form>
+    </section>
+  );
+}
+
+/**
+ * The second way in.
+ *
+ * Deliberately in Settings rather than as an onboarding step: §7.2 fixes the
+ * ten steps and their order, and this is not one of them. It also should not be
+ * — signing up is already eight minutes, and a member has no reason to care
+ * about a backup credential before they have an account worth backing up.
+ */
+export function SignInEmail({ email, confirmed }: { email: string | null; confirmed: boolean }) {
+  const [state, act, pending] = useActionState(addSignInEmail, SETTINGS_INITIAL);
+  const status =
+    email === null ? C.emailNone : confirmed ? C.emailConfirmed(email) : C.emailPending(email);
+
+  return (
+    <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+      <h2 className="text-[1.2rem]">{C.emailHeading}</h2>
+      <p className="mt-4 text-[15.5px] leading-[1.7] text-ink-2">{C.emailBody}</p>
+      <p className="mt-4 text-[15px] text-ink-2">{status}</p>
+
+      <form action={act} className="mt-5 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="sign_in_email" className="text-[15px]">
+            {C.emailLabel}
+          </label>
+          <input
+            id="sign_in_email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            defaultValue={email ?? ""}
+            aria-describedby={state.error ? "sign_in_email-error" : undefined}
+            aria-invalid={state.error ? true : undefined}
+            className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none sm:w-[300px]"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={pending}
+          className="ease-brand rounded-lg border border-line-2 px-4 py-2.5 text-[14.5px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
+        >
+          {email === null ? C.emailAddLabel : C.emailChangeLabel}
+        </button>
+      </form>
+
+      {state.error ? (
+        <p id="sign_in_email-error" role="alert" className="mt-3 text-[14px] text-critical">
+          {state.error}
+        </p>
+      ) : null}
+
+      {state.message ? (
+        <p role="status" className="mt-3 text-[14px] text-positive">
+          {state.message}
+        </p>
+      ) : null}
     </section>
   );
 }

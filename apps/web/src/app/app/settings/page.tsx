@@ -5,7 +5,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { getServerSupabase } from "@/lib/supabase";
 import { signOut } from "./sign-out";
 import { UnblockButton } from "@/app/app/safety/safety-controls";
-import { CrossCommunityToggle, DeleteAccount } from "./settings-forms";
+import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navSettings };
 
@@ -68,6 +68,13 @@ export default async function SettingsPage() {
           </button>
         </form>
       </section>
+
+      {/* Next to signing out, because both are about getting in and out
+          rather than about who can see you. */}
+      <SignInEmail
+        email={auth.user?.email ?? null}
+        confirmed={Boolean(auth.user?.email_confirmed_at)}
+      />
 
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
         <h2 className="text-[1.2rem]">{DRAFT_COPY.app.blockedHeading}</h2>

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/onboarding/phone");
+  if (!data.user) redirect("/sign-in");
 
   // No argument: is_admin() answers only about the caller, so the roster
   // cannot be probed. See 20260814001000_self_relative_predicates.sql.

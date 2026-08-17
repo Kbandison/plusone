@@ -127,7 +127,12 @@ export async function requireStep(step: Step): Promise<{ userId: string }> {
   const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
 
-  if (!data.user) redirect(STEP_ROUTES.phone);
+  // /sign-in, not step one of signing up. Anyone who reaches an onboarding
+  // URL with no session is far more often a member whose session lapsed than a
+  // brand-new visitor, and sending them to the phone step spent a text to get
+  // them back into an account they already had. /sign-in links onward for
+  // people who really are new.
+  if (!data.user) redirect("/sign-in");
 
   await attributeInviteOnce();
 

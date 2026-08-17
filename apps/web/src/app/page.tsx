@@ -12,9 +12,11 @@ import { SiteFooter } from "./site-footer";
  * which it did not before: every screen in the product was reachable only by
  * someone who already knew the URL.
  *
- * One link handles both cases. `/onboarding/phone` sends a signed-in member
- * straight to `/app`, so there is no need to ask who is knocking before showing
- * them the door — and no need to make this page dynamic to find out.
+ * Two links, because there are two people knocking. `/onboarding/phone` starts
+ * an account and forwards a member who already has a live session to `/app`;
+ * `/sign-in` is for the one whose session lapsed, who would otherwise be sent
+ * to step one of signing up and charged a text to reach an account they already
+ * had. Neither needs to know who is knocking, so this page stays static.
  */
 export default function Home() {
   return (
@@ -39,6 +41,13 @@ export default function Home() {
           className="ease-brand rounded-lg bg-accent px-7 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995]"
         >
           {DRAFT_COPY.home.getStarted}
+        </Link>
+
+        <Link
+          href="/sign-in"
+          className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+        >
+          {DRAFT_COPY.home.signIn}
         </Link>
 
         <Link
