@@ -35,6 +35,16 @@ import type { DevSignInState } from "./state";
  * it is not production. dev-sign-in.test.ts asserts both, because the failure
  * mode here is not a bug, it is a breach.
  */
+/**
+ * A synthetic address, because generateLink needs one and a test member has no
+ * real inbox. Never shown, never sent to.
+ *
+ * NOT exported — a `"use server"` module may export only async functions.
+ */
+function devEmailFor(phone: string): string {
+  return `${phone.replace(/\D/g, "")}@dev.invalid`;
+}
+
 export async function devSignIn(
   _previous: DevSignInState,
   formData: FormData,
@@ -56,9 +66,7 @@ export async function devSignIn(
   const { NEXT_PUBLIC_SUPABASE_URL } = parseClientEnv(process.env);
   const service = createServiceSupabase(NEXT_PUBLIC_SUPABASE_URL, server.SUPABASE_SECRET_KEY);
 
-  // A synthetic address, because generateLink needs one and a test member has
-  // no real inbox. It is never shown and never sent to.
-  const email = `${phone.replace(/\D/g, "")}@dev.invalid`;
+  const email = devEmailFor(phone);
 
   // Create if absent. "Already registered" is the normal case — signing in
   // again as the same test member — so it is not an error here.
@@ -121,4 +129,60 @@ export async function devSignIn(
   }
 
   redirect("/onboarding");
+}
+
+/**
+ * Puts a test member back at the liveness step.
+ *
+ * Verification is one-way by design — §7.2 runs liveness once and a verified
+ * member never sees it again. That is correct for members and useless for
+ * testing a provider, where the failure cases (a low score, the retry, the
+ * flagged-for-review path at three attempts) are the ones worth exercising and
+ * every one of them ends with an account you cannot reuse.
+ *
+ * Behind the same guard as the sign-in itself: never in production, and only
+ * with OTP_PROVIDER=stub. It writes with the service client because none of
+ * these columns are in the members' grant, which is the point of them.
+ */
+export async function devResetVerification(
+  _previous: DevSignInState,
+  formData: FormData,
+): Promise<DevSignInState> {
+  if (!devSignInAllowed(process.env["NODE_ENV"], process.env["OTP_PROVIDER"] ?? "")) {
+    return { error: DEV_SIGN_IN_REFUSED };
+  }
+
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!phone) return { error: "Pick a member to reset." };
+
+  const server = parseServerEnv(process.env);
+  const { NEXT_PUBLIC_SUPABASE_URL } = parseClientEnv(process.env);
+  const service = createServiceSupabase(NEXT_PUBLIC_SUPABASE_URL, server.SUPABASE_SECRET_KEY);
+
+  // generateLink is the lookup: it returns the user, and unlike listUsers it
+  // reports its own failures rather than answering "no such member".
+  const { data: link, error: linkError } = await service.auth.admin.generateLink({
+    type: "magiclink",
+    email: devEmailFor(phone),
+  });
+  if (linkError || !link?.user) {
+    return { error: "That test member does not exist yet — sign in as them first." };
+  }
+
+  const { error } = await service
+    .from("profiles")
+    .update({
+      verification_status: "phone_verified",
+      liveness_passed_at: null,
+      verified_at: null,
+      liveness_attempts: 0,
+    })
+    .eq("id", link.user.id);
+
+  if (error) return { error: "Could not reset that member." };
+
+  // Not a redirect: the member doing the resetting may not be the member being
+  // reset, and bouncing them into somebody else's onboarding would be worse
+  // than saying nothing.
+  return { error: null };
 }

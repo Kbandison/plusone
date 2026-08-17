@@ -101,3 +101,35 @@ describe("no image leaves the adapter", () => {
     expect(adapter).not.toMatch(/Action:\s*\[/);
   });
 });
+
+describe("the review screen is the server's call", () => {
+  const form = readFileSync(fileURLToPath(new URL("./liveness-form.tsx", import.meta.url)), "utf8");
+  const formCode = form.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  /**
+   * The regression Kevin hit on the very first run. `attemptsLeft` moved to the
+   * server, so the initial state honestly said "0 left, I have not asked yet" —
+   * and the form read 0 as "flagged for human review". Every member met "We
+   * will take a look" before pressing anything, having done nothing wrong.
+   */
+  it("does not infer flagged from an attempt count", () => {
+    expect(formCode).not.toMatch(/attemptsLeft\s*===\s*0/);
+    expect(formCode).toMatch(/if \(state\.flagged\)/);
+  });
+
+  it("starts un-flagged, because nothing has been asked yet", async () => {
+    const { LIVENESS_INITIAL } = await import("./state");
+    expect(LIVENESS_INITIAL.flagged).toBe(false);
+    expect(LIVENESS_INITIAL.session).toBeNull();
+  });
+
+  it("only ever sets flagged from the reducer or the cap", () => {
+    const sets = [...code.matchAll(/flagged:\s*([^,\n]+)/g)].map((m) => m[1].trim());
+    for (const value of sets) {
+      expect(
+        value === "true" || value === "false" || value.includes('next.status === "flagged"'),
+        `flagged set from ${value}`,
+      ).toBe(true);
+    }
+  });
+});

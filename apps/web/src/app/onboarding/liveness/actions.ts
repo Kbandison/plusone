@@ -113,7 +113,7 @@ export async function beginLiveness(
 
   // Out of attempts already: no session, no AWS call, no spend.
   if (current.attempts >= VERIFICATION.livenessMaxRetries) {
-    return { error: null, attemptsLeft: 0, session: null };
+    return { error: null, attemptsLeft: 0, flagged: true, session: null };
   }
 
   let sessionId: string;
@@ -139,6 +139,7 @@ export async function beginLiveness(
   return {
     error: null,
     attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - attempts),
+    flagged: false,
     session: { sessionId, region: env.AWS_REGION!, credentials },
   };
 }
@@ -214,6 +215,8 @@ export async function finishLiveness(
   return {
     error: next.status === "flagged" ? null : E.failed,
     attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
+    // The reducer's word, not a count we re-derive.
+    flagged: next.status === "flagged",
     session: null,
   };
 }

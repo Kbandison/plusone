@@ -51,3 +51,31 @@ describe("the development sign-in guard", () => {
     expect(readFileSync(join(dir, "actions.ts"), "utf8")).toMatch(/devSignInAllowed/);
   });
 });
+
+describe("every action in this file is behind the guard", () => {
+  const source = readFileSync(join(import.meta.dirname, "actions.ts"), "utf8");
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  /**
+   * This file is a door into any account. It had one action and now has two,
+   * and the second was written by pattern-matching the first — which is exactly
+   * how the third one forgets. A dev action without this check is a production
+   * hole, so the count is asserted rather than eyeballed.
+   */
+  it("guards as many times as it exports", () => {
+    const exported = [...code.matchAll(/export async function (\w+)/g)].map((m) => m[1]);
+    const guarded = [...code.matchAll(/devSignInAllowed\(/g)];
+
+    expect(exported.length, "no actions found — did the file move?").toBeGreaterThan(0);
+    expect(guarded.length, `exports: ${exported.join(", ")}`).toBe(exported.length);
+  });
+
+  it("checks both conditions, never just one", () => {
+    // NODE_ENV alone is one mis-set variable from open; OTP_PROVIDER alone
+    // opens the moment a stub build reaches a real host.
+    for (const call of code.matchAll(/devSignInAllowed\(([^)]*)\)/g)) {
+      expect(call[1]).toContain("NODE_ENV");
+      expect(call[1]).toContain("OTP_PROVIDER");
+    }
+  });
+});

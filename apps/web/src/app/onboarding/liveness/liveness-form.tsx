@@ -41,7 +41,11 @@ export function LivenessForm() {
   // Out of attempts is not a rejection. §2 Decision #21 puts a human in the loop
   // on a risk flag, and this is what that looks like from the member's side:
   // told plainly, asked to do nothing.
-  if (state.attemptsLeft === 0 && !state.error && !state.session && !beginning) {
+  //
+  // Reads the server's flag rather than inferring one from `attemptsLeft === 0`.
+  // Inferring it meant the initial state — which has asked the server nothing —
+  // rendered this screen to every member before they pressed a thing.
+  if (state.flagged) {
     return (
       // role="status" and focusable. This replaces the whole form, including
       // the button the member just pressed — so without it they press Start,

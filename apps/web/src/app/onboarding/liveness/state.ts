@@ -7,6 +7,8 @@
  * from its cause — see state-exports.test.ts.
  */
 
+import { VERIFICATION } from "@plusone/config";
+
 import type { BrowserCredentials } from "@/lib/liveness-aws";
 
 /**
@@ -21,6 +23,16 @@ import type { BrowserCredentials } from "@/lib/liveness-aws";
 export type LivenessState = {
   readonly error: string | null;
   readonly attemptsLeft: number;
+  /**
+   * A human is now looking at this member (Decision #21).
+   *
+   * Explicit, and NOT inferred from `attemptsLeft === 0`. The form used to
+   * derive it that way, and when the count moved to the server the initial
+   * state honestly said "0 attempts left, I have not asked yet" — so every
+   * member landed on "We will take a look" before pressing anything. Only the
+   * server knows this, so only the server says it.
+   */
+  readonly flagged: boolean;
   /** Set once a session is open, which is what puts the camera on screen. */
   readonly session: {
     readonly sessionId: string;
@@ -31,7 +43,8 @@ export type LivenessState = {
 
 export const LIVENESS_INITIAL: LivenessState = {
   error: null,
-  // Only a starting label. The row is what decides.
-  attemptsLeft: 0,
+  // A label only, replaced by the row on the first response.
+  attemptsLeft: VERIFICATION.livenessMaxRetries,
+  flagged: false,
   session: null,
 };
