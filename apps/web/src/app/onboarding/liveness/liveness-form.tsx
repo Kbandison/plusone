@@ -35,9 +35,15 @@ export function LivenessForm() {
     if (completedSession) finishRef.current?.requestSubmit();
   }, [completedSession]);
 
-  // Whichever phase spoke last. A finish overwrites a begin, because by then the
-  // begin's "0 attempts left" label is a phase behind.
-  const state = finished.error !== null || finishing ? finished : begun;
+  // Whichever phase spoke last, asked rather than inferred.
+  //
+  // This used to read `finished.error !== null || finishing ? finished : begun`,
+  // which is wrong in the one case that matters most: a member flagged for human
+  // review comes back with `error: null`, so the result was thrown away and the
+  // stale begin state rendered a retry button — for a step they can no longer
+  // pass, which then answered "the check is unavailable, try again in a moment"
+  // every time they pressed it.
+  const state = finished.phase !== "idle" || finishing ? finished : begun;
 
   // Out of attempts is not a rejection. §2 Decision #21 puts a human in the loop
   // on a risk flag, and this is what that looks like from the member's side:

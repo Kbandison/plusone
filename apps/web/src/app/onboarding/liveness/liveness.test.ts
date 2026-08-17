@@ -149,3 +149,59 @@ describe("the review screen is the server's call", () => {
     }
   });
 });
+
+describe("a flagged member is never told to try again", () => {
+  const form = readFileSync(fileURLToPath(new URL("./liveness-form.tsx", import.meta.url)), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "");
+
+  /**
+   * What Kevin hit after three real failures. `finishLiveness` flagged him and
+   * returned `error: null, flagged: true` — and the form picked between its two
+   * action states by asking whether finish had an ERROR. It had not, so the
+   * flagged result was discarded, the stale begin state rendered a retry
+   * button, and pressing it hit the reducer's `under_review` refusal, which
+   * this file collapsed into "the check is unavailable right now".
+   *
+   * A member handed to a human, told to try again, forever.
+   */
+  it("picks the live phase explicitly, not by whether an error is set", () => {
+    expect(form).not.toMatch(/finished\.error\s*!==\s*null/);
+    expect(form).toMatch(/finished\.phase\s*!==\s*"idle"/);
+  });
+
+  /**
+   * Decision #21: manual review only on a risk flag, and the appeal path is
+   * never locked behind the thing being appealed. "Try again in a moment" on a
+   * check that will refuse forever is that lock.
+   */
+  it("routes under_review to the review screen, not to an error", () => {
+    const begin = code.slice(
+      code.indexOf("export async function beginLiveness"),
+      code.indexOf("export async function finishLiveness"),
+    );
+    expect(begin).toMatch(/started\.code === "under_review"/);
+    const branch = begin.slice(begin.indexOf('started.code === "under_review"'));
+    expect(branch.slice(0, 200)).toMatch(/flagged: true/);
+  });
+
+  /**
+   * `...previous` carries the count from a phase ago. The refusal branch showed
+   * "1 attempt left" to a member with none — the same screenshot that started
+   * this, where the number and the reality disagreed.
+   */
+  it("recomputes the attempt count on the refusal branch", () => {
+    const begin = code.slice(
+      code.indexOf("export async function beginLiveness"),
+      code.indexOf("export async function finishLiveness"),
+    );
+    const refusal = begin.slice(
+      begin.indexOf("if (!started.ok)"),
+      begin.indexOf("// Out of attempts"),
+    );
+    expect(refusal).toMatch(
+      /attemptsLeft:\s*Math\.max\(0, VERIFICATION\.livenessMaxRetries - current\.attempts\)/,
+    );
+    expect(refusal, "the phoneFirst branch is still reachable").toMatch(/E\.phoneFirst/);
+  });
+});

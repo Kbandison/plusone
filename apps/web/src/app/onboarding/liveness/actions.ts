@@ -92,7 +92,7 @@ export async function beginLiveness(
 
   const env = parseServerEnv(process.env);
   const provider = providerFor(env);
-  if (!provider) return { ...previous, error: E.unavailable, session: null };
+  if (!provider) return { ...previous, error: E.unavailable, phase: "settled", session: null };
 
   const current = await readState(userId);
 
@@ -110,19 +110,36 @@ export async function beginLiveness(
     at: Date.now(),
   });
   if (!started.ok) {
-    // The reducer knows why. Reporting all of it as "unavailable" is what hid a
-    // missing phone_verified transition behind what looked like a provider
-    // outage — the same failure as telling a flagged member "not_under_review".
+    // The reducer knows why, and each reason is a different screen.
+    //
+    // `under_review` used to fall into the generic "unavailable, try again in a
+    // moment" — told to a member the machine had just handed to a human, on a
+    // step they can no longer pass, with a button that would say it again
+    // forever. That is the hostile verification Decision #21 exists to be the
+    // opposite of, and this file already carried a comment about the same
+    // mistake made one layer down.
+    if (started.code === "under_review") {
+      return { error: null, attemptsLeft: 0, flagged: true, phase: "settled", session: null };
+    }
+
+    // Already through. Nothing to do here, and `/onboarding` knows where they
+    // belong next.
+    if (started.code === "already_verified") redirect("/onboarding");
+
     return {
       ...previous,
       error: started.code === "phone_not_verified" ? E.phoneFirst : E.unavailable,
+      // Not `previous`'s count: that is a phase behind and would show a member
+      // attempts they do not have.
+      attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
+      phase: "settled",
       session: null,
     };
   }
 
   // Out of attempts already: no session, no AWS call, no spend.
   if (current.attempts >= VERIFICATION.livenessMaxRetries) {
-    return { error: null, attemptsLeft: 0, flagged: true, session: null };
+    return { error: null, attemptsLeft: 0, flagged: true, phase: "settled", session: null };
   }
 
   let sessionId: string;
@@ -136,7 +153,7 @@ export async function beginLiveness(
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
     });
   } catch {
-    return { ...previous, error: E.unavailable, session: null };
+    return { ...previous, error: E.unavailable, phase: "settled", session: null };
   }
 
   // Status only. The attempt is NOT counted here.
@@ -157,6 +174,7 @@ export async function beginLiveness(
     error: null,
     attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
     flagged: false,
+    phase: "open",
     session: { sessionId, region: env.AWS_REGION!, credentials },
   };
 }
@@ -178,11 +196,11 @@ export async function finishLiveness(
   const { userId } = await requireStep("liveness");
 
   const sessionId = String(formData.get("session_id") ?? "").trim();
-  if (!sessionId) return { ...previous, error: E.unavailable, session: null };
+  if (!sessionId) return { ...previous, error: E.unavailable, phase: "settled", session: null };
 
   const env = parseServerEnv(process.env);
   const provider = providerFor(env);
-  if (!provider) return { ...previous, error: E.unavailable, session: null };
+  if (!provider) return { ...previous, error: E.unavailable, phase: "settled", session: null };
 
   const current = await readState(userId);
 
@@ -190,7 +208,7 @@ export async function finishLiveness(
   try {
     outcome = await provider.fetchOutcome(sessionId);
   } catch {
-    return { ...previous, error: E.unavailable, session: null };
+    return { ...previous, error: E.unavailable, phase: "settled", session: null };
   }
 
   // The state machine already counted this attempt in beginLiveness, so the
@@ -199,7 +217,7 @@ export async function finishLiveness(
     { ...stateFor(current), status: "liveness_pending" },
     { type: "liveness_result", at: Date.now(), outcome },
   );
-  if (!decided.ok) return { ...previous, error: E.unavailable, session: null };
+  if (!decided.ok) return { ...previous, error: E.unavailable, phase: "settled", session: null };
 
   const next = decided.state;
 
@@ -236,6 +254,7 @@ export async function finishLiveness(
     attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - next.livenessAttempts),
     // The reducer's word, not a count we re-derive.
     flagged: next.status === "flagged",
+    phase: "settled",
     session: null,
   };
 }

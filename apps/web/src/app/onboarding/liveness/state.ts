@@ -33,6 +33,16 @@ export type LivenessState = {
    * server knows this, so only the server says it.
    */
   readonly flagged: boolean;
+  /**
+   * Which phase produced this state.
+   *
+   * The form runs two action states and has to know which spoke last. It used
+   * to guess — "finished, if it has an error" — which is wrong in exactly the
+   * case that matters: a member flagged for review comes back with no error at
+   * all, so the guess fell through to the stale begin state and offered them a
+   * retry button for a step they can no longer pass.
+   */
+  readonly phase: "idle" | "open" | "settled";
   /** Set once a session is open, which is what puts the camera on screen. */
   readonly session: {
     readonly sessionId: string;
@@ -46,5 +56,6 @@ export const LIVENESS_INITIAL: LivenessState = {
   // A label only, replaced by the row on the first response.
   attemptsLeft: VERIFICATION.livenessMaxRetries,
   flagged: false,
+  phase: "idle",
   session: null,
 };
