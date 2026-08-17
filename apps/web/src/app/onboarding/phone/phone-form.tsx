@@ -12,7 +12,7 @@ import { PHONE_INITIAL } from "./state";
 
 const C = DRAFT_COPY.phone;
 
-export function PhoneForm() {
+export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: string }) {
   const [sendState, send, sending] = useActionState(sendCode, PHONE_INITIAL);
   const [changingNumber, setChangingNumber] = useState(false);
   const phoneId = useId();
@@ -42,6 +42,10 @@ export function PhoneForm() {
         inputMode="tel"
         autoComplete="tel"
         required
+        // Prefilled from the request's IP country, and empty when we cannot
+        // place it. defaultValue rather than value: the member types over it
+        // freely, and a VPN or a wrong guess costs them one backspace.
+        defaultValue={suggestedDialCode}
         placeholder="+1 555 123 4567"
         error={sendState.error}
       />

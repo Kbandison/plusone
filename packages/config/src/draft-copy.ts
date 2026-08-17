@@ -41,7 +41,13 @@ export const DRAFT_COPY = {
     intro:
       "We text you a code to sign in. Your number is never shown to anyone, and it is not used to find you.",
     phoneLabel: "Mobile number",
-    phoneHint: "Include your country code, like +1.",
+    /**
+     * Reads as an instruction when the field is empty and as a check when a
+     * country code has been suggested from the request's IP — which is wrong
+     * often enough (VPNs, travel, a member on a work network) that asking them
+     * to look is the honest version.
+     */
+    phoneHint: "Include your country code — check the one we filled in is right.",
     /**
      * The SMS opt-in disclosure. Legally required, not a formality.
      *

@@ -7,6 +7,7 @@ import { StepShell } from "../step-shell";
 import { onboarding } from "@plusone/logic";
 
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
+import { suggestedDialCode } from "@/lib/dial-code";
 import { getServerSupabase } from "@/lib/supabase";
 import { PhoneForm } from "./phone-form";
 
@@ -32,7 +33,10 @@ export default async function PhonePage() {
 
   return (
     <StepShell step="phone" heading={DRAFT_COPY.phone.heading} intro={DRAFT_COPY.phone.intro}>
-      <PhoneForm />
+      {/* A suggestion, not an assumption — see lib/dial-code.ts. The field is a
+          plain editable input and normalizePhone still refuses to invent a
+          country code for anybody who clears it. */}
+      <PhoneForm suggestedDialCode={await suggestedDialCode()} />
     </StepShell>
   );
 }
