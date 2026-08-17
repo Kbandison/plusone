@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { PALETTE, STATUS, type ThemeName, type ThemePalette } from "./index";
+import { LAYOUT, PALETTE, STATUS, TYPE, type ThemeName, type ThemePalette } from "./index";
 
 /**
  * Contrast is verified by recomputation, not by trusting a comment. LuxWeb targets
@@ -175,5 +175,41 @@ describe("the two dark blocks agree", () => {
         read(media, token),
       );
     }
+  });
+});
+
+describe("the type scale reaches the app", () => {
+  const css = readFileSync(fileURLToPath(new URL("../tokens.css", import.meta.url)), "utf8");
+
+  /**
+   * TYPE existed only as TypeScript that nothing imported, so 35 one-off
+   * arbitrary font sizes shipped and the scale was documentation. It is
+   * registered under @theme inline now — which means two copies of the same
+   * numbers, and this is what keeps them the same numbers.
+   */
+  it.each([
+    ["hero", TYPE.hero],
+    ["h1", TYPE.h1],
+    ["h2", TYPE.h2],
+    ["h3", TYPE.h3],
+    ["body", TYPE.body],
+    ["label", TYPE.label],
+  ])("--text-%s matches TYPE", (name, step) => {
+    const declared = new RegExp(`--text-${name}:\\s*([^;]+);`).exec(css)?.[1]?.trim();
+    expect(declared, `--text-${name} is not registered`).toBe(step.size);
+  });
+
+  it("registers the 44px tap floor LAYOUT declares", () => {
+    expect(/--spacing-tap:\s*([^;]+);/.exec(css)?.[1]?.trim()).toBe(LAYOUT.minTapTarget);
+  });
+
+  /**
+   * WCAG 1.4.11 wants 3:1 for the boundary of a control. --line-2 is about
+   * 1.15:1 against its own fill — fine for a decorative card edge, invisible as
+   * the edge of an input somebody has to find.
+   */
+  it("declares a control boundary distinct from the decorative one, in all three theme states", () => {
+    expect((css.match(/--line-control:/g) ?? []).length).toBe(3);
+    expect(css).toMatch(/--color-line-control:\s*var\(--line-control\)/);
   });
 });

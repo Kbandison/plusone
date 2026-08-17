@@ -83,7 +83,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
 
   return (
     <div className="mt-10">
-      <h2 className="text-[clamp(1.4rem,4vw,1.7rem)]">{C.codeHeading}</h2>
+      <h2 className="text-h3">{C.codeHeading}</h2>
       {/* Deliberately does NOT name where the code went.
        *
        * Echoing the identifier back is the ordinary thing to do and it is the

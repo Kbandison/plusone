@@ -59,7 +59,7 @@ export default async function PremiumPage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{C.premiumHeading}</h1>
+      <h1 className="text-h2">{C.premiumHeading}</h1>
       <p className="mt-5 text-[16.5px] leading-[1.7] text-ink-2">{C.premiumIntro}</p>
 
       {isPremium ? (

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
 import { SiteFooter } from "./site-footer";
+import { Wordmark } from "@/app/ui";
+import { buttonClass } from "@/app/ui";
 
 /**
  * The front door.
@@ -24,22 +26,16 @@ export default function Home() {
       id="main"
       className="mx-auto flex min-h-[100dvh] max-w-[680px] flex-col justify-center px-6 py-24"
     >
-      <p className="font-display text-[34px] leading-none tracking-[-0.02em]">
-        <span className="align-super text-[0.42em] text-accent">+</span>One
-      </p>
+      {/* Not a link on the home page — it is already here. */}
+      <Wordmark className="text-[34px]" asLink={false} />
 
       {/* §3.4, verbatim. */}
-      <h1 className="mt-12 max-w-[15ch] text-[clamp(2.3rem,7vw,3.4rem)] text-balance">
-        {COPY.marketing.hero}
-      </h1>
+      <h1 className="mt-12 max-w-[15ch] text-h1 text-balance">{COPY.marketing.hero}</h1>
 
       <p className="mt-6 max-w-[46ch] text-ink-2">{COPY.marketing.sub}</p>
 
       <div className="mt-11 flex flex-wrap items-center gap-x-7 gap-y-4">
-        <Link
-          href="/onboarding/phone"
-          className="ease-brand rounded-lg bg-accent px-7 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995]"
-        >
+        <Link href="/onboarding/phone" className={buttonClass("primary")}>
           {DRAFT_COPY.home.getStarted}
         </Link>
 

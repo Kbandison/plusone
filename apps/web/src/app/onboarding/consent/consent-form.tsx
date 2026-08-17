@@ -6,6 +6,7 @@ import { COPY } from "@plusone/config";
 
 import { grantHealthDataConsent } from "./actions";
 import { type ConsentActionState } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const INITIAL: ConsentActionState = { error: null };
 
@@ -46,7 +47,7 @@ export function ConsentForm() {
       <button
         type="submit"
         disabled={pending}
-        className="ease-brand mt-9 w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px]"
+        className={buttonClass("primary", "mt-9 w-full sm:w-auto sm:min-w-[190px]")}
       >
         {COPY.actions.continueLabel}
       </button>

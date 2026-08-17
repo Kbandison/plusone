@@ -29,6 +29,10 @@
 
   --line: rgba(28, 25, 23, 0.13);
   --line-2: rgba(28, 25, 23, 0.07);
+  /* The boundary of a CONTROL, which WCAG 1.4.11 requires at 3:1 against its
+     own fill. --line-2 is 1.15:1 — fine for a decorative card edge, invisible
+     as the edge of an input somebody has to find and click. */
+  --line-control: rgba(28, 25, 23, 0.34);
 
   --positive: #3f6b4a;
   --caution: #8a6516;
@@ -57,6 +61,7 @@
 
     --line: rgba(237, 231, 222, 0.12);
     --line-2: rgba(237, 231, 222, 0.06);
+    --line-control: rgba(237, 231, 222, 0.3);
 
     --positive: #7fb08c;
     --caution: #d2a63e;
@@ -86,6 +91,7 @@
 
   --line: rgba(237, 231, 222, 0.12);
   --line-2: rgba(237, 231, 222, 0.06);
+  --line-control: rgba(237, 231, 222, 0.3);
 
   --positive: #7fb08c;
   --caution: #d2a63e;
@@ -115,6 +121,7 @@
 
   --color-line: var(--line);
   --color-line-2: var(--line-2);
+  --color-line-control: var(--line-control);
 
   --color-positive: var(--positive);
   --color-caution: var(--caution);
@@ -132,6 +139,46 @@
 
   --ease-brand: cubic-bezier(0.22, 0.61, 0.24, 1);
   --ease-brand-out: cubic-bezier(0.2, 0.6, 0.2, 1);
+
+  /**
+   * The type scale from packages/ui-tokens/src/index.ts, registered so
+   * `text-hero`, `text-h2`, `text-body` are real utilities.
+   *
+   * It existed only as TypeScript nothing imported, so 35 one-off arbitrary
+   * sizes shipped instead and the scale was documentation. These MUST stay in
+   * step with TYPE — tokens.test.ts asserts they do.
+   */
+  --text-hero: clamp(2.6rem, 6.4vw, 4.6rem);
+  --text-hero--line-height: 1.04;
+  --text-hero--letter-spacing: -0.022em;
+
+  --text-h1: clamp(2.3rem, 5.4vw, 3.9rem);
+  --text-h1--line-height: 1.05;
+  --text-h1--letter-spacing: -0.022em;
+
+  --text-h2: clamp(1.8rem, 3.2vw, 2.5rem);
+  --text-h2--line-height: 1.08;
+  --text-h2--letter-spacing: -0.02em;
+
+  --text-h3: clamp(1.4rem, 1.9vw, 1.75rem);
+  --text-h3--line-height: 1.1;
+  --text-h3--letter-spacing: -0.018em;
+
+  --text-body: 17px;
+  --text-body--line-height: 1.65;
+
+  --text-body-sm: 14.5px;
+  --text-body-sm--line-height: 1.62;
+
+  --text-label: 11.5px;
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.14em;
+
+  /**
+   * The 44px floor LAYOUT.minTapTarget declares and which was honoured in
+   * exactly one place in the whole app.
+   */
+  --spacing-tap: 44px;
 }
 
 /**

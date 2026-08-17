@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 
 import { saveBio } from "./actions";
 import { PROFILE_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -40,17 +41,13 @@ export function BioEditor({ bio }: { bio: string | null }) {
           maxLength={MAX_CHARS}
           defaultValue={bio ?? ""}
           aria-describedby={hintId}
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
         />
         <p id={hintId} className="text-[13.5px] text-ink-3">
           {C.bioHint(MAX_CHARS)}
         </p>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
           {C.saveLabel}
         </button>
 

@@ -86,7 +86,7 @@ export default async function MetricsPage() {
 
   return (
     <main id="main">
-      <h1 className="mt-4 text-[clamp(1.9rem,5vw,2.4rem)]">Metrics</h1>
+      <h1 className="mt-4 text-h2">Metrics</h1>
 
       {/* §7.3 asks for the "closure vs ghost-equivalent rate = 0 by
           construction". It is measured rather than asserted: if this is ever
@@ -100,7 +100,7 @@ export default async function MetricsPage() {
         <p className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">
           Chats that ended in silence
         </p>
-        <p className="mt-2 font-display text-[clamp(2.4rem,8vw,3.2rem)] leading-none">{ghosted}</p>
+        <p className="mt-2 font-display text-h1 leading-none">{ghosted}</p>
         <p className="mt-3 text-[14.5px] leading-[1.6] text-ink-2">
           {ghosted === 0
             ? "Zero by construction — every closed chat carries a note. If this ever moves, something has broken."
@@ -113,7 +113,7 @@ export default async function MetricsPage() {
           <h2 className="text-[1.1rem] tracking-[0.04em] text-ink-3 uppercase">{group.title}</h2>
           <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {group.keys.map((key) => (
-              <div key={key} className="rounded-lg border border-line-2 bg-surface px-5 py-4">
+              <div key={key} className="rounded-lg border border-line-control bg-surface px-5 py-4">
                 <dt className="text-[13px] text-ink-3">{LABELS[key]}</dt>
                 <dd className="mt-1.5 font-display text-[1.7rem] leading-none tabular-nums">
                   {Number(metrics[key] ?? 0)}

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { revealCondition } from "../verifications/actions";
 import { REVEAL_INITIAL } from "../verifications/state";
+import { buttonClass } from "@/app/ui";
 
 /**
  * §7.3 — "reveal requires explicit reason logged".
@@ -32,13 +33,9 @@ export function RevealCondition({ memberId }: { memberId: string }) {
           minLength={10}
           placeholder="Why you need it"
           aria-label="Why you need it"
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand self-start rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("secondary", "self-start")}>
           Reveal and log
         </button>
         {state.error ? (

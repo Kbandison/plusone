@@ -6,6 +6,7 @@ import { DRAFT_COPY, promptQuestion, type ProfilePromptAnswer } from "@plusone/c
 
 import { sendConnect } from "./actions";
 import { CONNECT_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -38,7 +39,7 @@ export function ConnectForm({
         {prompts.map((prompt) => (
           <label
             key={prompt.id}
-            className="ease-brand flex cursor-pointer flex-col gap-1.5 rounded-lg border border-line-2 bg-surface px-4 py-3.5 transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer flex-col gap-1.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 transition-colors duration-200 has-checked:border-accent"
           >
             <span className="flex items-center gap-3">
               <input
@@ -47,7 +48,7 @@ export function ConnectForm({
                 value={prompt.id}
                 checked={selected === prompt.id}
                 onChange={() => setSelected(prompt.id)}
-                className="size-[16px] accent-accent"
+                className="size-[18px] accent-accent"
               />
               <span className="text-[13.5px] text-ink-3">{promptQuestion(prompt.id)}</span>
             </span>
@@ -63,7 +64,7 @@ export function ConnectForm({
           rows={4}
           maxLength={500}
           required
-          className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15.5px] focus:border-accent"
+          className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
         />
       </label>
 
@@ -73,11 +74,7 @@ export function ConnectForm({
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand self-start rounded-lg bg-accent px-6 py-3 text-[16px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-      >
+      <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
         {C.connectSendLabel}
       </button>
     </form>

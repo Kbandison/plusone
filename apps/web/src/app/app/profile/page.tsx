@@ -37,7 +37,7 @@ export default async function ProfilePage() {
     <main id="main">
       <div className="flex items-center gap-4">
         <MemberPhotoFrame photo={photos[0]} size={72} emptyLabel={DRAFT_COPY.app.photoNone} />
-        <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{profile?.display_name ?? "You"}</h1>
+        <h1 className="text-h2">{profile?.display_name ?? "You"}</h1>
       </div>
 
       {photos.length > 1 ? (

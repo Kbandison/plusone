@@ -6,6 +6,7 @@ import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY } from "@plusone/config";
 
 import { acceptConnect, declineConnect } from "./actions";
 import { INBOX_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -25,7 +26,7 @@ export function AcceptForm({
         type="submit"
         disabled={pending}
         aria-describedby={describedBy}
-        className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+        className={buttonClass("primary")}
       >
         {C.acceptLabel}
       </button>
@@ -66,7 +67,7 @@ export function DeclineForm({
       onClick={() => setOpen((current) => !current)}
       aria-expanded={open}
       aria-describedby={describedBy}
-      className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-ink-3"
+      className={buttonClass("secondary", "hover:border-ink-3")}
     >
       {C.declineLabel}
     </button>
@@ -105,7 +106,7 @@ export function DeclineForm({
             name="personal_line"
             type="text"
             maxLength={CONNECTS.personalLineMaxChars}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
           />
         </label>
 
@@ -118,7 +119,7 @@ export function DeclineForm({
         <button
           type="submit"
           disabled={pending}
-          className="ease-brand self-start rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-ink-3 disabled:opacity-55"
+          className={buttonClass("secondary", "self-start hover:border-ink-3")}
         >
           {C.declineLabel}
         </button>

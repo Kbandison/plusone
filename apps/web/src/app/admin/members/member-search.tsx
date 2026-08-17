@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { RevealCondition } from "./reveal";
 import { lookupMembers } from "./actions";
 import { LOOKUP_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 /**
  * The search box and its results.
@@ -24,13 +25,9 @@ export function MemberSearch() {
           minLength={2}
           placeholder="Display name or member id"
           aria-label="Display name or member id"
-          className="min-w-[240px] flex-1 rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[15px] focus:border-accent"
+          className="min-w-[240px] flex-1 rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] focus:border-accent"
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("secondary")}>
           Look up
         </button>
       </form>

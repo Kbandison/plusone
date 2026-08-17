@@ -94,7 +94,7 @@ function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: 
 
   return (
     <div className="mt-10">
-      <h2 className="text-[clamp(1.4rem,4vw,1.7rem)]">{C.codeHeading}</h2>
+      <h2 className="text-h3">{C.codeHeading}</h2>
       <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{C.codeIntro}</p>
 
       <form action={verify} className="mt-8 flex flex-col gap-8">

@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { signOut } from "./sign-out";
 import { UnblockButton } from "@/app/app/safety/safety-controls";
 import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
+import { buttonClass } from "@/app/ui";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navSettings };
 
@@ -50,7 +51,7 @@ export default async function SettingsPage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{DRAFT_COPY.app.settingsHeading}</h1>
+      <h1 className="text-h2">{DRAFT_COPY.app.settingsHeading}</h1>
 
       <CrossCommunityToggle optIn={Boolean(profile?.cross_community_opt_in)} />
 
@@ -60,10 +61,7 @@ export default async function SettingsPage() {
         <h2 className="text-[1.2rem]">{DRAFT_COPY.app.signOutHeading}</h2>
         <p className="mt-3 text-[15px] leading-[1.65] text-ink-2">{DRAFT_COPY.app.signOutBody}</p>
         <form action={signOut} className="mt-5">
-          <button
-            type="submit"
-            className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent"
-          >
+          <button type="submit" className={buttonClass("secondary")}>
             {DRAFT_COPY.app.signOutLabel}
           </button>
         </form>

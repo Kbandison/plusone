@@ -7,6 +7,7 @@ import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plu
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
+import { buttonClass } from "@/app/ui";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navBrowse };
 
@@ -73,7 +74,7 @@ export default async function BrowsePage({
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{C.navBrowse}</h1>
+      <h1 className="text-h2">{C.navBrowse}</h1>
 
       {/* §3.4, verbatim — real counts only, never inflated. */}
       <p className="mt-4 text-[15px] text-ink-2">
@@ -86,7 +87,7 @@ export default async function BrowsePage({
           <select
             name="distance"
             defaultValue={String(distanceMi)}
-            className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15px] focus:border-accent"
+            className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
           >
             {RADIUS.ladderMi.map((mi) => (
               <option key={mi} value={mi}>
@@ -101,7 +102,7 @@ export default async function BrowsePage({
           <select
             name="intention"
             defaultValue={intention ?? ""}
-            className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15px] focus:border-accent"
+            className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
           >
             <option value="">{C.filterAny}</option>
             {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (
@@ -123,10 +124,7 @@ export default async function BrowsePage({
           {C.filterActive}
         </label>
 
-        <button
-          type="submit"
-          className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent"
-        >
+        <button type="submit" className={buttonClass("secondary")}>
           {C.applyFiltersLabel}
         </button>
       </form>

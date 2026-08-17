@@ -12,6 +12,7 @@ import {
 
 import { savePrompts } from "./actions";
 import { PROFILE_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -107,17 +108,13 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
                   },
                 ])
               }
-              className="ease-brand rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-accent"
+              className={buttonClass("secondary")}
             >
               Add another
             </button>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-          >
+          <button type="submit" disabled={pending} className={buttonClass("primary")}>
             {C.promptSaveLabel}
           </button>
         </div>

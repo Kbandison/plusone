@@ -6,6 +6,7 @@ import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
 import { saveRadius } from "./actions";
 import { type RadiusState } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.radius;
 const INITIAL: RadiusState = { error: null };
@@ -27,11 +28,7 @@ export function RadiusForm() {
         {/* aria-hidden because the slider itself now announces this value
             through aria-valuetext. <output> carries an implicit role="status",
             so without this every drag step was announced twice. */}
-        <output
-          aria-hidden
-          htmlFor={sliderId}
-          className="font-display text-[clamp(2.4rem,8vw,3.2rem)] leading-none"
-        >
+        <output aria-hidden htmlFor={sliderId} className="font-display text-h1 leading-none">
           {C.unit(radius)}
         </output>
 
@@ -47,7 +44,11 @@ export function RadiusForm() {
           // page says "50 miles". The unit is the part that matters.
           aria-valuetext={C.unit(radius)}
           onChange={(event) => setRadius(Number(event.target.value))}
-          className="accent-accent"
+          /* A native range is about 16px tall. LAYOUT.minTapTarget declares a
+             44px floor and this was one of the controls ignoring it — on a
+             phone it is a hairline to hit with a thumb. The height is padding
+             around the track, so the control grows without the track doing. */
+          className="min-h-tap w-full cursor-pointer accent-accent"
         />
       </div>
 
@@ -60,7 +61,7 @@ export function RadiusForm() {
       <button
         type="submit"
         disabled={pending}
-        className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px] sm:self-start"
+        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
       >
         {C.continueLabel}
       </button>

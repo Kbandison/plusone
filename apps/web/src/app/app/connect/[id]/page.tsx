@@ -39,7 +39,7 @@ export default async function ConnectPage({
     <main id="main">
       <div className="flex items-center gap-4">
         <MemberPhotoFrame photo={photos.get(target.id as string)} size={56} />
-        <h1 className="text-[clamp(1.7rem,5vw,2.1rem)]">{target.display_name as string}</h1>
+        <h1 className="text-h2">{target.display_name as string}</h1>
       </div>
 
       <h2 className="mt-8 text-[1.15rem]">{DRAFT_COPY.app.connectHeading}</h2>

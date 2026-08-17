@@ -12,7 +12,7 @@ export default async function ReportsPage() {
 
   return (
     <main id="main">
-      <h1 className="mt-4 text-[clamp(1.9rem,5vw,2.4rem)]">Reports</h1>
+      <h1 className="mt-4 text-h2">Reports</h1>
       <p className="mt-4 max-w-[52ch] text-[16px] leading-[1.7] text-ink-2">
         Open reports, oldest first. Every decision is written to the audit log with your note.
       </p>

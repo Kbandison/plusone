@@ -6,6 +6,7 @@ import { DRAFT_COPY, QUIZ_QUESTIONS } from "@plusone/config";
 
 import { saveQuiz } from "./actions";
 import { QUIZ_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.quiz;
 
@@ -38,7 +39,7 @@ export function QuizForm() {
           {question.options.map((option) => (
             <label
               key={option.id}
-              className="ease-brand flex cursor-pointer items-center gap-3.5 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[15.5px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[15.5px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
@@ -66,11 +67,7 @@ export function QuizForm() {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("primary")}>
           {C.finishLabel}
         </button>
 

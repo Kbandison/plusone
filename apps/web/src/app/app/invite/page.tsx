@@ -26,7 +26,7 @@ export default async function InvitePage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{DRAFT_COPY.app.inviteHeading}</h1>
+      <h1 className="text-h2">{DRAFT_COPY.app.inviteHeading}</h1>
 
       {/* §3.4, verbatim. */}
       <p className="mt-5 text-[16.5px] leading-[1.7] text-ink-2">{COPY.referral.shareLine}</p>

@@ -41,7 +41,7 @@ export default function DevSignInPage() {
 
   return (
     <main id="main" className="mx-auto w-full max-w-[560px] px-6 py-16">
-      <h1 className="text-[clamp(1.8rem,5vw,2.2rem)]">Development sign-in</h1>
+      <h1 className="text-h2">Development sign-in</h1>
       <p className="mt-5 text-[16px] leading-[1.7] text-ink-2">
         No SMS is sent. This mints a real session for a phone-confirmed member, so every wall,
         policy and onboarding step behaves exactly as it will in production.

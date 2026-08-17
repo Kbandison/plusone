@@ -10,6 +10,7 @@
  */
 
 import type React from "react";
+import { buttonClass } from "@/app/ui";
 
 export function Field({
   id,
@@ -40,7 +41,10 @@ export function Field({
           [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined
         }
         aria-invalid={error ? true : undefined}
-        className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[300px]"
+        /* line-control, not line-2: WCAG 1.4.11 wants 3:1 for the boundary of a
+           control, and line-2 is about 1.15:1 against its own fill — fine on a
+           decorative card edge, invisible as the edge of a field. */
+        className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[300px]"
         {...props}
       />
       {hint ? (
@@ -62,7 +66,7 @@ export function Submit({ label, pending }: { label: string; pending: boolean }) 
     <button
       type="submit"
       disabled={pending}
-      className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px] sm:self-start"
+      className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
     >
       {label}
     </button>

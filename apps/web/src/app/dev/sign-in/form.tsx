@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { devResetVerification, devSignIn } from "./actions";
 import { DEV_SIGN_IN_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 /**
  * Four presets, because most of what there is to test needs more than one
@@ -31,7 +32,7 @@ export function DevSignInForm() {
         {PRESETS.map((preset, index) => (
           <label
             key={preset.phone}
-            className="ease-brand flex cursor-pointer items-center gap-3.5 rounded-lg border border-line-2 bg-surface px-4 py-3.5 text-[16px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[16px] transition-colors duration-200 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -48,11 +49,7 @@ export function DevSignInForm() {
         ))}
       </fieldset>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand self-start rounded-lg bg-accent px-6 py-3 text-[16px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-      >
+      <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
         {pending ? "Signing in…" : "Sign in"}
       </button>
 

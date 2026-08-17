@@ -6,6 +6,7 @@ import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "
 
 import { cancelPlan, closeChat, confirmPlan, proposePlan, sendMessage } from "./actions";
 import { CHAT_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -44,13 +45,9 @@ export function Composer({ chatId }: { chatId: string }) {
              the composer could not be used at all on a small phone.
              is gone too — globals.css defines the keyboard
              focus ring the accessibility gate requires, and this cancelled it. */
-          className="min-w-0 flex-1 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] focus:border-accent"
+          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] focus:border-accent"
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand rounded-lg bg-accent px-5 py-3 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("primary")}>
           {C.sendLabel}
         </button>
       </div>
@@ -87,18 +84,14 @@ export function ProposePlan({ chatId }: { chatId: string }) {
             name={field.name}
             type={field.type}
             required
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
           />
         </label>
       ))}
 
       <Error message={state.error} />
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-      >
+      <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
         {C.proposeLabel}
       </button>
     </form>
@@ -113,11 +106,7 @@ export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm
       {canConfirm ? (
         <form action={confirm}>
           <input type="hidden" name="chat_id" value={chatId} />
-          <button
-            type="submit"
-            disabled={confirming}
-            className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-          >
+          <button type="submit" disabled={confirming} className={buttonClass("primary")}>
             {C.confirmPlanLabel}
           </button>
         </form>
@@ -181,11 +170,7 @@ export function CancelPlan({ chatId }: { chatId: string }) {
           <div className="flex flex-wrap items-center gap-4">
             <form action={cancel}>
               <input type="hidden" name="chat_id" value={chatId} />
-              <button
-                type="submit"
-                disabled={cancelling}
-                className="ease-brand rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-55"
-              >
+              <button type="submit" disabled={cancelling} className={buttonClass("danger")}>
                 {C.cancelPlanConfirmLabel}
               </button>
             </form>
@@ -284,11 +269,7 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
 
         <Error message={state.error} />
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
           {C.closeLabel}
         </button>
       </form>

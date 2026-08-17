@@ -11,6 +11,8 @@ import {
   formatPriceCents,
 } from "@plusone/config";
 
+import { SiteHeader } from "@/app/site-header";
+
 export const metadata: Metadata = {
   title: "Pricing",
   description: "What the free version includes, what premium adds, and what it will never buy.",
@@ -19,7 +21,9 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <main id="main" className="mx-auto w-full max-w-[680px] px-6 py-16 sm:py-24">
-      <h1 className="text-[clamp(2.2rem,7vw,3rem)] text-balance">Pricing</h1>
+      <SiteHeader />
+
+      <h1 className="text-h1 text-balance">Pricing</h1>
       <p className="mt-6 text-[17px] leading-[1.7] text-ink-2">{PRICING_INTRO}</p>
 
       <ul className="mt-12 flex flex-col gap-4">

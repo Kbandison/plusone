@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { SiteFooter } from "../site-footer";
 
 import { PRIVACY_POLICY, PRIVACY_POLICY_EFFECTIVE, PRIVACY_POLICY_INTRO } from "@plusone/config";
+import { SiteHeader } from "@/app/site-header";
 
 /**
  * The privacy page (§7.1). Plain language: what we store, what we never store,
@@ -28,7 +29,9 @@ function formatDate(iso: string): string {
 export default function PrivacyPage() {
   return (
     <main id="main" className="mx-auto w-full max-w-[680px] px-6 py-16 sm:py-24">
-      <h1 className="text-[clamp(2.2rem,7vw,3rem)] text-balance">Privacy</h1>
+      <SiteHeader />
+
+      <h1 className="text-h1 text-balance">Privacy</h1>
 
       <p className="mt-6 text-[17px] leading-[1.7] text-ink-2">{PRIVACY_POLICY_INTRO}</p>
 
@@ -61,7 +64,7 @@ export default function PrivacyPage() {
             // Deep links land under any sticky chrome rather than flush against it.
             className="scroll-mt-24"
           >
-            <h2 className="text-[clamp(1.5rem,4vw,1.85rem)]">{section.title}</h2>
+            <h2 className="text-h3">{section.title}</h2>
 
             {section.body.map((paragraph) => (
               <p key={paragraph} className="mt-5 text-[16.5px] leading-[1.72] text-ink-2">

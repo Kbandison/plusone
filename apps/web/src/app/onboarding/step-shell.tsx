@@ -43,7 +43,7 @@ export function StepShell({
         <div className="h-px bg-accent" style={{ width: `${((current + 1) / total) * 100}%` }} />
       </div>
 
-      <h1 className="mt-12 text-[clamp(2rem,6vw,2.6rem)] text-balance">{heading}</h1>
+      <h1 className="mt-12 text-h2 text-balance">{heading}</h1>
 
       {intro ? <p className="mt-6 text-[16.5px] leading-[1.7] text-ink-2">{intro}</p> : null}
 

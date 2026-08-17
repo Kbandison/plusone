@@ -7,6 +7,7 @@ import { DRAFT_COPY } from "@plusone/config";
 
 import { beginLiveness, finishLiveness, openAppeal } from "./actions";
 import { LIVENESS_INITIAL, type LivenessState } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.liveness;
 
@@ -115,7 +116,7 @@ export function LivenessForm() {
         <button
           type="submit"
           disabled={beginning || finishing}
-          className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[210px] sm:self-start"
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[210px] sm:self-start")}
         >
           {beginning || finishing ? C.checkingLabel : state.error ? C.retryLabel : C.startLabel}
         </button>
@@ -180,16 +181,12 @@ function ReviewScreen({
          in the app was cancelling the keyboard focus ring globals.css defines. */
       className="mt-10 rounded-lg border border-line-2 bg-surface p-6 focus:outline-none"
     >
-      <h2 className="text-[clamp(1.3rem,3.5vw,1.55rem)]">{heading}</h2>
+      <h2 className="text-h3">{heading}</h2>
       <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{body}</p>
 
       {review.status === "rejected" && !waiting ? (
         <form action={appeal} className="mt-6">
-          <button
-            type="submit"
-            disabled={appealing}
-            className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-          >
+          <button type="submit" disabled={appealing} className={buttonClass("secondary")}>
             {C.appealLabel}
           </button>
         </form>

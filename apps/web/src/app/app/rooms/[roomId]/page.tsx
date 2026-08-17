@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { getServerSupabase } from "@/lib/supabase";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { JoinRoom, RoomComposer } from "./room-forms";
+import { EmptyState } from "@/app/ui";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
 
@@ -56,7 +57,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.7rem,5vw,2.1rem)]">{room.title as string}</h1>
+      <h1 className="text-h2">{room.title as string}</h1>
       {room.description ? (
         <p className="mt-3 text-[15.5px] leading-[1.7] text-ink-2">{room.description as string}</p>
       ) : null}
@@ -77,6 +78,10 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       <p className="mt-2 text-[13.5px] text-ink-3">{C.roomNoDmNote}</p>
 
       <ul className="mt-8 flex flex-col gap-4">
+        {(messages ?? []).length === 0 ? (
+          <EmptyState heading={C.roomEmptyHeading} body={C.roomEmptyBody} />
+        ) : null}
+
         {[...(messages ?? [])].reverse().map((message) => (
           <li key={message.id as string} className="rounded-lg border border-line px-5 py-4">
             {/* The controls below point at this id, which is what tells a

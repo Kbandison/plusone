@@ -11,6 +11,7 @@ import {
 
 import { blockMember, reportMember, unblockMember } from "@/lib/safety";
 import { SAFETY_INITIAL } from "@/lib/safety-state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -171,14 +172,14 @@ export function ReportControl({
           {(Object.keys(REPORT_REASONS) as ReportReason[]).map((reason) => (
             <label
               key={reason}
-              className="ease-brand flex cursor-pointer items-center gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[14.5px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[14.5px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
                 name="reason"
                 value={reason}
                 required
-                className="size-[16px] accent-accent"
+                className="size-[18px] accent-accent"
               />
               {REPORT_REASONS[reason]}
             </label>
@@ -191,7 +192,7 @@ export function ReportControl({
             name="detail"
             rows={3}
             maxLength={REPORT_DETAIL_MAX_CHARS}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
           />
         </label>
 
@@ -208,11 +209,7 @@ export function ReportControl({
           </p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
           {C.reportSubmitLabel}
         </button>
       </form>

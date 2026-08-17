@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { COPY } from "@plusone/config";
+import { Wordmark } from "@/app/ui";
+import { buttonClass } from "@/app/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -43,20 +45,13 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
       id="main"
       className="mx-auto flex min-h-[100dvh] max-w-[560px] flex-col justify-center px-6 py-24"
     >
-      <p className="font-display text-[30px] leading-none tracking-[-0.02em]">
-        <span className="align-super text-[0.42em] text-accent">+</span>One
-      </p>
+      <Wordmark className="text-[30px]" />
 
-      <h1 className="mt-12 text-[clamp(2rem,7vw,2.9rem)] text-balance">
-        {COPY.referral.landingHeadline}
-      </h1>
+      <h1 className="mt-12 text-h1 text-balance">{COPY.referral.landingHeadline}</h1>
 
       <p className="mt-6 text-[17px] leading-[1.7] text-ink-2">{COPY.referral.landingSub}</p>
 
-      <Link
-        href="/onboarding/phone"
-        className="ease-brand mt-10 self-start rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995]"
-      >
+      <Link href="/onboarding/phone" className={buttonClass("primary", "mt-10 self-start")}>
         {COPY.referral.landingButton}
       </Link>
     </main>

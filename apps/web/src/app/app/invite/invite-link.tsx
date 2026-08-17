@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
+import { buttonClass } from "@/app/ui";
 
 export function InviteLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
@@ -10,7 +11,7 @@ export function InviteLink({ url }: { url: string }) {
 
   return (
     <div className="mt-8 flex flex-col gap-4">
-      <p className="rounded-lg border border-line-2 bg-surface px-4 py-3.5 text-[15px] break-all text-ink-2">
+      <p className="rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[15px] break-all text-ink-2">
         {url}
       </p>
       <button
@@ -28,7 +29,7 @@ export function InviteLink({ url }: { url: string }) {
             setFailed(true);
           }
         }}
-        className="ease-brand self-start rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
+        className={buttonClass("primary", "self-start")}
       >
         {copied ? DRAFT_COPY.app.inviteCopied : DRAFT_COPY.app.inviteCopyLabel}
       </button>

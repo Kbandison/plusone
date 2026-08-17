@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { sendVoiceNote } from "./actions";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 const MAX_SECONDS = 120;
@@ -147,11 +148,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
       </p>
 
       {state === "idle" ? (
-        <button
-          type="button"
-          onClick={start}
-          className="ease-brand self-start rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent"
-        >
+        <button type="button" onClick={start} className={buttonClass("secondary", "self-start")}>
           {C.voiceRecordLabel}
         </button>
       ) : null}
@@ -167,7 +164,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
           <button
             type="button"
             onClick={() => recorder.current?.stop()}
-            className="ease-brand rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-accent"
+            className={buttonClass("secondary")}
           >
             {C.voiceStopLabel}
           </button>
@@ -189,7 +186,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
             type="button"
             onClick={send}
             disabled={state === "sending"}
-            className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+            className={buttonClass("primary")}
           >
             {C.voiceSendLabel}
           </button>

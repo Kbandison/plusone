@@ -29,7 +29,12 @@ describe("the keyboard focus ring is not cancelled", () => {
 
   it("appears on no interactive control", () => {
     const offenders = files.filter((f) => {
-      const source = readFileSync(f, "utf8");
+      // Comments stripped first: ui.tsx documents the rule in prose, and a test
+      // that reads its own documentation as a violation is a test that fails
+      // the moment somebody writes down why.
+      const source = readFileSync(f, "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*$/gm, "");
       if (!source.includes("focus:outline-none")) return false;
       // A container focused programmatically — so a screen reader announces it —
       // is the one place suppressing the ring is right: the member did not move

@@ -33,7 +33,7 @@ export default async function ConfigPage() {
 
   return (
     <main id="main">
-      <h1 className="mt-4 text-[clamp(1.9rem,5vw,2.4rem)]">Config</h1>
+      <h1 className="mt-4 text-h2">Config</h1>
       <p className="mt-4 max-w-[54ch] text-[16px] leading-[1.7] text-ink-2">
         Read live by the mechanics. Every change is audited with its previous value, and unknown
         keys are refused — there is no setting here that buys anyone an exemption.

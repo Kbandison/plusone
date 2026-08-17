@@ -29,7 +29,7 @@ export default async function SignInPage({
 
   return (
     <main id="main" className="mx-auto w-full max-w-[640px] px-6 py-16 sm:py-24">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{DRAFT_COPY.signIn.heading}</h1>
+      <h1 className="text-h2">{DRAFT_COPY.signIn.heading}</h1>
       <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{DRAFT_COPY.signIn.intro}</p>
 
       {/* /auth/callback sends people here when a link is expired or reused.

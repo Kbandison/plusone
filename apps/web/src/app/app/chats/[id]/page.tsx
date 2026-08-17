@@ -8,6 +8,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
+import { EmptyState } from "@/app/ui";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
@@ -147,13 +148,24 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       ) : null}
 
       <ul className="mt-6 flex flex-col gap-3">
+        {(messages ?? []).length === 0 ? (
+          <EmptyState heading={C.chatEmptyHeading} body={C.chatEmptyBody} />
+        ) : null}
+
         {(messages ?? []).map((message) => (
           <li
             key={message.id as string}
+            /* Own messages are surface-2 with an accent edge, not an accent
+               FILL. The token file's own contract reads "CTAs, links,
+               highlights, interactive states — never large fills", restating
+               the design system's colour rule; a column of accent-filled
+               bubbles is the largest fill in the app and it makes every real
+               control on the screen compete with the conversation. Alignment
+               and the edge carry the same distinction more quietly. */
             className={`max-w-[85%] rounded-xl px-4 py-3 text-[15.5px] leading-[1.6] ${
               message.sender_id === me
-                ? "self-end bg-accent text-accent-ink"
-                : "bg-surface text-ink"
+                ? "self-end border-r-2 border-accent bg-surface-2 text-ink"
+                : "border-l-2 border-line-2 bg-surface text-ink"
             }`}
           >
             {/* Who said it. Colour and alignment were the only signal, so a

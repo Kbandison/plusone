@@ -6,6 +6,7 @@ import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/con
 
 import { saveIntention } from "./actions";
 import { type IntentionState } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.intention;
 const INITIAL: IntentionState = { error: null };
@@ -20,7 +21,7 @@ export function IntentionForm() {
         {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (
           <label
             key={value}
-            className="ease-brand flex cursor-pointer items-center gap-3.5 rounded-lg border border-line-2 bg-surface px-4 py-3.5 text-[16px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[16px] transition-colors duration-200 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -47,7 +48,7 @@ export function IntentionForm() {
       <button
         type="submit"
         disabled={pending}
-        className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[190px] sm:self-start"
+        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
       >
         {COPY.actions.continueLabel}
       </button>

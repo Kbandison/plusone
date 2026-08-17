@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { setConfig } from "./actions";
 import { CONFIG_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 export function ConfigRow({ configKey, value }: { configKey: string; value: string }) {
   const [state, act, pending] = useActionState(setConfig, CONFIG_INITIAL);
@@ -23,13 +24,9 @@ export function ConfigRow({ configKey, value }: { configKey: string; value: stri
           type="number"
           step="any"
           defaultValue={value}
-          className="w-[110px] rounded-lg border border-line-2 bg-ground px-3 py-2 text-[15px] tabular-nums focus:border-accent"
+          className="w-[110px] rounded-lg border border-line-2 bg-ground px-3 py-2 text-[16px] tabular-nums focus:border-accent"
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("secondary")}>
           Save
         </button>
       </form>

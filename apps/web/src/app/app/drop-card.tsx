@@ -5,6 +5,7 @@ import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/con
 import type { DropCard as Card, PreviewCard } from "@/lib/drop";
 import type { MemberPhoto } from "@/lib/photo-urls";
 import { MemberPhotoFrame } from "./member-photo";
+import { buttonClass } from "@/app/ui";
 
 /**
  * The enum is a database value, not something to show a member. Rendering
@@ -52,7 +53,7 @@ export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | un
           would have refused: the button could never have worked. */}
       <Link
         href={`/app/connect/${card.id}?source=drop`}
-        className="ease-brand mt-5 inline-block rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90"
+        className={buttonClass("primary", "mt-5 inline-block")}
       >
         {DRAFT_COPY.app.connectLabel}
       </Link>

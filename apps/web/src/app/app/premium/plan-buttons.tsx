@@ -6,6 +6,7 @@ import { DRAFT_COPY, PLANS, formatPriceCents } from "@plusone/config";
 
 import { openBillingPortal, startCheckout } from "./actions";
 import { CHECKOUT_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -69,11 +70,7 @@ export function ManageBilling() {
 
   return (
     <form action={act} className="mt-6">
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-      >
+      <button type="submit" disabled={pending} className={buttonClass("secondary")}>
         {C.manageBillingLabel}
       </button>
       {state.error ? (

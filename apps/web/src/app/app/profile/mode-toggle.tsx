@@ -7,6 +7,7 @@ import { COPY } from "@plusone/config";
 import { switchMode } from "./actions";
 import { type ProfileState } from "./state";
 import { PROFILE_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 /**
  * §3.4's support-only copy, verbatim. It explains what the mode does in the
@@ -24,11 +25,7 @@ export function ModeToggle({ mode }: { mode: "dating" | "support_only" }) {
 
       <form action={act} className="mt-6">
         <input type="hidden" name="mode" value={target} />
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("secondary")}>
           {mode === "dating" ? "Switch to support-only" : "Switch to dating"}
         </button>
       </form>

@@ -22,7 +22,7 @@ export default async function TonightPage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{COPY.drop.header}</h1>
+      <h1 className="text-h2">{COPY.drop.header}</h1>
 
       {/* §6.1 step 2 — the honesty line, shown whenever the search went wider
           than the member asked for. Quietly widening is how apps pretend to be

@@ -6,6 +6,7 @@ import { REPORT_REASONS, type ReportReason } from "@plusone/config";
 
 import { decideReport } from "./actions";
 import { REPORT_DECISION_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 /** What admin_open_reports returns. The page reads this; the card does not. */
 export interface OpenReport {
@@ -88,7 +89,7 @@ export function ReportCard({ report }: { report: ReportForCard }) {
           id={`note-${report.queue_id}`}
           name="note"
           type="text"
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
         />
         <div className="mt-1 flex gap-3">
           <button
@@ -96,7 +97,7 @@ export function ReportCard({ report }: { report: ReportForCard }) {
             name="status"
             value="resolved"
             disabled={pending}
-            className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+            className={buttonClass("primary")}
           >
             Resolve
           </button>
@@ -105,7 +106,7 @@ export function ReportCard({ report }: { report: ReportForCard }) {
             name="status"
             value="dismissed"
             disabled={pending}
-            className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-ink-3 disabled:opacity-55"
+            className={buttonClass("secondary", "hover:border-ink-3")}
           >
             Dismiss
           </button>

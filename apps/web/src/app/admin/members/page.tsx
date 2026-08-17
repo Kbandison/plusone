@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "Members" };
 export default function MembersPage() {
   return (
     <main id="main">
-      <h1 className="mt-4 text-[clamp(1.9rem,5vw,2.4rem)]">Members</h1>
+      <h1 className="mt-4 text-h2">Members</h1>
       <MemberSearch />
     </main>
   );

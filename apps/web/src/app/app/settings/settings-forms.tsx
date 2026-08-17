@@ -6,6 +6,7 @@ import { COPY, DRAFT_COPY } from "@plusone/config";
 
 import { addSignInEmail, requestDeletion, setCrossCommunityOptIn } from "./actions";
 import { SETTINGS_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -25,16 +26,12 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
           name="cross_community"
           type="checkbox"
           defaultChecked={optIn}
-          className="size-[20px] accent-accent"
+          className="size-[18px] accent-accent"
         />
         <label htmlFor="cross_community" className="text-[15px]">
           Open to other communities
         </label>
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand ml-auto rounded-lg border border-line-2 px-4 py-2 text-[14.5px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("secondary", "ml-auto")}>
           {/* Not "Continue". There is nothing to continue to on a settings
               page, and a button whose name does not describe what it does
               fails 2.4.6 for everyone reading a list of controls. */}
@@ -93,7 +90,7 @@ export function DeleteAccount() {
           name="confirm"
           type="text"
           autoComplete="off"
-          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-critical sm:w-[220px]"
+          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-critical sm:w-[220px]"
         />
 
         {state.error ? (
@@ -147,14 +144,10 @@ export function SignInEmail({ email, confirmed }: { email: string | null; confir
             defaultValue={email ?? ""}
             aria-describedby={state.error ? "sign_in_email-error" : undefined}
             aria-invalid={state.error ? true : undefined}
-            className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[300px]"
+            className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[300px]"
           />
         </div>
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand rounded-lg border border-line-2 px-4 py-2.5 text-[14.5px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
-        >
+        <button type="submit" disabled={pending} className={buttonClass("secondary")}>
           {email === null ? C.emailAddLabel : C.emailChangeLabel}
         </button>
       </form>

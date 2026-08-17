@@ -7,6 +7,8 @@ import { onboarding } from "@plusone/logic";
 
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
+import { Wordmark } from "@/app/ui";
+import { NavLinks } from "./nav-links";
 
 /**
  * The member app.
@@ -54,9 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col px-6">
       <header className="flex items-baseline justify-between py-7">
-        <Link href="/app" className="font-display text-[26px] leading-none tracking-[-0.02em]">
-          <span className="align-super text-[0.42em] text-accent">+</span>One
-        </Link>
+        <Wordmark className="text-[26px]" />
       </header>
 
       {/* Clears the nav, which is two rows on a narrow screen. */}
@@ -81,16 +81,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         className="fixed inset-x-0 bottom-0 border-t border-line bg-ground/95 backdrop-blur"
       >
         <ul className="mx-auto flex max-w-[680px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
-          {nav.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="ease-brand flex min-h-[44px] items-center px-2.5 text-[13px] text-ink-2 transition-colors duration-200 hover:text-ink"
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
+          {/* A client component, only so it can read the pathname. Nine links
+              rendered identically with no aria-current anywhere, so nothing
+              said which section you were in. */}
+          <NavLinks items={nav} />
         </ul>
       </nav>
     </div>

@@ -24,7 +24,7 @@ export default async function RoomsPage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{C.roomsHeading}</h1>
+      <h1 className="text-h2">{C.roomsHeading}</h1>
 
       {rooms.length === 0 ? (
         <p className="mt-8 text-[16px] text-ink-2">{C.roomsEmpty}</p>
@@ -37,7 +37,7 @@ export default async function RoomsPage() {
                 // §8 keeps those out of paths — history, autocomplete on a
                 // borrowed phone, our access logs, Referer headers.
                 href={`/app/rooms/${room.id as string}`}
-                className="ease-brand block rounded-xl border border-line-2 bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
+                className="ease-brand block rounded-xl border border-line-control bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
               >
                 <h2 className="text-[1.15rem]">{room.title as string}</h2>
                 {room.description ? (

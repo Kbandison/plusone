@@ -302,6 +302,16 @@ export const DRAFT_COPY = {
     declineLabel: "Decline",
     chatsHeading: "Chats",
     chatsEmpty: "No chats yet.",
+    /**
+     * The two message lists were the only ones in the app with no empty state,
+     * and an empty chat is guaranteed at creation — so the first thing both
+     * people saw after matching was a blank rectangle.
+     */
+    chatEmptyHeading: "Say the first thing",
+    chatEmptyBody:
+      "Nobody has written yet. There is no clever opener needed here — the hard part is already behind both of you.",
+    roomEmptyHeading: "Nothing here yet",
+    roomEmptyBody: "No posts in this room so far. Yours can be the first.",
     fuseDaysLeft: (days: number) => `${days} ${days === 1 ? "day" : "days"} left`,
     fuseExpiringSoon: "Closes tomorrow",
     datePlannedLabel: "Date planned",

@@ -79,7 +79,7 @@ export default async function ChatsPage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{C.chatsHeading}</h1>
+      <h1 className="text-h2">{C.chatsHeading}</h1>
 
       {chats.length === 0 ? (
         <p className="mt-8 text-[16px] text-ink-2">{C.chatsEmpty}</p>
@@ -100,7 +100,7 @@ export default async function ChatsPage() {
               <li key={chat.id}>
                 <Link
                   href={`/app/chats/${chat.id}`}
-                  className="ease-brand flex items-center justify-between rounded-xl border border-line-2 bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
+                  className="ease-brand flex items-center justify-between rounded-xl border border-line-control bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
                 >
                   <span className="flex flex-col gap-0.5">
                     <span className="text-[16px]">

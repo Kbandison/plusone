@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { decideVerification, revealCondition } from "./actions";
 import { DECISION_INITIAL, REVEAL_INITIAL } from "./state";
+import { buttonClass } from "@/app/ui";
 
 export interface FlaggedMember {
   user_id: string;
@@ -49,7 +50,7 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
           id={`note-${member.user_id}`}
           name="note"
           type="text"
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
         />
         <div className="mt-1 flex gap-3">
           <button
@@ -57,7 +58,7 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
             name="decision"
             value="approve"
             disabled={deciding}
-            className="ease-brand rounded-lg bg-accent px-5 py-2.5 text-[15px] text-accent-ink transition-opacity duration-200 hover:opacity-90 disabled:opacity-55"
+            className={buttonClass("primary")}
           >
             Verify
           </button>
@@ -66,7 +67,7 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
             name="decision"
             value="reject"
             disabled={deciding}
-            className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-55"
+            className={buttonClass("danger")}
           >
             Reject
           </button>
@@ -98,12 +99,12 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
             minLength={10}
             placeholder="Why you need it"
             aria-label="Why you need it"
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
           />
           <button
             type="submit"
             disabled={revealing}
-            className="ease-brand self-start rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
+            className={buttonClass("secondary", "self-start")}
           >
             Reveal and log
           </button>

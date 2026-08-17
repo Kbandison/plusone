@@ -34,7 +34,7 @@ export default async function InboxPage() {
 
   return (
     <main id="main">
-      <h1 className="text-[clamp(1.9rem,5.5vw,2.4rem)]">{DRAFT_COPY.app.inboxHeading}</h1>
+      <h1 className="text-h2">{DRAFT_COPY.app.inboxHeading}</h1>
 
       {incoming.length === 0 ? (
         <p className="mt-8 text-[16px] text-ink-2">{DRAFT_COPY.app.inboxEmpty}</p>
