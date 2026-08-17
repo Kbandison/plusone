@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
-import { normalizeConfidence, passedFromStatus } from "./liveness-aws";
+import { isTerminalStatus, normalizeConfidence, passedFromStatus } from "./liveness-aws";
 
 /**
  * The two pure functions that translate AWS's vocabulary into the seam's.
@@ -52,4 +55,60 @@ describe("passedFromStatus", () => {
       expect(passedFromStatus(status)).toBe(false);
     },
   );
+});
+
+describe("isTerminalStatus — a verdict, not a progress report", () => {
+  /**
+   * The bug Kevin spent an evening on. The adapter read the result once, the
+   * instant the browser stopped streaming, and mapped everything that was not
+   * SUCCEEDED to a failed check. But the analysis runs AFTER the stream ends,
+   * so IN_PROGRESS is the normal first answer — and a member who passed was
+   * recorded as having failed, three times, and handed to a human for it.
+   *
+   * AWS documents polling until the status is terminal. These two are the ones
+   * that must never be mistaken for a verdict.
+   */
+  it.each(["CREATED", "IN_PROGRESS"])("%s is not a verdict", (status) => {
+    expect(isTerminalStatus(status)).toBe(false);
+  });
+
+  it.each(["SUCCEEDED", "FAILED", "EXPIRED"])("%s is", (status) => {
+    expect(isTerminalStatus(status)).toBe(true);
+  });
+
+  it("treats an absent status as not settled", () => {
+    // Better to poll again and eventually throw than to call it a failure.
+    expect(isTerminalStatus(undefined)).toBe(false);
+    expect(isTerminalStatus("")).toBe(false);
+  });
+
+  /**
+   * Every status this app can see is either terminal or polled. A new one
+   * appearing in the SDK and silently landing in the non-terminal bucket would
+   * mean a member waiting seven seconds and getting a retryable error, which is
+   * the safe direction — but it should be a decision, not a default.
+   */
+  it("covers the documented status set exactly", () => {
+    const documented = ["CREATED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "EXPIRED"];
+    const terminal = documented.filter(isTerminalStatus);
+    expect(terminal).toEqual(["SUCCEEDED", "FAILED", "EXPIRED"]);
+  });
+});
+
+describe("polling never turns impatience into a failed check", () => {
+  const source = readFileSync(fileURLToPath(new URL("./liveness-aws.ts", import.meta.url)), "utf8");
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  it("throws when the verdict never arrives, rather than returning passed:false", () => {
+    const fetchOutcome = code.slice(code.indexOf("async fetchOutcome"));
+    expect(fetchOutcome).toMatch(/throw new Error/);
+    // A `passed: false` fallback after the loop would spend an attempt on our
+    // own timeout and, three times over, flag the member for it.
+    const afterLoop = fetchOutcome.slice(fetchOutcome.lastIndexOf("await wait("));
+    expect(afterLoop).not.toMatch(/passed:\s*false/);
+  });
+
+  it("only returns an outcome once the status is terminal", () => {
+    expect(code).toMatch(/if \(isTerminalStatus\(response\.Status\)\)/);
+  });
 });

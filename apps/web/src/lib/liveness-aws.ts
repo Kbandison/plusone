@@ -73,6 +73,27 @@ export function passedFromStatus(status: string | undefined): boolean {
   return status === "SUCCEEDED";
 }
 
+/**
+ * Whether AWS has finished deciding.
+ *
+ * CREATED and IN_PROGRESS are not verdicts, and reading them as one is how a
+ * member who passed the check was recorded as having failed it. The analysis
+ * runs after the browser stops streaming, so the result is frequently not ready
+ * at the moment `onAnalysisComplete` fires — AWS documents polling until the
+ * status becomes terminal, and this is the predicate that says when to stop.
+ */
+export function isTerminalStatus(status: string | undefined): boolean {
+  return status === "SUCCEEDED" || status === "FAILED" || status === "EXPIRED";
+}
+
+/** Roughly seven seconds of polling. Analysis normally settles in one or two. */
+const POLL_ATTEMPTS = 10;
+const POLL_INTERVAL_MS = 700;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function createAwsLivenessProvider(
   config: AwsLivenessConfig,
 ): verification.LivenessProvider {
@@ -94,16 +115,45 @@ export function createAwsLivenessProvider(
 
     async fetchOutcome(sessionId: string): Promise<verification.LivenessOutcome> {
       const client = rekognition(config);
-      const response = await client.send(
-        new GetFaceLivenessSessionResultsCommand({ SessionId: sessionId }),
-      );
 
-      // `response` also holds ReferenceImage — Base64 bytes of the member's
-      // face. It stops here. Do not return it, log it, or widen this object.
-      return {
-        passed: passedFromStatus(response.Status),
-        score: normalizeConfidence(response.Confidence),
-      };
+      for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt += 1) {
+        const response = await client.send(
+          new GetFaceLivenessSessionResultsCommand({ SessionId: sessionId }),
+        );
+
+        if (isTerminalStatus(response.Status)) {
+          if (process.env["NODE_ENV"] !== "production") {
+            // Numbers only, no member and no image. The one thing that made
+            // "your webcam is blurry" and "we read the result too early"
+            // indistinguishable was having nothing to look at.
+            console.info(
+              JSON.stringify({
+                at: "liveness.aws",
+                status: response.Status,
+                confidence: response.Confidence ?? null,
+                polls: attempt + 1,
+              }),
+            );
+          }
+
+          // `response` also holds ReferenceImage — Base64 bytes of the member's
+          // face. It stops here. Do not return it, log it, or widen this object.
+          return {
+            passed: passedFromStatus(response.Status),
+            score: normalizeConfidence(response.Confidence),
+          };
+        }
+
+        await wait(POLL_INTERVAL_MS);
+      }
+
+      // Deliberately a throw, not a failed outcome.
+      //
+      // "We never found out" is not "you did not pass". Returning
+      // `{ passed: false }` here would spend one of three attempts on our own
+      // impatience and, three times over, hand a member to a human for it. The
+      // caller turns this into a retryable error, and the reducer never runs.
+      throw new Error("Face Liveness did not reach a verdict in time");
     },
   };
 }
