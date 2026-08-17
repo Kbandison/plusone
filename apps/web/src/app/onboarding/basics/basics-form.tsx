@@ -39,7 +39,7 @@ export function BasicsForm() {
           // field it is about, and marking a field invalid when we cannot tell
           // is a claim rather than a fix.
           aria-describedby={state.error ? `${nameHintId} ${errorId}` : nameHintId}
-          className="ease-brand rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none"
+          className="ease-brand rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent"
         />
         <p id={nameHintId} className="text-[13.5px] text-ink-3">
           {C.displayNameHint}
@@ -56,7 +56,7 @@ export function BasicsForm() {
           type="date"
           required
           aria-describedby={state.error ? `${dobHintId} ${errorId}` : dobHintId}
-          className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none sm:w-[260px]"
+          className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[260px]"
         />
         <p id={dobHintId} className="text-[13.5px] text-ink-3">
           {C.birthdateHint}

@@ -23,7 +23,7 @@ export function ConfigRow({ configKey, value }: { configKey: string; value: stri
           type="number"
           step="any"
           defaultValue={value}
-          className="w-[110px] rounded-lg border border-line-2 bg-ground px-3 py-2 text-[15px] tabular-nums focus:border-accent focus:outline-none"
+          className="w-[110px] rounded-lg border border-line-2 bg-ground px-3 py-2 text-[15px] tabular-nums focus:border-accent"
         />
         <button
           type="submit"

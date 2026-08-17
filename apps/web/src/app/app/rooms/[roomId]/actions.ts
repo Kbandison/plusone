@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { DRAFT_COPY } from "@plusone/config";
 import { tone } from "@plusone/logic";
 
 import { memberFacingError } from "@/lib/rpc-error";
@@ -40,10 +41,16 @@ export async function joinRoom(_prev: RoomState, formData: FormData): Promise<Ro
  * Slow mode is enforced by the database. Checking it here as well would be a
  * second clock, and two clocks disagree.
  */
+const C = DRAFT_COPY.app;
+
 export async function postToRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  if (!body) return { error: null };
+  // Says so, rather than returning success and doing nothing. The composer has
+  // no `required` attribute, so an accidental Post — or one after the browser
+  // cleared the field — produced no message, no error and no clue. The chat
+  // composer already answers this; rooms did not.
+  if (!body) return { error: C.emptyPost };
 
   // A room post does not leave the app, so the condition rule that protects a
   // closure note does not apply — see ToneOptions.allowConditionWords. Naming

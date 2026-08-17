@@ -21,7 +21,17 @@ export function SignInForm() {
   }
 
   return (
-    <form action={send} className="mt-10 flex flex-col gap-8">
+    <form
+      action={(formData) => {
+        // Cleared on every send, or this is a one-way door: the flag was only
+        // ever set to true, so tapping "use something else" removed the code
+        // screen for good and a member who had the code in their hand had
+        // nowhere to type it.
+        setChanging(false);
+        send(formData);
+      }}
+      className="mt-10 flex flex-col gap-8"
+    >
       <Field
         id={identifierId}
         label={C.identifierLabel}

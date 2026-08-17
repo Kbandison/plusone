@@ -105,7 +105,7 @@ export function DeclineForm({
             name="personal_line"
             type="text"
             maxLength={CONNECTS.personalLineMaxChars}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
           />
         </label>
 

@@ -88,7 +88,7 @@ export function ReportCard({ report }: { report: ReportForCard }) {
           id={`note-${report.queue_id}`}
           name="note"
           type="text"
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
         />
         <div className="mt-1 flex gap-3">
           <button

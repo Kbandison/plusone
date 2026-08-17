@@ -92,6 +92,10 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
                     room into a name and a face for anyone reading the payload.
                     Both resolve it server-side from the message. */}
                 <ReportControl
+                  // h2 here: a room page's only other h2 is the pinned-resource
+                  // aside, which most rooms do not have — so an h3 followed the
+                  // h1 with nothing between it.
+                  headingLevel={2}
                   roomMessageId={message.id as string}
                   describedBy={`post-${message.id as string}`}
                 />

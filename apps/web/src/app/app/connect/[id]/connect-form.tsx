@@ -63,7 +63,7 @@ export function ConnectForm({
           rows={4}
           maxLength={500}
           required
-          className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15.5px] focus:border-accent focus:outline-none"
+          className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15.5px] focus:border-accent"
         />
       </label>
 

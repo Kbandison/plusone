@@ -40,7 +40,7 @@ export function Field({
           [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined
         }
         aria-invalid={error ? true : undefined}
-        className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none sm:w-[300px]"
+        className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[300px]"
         {...props}
       />
       {hint ? (

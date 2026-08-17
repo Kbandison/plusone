@@ -75,7 +75,10 @@
 
   --ink: #ede7de;
   --ink-2: #a79c90;
-  --ink-3: #877a6e;
+  /* #877a6e was here and it is the value this file documents as failing AA.
+     Both dark blocks have identical specificity, so this one won by source
+     order and the corrected value in the media query above was unreachable. */
+  --ink-3: #8d8074;
 
   --accent: #d69a4e;
   --accent-ink: #14110f;

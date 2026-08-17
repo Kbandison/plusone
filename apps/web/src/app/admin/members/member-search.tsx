@@ -24,7 +24,7 @@ export function MemberSearch() {
           minLength={2}
           placeholder="Display name or member id"
           aria-label="Display name or member id"
-          className="min-w-[240px] flex-1 rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+          className="min-w-[240px] flex-1 rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[15px] focus:border-accent"
         />
         <button
           type="submit"

@@ -40,7 +40,7 @@ export function BioEditor({ bio }: { bio: string | null }) {
           maxLength={MAX_CHARS}
           defaultValue={bio ?? ""}
           aria-describedby={hintId}
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
         />
         <p id={hintId} className="text-[13.5px] text-ink-3">
           {C.bioHint(MAX_CHARS)}

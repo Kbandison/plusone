@@ -174,6 +174,10 @@ function ReviewScreen({
       role="status"
       tabIndex={-1}
       ref={(node) => node?.focus()}
+      /* The one defensible use: this container is focused programmatically so a
+         screen reader announces the review, and a ring on a focus the member did
+         not move there themselves is noise. Every other instance of this class
+         in the app was cancelling the keyboard focus ring globals.css defines. */
       className="mt-10 rounded-lg border border-line-2 bg-surface p-6 focus:outline-none"
     >
       <h2 className="text-[clamp(1.3rem,3.5vw,1.55rem)]">{heading}</h2>

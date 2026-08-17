@@ -314,6 +314,15 @@ export const DRAFT_COPY = {
      * accept anything again.
      */
     chatClosedMidSend: "This chat closed while you were writing. There is a note waiting for you.",
+    /** An empty room post used to return success and do nothing at all. */
+    emptyPost: "Write something first.",
+    /**
+     * Announced when the recorder changes phase. Each phase renders a different
+     * button, so pressing one destroys the element holding focus — without this
+     * a screen-reader user got silence and a lost cursor.
+     */
+    voiceRecordingStatus: "Recording.",
+    voiceReviewStatus: "Recorded. Listen back before you send it.",
     messagePlaceholder: "Say something",
     sendLabel: "Send",
     proposeHeading: "Propose a plan",

@@ -93,7 +93,7 @@ export function DeleteAccount() {
           name="confirm"
           type="text"
           autoComplete="off"
-          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-critical focus:outline-none sm:w-[220px]"
+          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-critical sm:w-[220px]"
         />
 
         {state.error ? (
@@ -147,7 +147,7 @@ export function SignInEmail({ email, confirmed }: { email: string | null; confir
             defaultValue={email ?? ""}
             aria-describedby={state.error ? "sign_in_email-error" : undefined}
             aria-invalid={state.error ? true : undefined}
-            className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent focus:outline-none sm:w-[300px]"
+            className="ease-brand w-full rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[300px]"
           />
         </div>
         <button

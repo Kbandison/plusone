@@ -135,3 +135,45 @@ describe("tokens.css stays in sync with the TypeScript palette", () => {
     expect(css).toContain(':root:not([data-theme="light"])');
   });
 });
+
+describe("the two dark blocks agree", () => {
+  const css = readFileSync(fileURLToPath(new URL("../tokens.css", import.meta.url)), "utf8");
+
+  /**
+   * They did not. `--ink-3` was #8d8074 in the media query and #877a6e in the
+   * attribute selector — and the two have identical specificity (0,2,0), so the
+   * attribute block won by source order and the corrected value was unreachable.
+   * The older one is the value this file's own comment documents as failing AA.
+   *
+   * A duplicated declaration list is a duplicated decision. This asserts they
+   * never drift again, whichever one someone edits.
+   */
+  it("declares identical values in the media query and the [data-theme] block", () => {
+    const media = css.slice(
+      css.indexOf("@media (prefers-color-scheme: dark)"),
+      css.indexOf(':root[data-theme="dark"]'),
+    );
+    const attr = css.slice(css.indexOf(':root[data-theme="dark"]'));
+
+    const read = (block: string, name: string) =>
+      new RegExp(`${name}:\\s*([^;]+);`).exec(block)?.[1]?.trim();
+
+    for (const token of [
+      "--ground",
+      "--surface",
+      "--surface-2",
+      "--ink",
+      "--ink-2",
+      "--ink-3",
+      "--accent",
+      "--accent-ink",
+      "--positive",
+      "--caution",
+      "--critical",
+    ]) {
+      expect(read(attr, token), `${token} differs between the two dark blocks`).toBe(
+        read(media, token),
+      );
+    }
+  });
+});

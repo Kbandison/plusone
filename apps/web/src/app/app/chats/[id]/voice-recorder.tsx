@@ -130,6 +130,22 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
 
   return (
     <div className="mt-4 flex flex-col gap-3">
+      {/* A persistent live region naming the current phase.
+       *
+       * Each phase renders a different button, so pressing Record unmounts the
+       * element holding focus and React drops it to <body> — a keyboard or
+       * screen-reader user pressed a button and then had no idea what had
+       * happened or where they were. The comment below is right that the
+       * SECONDS must not be announced, and the phase is a different thing: it
+       * changes three times in a recording, not sixty. */}
+      <p role="status" className="sr-only">
+        {state === "recording"
+          ? C.voiceRecordingStatus
+          : state === "review"
+            ? C.voiceReviewStatus
+            : ""}
+      </p>
+
       {state === "idle" ? (
         <button
           type="button"

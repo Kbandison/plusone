@@ -86,7 +86,7 @@ export default async function BrowsePage({
           <select
             name="distance"
             defaultValue={String(distanceMi)}
-            className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+            className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15px] focus:border-accent"
           >
             {RADIUS.ladderMi.map((mi) => (
               <option key={mi} value={mi}>
@@ -101,7 +101,7 @@ export default async function BrowsePage({
           <select
             name="intention"
             defaultValue={intention ?? ""}
-            className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+            className="rounded-lg border border-line-2 bg-surface px-3.5 py-2.5 text-[15px] focus:border-accent"
           >
             <option value="">{C.filterAny}</option>
             {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (

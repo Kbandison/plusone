@@ -45,7 +45,7 @@ export function RoomComposer({ roomId }: { roomId: string }) {
           // typed, so a member who tabs back lands on an unnamed field. This is
           // the primary messaging control of the product.
           aria-label={C.roomPostPlaceholder}
-          className="flex-1 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] focus:border-accent focus:outline-none"
+          className="flex-1 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] focus:border-accent"
         />
         <button
           type="submit"

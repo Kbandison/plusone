@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 
 import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
 
@@ -38,7 +38,13 @@ export function Composer({ chatId }: { chatId: string }) {
           // typed, so a member who tabs back lands on an unnamed field. This is
           // the primary messaging control of the product.
           aria-label={C.messagePlaceholder}
-          className="flex-1 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] focus:border-accent focus:outline-none"
+          /* min-w-0: a flex item's default min-width is `auto`, which for a text
+             input resolves to its intrinsic control width (~234px). At 320px
+             that pushed Send off the right edge with nothing to scroll to, so
+             the composer could not be used at all on a small phone.
+             is gone too — globals.css defines the keyboard
+             focus ring the accessibility gate requires, and this cancelled it. */
+          className="min-w-0 flex-1 rounded-lg border border-line-2 bg-surface px-4 py-3 text-[16px] focus:border-accent"
         />
         <button
           type="submit"
@@ -81,7 +87,7 @@ export function ProposePlan({ chatId }: { chatId: string }) {
             name={field.name}
             type={field.type}
             required
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
           />
         </label>
       ))}
@@ -139,6 +145,7 @@ export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm
 export function CancelPlan({ chatId }: { chatId: string }) {
   const [cancelState, cancel, cancelling] = useActionState(cancelPlan, CHAT_INITIAL);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const confirmId = useId();
 
   return (
     <div className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6">
@@ -149,9 +156,25 @@ export function CancelPlan({ chatId }: { chatId: string }) {
           Blocking is deliberately unguarded and this is deliberately not: a
           block is reversible from Settings and is reached at the worst moment
           someone will have here, where a cancelled plan means going back to the
-          other person and asking again. */}
+          other person and asking again.
+
+          The trigger stays MOUNTED while the confirmation is open. It used to be
+          the other branch of a ternary, so activating it destroyed the element
+          holding focus and dropped the cursor to <body> exactly when the member
+          was being asked a question. aria-expanded says what is actually true
+          rather than a hard-coded false. */}
+      <button
+        type="button"
+        onClick={() => setConfirmingCancel((open) => !open)}
+        aria-expanded={confirmingCancel}
+        aria-controls={confirmId}
+        className="ease-brand self-start text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      >
+        {C.cancelPlanLabel}
+      </button>
+
       {confirmingCancel ? (
-        <div className="flex flex-col gap-3">
+        <div id={confirmId} className="flex flex-col gap-3">
           <p role="status" className="text-[14.5px] text-ink-2">
             {C.cancelPlanConfirm}
           </p>
@@ -175,16 +198,7 @@ export function CancelPlan({ chatId }: { chatId: string }) {
             </button>
           </div>
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setConfirmingCancel(true)}
-          aria-expanded={false}
-          className="ease-brand self-start text-[14.5px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
-        >
-          {C.cancelPlanLabel}
-        </button>
-      )}
+      ) : null}
 
       <Error message={cancelState.error} />
     </div>
@@ -256,7 +270,7 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
             maxLength={CONNECTS.personalLineMaxChars}
             value={line}
             onChange={(event) => setLine(event.target.value)}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
           />
         </label>
 

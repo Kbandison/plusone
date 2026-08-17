@@ -1,4 +1,7 @@
+import { DRAFT_COPY } from "@plusone/config";
 import { onboarding } from "@plusone/logic";
+
+import { signOut } from "@/app/app/settings/sign-out";
 
 /**
  * The frame every onboarding step sits in: where you are, what this screen is
@@ -45,6 +48,23 @@ export function StepShell({
       {intro ? <p className="mt-6 text-[16.5px] leading-[1.7] text-ink-2">{intro}</p> : null}
 
       {children}
+
+      {/* A way off the device, on every onboarding screen.
+       *
+       * Sign-out lived only in Settings, Settings is behind the app shell, and
+       * the shell sends anybody whose step is not "done" back into onboarding.
+       * So a member who failed the selfie check — or was flagged and handed to a
+       * human — could not sign out at all. On an app about a stigmatised
+       * condition, on a phone somebody might hand to a friend, that is the one
+       * control that has to be reachable from everywhere. */}
+      <form action={signOut} className="mt-16 border-t border-line pt-6">
+        <button
+          type="submit"
+          className="ease-brand text-[14px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+        >
+          {DRAFT_COPY.app.signOutLabel}
+        </button>
+      </form>
     </main>
   );
 }

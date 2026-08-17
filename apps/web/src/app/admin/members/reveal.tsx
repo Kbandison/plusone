@@ -32,7 +32,7 @@ export function RevealCondition({ memberId }: { memberId: string }) {
           minLength={10}
           placeholder="Why you need it"
           aria-label="Why you need it"
-          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+          className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
         />
         <button
           type="submit"

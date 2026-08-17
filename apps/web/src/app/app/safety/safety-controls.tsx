@@ -104,13 +104,24 @@ export function ReportControl({
   messageId,
   roomMessageId,
   describedBy,
+  headingLevel = 3,
 }: {
   memberId?: string;
   messageId?: string;
   roomMessageId?: string;
   /** Id of the text this control acts on, so repeated buttons are told apart. */
   describedBy?: string;
+  /**
+   * Where this sits in the page's outline.
+   *
+   * A chat page supplies an h2 above this — the plan panel, the closure note —
+   * so h3 is correct there. A room page's only h2 is the pinned-resource aside,
+   * which renders solely when a room HAS one, so on most rooms this h3 followed
+   * the h1 with nothing between and the outline skipped a level.
+   */
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   const [state, act, pending] = useActionState(reportMember, SAFETY_INITIAL);
   const [open, setOpen] = useState(false);
 
@@ -146,7 +157,7 @@ export function ReportControl({
         action={act}
         className="mt-4 flex flex-col gap-4 rounded-lg border border-line-2 bg-surface p-5"
       >
-        <h3 className="text-[1.05rem]">{C.reportHeading}</h3>
+        <Heading className="text-[1.05rem]">{C.reportHeading}</Heading>
         <p className="text-[14px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
 
         {memberId ? <input type="hidden" name="reported_user_id" value={memberId} /> : null}
@@ -180,7 +191,7 @@ export function ReportControl({
             name="detail"
             rows={3}
             maxLength={REPORT_DETAIL_MAX_CHARS}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent focus:outline-none"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[15px] focus:border-accent"
           />
         </label>
 
