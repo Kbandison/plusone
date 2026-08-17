@@ -102,10 +102,15 @@ function providerFor(env: ReturnType<typeof parseServerEnv>): verification.Liven
  * Opens a check: a Rekognition session, plus credentials for the device to
  * stream to it.
  *
- * The attempt is spent HERE, before the camera opens, rather than when a result
- * comes back. A member who opens a session and closes the tab has still cost a
- * Face Liveness call, and charging only for completed checks is what makes
- * "abandon and retry" an unlimited loop.
+ * The attempt is NOT spent here — the reducer counts it when a result comes
+ * back, and this docstring said the opposite of the code for half a day.
+ *
+ * Charging at the door looked right (an abandoned session is not free at AWS)
+ * and was wrong twice over: the reducer counts too, so every check was charged
+ * against a cap of three and members were flagged after two; and it charged
+ * anybody whose camera never opened, which on a desktop without a webcam is
+ * everybody. The billable event at AWS is a STREAMED analysis, and an abandoned
+ * session is not one.
  */
 export async function beginLiveness(
   previous: LivenessState,

@@ -26,6 +26,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   }
 
+  // The notifier is built FIRST, before anything is claimed.
+  //
+  // createStubNotifier throws SYNCHRONOUSLY at construction when NODE_ENV is
+  // 'production' — which it is on every Vercel deployment — and that happened
+  // after claim_fuse_warnings had already stamped and committed. So each hourly
+  // fire consumed a whole window of warnings and then threw, and nobody would
+  // ever have been warned about a closing chat. Constructing it up here means a
+  // refusal costs nothing: the rows stay unclaimed for a run that can deliver.
+  let send: notify.Notifier;
+  try {
+    send = notifier();
+  } catch (error) {
+    return NextResponse.json({ error: String(error), claimed: 0 }, { status: 500 });
+  }
+
   const supabase = serviceClient();
 
   // CLAIM, not query.
@@ -51,7 +66,7 @@ export async function POST(request: Request) {
   if (recipients.length === 0) return NextResponse.json({ notified: 0 });
 
   const deliveries = notify.planDeliveries("fuse_warning", recipients);
-  const result = await notifier().send(deliveries);
+  const result = await send.send(deliveries);
 
   // A TRADE-OFF, stated rather than assumed.
   //

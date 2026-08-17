@@ -24,9 +24,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const NAV = [
+const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   { href: "/app", label: DRAFT_COPY.app.navHome },
-  { href: "/app/browse", label: DRAFT_COPY.app.navBrowse },
+  // Hidden from a support-only member: Browse is a dating surface (Decision #17)
+  // and they get the Preview Drop instead (#19). The page redirects too — this
+  // only stops the link existing, so nobody is bounced by their own nav.
+  { href: "/app/browse", label: DRAFT_COPY.app.navBrowse, datingOnly: true },
   { href: "/app/inbox", label: DRAFT_COPY.app.navInbox },
   { href: "/app/chats", label: DRAFT_COPY.app.navChats },
   { href: "/app/rooms", label: DRAFT_COPY.app.navRooms },
@@ -43,6 +46,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const step = onboarding.resolveStep(await loadFacts(data.user.id));
   if (step !== "done") redirect(STEP_ROUTES[step]);
+
+  const { data: me } = await supabase.rpc("my_profile").maybeSingle<{ mode: string | null }>();
+  const supportOnly = me?.mode === "support_only";
+  const nav = NAV.filter((item) => !(item.datingOnly && supportOnly));
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col px-6">
@@ -74,7 +81,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         className="fixed inset-x-0 bottom-0 border-t border-line bg-ground/95 backdrop-blur"
       >
         <ul className="mx-auto flex max-w-[680px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}

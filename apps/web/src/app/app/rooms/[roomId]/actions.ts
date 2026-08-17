@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { tone } from "@plusone/logic";
 
+import { memberFacingError } from "@/lib/rpc-error";
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import type { RoomState } from "./state";
@@ -59,7 +60,12 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
     .from("room_messages")
     .insert({ room_id: roomId, user_id: auth.user!.id, body });
 
-  if (error) return { error: "That didn't post." };
+  // memberFacingError, not a blanket string. 20260817000800 raises
+  // "slow mode: wait N more seconds" and rpc-error.ts was extended to allow it
+  // precisely so the member is told how long is left — and this collapsed it
+  // into "That didn't post.", which is the silent drop the trigger was written
+  // to replace.
+  if (error) return { error: memberFacingError(error, "That didn't post.") };
 
   revalidatePath(`/app/rooms/${roomId}`);
   return { error: null };

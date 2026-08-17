@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plusone/config";
 
@@ -38,6 +39,19 @@ export default async function BrowsePage({
   const activeOnly = filters.active === "1";
 
   const supabase = await getServerSupabase();
+
+  // Browse is a dating surface, and a support-only member is not on it.
+  //
+  // Decision #17 makes support-only a shield that removes somebody from every
+  // dating surface, and Decision #19 gives them a Preview Drop instead —
+  // photos blurred, names hidden, one call to action: "Switch to dating to see
+  // and connect." All of that redaction was contradicted one tab away, because
+  // can_view_profile's mode wall passes every dating target for a support-only
+  // viewer and Browse reads clear photos and display names straight off
+  // visible_profiles. The preview only means something if this is closed.
+  const { data: me } = await supabase.rpc("my_profile").maybeSingle<{ mode: string | null }>();
+  if (me?.mode === "support_only") redirect("/app");
+
   let query = supabase
     .from("visible_profiles")
     .select("id, display_name, age, intention, distance_mi, last_active_at")

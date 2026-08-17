@@ -87,6 +87,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // record_drop refuses a backdated date. Only a forged call can produce it —
   // the app always sends today — so it says nothing a member needs.
   "a drop is for today",
+  // record_drop's own bounds. Only a forged call can produce any of them — the
+  // app sends the Drop it just assembled — so none says anything a member needs.
+  "a drop is at most ",
+  "a drop card must be someone you can see",
+  "a referral grant is for a conversion or a tier",
   "% is not callable by a member",
   "policies call an is_admin overload that end users cannot execute: ",
   "policies still calling is_admin(uuid): ",

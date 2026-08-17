@@ -43,7 +43,14 @@ export function LivenessForm() {
   // stale begin state rendered a retry button — for a step they can no longer
   // pass, which then answered "the check is unavailable, try again in a moment"
   // every time they pressed it.
-  const state = finished.phase !== "idle" || finishing ? finished : begun;
+  // Whichever phase spoke MOST RECENTLY.
+  //
+  // "finished, once it has ever settled" was wrong in the other direction: after
+  // one failed check a later begin error — the provider down, the cap reached —
+  // could never reach the screen, because finish had settled once and won
+  // forever. A begin that has moved past idle since is the newer word.
+  const state =
+    finishing || (finished.phase !== "idle" && begun.phase === "idle") ? finished : begun;
 
   // Out of attempts is not a rejection. §2 Decision #21 puts a human in the loop
   // on a risk flag, and this is what that looks like from the member's side:
@@ -97,6 +104,11 @@ export function LivenessForm() {
         action={(formData) => {
           setCompletedSession(null);
           setCancelled(false);
+          // Reset too. Without this, one camera error latched the gate shut for
+          // the life of the page: the capture branch tests !cameraFailed, so
+          // Try again re-ran begin and then refused to show the camera — and
+          // the member had no way to reach it again short of a reload.
+          setCameraFailed(false);
           begin(formData);
         }}
       >

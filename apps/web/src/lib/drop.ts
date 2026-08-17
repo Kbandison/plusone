@@ -7,6 +7,9 @@ import { serviceClient } from "./cron";
 import { getServerSupabase } from "./supabase";
 import { dropConfig } from "./tunables";
 
+/** Candidates whose quiz vectors are fetched. Beyond this the ranking is already decided. */
+const MAX_VECTOR_LOOKUP = 400;
+
 /**
  * Tonight's Drop.
  *
@@ -112,7 +115,13 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
       radiusExpanded: existing.radius_used_mi > memberRadiusMi,
       memberRadiusMi,
     };
-    return existing.is_preview
+    // Redaction follows the member's CURRENT mode, not the mode they were in
+    // when the row was written. Branching on existing.is_preview meant somebody
+    // who switched to support-only after their Drop was built kept getting full
+    // cards and clear photos for the rest of the day — and that branch only
+    // became reachable at all once record_drop started working this morning.
+    // The stored flag still stands as the record of what was served.
+    return preview
       ? { preview: true, cards: await loadPreviewCards(ids), ...shared }
       : { preview: false, cards: await loadCards(ids), ...shared };
   }
@@ -149,11 +158,19 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
   // drop_candidates RPC would let anyone read other members' trait scores by
   // calling it directly. This runs server-side, the vectors never reach the
   // browser, and only the ids of the chosen cards leave this function.
-  const vectorIds = [userId, ...candidateRows.map((r) => r.id)];
-  const { data: vectorRows } = await serviceClient()
+  // Bounded, and the error is not discarded. An unbounded `in` list grows with
+  // the candidate pool and a failure here silently reverts every candidate to a
+  // neutral quiz score — which is the exact bug this read was written to fix,
+  // returning in a quieter form.
+  const vectorIds = [userId, ...candidateRows.slice(0, MAX_VECTOR_LOOKUP).map((r) => r.id)];
+  const { data: vectorRows, error: vectorError } = await serviceClient()
     .from("quiz_responses")
     .select("user_id, trait_vector")
     .in("user_id", vectorIds);
+
+  if (vectorError) {
+    console.error(JSON.stringify({ at: "drop.quiz_vectors", problem: vectorError.message }));
+  }
 
   const vectors = new Map<string, readonly number[] | null>();
   for (const row of (vectorRows ?? []) as { user_id: string; trait_vector: number[] | null }[]) {

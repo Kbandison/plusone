@@ -43,9 +43,19 @@ export default async function PremiumPage() {
     console.error(JSON.stringify({ at: "premium.page", problem: premiumError.message }));
   }
 
+  // Only dates that have not already passed.
+  //
+  // A member whose subscription lapsed in June and who then earned a referral
+  // grant is premium — and this sorted both dates and took the later string, so
+  // it could show them a June date and tell a currently-premium member their
+  // access ended two months ago. Whether they ARE premium is is_premium's
+  // answer; this line only picks which date to show.
+  const now = Date.now();
   const grantUntil = grants?.[0]?.expires_at as string | undefined;
-  const paidUntil = subscription?.current_period_end as string | undefined;
-  const until = [paidUntil, grantUntil].filter(Boolean).sort().at(-1);
+  const until = [subscription?.current_period_end as string | undefined, grantUntil]
+    .filter((d): d is string => Boolean(d) && Date.parse(d as string) > now)
+    .sort()
+    .at(-1);
 
   return (
     <main id="main">

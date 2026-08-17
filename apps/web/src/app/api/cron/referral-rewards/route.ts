@@ -76,6 +76,7 @@ export async function POST(request: Request) {
         p_user_id: conversion.invitee_id,
         p_days: reward.days,
         p_role: "invitee",
+        p_reason: "conversion",
       });
       if (inviteeError) {
         // Reported, not swallowed. The conversion stays outstanding, so the next
@@ -108,12 +109,21 @@ export async function POST(request: Request) {
         continue;
       }
 
-      if (conversion.referrer_paid) continue;
+      // The REASON is part of the key now.
+      //
+      // On a tier conversion the referrer earns two grants — the ordinary
+      // per-conversion days AND the tier bonus — and both were written with the
+      // same source string. This morning's uniqueness index then dropped the
+      // second without a word, so the fix for double-granting became a fix for
+      // granting at all.
+      const reason = reward.reason === "tier" ? "tier" : "conversion";
+      if (reason === "conversion" && conversion.referrer_paid) continue;
       const { error: referrerError } = await supabase.rpc("grant_referral_premium", {
         p_conversion_id: conversion.conversion_id,
         p_user_id: conversion.referrer_id,
         p_days: reward.days,
         p_role: "referrer",
+        p_reason: reason,
       });
       if (referrerError) {
         failures.push(`referrer:${conversion.conversion_id}`);

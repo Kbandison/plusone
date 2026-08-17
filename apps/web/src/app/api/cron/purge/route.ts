@@ -58,12 +58,41 @@ export async function POST(request: Request) {
   const targets = (targetRows ?? []) as PurgeTarget[];
   const byUser = new Map(targets.map((t) => [t.user_id, t]));
 
+  // Stripe FIRST, then the rows.
+  //
+  // Cancelling after the delete meant the webhook Stripe fires in response —
+  // customer.subscription.deleted, carrying metadata.user_id — arrived to find
+  // no profiles row, so the upsert failed a foreign key, the handler now throws
+  // on a failed write, and Stripe retried it for days. purge_targets has already
+  // read the ids, so nothing is lost by doing this while the rows still exist:
+  // a crash between the two leaves a cancelled subscription and a live account,
+  // which is recoverable, where the other order leaves a charged card and no
+  // record of who to refund.
+  const billingFailures: string[] = [];
+  for (const target of targets) {
+    if (target.stripe_sub_id) {
+      try {
+        await stripe().subscriptions.cancel(target.stripe_sub_id);
+      } catch {
+        // Already cancelled is the common case. A real failure must not be
+        // silent — the member is still being billed.
+        billingFailures.push(`sub:${target.stripe_sub_id}`);
+      }
+    }
+    if (target.stripe_customer_id) {
+      try {
+        await stripe().customers.del(target.stripe_customer_id);
+      } catch {
+        billingFailures.push(`customer:${target.stripe_customer_id}`);
+      }
+    }
+  }
+
   const { data, error } = await supabase.rpc("purge_due_deletions");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const purged = ((data ?? []) as { purged_user_id: string }[]).map((r) => r.purged_user_id);
   const orphaned: string[] = [];
-  const billingFailures: string[] = [];
 
   for (const userId of purged) {
     for (const bucket of ["photos", "verification-selfies"]) {
@@ -107,26 +136,6 @@ export async function POST(request: Request) {
     if (voiceNotes.length > 0) {
       const { error: voiceError } = await supabase.storage.from("voice-notes").remove(voiceNotes);
       if (voiceError) orphaned.push(`voice-notes/${userId}`);
-    }
-
-    // Cancel before detaching: deleting a customer with a live subscription is
-    // an invoice nobody will ever see.
-    if (target?.stripe_sub_id) {
-      try {
-        await stripe().subscriptions.cancel(target.stripe_sub_id);
-      } catch {
-        // Already cancelled is the common case and is not a failure worth
-        // shouting about — but a real one must not be silent, because the
-        // member is still being billed and the mapping is now gone.
-        billingFailures.push(`sub:${target.stripe_sub_id}`);
-      }
-    }
-    if (target?.stripe_customer_id) {
-      try {
-        await stripe().customers.del(target.stripe_customer_id);
-      } catch {
-        billingFailures.push(`customer:${target.stripe_customer_id}`);
-      }
     }
   }
 
