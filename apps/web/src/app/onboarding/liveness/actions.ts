@@ -8,9 +8,11 @@ import { verification } from "@plusone/logic";
 import { serviceClient } from "@/lib/cron";
 import { createAwsLivenessProvider, vendBrowserCredentials } from "@/lib/liveness-aws";
 import { requireStep } from "@/lib/onboarding";
+import { getServerSupabase } from "@/lib/supabase";
 import type { LivenessState } from "./state";
 
 const E = DRAFT_COPY.liveness.errors;
+const A = DRAFT_COPY.liveness.appealErrors;
 
 /**
  * The liveness step (§7.2 step 2, Decision #21).
@@ -30,20 +32,41 @@ const E = DRAFT_COPY.liveness.errors;
 interface Attempted {
   readonly status: verification.VerificationStatus;
   readonly attempts: number;
+  /** The session this member has open, if any. The only one they may finish. */
+  readonly sessionId: string | null;
+  readonly appealOpenedAt: string | null;
+  readonly appealDecidedAt: string | null;
+}
+
+/** An appeal the member has asked for and nobody has ruled on yet. */
+function appealIsOpen(current: Attempted): boolean {
+  if (!current.appealOpenedAt) return false;
+  if (!current.appealDecidedAt) return true;
+  return current.appealDecidedAt < current.appealOpenedAt;
 }
 
 /** Reads the member's real verification state. Never from the client. */
 async function readState(userId: string): Promise<Attempted> {
   const { data } = await serviceClient()
     .from("profiles")
-    .select("verification_status, liveness_attempts")
+    .select(
+      "verification_status, liveness_attempts, liveness_session_id, appeal_opened_at, appeal_decided_at",
+    )
     .eq("id", userId)
     .maybeSingle();
 
   return {
     status: (data?.verification_status ?? "phone_verified") as verification.VerificationStatus,
     attempts: (data?.liveness_attempts as number | null) ?? 0,
+    sessionId: (data?.liveness_session_id as string | null) ?? null,
+    appealOpenedAt: (data?.appeal_opened_at as string | null) ?? null,
+    appealDecidedAt: (data?.appeal_decided_at as string | null) ?? null,
   };
+}
+
+/** What the member has left, from the row rather than from a phase-old label. */
+function attemptsLeftFor(current: Attempted): number {
+  return Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts);
 }
 
 function stateFor({ status, attempts }: Attempted): verification.VerificationState {
@@ -92,6 +115,7 @@ export async function beginLiveness(
 
   const env = parseServerEnv(process.env);
   const provider = providerFor(env);
+  // Before `current` is read there is no count to show, so the label stands.
   if (!provider) return { ...previous, error: E.unavailable, phase: "settled", session: null };
 
   const current = await readState(userId);
@@ -119,7 +143,20 @@ export async function beginLiveness(
     // opposite of, and this file already carried a comment about the same
     // mistake made one layer down.
     if (started.code === "under_review") {
-      return { error: null, attemptsLeft: 0, flagged: true, phase: "settled", session: null };
+      // Which KIND of review matters. "Somebody will look" is true of a flagged
+      // member and false of one an administrator has already refused — they
+      // need to be told the review finished, and offered the appeal Decision #21
+      // promises.
+      return {
+        error: null,
+        attemptsLeft: 0,
+        review: {
+          status: current.status === "rejected" ? "rejected" : "flagged",
+          appealOpen: appealIsOpen(current),
+        },
+        phase: "settled",
+        session: null,
+      };
     }
 
     // Already through. Nothing to do here, and `/onboarding` knows where they
@@ -131,7 +168,7 @@ export async function beginLiveness(
       error: started.code === "phone_not_verified" ? E.phoneFirst : E.unavailable,
       // Not `previous`'s count: that is a phase behind and would show a member
       // attempts they do not have.
-      attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
+      attemptsLeft: attemptsLeftFor(current),
       phase: "settled",
       session: null,
     };
@@ -139,7 +176,13 @@ export async function beginLiveness(
 
   // Out of attempts already: no session, no AWS call, no spend.
   if (current.attempts >= VERIFICATION.livenessMaxRetries) {
-    return { error: null, attemptsLeft: 0, flagged: true, phase: "settled", session: null };
+    return {
+      error: null,
+      attemptsLeft: 0,
+      review: { status: "flagged", appealOpen: appealIsOpen(current) },
+      phase: "settled",
+      session: null,
+    };
   }
 
   let sessionId: string;
@@ -153,10 +196,16 @@ export async function beginLiveness(
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
     });
   } catch {
-    return { ...previous, error: E.unavailable, phase: "settled", session: null };
+    return {
+      ...previous,
+      error: E.unavailable,
+      attemptsLeft: attemptsLeftFor(current),
+      phase: "settled",
+      session: null,
+    };
   }
 
-  // Status only. The attempt is NOT counted here.
+  // Status AND the session id. The attempt is NOT counted here.
   //
   // It was, and the reducer counts too — `state.livenessAttempts + 1` — so
   // every check was charged twice and members were flagged after two attempts
@@ -165,15 +214,21 @@ export async function beginLiveness(
   // Counting here would also charge a member whose camera never opened, which
   // on a desktop without a webcam is everyone. The billable thing at AWS is a
   // streamed analysis, and an unstreamed session is not one.
+  //
+  // The session id is stored because it is a capability. It used to be handed
+  // to the browser and read back off the submitted form, so one member could
+  // paste another's session id in and claim their verdict — AWS answers
+  // GetFaceLivenessSessionResults for whoever asks. Now the row owns it and the
+  // form is not consulted.
   await serviceClient()
     .from("profiles")
-    .update({ verification_status: "liveness_pending" })
+    .update({ verification_status: "liveness_pending", liveness_session_id: sessionId })
     .eq("id", userId);
 
   return {
     error: null,
-    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
-    flagged: false,
+    attemptsLeft: attemptsLeftFor(current),
+    review: null,
     phase: "open",
     session: { sessionId, region: env.AWS_REGION!, credentials },
   };
@@ -182,42 +237,78 @@ export async function beginLiveness(
 /**
  * Reads the verdict AWS recorded for this session and lets the reducer decide.
  *
- * The session id comes from the client, which is fine and is the only thing
- * that could: the browser is the only party that knows which session it just
- * streamed. It is not a capability — the verdict is fetched from AWS, so a
- * member substituting somebody else's session id gets somebody else's result
- * written to their own row, which gains them nothing they could not get by
- * doing the check.
+ * The session id comes from the ROW, never from the request. The comment that
+ * used to sit here argued the opposite — that the browser is the only party who
+ * knows which session it streamed, and that borrowing another id "gains them
+ * nothing they could not get by doing the check". True of one honest person,
+ * false of the attack this check exists to stop: one operator passes a single
+ * genuine check, reads the id out of their own page, and submits it from every
+ * other account they hold. AWS answers GetFaceLivenessSessionResults for
+ * whoever asks, so each of those accounts is handed a real SUCCEEDED verdict
+ * with no camera ever opening.
+ *
+ * So the form is not consulted, and the id is consumed on use — a verdict is
+ * good for exactly one decision, even for the member who earned it.
  */
 export async function finishLiveness(
   previous: LivenessState,
-  formData: FormData,
+  _formData: FormData,
 ): Promise<LivenessState> {
   const { userId } = await requireStep("liveness");
 
-  const sessionId = String(formData.get("session_id") ?? "").trim();
-  if (!sessionId) return { ...previous, error: E.unavailable, phase: "settled", session: null };
-
   const env = parseServerEnv(process.env);
   const provider = providerFor(env);
+  // Before `current` is read there is no count to show, so the label stands.
   if (!provider) return { ...previous, error: E.unavailable, phase: "settled", session: null };
 
   const current = await readState(userId);
+
+  // No open session of their own means no verdict of theirs to read.
+  const sessionId = current.sessionId;
+  if (!sessionId)
+    return {
+      ...previous,
+      error: E.unavailable,
+      attemptsLeft: attemptsLeftFor(current),
+      phase: "settled",
+      session: null,
+    };
 
   let outcome: verification.LivenessOutcome;
   try {
     outcome = await provider.fetchOutcome(sessionId);
   } catch {
-    return { ...previous, error: E.unavailable, phase: "settled", session: null };
+    return {
+      ...previous,
+      error: E.unavailable,
+      attemptsLeft: attemptsLeftFor(current),
+      phase: "settled",
+      session: null,
+    };
   }
 
-  // The state machine already counted this attempt in beginLiveness, so the
-  // reducer is handed the state as it stands rather than one step behind.
-  const decided = verification.transition(
-    { ...stateFor(current), status: "liveness_pending" },
-    { type: "liveness_result", at: Date.now(), outcome },
-  );
-  if (!decided.ok) return { ...previous, error: E.unavailable, phase: "settled", session: null };
+  // The member's REAL status, not an asserted one.
+  //
+  // This used to force `status: "liveness_pending"`, discarding whatever the row
+  // said and defeating the only two guards the reducer has on this event:
+  // `no_liveness_in_progress`, and the refusal whose comment reads "Under
+  // review, only an administrator moves a member". A member already flagged
+  // after three failures could submit a passing verdict and be written straight
+  // to 'verified', around admin_decide_verification — the RPC that makes that
+  // rule a wall rather than a convention.
+  const decided = verification.transition(stateFor(current), {
+    type: "liveness_result",
+    at: Date.now(),
+    outcome,
+  });
+  if (!decided.ok)
+    return {
+      ...previous,
+      error: E.unavailable,
+      attemptsLeft: attemptsLeftFor(current),
+      phase: "settled",
+      session: null,
+    };
 
   const next = decided.state;
 
@@ -238,6 +329,8 @@ export async function finishLiveness(
       verification_status: next.status,
       // The reducer's count, written once. Nothing else increments it.
       liveness_attempts: next.livenessAttempts,
+      // Consumed. A verdict is good for exactly one decision.
+      liveness_session_id: null,
       ...(next.status === "verified"
         ? {
             liveness_passed_at: new Date().toISOString(),
@@ -253,7 +346,54 @@ export async function finishLiveness(
     error: next.status === "flagged" ? null : E.failed,
     attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - next.livenessAttempts),
     // The reducer's word, not a count we re-derive.
-    flagged: next.status === "flagged",
+    review: verification.REVIEW_STATUSES.includes(
+      next.status as (typeof verification.REVIEW_STATUSES)[number],
+    )
+      ? { status: next.status === "rejected" ? "rejected" : "flagged", appealOpen: false }
+      : null,
+    phase: "settled",
+    session: null,
+  };
+}
+
+/**
+ * The member asking a human to look again (Decision #21).
+ *
+ * The rule lives in `open_verification_appeal`, not here: only a member under
+ * review may appeal, an open appeal cannot be opened twice, and a DECIDED
+ * appeal does not block a new one — because the rejection that followed the
+ * first appeal has to be appealable too, or the path is locked behind its own
+ * outcome, which is the trap #21 names by name.
+ *
+ * Deliberately not gated on liveness. A member who never passed a check can
+ * still ask, which is the whole point.
+ */
+export async function openAppeal(
+  previous: LivenessState,
+  _formData: FormData,
+): Promise<LivenessState> {
+  const { userId } = await requireStep("liveness");
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase.rpc("open_verification_appeal");
+
+  if (error) {
+    const message = /already open/i.test(error.message)
+      ? A.alreadyOpen
+      : /no review to appeal/i.test(error.message)
+        ? A.notUnderReview
+        : A.failed;
+    return { ...previous, error: message, phase: "settled", session: null };
+  }
+
+  const current = await readState(userId);
+  return {
+    error: null,
+    attemptsLeft: 0,
+    review: {
+      status: current.status === "rejected" ? "rejected" : "flagged",
+      appealOpen: appealIsOpen(current),
+    },
     phase: "settled",
     session: null,
   };

@@ -61,9 +61,20 @@ describe("the attempt count is not the member's to keep", () => {
 });
 
 describe("the browser does not get to say what happened", () => {
-  it("takes only a session id from the form, never a verdict", () => {
+  /**
+   * Now reads NOTHING from the form. The session id used to be posted from the
+   * page, which let one member submit another's id and claim their AWS verdict
+   * — one live face verifying unlimited accounts. It comes off the member's own
+   * row instead, so there is no field left to forge.
+   */
+  it("reads nothing at all from the request body", () => {
     const fields = [...code.matchAll(/formData\.get\("([^"]+)"\)/g)].map((m) => m[1]);
-    expect(fields).toEqual(["session_id"]);
+    expect(fields).toEqual([]);
+  });
+
+  it("takes the session id from the row and consumes it", () => {
+    expect(code).toMatch(/const sessionId = current\.sessionId/);
+    expect(code).toMatch(/liveness_session_id: null/);
   });
 
   /**
@@ -130,21 +141,24 @@ describe("the review screen is the server's call", () => {
    */
   it("does not infer flagged from an attempt count", () => {
     expect(formCode).not.toMatch(/attemptsLeft\s*===\s*0/);
-    expect(formCode).toMatch(/if \(state\.flagged\)/);
+    expect(formCode).toMatch(/if \(state\.review\)/);
   });
 
-  it("starts un-flagged, because nothing has been asked yet", async () => {
+  it("starts with no review, because nothing has been asked yet", async () => {
     const { LIVENESS_INITIAL } = await import("./state");
-    expect(LIVENESS_INITIAL.flagged).toBe(false);
+    expect(LIVENESS_INITIAL.review).toBeNull();
     expect(LIVENESS_INITIAL.session).toBeNull();
   });
 
-  it("only ever sets flagged from the reducer or the cap", () => {
-    const sets = [...code.matchAll(/flagged:\s*([^,\n]+)/g)].map((m) => (m[1] ?? "").trim());
-    for (const value of sets) {
+  it("only ever sets a review from the reducer, the cap, or a refusal", () => {
+    // Every `review:` assignment must come from a status the SERVER read, never
+    // from anything the browser sent.
+    for (const m of code.matchAll(/review:\s*([\s\S]{0,120}?)(,\n|\n\s*\})/g)) {
+      const value = (m[1] ?? "").trim();
+      if (value === "null") continue;
       expect(
-        value === "true" || value === "false" || value.includes('next.status === "flagged"'),
-        `flagged set from ${value}`,
+        value.includes("current") || value.includes("next."),
+        `review derived from ${value}`,
       ).toBe(true);
     }
   });
@@ -182,7 +196,9 @@ describe("a flagged member is never told to try again", () => {
     );
     expect(begin).toMatch(/started\.code === "under_review"/);
     const branch = begin.slice(begin.indexOf('started.code === "under_review"'));
-    expect(branch.slice(0, 200)).toMatch(/flagged: true/);
+    // And it must distinguish rejected from flagged: "somebody will look" is
+    // false for a member an administrator has already refused.
+    expect(branch.slice(0, 400)).toMatch(/current\.status === "rejected"/);
   });
 
   /**
@@ -199,8 +215,8 @@ describe("a flagged member is never told to try again", () => {
       begin.indexOf("if (!started.ok)"),
       begin.indexOf("// Out of attempts"),
     );
-    expect(refusal).toMatch(
-      /attemptsLeft:\s*Math\.max\(0, VERIFICATION\.livenessMaxRetries - current\.attempts\)/,
+    expect(refusal, "the count must come from the row, not from ...previous").toMatch(
+      /attemptsLeft:\s*attemptsLeftFor\(current\)/,
     );
     expect(refusal, "the phoneFirst branch is still reachable").toMatch(/E\.phoneFirst/);
   });

@@ -31,8 +31,16 @@ export type LivenessState = {
    * state honestly said "0 attempts left, I have not asked yet" — so every
    * member landed on "We will take a look" before pressing anything. Only the
    * server knows this, so only the server says it.
+   *
+   * It was also a single boolean, which merged two situations a member
+   * experiences completely differently: "nobody has looked yet" and "somebody
+   * looked and said no". The second needs a way to ask again, and had none.
    */
-  readonly flagged: boolean;
+  readonly review: {
+    readonly status: "flagged" | "rejected";
+    /** An appeal is open, so the member is waiting rather than being asked. */
+    readonly appealOpen: boolean;
+  } | null;
   /**
    * Which phase produced this state.
    *
@@ -55,7 +63,7 @@ export const LIVENESS_INITIAL: LivenessState = {
   error: null,
   // A label only, replaced by the row on the first response.
   attemptsLeft: VERIFICATION.livenessMaxRetries,
-  flagged: false,
+  review: null,
   phase: "idle",
   session: null,
 };

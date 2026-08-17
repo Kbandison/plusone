@@ -5,8 +5,8 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { beginLiveness, finishLiveness } from "./actions";
-import { LIVENESS_INITIAL } from "./state";
+import { beginLiveness, finishLiveness, openAppeal } from "./actions";
+import { LIVENESS_INITIAL, type LivenessState } from "./state";
 
 const C = DRAFT_COPY.liveness;
 
@@ -52,22 +52,8 @@ export function LivenessForm() {
   // Reads the server's flag rather than inferring one from `attemptsLeft === 0`.
   // Inferring it meant the initial state — which has asked the server nothing —
   // rendered this screen to every member before they pressed a thing.
-  if (state.flagged) {
-    return (
-      // role="status" and focusable. This replaces the whole form, including
-      // the button the member just pressed — so without it they press Start,
-      // the button vanishes, focus lands on <body>, and the news that they have
-      // been flagged for human review is never announced at all.
-      <div
-        role="status"
-        tabIndex={-1}
-        ref={(node) => node?.focus()}
-        className="mt-10 rounded-lg border border-line-2 bg-surface p-6 focus:outline-none"
-      >
-        <h2 className="text-[clamp(1.3rem,3.5vw,1.55rem)]">{C.flaggedHeading}</h2>
-        <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{C.flaggedBody}</p>
-      </div>
-    );
+  if (state.review) {
+    return <ReviewScreen review={state.review} error={state.error} />;
   }
 
   if (begun.session && !completedSession && !cancelled && !cameraFailed) {
@@ -127,9 +113,77 @@ export function LivenessForm() {
         <p className="text-[14px] text-ink-3">{C.retriesLeft(state.attemptsLeft)}</p>
       ) : null}
 
-      <form ref={finishRef} action={finish} className="hidden">
-        <input type="hidden" name="session_id" value={completedSession ?? ""} />
-      </form>
+      {/* No session_id field: finishLiveness reads the open session off the
+          member's own row. It used to be posted from here, which meant one
+          member could submit another's session id and claim their verdict. */}
+      <form ref={finishRef} action={finish} className="hidden" />
+    </div>
+  );
+}
+
+/**
+ * What a member sees once a human has them.
+ *
+ * Three screens, not one. "Somebody will look" is true only of a flagged member
+ * who has not been ruled on; a rejected member needs to be told the review
+ * finished and offered the appeal, and a member whose appeal is already open
+ * needs to be told to wait rather than asked again.
+ *
+ * Out of attempts is not a rejection. §2 Decision #21 puts a human in the loop
+ * on a risk flag, and this is what that looks like from the member's side.
+ */
+function ReviewScreen({
+  review,
+  error,
+}: {
+  review: NonNullable<LivenessState["review"]>;
+  error: string | null;
+}) {
+  const [state, appeal, appealing] = useActionState(openAppeal, LIVENESS_INITIAL);
+
+  const waiting = review.appealOpen || Boolean(state.review?.appealOpen);
+  const heading = waiting
+    ? C.appealPendingHeading
+    : review.status === "rejected"
+      ? C.rejectedHeading
+      : C.flaggedHeading;
+  const body = waiting
+    ? C.appealPendingBody
+    : review.status === "rejected"
+      ? C.rejectedBody
+      : C.flaggedBody;
+
+  return (
+    // role="status" and focusable. This replaces the whole form, including the
+    // button the member just pressed — so without it they press Start, the
+    // button vanishes, focus lands on <body>, and the news that a person is
+    // now involved is never announced at all.
+    <div
+      role="status"
+      tabIndex={-1}
+      ref={(node) => node?.focus()}
+      className="mt-10 rounded-lg border border-line-2 bg-surface p-6 focus:outline-none"
+    >
+      <h2 className="text-[clamp(1.3rem,3.5vw,1.55rem)]">{heading}</h2>
+      <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{body}</p>
+
+      {review.status === "rejected" && !waiting ? (
+        <form action={appeal} className="mt-6">
+          <button
+            type="submit"
+            disabled={appealing}
+            className="ease-brand rounded-lg border border-line-2 px-5 py-2.5 text-[15px] transition-colors duration-200 hover:border-accent disabled:opacity-55"
+          >
+            {C.appealLabel}
+          </button>
+        </form>
+      ) : null}
+
+      {(state.error ?? error) ? (
+        <p role="alert" className="mt-4 text-[14.5px] text-critical">
+          {state.error ?? error}
+        </p>
+      ) : null}
     </div>
   );
 }

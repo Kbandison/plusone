@@ -206,6 +206,28 @@ export const DRAFT_COPY = {
     retriesLeft: (n: number) =>
       `${n} ${n === 1 ? "attempt" : "attempts"} left before a person takes a look.`,
     flaggedHeading: "We will take a look",
+    /**
+     * The REJECTED screen, which did not exist.
+     *
+     * A member an administrator had already refused was shown flaggedBody: "The
+     * automatic check could not decide. Someone on our team will review it,
+     * usually within a day. You do not need to do anything." For them every
+     * clause was false — the check decided, the review happened, and doing
+     * nothing changed nothing — and the resolver returned them to that screen on
+     * every visit, forever.
+     */
+    rejectedHeading: "That review has finished",
+    rejectedBody:
+      "Someone on our team looked and could not confirm the selfie matched a live person. If you think that is wrong, ask us to look again and a different person will.",
+    appealLabel: "Ask us to look again",
+    appealPendingHeading: "We are looking again",
+    appealPendingBody:
+      "Your request is with our team. You do not need to do anything, and we will not ask you for another selfie while it is open.",
+    appealErrors: {
+      notUnderReview: "There is no review to appeal right now.",
+      alreadyOpen: "You already have a request open. We will get to it.",
+      failed: "We could not send that just now. Try again in a moment.",
+    },
     flaggedBody:
       "The automatic check could not decide. Someone on our team will review it, usually within a day. You do not need to do anything.",
     errors: {

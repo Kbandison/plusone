@@ -25,6 +25,11 @@
  */
 const SAFE_PREFIXES: readonly string[] = [
   "a plan needs a date",
+  // The appeal refusals (Decision #21). Both are about the member's own
+  // situation and both are actionable by them, so they are safe to show — and
+  // openAppeal maps them to reviewed copy rather than passing them through raw.
+  "an appeal is already open",
+  "no review to appeal",
   "chat is ",
   "connect is already ",
   "connect: daily budget exhausted",
@@ -62,6 +67,9 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "member is not under review",
   "not an administrator",
   "not authenticated",
+  // Never reaches a signed-in member by construction, and says nothing useful
+  // to anyone else.
+  "not signed in",
   "a reason of at least 10 characters is required",
   "a report is resolved or dismissed",
   "no open report with that id",
