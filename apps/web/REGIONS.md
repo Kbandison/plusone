@@ -14,7 +14,10 @@ It is a cost change as well as a latency one: Vercel bills provisioned memory
 for the duration a function is alive, and a function waiting on the network is
 alive the whole time it waits.
 
-`sfo1` is the failover — a different Vercel region, still on the west coast, so
-a regional outage degrades latency rather than correctness.
+There is no failover region. `functionFailoverRegions` — Vercel calls them
+passive regions — is restricted to the Enterprise plan, and adding one made
+every deployment fail with "Deploying Serverless Function passive regions is
+restricted to the Enterprise plan." A single region is the whole of what a
+non-Enterprise project can ask for.
 
 If the database ever moves, this moves with it. They are one decision.
