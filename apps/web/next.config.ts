@@ -33,6 +33,27 @@ const nextConfig: NextConfig = {
        * upload-limits.test.ts asserts the three stay in step.
        */
       bodySizeLimit: 8 * 1024 * 1024 + 256 * 1024,
+
+      /**
+       * Lets a dev tunnel reach the Server Actions behind it.
+       *
+       * Needed because the liveness step cannot be tested on a desktop without
+       * a camera, and a phone cannot reach `localhost`. Its LAN address is no
+       * use either: `getUserMedia` requires a secure context, and an http://
+       * origin that is not localhost is not one — the camera is refused before
+       * any of our code runs. A tunnel gives the phone a real HTTPS origin.
+       *
+       * Next compares a Server Action's Origin against the host to stop CSRF,
+       * and a tunnel makes those differ, so the tunnel host has to be named.
+       *
+       * Gated on NODE_ENV so a stale value cannot widen the check in
+       * production, and read from the environment because the hostname changes
+       * every time a quick tunnel restarts. Set DEV_TUNNEL_HOST to the bare
+       * host — no scheme, no path.
+       */
+      ...(process.env.NODE_ENV !== "production" && process.env["DEV_TUNNEL_HOST"]
+        ? { allowedOrigins: [process.env["DEV_TUNNEL_HOST"]] }
+        : {}),
     },
   },
 

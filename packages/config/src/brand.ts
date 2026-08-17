@@ -14,10 +14,18 @@ export const BRAND = {
   /** Device display name, with a fallback for platforms that mangle superscripts. */
   deviceName: "⁺One",
   deviceNameFallback: "PlusOne",
-  /** Store listing and legal entity name only — never rendered in the UI. */
+  /**
+   * Store listing and legal entity name only — never rendered in the UI.
+   *
+   * NEEDS KEVIN. This was derived from the old domain and is now doubly stale:
+   * the domain is loveplusone.app, and the A2P brand was registered as LuxWeb
+   * Studio LLC with the friendly name PlusOne. Nothing renders it yet, so it is
+   * left rather than guessed at.
+   */
   legalName: "YourPlusOne",
-  domain: "yourplusone.app",
-  supportEmail: "hello@yourplusone.app",
+  /** Secured 2026-08-17. Was yourplusone.app, which was never bought. */
+  domain: "loveplusone.app",
+  supportEmail: "hello@loveplusone.app",
 } as const;
 
 /**

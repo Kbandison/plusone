@@ -50,6 +50,20 @@ export default function Home() {
           {DRAFT_COPY.home.signIn}
         </Link>
 
+        {/* Never in production, and never merely hidden — the guard on
+            /dev/sign-in itself is what closes that door, and this only stops
+            the link from existing. Two independent checks, same as the page.
+            NODE_ENV is inlined at build time, so this whole branch is gone from
+            a production bundle rather than rendered and styled away. */}
+        {process.env.NODE_ENV !== "production" && process.env["OTP_PROVIDER"] === "stub" ? (
+          <Link
+            href="/dev/sign-in"
+            className="ease-brand rounded-lg border border-dashed border-line-2 px-4 py-2 text-[14px] text-ink-3 transition-colors duration-200 hover:text-ink"
+          >
+            Dev sign-in
+          </Link>
+        ) : null}
+
         <Link
           href="/how-it-works"
           className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"

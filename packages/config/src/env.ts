@@ -115,6 +115,19 @@ export const serverEnvSchema = z
 
     /** Shared secret so only Vercel Cron can invoke /api/cron/*. */
     CRON_SECRET: z.string().min(32),
+
+    /**
+     * Bare host of a local dev tunnel, e.g. `abc-123.trycloudflare.com`.
+     *
+     * Read by next.config.ts at BUILD time, not by the app — it names the
+     * tunnel in `serverActions.allowedOrigins` so Next's Origin/host CSRF check
+     * does not reject actions arriving through it. Listed here because this
+     * schema is what .env.example is checked against, and a variable nobody
+     * declares is a variable nobody can find.
+     *
+     * Optional, and ignored entirely when NODE_ENV=production.
+     */
+    DEV_TUNNEL_HOST: z.string().optional(),
   })
   .refine(
     // Only the stub runs without credentials. A real provider missing them would
