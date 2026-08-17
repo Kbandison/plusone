@@ -76,6 +76,9 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "config values are numbers or objects",
   "unknown config key: ",
   "could not allocate a referral code",
+  // record_drop refuses a backdated date. Only a forged call can produce it —
+  // the app always sends today — so it says nothing a member needs.
+  "a drop is for today",
   "% is not callable by a member",
   "policies call an is_admin overload that end users cannot execute: ",
   "policies still calling is_admin(uuid): ",

@@ -57,32 +57,44 @@ export async function sendVoiceNote(_prev: ChatState, formData: FormData): Promi
 
   // Whether this chat still accepts messages is RLS's decision, here and on the
   // storage object. A closed chat rejects both.
-  const { data: message, error: insertError } = await supabase
-    .from("messages")
-    .insert({
-      chat_id: chatId,
-      sender_id: auth.user!.id,
-      voice_note_path: "pending",
-      voice_note_seconds: seconds,
-    })
-    .select("id")
-    .single();
-
-  if (insertError || !message) return { error: "That didn't send." };
-
+  //
+  // ONE write, with the real path.
+  //
+  // This used to insert with voice_note_path = 'pending', upload, then UPDATE
+  // the row to the real path. Members hold `select, insert` on messages and
+  // nothing else — §5.2 makes them immutable — so that update was refused every
+  // time and its result was never checked. Every voice note in the database
+  // pointed at 'pending' and none could be played. The rollback had the same
+  // flaw: .delete() on messages, which members also cannot do.
+  //
+  // So the id is minted here, the audio goes up under its final name, and the
+  // row is written once. The upload is first because a failed insert leaves an
+  // orphaned object, which 20260817000600 lets us remove, whereas a failed
+  // upload after the row exists leaves a message that plays silence — the thing
+  // the bucket's missing delete policy was protecting against.
+  const messageId = crypto.randomUUID();
   const extension = audio.type.split("/")[1]?.split(";")[0] ?? "webm";
-  const path = `${chatId}/${message.id}.${extension}`;
+  const path = `${chatId}/${messageId}.${extension}`;
 
   const { error: uploadError } = await supabase.storage
     .from("voice-notes")
     .upload(path, audio, { contentType: audio.type });
 
-  if (uploadError) {
-    await supabase.from("messages").delete().eq("id", message.id);
+  if (uploadError) return { error: "That didn't send." };
+
+  const { error: insertError } = await supabase.from("messages").insert({
+    id: messageId,
+    chat_id: chatId,
+    sender_id: auth.user!.id,
+    voice_note_path: path,
+    voice_note_seconds: seconds,
+  });
+
+  if (insertError) {
+    // Now removable, because no message points at it.
+    await supabase.storage.from("voice-notes").remove([path]);
     return { error: "That didn't send." };
   }
-
-  await supabase.from("messages").update({ voice_note_path: path }).eq("id", message.id);
 
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };

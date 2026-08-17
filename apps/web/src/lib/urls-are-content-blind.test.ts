@@ -88,3 +88,37 @@ describe("URLs are content-blind", () => {
     expect(offending("newly-diagnosed")).toContain("diagnosis");
   });
 });
+
+describe("the referral cookie is set where Next allows it", () => {
+  const proxy = readFileSync(join(import.meta.dirname, "../proxy.ts"), "utf8");
+  const landing = readFileSync(join(APP, "i/[code]/page.tsx"), "utf8");
+
+  /**
+   * Every invite link used to throw. /i/[code] is a Server Component and was
+   * calling cookies().set() during render; Next seals the cookie object outside
+   * the action phase, so the page raised "Cookies can only be modified in a
+   * Server Action or Route Handler" and no referral was ever attributed.
+   */
+  it("is not set from the landing page", () => {
+    expect(landing).not.toMatch(/store\.set\(/);
+    expect(landing).not.toMatch(/cookies\(\)/);
+  });
+
+  it("is set from the proxy, which owns the response", () => {
+    expect(proxy).toMatch(/response\.cookies\.set\("plusone_ref"/);
+  });
+
+  /**
+   * setAll may rebuild `response` when supabase rotates a token. Writing the
+   * cookie before that would drop it on the floor.
+   */
+  it("is set after the session refresh that can rebuild the response", () => {
+    expect(proxy.indexOf("plusone_ref")).toBeGreaterThan(proxy.indexOf("auth.getUser()"));
+  });
+
+  it("the proxy matcher actually covers /i/<code>", () => {
+    const matcher =
+      /^\/((?!_next\/static|_next\/image|favicon\.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|woff2?)$).*)$/;
+    expect(matcher.test("/i/abc123")).toBe(true);
+  });
+});

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 
 import { COPY } from "@plusone/config";
 
@@ -31,19 +30,13 @@ export const metadata: Metadata = {
 export default async function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
 
-  // Code goes to a cookie, not the URL of the next page. It survives the whole
+  // The cookie is set in proxy.ts, on the same request.
+  //
+  // It was set here, and a Server Component cannot: Next seals the cookie
+  // object outside the action phase, so `store.set` threw on every real invite
+  // link and no referral was ever attributed. The code still survives the whole
   // of onboarding and is attributed once the invitee has an account — the point
   // at which there is anyone to attribute it to.
-  if (/^[a-z0-9]{6,12}$/.test(code)) {
-    const store = await cookies();
-    store.set("plusone_ref", code, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
-  }
 
   return (
     <main

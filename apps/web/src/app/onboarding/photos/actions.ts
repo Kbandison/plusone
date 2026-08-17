@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { randomUUID } from "node:crypto";
 
 import { redirect } from "next/navigation";
@@ -85,10 +87,21 @@ export async function uploadPhoto(
   });
 
   if (error) {
-    await supabase.storage.from(BUCKET).remove([fullPath, blurredPath]);
+    // All three, not two: the card variant was being left behind, so a failed
+    // insert orphaned an object nothing would ever reference or purge.
+    await supabase.storage.from(BUCKET).remove([fullPath, cardPath, blurredPath]);
     return { error: E.uploadFailed };
   }
 
+  // Without this the step dead-ends.
+  //
+  // The screen is server-rendered from a count: page.tsx computes `uploaded`
+  // and passes `canContinue={uploaded > 0}`, and the Continue button is
+  // disabled until that is true. A Server Action that neither redirects nor
+  // revalidates does not re-render the route — the Next 16 docs say so in as
+  // many words — so the photo uploaded, the count stayed at zero, the
+  // confirmation line never appeared, and Continue stayed grey forever.
+  revalidatePath("/onboarding/photos");
   return { error: null };
 }
 

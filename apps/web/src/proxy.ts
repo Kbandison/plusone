@@ -49,6 +49,28 @@ export async function proxy(request: NextRequest) {
   // setAll above is what persists it.
   await supabase.auth.getUser();
 
+  // The referral cookie is set HERE, not on the landing page.
+  //
+  // /i/[code] is a Server Component and was calling cookies().set() during
+  // render. Next seals the cookie object outside the action phase — the seal
+  // proxy replaces set/delete/clear with a thrower — so every real invite link
+  // raised "Cookies can only be modified in a Server Action or Route Handler"
+  // and no referral was ever attributed. The proxy runs on the same request and
+  // owns the outgoing response, which is where this belongs.
+  //
+  // Read after getUser() deliberately: setAll may have rebuilt `response`, and
+  // writing before that would drop the cookie on the floor.
+  const invite = /^\/i\/([a-z0-9]{6,12})$/.exec(request.nextUrl.pathname);
+  if (invite?.[1]) {
+    response.cookies.set("plusone_ref", invite[1], {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  }
+
   return response;
 }
 

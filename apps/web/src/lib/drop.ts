@@ -3,6 +3,7 @@ import "server-only";
 import { RADIUS } from "@plusone/config";
 import { drop as dropLogic } from "@plusone/logic";
 
+import { serviceClient } from "./cron";
 import { getServerSupabase } from "./supabase";
 import { dropConfig } from "./tunables";
 
@@ -118,12 +119,41 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
     p_max_radius_mi: RADIUS.maxMi,
   });
 
-  const candidates = ((rows ?? []) as CandidateRow[]).map((row) => ({
+  const candidateRows = (rows ?? []) as CandidateRow[];
+
+  // The quiz reaches the Drop.
+  //
+  // This used to hardcode `quizVector: null` for every candidate AND for the
+  // viewer, so quizCompat returned NEUTRAL for all of them — a constant, which
+  // cancels out of the ranking entirely. Onboarding asked twelve questions,
+  // stored a trait vector, and nothing ever read it: 30% of the score under the
+  // launch weights was doing nothing at all. The migration comment that excused
+  // it said "QUIZ_QUESTIONS is currently empty", which stopped being true when
+  // the twelve questions landed.
+  //
+  // Read with the SERVICE client, deliberately. quiz_responses is own-rows-only
+  // and should stay that way — returning vectors from the member-callable
+  // drop_candidates RPC would let anyone read other members' trait scores by
+  // calling it directly. This runs server-side, the vectors never reach the
+  // browser, and only the ids of the chosen cards leave this function.
+  const vectorIds = [userId, ...candidateRows.map((r) => r.id)];
+  const { data: vectorRows } = await serviceClient()
+    .from("quiz_responses")
+    .select("user_id, trait_vector")
+    .in("user_id", vectorIds);
+
+  const vectors = new Map<string, readonly number[] | null>();
+  for (const row of (vectorRows ?? []) as { user_id: string; trait_vector: number[] | null }[]) {
+    // An empty array is a skipped quiz, which quizCompat must see as absent
+    // rather than as a vector of zeroes.
+    vectors.set(row.user_id, row.trait_vector?.length ? row.trait_vector : null);
+  }
+
+  const candidates = candidateRows.map((row) => ({
     id: row.id,
     distanceMi: row.distance_mi ?? Number.POSITIVE_INFINITY,
     intention: (row.intention ?? "open_to_either") as never,
-    // No quiz vector by design — see the note in 20260814000700_drop_candidates.sql.
-    quizVector: null,
+    quizVector: vectors.get(row.id) ?? null,
     lastActiveAt: new Date(row.last_active_at).getTime(),
     timesServed: Number(row.times_served ?? 0),
     // The RPC reads visible_profiles, which has already applied every wall, so
@@ -144,7 +174,7 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
   const result = dropLogic.selectDrop(
     {
       intention: (profile?.intention ?? "open_to_either") as never,
-      quizVector: null,
+      quizVector: vectors.get(userId) ?? null,
       radiusMi: memberRadiusMi,
       mode: preview ? "support_only" : "dating",
     },
@@ -155,15 +185,26 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
 
   const servedIds = result.cards.map((c) => c.id);
 
-  // Unique on (user_id, drop_date), so two tabs opening at once settle on one
-  // drop rather than racing to write two.
-  await supabase.from("drops").insert({
-    user_id: userId,
-    drop_date: dropDate,
-    served_profile_ids: servedIds,
-    radius_used_mi: result.radiusUsedMi,
-    is_preview: result.preview,
+  // Through record_drop, because members hold SELECT on drops and nothing else.
+  //
+  // This was a plain insert with the member's own client. It failed with 42501
+  // every single time and the result was never checked — so no Drop was ever
+  // recorded, Decision #15's free drop-connect (which validates source='drop'
+  // against served_profile_ids) could never apply, and re-opening the app rolled
+  // an entirely new Drop because the "already served today" read found nothing.
+  //
+  // The error is destructured now. A Drop that cannot be recorded is still shown
+  // — the member should not lose their evening to our bookkeeping — but it is
+  // reported rather than swallowed.
+  const { error: recordError } = await supabase.rpc("record_drop", {
+    p_drop_date: dropDate,
+    p_served_profile_ids: servedIds,
+    p_radius_used_mi: result.radiusUsedMi,
+    p_is_preview: result.preview,
   });
+  if (recordError) {
+    console.error(JSON.stringify({ at: "drop.record", problem: recordError.message }));
+  }
 
   const shared = {
     radiusUsedMi: result.radiusUsedMi,
