@@ -15,9 +15,18 @@ import type { SafetyState } from "./safety-state";
 /**
  * Blocking (§5.3).
  *
- * Immediate and mutual: `is_blocked_either_way` is in every wall, so the moment
- * this row exists neither member appears to the other anywhere — drop, browse,
- * rooms, or an existing chat.
+ * Immediate and mutual: `is_blocked_either_way` is in the visibility walls, so
+ * the moment this row exists neither member appears to the other in the drop,
+ * in browse, or in rooms.
+ *
+ * An existing chat is handled differently, and this comment used to claim
+ * otherwise. The chat policies test only membership and whether the chat is
+ * open — no block term — so blocking from inside a chat did nothing to it, and
+ * the other member could keep sending. A trigger now CLOSES any open chat
+ * between the two (20260817000500), which the insert policy already refuses to
+ * write to. Messages already sent stay readable to both: hiding them
+ * retroactively is a product decision nobody has made, and it would destroy
+ * what a member might want to attach to a report.
  *
  * It asks nothing and explains nothing. A member blocking someone is often
  * having the worst moment this product will give them, and a confirmation

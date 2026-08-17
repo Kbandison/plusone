@@ -65,7 +65,7 @@ async function recordSubscription(
   const item = subscription.items.data[0];
   const priceId = item?.price?.id ?? null;
 
-  await supabase.from("subscriptions").upsert(
+  const { error } = await supabase.from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_customer_id: customerId,
@@ -79,6 +79,15 @@ async function recordSubscription(
     },
     { onConflict: "user_id" },
   );
+
+  // supabase-js RESOLVES on failure rather than rejecting — PostgrestBuilder is
+  // typed ThrowOnError=false, and its runtime converts fetch errors, aborts and
+  // HTTP errors into a resolved { data: null, error }. So discarding this value
+  // meant a failed write fell through to `{ received: true }` with a 200, and
+  // Stripe never retried: a real payment taken, nothing recorded, and no
+  // signal anywhere. The catch below is what turns this into the 500 that asks
+  // Stripe to try again.
+  if (error) throw error;
 }
 
 export async function POST(request: Request) {

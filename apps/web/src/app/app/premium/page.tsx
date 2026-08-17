@@ -13,22 +13,35 @@ export default async function PremiumPage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
 
-  const [{ data: subscription }, { data: grants }, { data: isPremium }] = await Promise.all([
-    supabase
-      .from("subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", auth.user!.id)
-      .maybeSingle(),
-    supabase
-      .from("premium_grants")
-      .select("expires_at")
-      .eq("user_id", auth.user!.id)
-      .order("expires_at", { ascending: false })
-      .limit(1),
-    // The same function the walls use. A second opinion about who is premium is
-    // how a paying member gets told they are not.
-    supabase.rpc("is_premium", { p_user_id: auth.user!.id }),
-  ]);
+  const [{ data: subscription }, { data: grants }, { data: isPremium, error: premiumError }] =
+    await Promise.all([
+      supabase
+        .from("subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", auth.user!.id)
+        .maybeSingle(),
+      supabase
+        .from("premium_grants")
+        .select("expires_at")
+        .eq("user_id", auth.user!.id)
+        .order("expires_at", { ascending: false })
+        .limit(1),
+      // The same rule the walls use — a second opinion about who is premium is how
+      // a paying member gets told they are not.
+      //
+      // The self-relative form, because is_premium(uuid) is revoked from
+      // authenticated (20260814001000, closing a uuid-probe leak). Calling it here
+      // returned "permission denied", supabase-js resolves rather than rejects, the
+      // error was discarded, and null read as "not premium" — so every paying
+      // member was shown the plan chooser.
+      supabase.rpc("i_am_premium"),
+    ]);
+
+  // Not discarded. This page deciding wrongly is a member being asked to pay
+  // twice, which should be loud rather than silent.
+  if (premiumError) {
+    console.error(JSON.stringify({ at: "premium.page", problem: premiumError.message }));
+  }
 
   const grantUntil = grants?.[0]?.expires_at as string | undefined;
   const paidUntil = subscription?.current_period_end as string | undefined;
