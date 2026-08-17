@@ -1,5 +1,64 @@
 # Project Updates
 
+## 2026-08-17 — Decision #22's mobile clause is now the expensive option
+
+Kevin asked for whichever payment path is cheaper on Android, and said he would
+take the store's own billing if it won on price, since it is also the more
+convenient one. It does win, and the reason is that the ground moved.
+
+**Decision #22 says "Stripe Checkout on web; mobile opens checkout in browser."**
+That was the right call when linking out was the way to avoid a store's cut
+entirely. It no longer is. Google's structure from 30 June 2026 splits the fee
+in two:
+
+- a **service fee of 10%** on the first $1M of annual earnings, which applies to
+  all auto-renewing subscriptions **and applies to external links as well**
+- a **billing fee of 5%** in the US, UK and EEA, which is waived when you link
+  out or use alternative billing
+
+So linking out saves the 5% billing fee and nothing else — and Stripe then takes
+2.9% + $0.30 of it back.
+
+| Plan    | Play Billing | Link out to Stripe | Signing up on the web |
+| ------- | ------------ | ------------------ | --------------------- |
+| 1 month | $16.99       | $17.11             | **$19.11**            |
+| 3 month | $33.99       | $34.53             | **$38.53**            |
+| 6 month | $59.49       | $60.66             | **$67.66**            |
+
+Linking out is ahead by **twelve cents a month** on the monthly plan. It is
+0.6% of the price, and it buys three liabilities:
+
+1. **A conversion cost far larger than the saving.** A 0.7% drop-off at the
+   browser handoff wipes out the entire advantage on the monthly plan, 1.6% on
+   the three-month. Real handoff loss is not measured in fractions of a percent.
+2. **A reporting obligation.** From 1 October 2026 developers on external links
+   must report transactions and remit the service fee to Google themselves. That
+   is ongoing operational work, and getting it wrong is a policy breach rather
+   than a bad month.
+3. **Two payment paths to build and keep correct**, when the Stripe one already
+   exists for web.
+
+**Recommendation: Play Billing inside the Android app, Stripe on the web.**
+
+### The number that actually matters
+
+A member who signs up on loveplusone.app nets **$19.11** against **$16.99** in
+the app — $2.12 a month, every month, because a transaction that never touched
+the app is not Google's to charge for. That is seventeen times the difference
+between the two in-app options.
+
+The app is worth building for retention and for being findable in a store. It
+should not be the front door. Worth confirming with Google's own terms before
+building on it, since it is the largest single lever in the pricing and the
+rules around it changed twice this year.
+
+### Held for Kevin
+
+Decision #22's mobile clause is LOCKED and this contradicts it, so nothing has
+been changed. Above $1M in annual earnings the service fee rises to 20% on new
+installs and 25% on existing ones, which is a different conversation and not
+this year's. Apple is untouched by any of it — that decision comes when iOS does.
+
 ## 2026-08-15 — A hardening pass, and what four reviews found
 
 I ran four parallel reviews — schema security, pure-logic correctness,
@@ -1918,14 +1977,15 @@ Nothing below blocks Milestone 2 except where noted.
 sent in chat. It is in no file in this repo; `pnpm check:db` reads `SUPABASE_DB_URL`
 from the environment.)
 
-| #   | Held                                                                                                                                                                                                                                                                                               | Blocks        |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| 1   | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Domain secured 2026-08-17 as loveplusone.app; `privacy@loveplusone.app` is the intended alias. Note Resend only _sends_ — receiving needs mail hosting or a forwarding rule. | **launch**    |
-| 2   | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out.                                                                                                                                                              | fast-follow   |
-| 3   | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim.                                                                  | Milestone 5   |
-| 4   | **Stripe keys** — secret, webhook secret, and the three price IDs.                                                                                                                                                                                                                                 | Milestone 6   |
-| 5   | **Resend API key.**                                                                                                                                                                                                                                                                                | Milestone 7   |
-| 6   | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above.                                                                                                                         | before launch |
+| #   | Held                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Blocks         |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1   | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Domain secured 2026-08-17 as loveplusone.app; `privacy@loveplusone.app` is the intended alias. Note Resend only _sends_ — receiving needs mail hosting or a forwarding rule.                                                                                                                                                                                                                                                                           | **launch**     |
+| 2   | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out.                                                                                                                                                                                                                                                                                                                                                                                                                                        | fast-follow    |
+| 3   | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim.                                                                                                                                                                                                                                                                                                                                            | Milestone 5    |
+| 4   | **Stripe keys** — secret, webhook secret, and the three price IDs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Milestone 6    |
+| 5   | **Resend API key.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Milestone 7    |
+| 7   | **Decision #22's mobile payment clause.** It says "mobile opens checkout in browser", written when linking out avoided a store cut. Google's 30 June 2026 structure charges its 10% service fee on external links too, so linking out saves only the 5% billing fee and Stripe takes most of that back — twelve cents a month on the monthly plan, against a browser handoff that costs far more in conversion, plus a self-reporting obligation from 1 October. Recommendation is Play Billing in the app and Stripe on the web. Needs Kevin, because the clause is locked. | before Android |
+| 6   | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above.                                                                                                                                                                                                                                                                                                                                                                                                   | before launch  |
 
 ### Next
 
