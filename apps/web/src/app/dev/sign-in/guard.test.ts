@@ -17,13 +17,13 @@ import { devSignInAllowed } from "./guard";
 describe("the development sign-in guard", () => {
   it("refuses in production, whatever the provider says", () => {
     expect(devSignInAllowed("production", "stub")).toBe(false);
-    expect(devSignInAllowed("production", "supabase_twilio")).toBe(false);
+    expect(devSignInAllowed("production", "supabase_twilio_verify")).toBe(false);
   });
 
   it("refuses whenever a real OTP provider is configured", () => {
-    expect(devSignInAllowed("development", "supabase_twilio")).toBe(false);
-    expect(devSignInAllowed("test", "supabase_twilio")).toBe(false);
-    expect(devSignInAllowed(undefined, "supabase_twilio")).toBe(false);
+    expect(devSignInAllowed("development", "supabase_twilio_verify")).toBe(false);
+    expect(devSignInAllowed("test", "supabase_twilio_verify")).toBe(false);
+    expect(devSignInAllowed(undefined, "supabase_twilio_verify")).toBe(false);
   });
 
   it("allows only the one combination it is for", () => {
@@ -35,8 +35,8 @@ describe("the development sign-in guard", () => {
     // OTP_PROVIDER alone would open the moment a stub build was deployed.
     const combinations = [
       ["production", "stub"],
-      ["development", "supabase_twilio"],
-      ["production", "supabase_twilio"],
+      ["development", "supabase_twilio_verify"],
+      ["production", "supabase_twilio_verify"],
     ] as const;
     for (const [nodeEnv, provider] of combinations) {
       expect(devSignInAllowed(nodeEnv, provider), `${nodeEnv} + ${provider}`).toBe(false);

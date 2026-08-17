@@ -111,13 +111,19 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     id: "text-messages",
     title: "Text messages",
     /**
-     * Carrier-required, and written to be true rather than to satisfy a form.
+     * Required, and written to be true rather than to satisfy a form.
      *
-     * A2P 10DLC campaign registration requires the linked privacy policy to
-     * state three things: that mobile numbers are not shared, how often
-     * messages are sent, and that message and data rates may apply. None of the
-     * three was here — the app said "message and data rates may apply" on the
-     * phone screen and the policy the campaign points at said nothing.
+     * DO NOT DELETE THIS BECAUSE WE NO LONGER REGISTER AN A2P CAMPAIGN.
+     *
+     * It was written for A2P 10DLC campaign review, which requires the linked
+     * privacy policy to state three things: that mobile numbers are not shared,
+     * how often messages are sent, and that message and data rates may apply.
+     * We send through Twilio Verify now, which is exempt from that registration
+     * — but the registration was never the reason these have to be true. The
+     * TCPA and the CTIA guidelines require express consent, a disclosure of
+     * frequency and rates, and a working STOP, from anyone sending an automated
+     * text to a US mobile number. Verify changes who registers with the
+     * carriers. It does not change consent law.
      *
      * The last paragraph is the one a template would not include: on an app
      * where the only way in is a texted code, opting out of texts means losing

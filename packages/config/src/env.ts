@@ -73,12 +73,23 @@ export const serverEnvSchema = z
     RESEND_API_KEY: z.string().startsWith("re_"),
 
     /**
-     * Phone OTP provider (§7.2). Twilio credentials live in the Supabase
-     * dashboard, not here — Supabase Auth talks to Twilio on our behalf, so this
-     * only records WHICH provider is live. `stub` accepts a fixed code and
-     * refuses to construct in production.
+     * Phone OTP provider (§7.2). Credentials live in the Supabase dashboard, not
+     * here — Supabase Auth talks to the provider on our behalf, so this only
+     * records WHICH one is live. `stub` accepts a fixed code and refuses to
+     * construct in production.
+     *
+     * `supabase_twilio_verify` replaced `supabase_twilio`, and the difference is
+     * not cosmetic. Sending our own OTPs over a 10DLC number means registering
+     * an A2P brand and campaign with the carriers and waiting on their review.
+     * Twilio Verify sends over Twilio's own registered infrastructure, so that
+     * whole process does not apply — Twilio's docs say it plainly: if you are
+     * registering solely for OTP, use Verify and you do not need A2P
+     * registration at all.
+     *
+     * Everything above this line is unchanged by that: signInWithOtp and
+     * verifyOtp are the same calls, because Supabase owns the provider seam.
      */
-    OTP_PROVIDER: z.enum(["stub", "supabase_twilio"]),
+    OTP_PROVIDER: z.enum(["stub", "supabase_twilio_verify"]),
 
     /**
      * Swappable liveness adapter (§4.2). `stub` is legal here and is the default

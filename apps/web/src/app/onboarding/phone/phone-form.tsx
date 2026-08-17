@@ -48,10 +48,10 @@ export function PhoneForm() {
 
       {/* The consent moment, at the consent moment.
        *
-       * A2P campaign review generally wants to SEE this — a reachable page
-       * showing what a member agrees to when they press the button that sends
-       * the text. Putting it in the terms instead is the version that gets a
-       * campaign rejected, and it is also the version nobody reads. */}
+       * Written for A2P campaign review and kept now that Twilio Verify makes
+       * that registration unnecessary: consent law wants the disclosure at the
+       * moment of consent, not filed in a document. Putting it in the terms
+       * instead is the version nobody reads. */}
       <p className="text-[13.5px] leading-[1.6] text-ink-3">
         {C.smsConsent}{" "}
         <Link

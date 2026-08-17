@@ -43,11 +43,13 @@ export const DRAFT_COPY = {
     phoneLabel: "Mobile number",
     phoneHint: "Include your country code, like +1.",
     /**
-     * The SMS opt-in disclosure (carrier A2P requirement).
+     * The SMS opt-in disclosure. Legally required, not a formality.
      *
-     * Campaign review wants to see the consent moment itself, so this sits
-     * under the number field rather than in the terms. It says codes only,
-     * because that is true and because it is the thing a person is agreeing to.
+     * Written for A2P campaign review, and still required now that we send
+     * through Twilio Verify and skip that registration: the TCPA and the CTIA
+     * guidelines want express consent at the moment it is given, which is why
+     * this sits under the number field rather than in the terms. It says codes
+     * only, because that is true and because it is the thing a person agrees to.
      */
     smsConsent:
       "By continuing you agree to receive a one-time sign-in code by text. Codes only — we never text anything else. Message and data rates may apply.",
@@ -116,7 +118,7 @@ export const DRAFT_COPY = {
     newHereLink: "Start with your number",
     /**
      * Shown under the field because this screen can still send an SMS, and the
-     * A2P disclosure belongs at the moment the message is sent rather than in a
+     * Consent belongs at the moment the message is sent rather than in a
      * document. Shorter than the onboarding one: a returning member agreed to
      * this when they joined, so this is a reminder rather than an opt-in.
      */
