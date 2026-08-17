@@ -26,17 +26,33 @@ describe("the attempt count is not the member's to keep", () => {
   });
 
   /**
-   * Charged when the session opens, not when a result arrives. Otherwise
-   * "open a session, close the tab, retry" is a free unlimited loop — and every
-   * turn of it is a paid Face Liveness call.
+   * One counter, and it is the reducer's.
+   *
+   * beginLiveness used to increment the column and then hand the incremented
+   * value to the reducer, which adds one of its own. Two counters over one
+   * event: members were flagged for human review after two checks instead of
+   * three. Kevin hit it on his second click.
+   *
+   * It also charged anyone whose camera never opened — on a desktop with no
+   * webcam, that is everyone.
    */
-  it("spends the attempt in beginLiveness, before the camera opens", () => {
+  it("does not count the attempt when the session opens", () => {
     const begin = code.slice(
       code.indexOf("export async function beginLiveness"),
       code.indexOf("export async function finishLiveness"),
     );
-    expect(begin).toMatch(/liveness_attempts:\s*attempts/);
-    expect(begin).toMatch(/current\.attempts \+ 1/);
+    expect(begin).not.toMatch(/liveness_attempts/);
+    expect(begin).not.toMatch(/attempts \+ 1/);
+  });
+
+  it("persists the reducer's own count when the result lands", () => {
+    const finish = code.slice(code.indexOf("export async function finishLiveness"));
+    expect(finish).toMatch(/liveness_attempts:\s*next\.livenessAttempts/);
+  });
+
+  it("counts liveness_attempts in exactly one place", () => {
+    const writes = [...code.matchAll(/liveness_attempts:/g)];
+    expect(writes.length, "a second writer is a second counter").toBe(1);
   });
 
   it("refuses to open a session once the cap is reached", () => {

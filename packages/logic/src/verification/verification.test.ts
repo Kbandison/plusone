@@ -431,3 +431,50 @@ describe("no dead ends", () => {
     }
   });
 });
+
+describe("the cap is three attempts, counted once", () => {
+  /**
+   * Kevin was flagged after two checks, not three. The reducer counts —
+   * `state.livenessAttempts + 1` — and the web action was incrementing a
+   * database column as well, then handing the already-incremented value back
+   * in. Two counters over one event.
+   *
+   * This walks the machine the way a member does and asserts where the human
+   * actually enters, so a second counter anywhere shows up as an off-by-one
+   * here rather than as a flagged member.
+   */
+  function failOnce(state: VerificationState): VerificationState {
+    const started = transition(state, { type: "start_liveness", at: AT });
+    if (!started.ok) throw new Error(`start refused: ${started.code}`);
+    const decided = transition(started.state, {
+      type: "liveness_result",
+      at: AT,
+      outcome: { passed: false, score: 0 },
+    });
+    if (!decided.ok) throw new Error(`result refused: ${decided.code}`);
+    return decided.state;
+  }
+
+  it("returns the member to phone_verified for the first two failures", () => {
+    let state: VerificationState = {
+      status: "phone_verified",
+      livenessAttempts: 0,
+      lastScore: null,
+      decidedAt: null,
+      appealOpenedAt: null,
+      appealDecidedAt: null,
+    };
+
+    state = failOnce(state);
+    expect(state.livenessAttempts, "one check, one attempt").toBe(1);
+    expect(state.status).toBe("phone_verified");
+
+    state = failOnce(state);
+    expect(state.livenessAttempts).toBe(2);
+    expect(state.status, "flagged after two checks is one too early").toBe("phone_verified");
+
+    state = failOnce(state);
+    expect(state.livenessAttempts).toBe(3);
+    expect(state.status, "the third failure is where a human comes in").toBe("flagged");
+  });
+});

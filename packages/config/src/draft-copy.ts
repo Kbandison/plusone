@@ -210,6 +210,14 @@ export const DRAFT_COPY = {
       "The automatic check could not decide. Someone on our team will review it, usually within a day. You do not need to do anything.",
     errors: {
       failed: "That did not pass. Make sure your face is well lit and fills the frame.",
+      /**
+       * The camera never opened — no device, or permission refused. Distinct
+       * from `failed` on purpose: nothing was checked, so telling someone their
+       * face did not pass is both wrong and discouraging. On a desktop without
+       * a webcam this is the only message anyone will ever see.
+       */
+      camera:
+        "We could not reach your camera. Check that this site is allowed to use it, then try again.",
       unavailable: "The check is unavailable right now. Try again in a moment.",
       /**
        * Distinct from `unavailable`. Collapsing every failure into one message

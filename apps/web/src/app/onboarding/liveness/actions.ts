@@ -96,7 +96,16 @@ export async function beginLiveness(
 
   const current = await readState(userId);
 
-  const started = verification.transition(stateFor(current), {
+  // A status of `liveness_pending` means a previous session was opened and never
+  // finished — the member closed the tab, or the camera failed. The reducer
+  // rightly refuses to start a second check while one is in progress, but from
+  // here that is indistinguishable from "start over", and refusing leaves them
+  // stuck on a step they cannot leave. Nothing was counted, because only a
+  // completed analysis is, so restarting costs them nothing.
+  const resumable: Attempted =
+    current.status === "liveness_pending" ? { ...current, status: "phone_verified" } : current;
+
+  const started = verification.transition(stateFor(resumable), {
     type: "start_liveness",
     at: Date.now(),
   });
@@ -130,15 +139,23 @@ export async function beginLiveness(
     return { ...previous, error: E.unavailable, session: null };
   }
 
-  const attempts = current.attempts + 1;
+  // Status only. The attempt is NOT counted here.
+  //
+  // It was, and the reducer counts too — `state.livenessAttempts + 1` — so
+  // every check was charged twice and members were flagged after two attempts
+  // rather than three. One counter, and it is the tested one.
+  //
+  // Counting here would also charge a member whose camera never opened, which
+  // on a desktop without a webcam is everyone. The billable thing at AWS is a
+  // streamed analysis, and an unstreamed session is not one.
   await serviceClient()
     .from("profiles")
-    .update({ liveness_attempts: attempts, verification_status: "liveness_pending" })
+    .update({ verification_status: "liveness_pending" })
     .eq("id", userId);
 
   return {
     error: null,
-    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - attempts),
+    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
     flagged: false,
     session: { sessionId, region: env.AWS_REGION!, credentials },
   };
@@ -201,6 +218,8 @@ export async function finishLiveness(
     .from("profiles")
     .update({
       verification_status: next.status,
+      // The reducer's count, written once. Nothing else increments it.
+      liveness_attempts: next.livenessAttempts,
       ...(next.status === "verified"
         ? {
             liveness_passed_at: new Date().toISOString(),
@@ -214,7 +233,7 @@ export async function finishLiveness(
 
   return {
     error: next.status === "flagged" ? null : E.failed,
-    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
+    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - next.livenessAttempts),
     // The reducer's word, not a count we re-derive.
     flagged: next.status === "flagged",
     session: null,

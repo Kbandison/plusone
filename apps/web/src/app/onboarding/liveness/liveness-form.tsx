@@ -25,6 +25,7 @@ export function LivenessForm() {
   const [begun, begin, beginning] = useActionState(beginLiveness, LIVENESS_INITIAL);
   const [finished, finish, finishing] = useActionState(finishLiveness, LIVENESS_INITIAL);
   const [cancelled, setCancelled] = useState(false);
+  const [cameraFailed, setCameraFailed] = useState(false);
 
   // The camera signals completion from a callback, not from a click, so the
   // result has to be posted programmatically.
@@ -63,17 +64,20 @@ export function LivenessForm() {
     );
   }
 
-  if (begun.session && !completedSession && !cancelled) {
+  if (begun.session && !completedSession && !cancelled && !cameraFailed) {
     return (
       <LivenessCapture
         sessionId={begun.session.sessionId}
         region={begun.session.region}
         credentials={begun.session.credentials}
         onComplete={() => setCompletedSession(begun.session!.sessionId)}
-        // A camera error and a failed check are different things, but both mean
-        // this session is spent — the attempt was charged when the session
-        // opened, so there is nothing to reclaim by distinguishing them.
-        onFailed={() => setCompletedSession(begun.session!.sessionId)}
+        // A camera error is NOT a failed check, and must not be finished as one.
+        //
+        // It used to call the same handler, so a device with no webcam — or a
+        // refused permission — streamed nothing, scored zero, and burned an
+        // attempt. Two clicks flagged a member for human review for owning a
+        // desktop. Nothing was analysed, so nothing is spent.
+        onFailed={() => setCameraFailed(true)}
         onCancel={() => setCancelled(true)}
       />
     );
@@ -81,7 +85,11 @@ export function LivenessForm() {
 
   return (
     <div className="mt-10 flex flex-col gap-6">
-      {state.error ? (
+      {cameraFailed ? (
+        <p role="alert" className="text-[14.5px] text-critical">
+          {C.errors.camera}
+        </p>
+      ) : state.error ? (
         <p role="alert" className="text-[14.5px] text-critical">
           {state.error}
         </p>
