@@ -221,3 +221,28 @@ describe("a flagged member is never told to try again", () => {
     expect(refusal, "the phoneFirst branch is still reachable").toMatch(/E\.phoneFirst/);
   });
 });
+
+describe("a misconfigured provider is not a 500 in a member's face", () => {
+  /**
+   * createStubLivenessProvider throws when NODE_ENV is "production" — correctly,
+   * because a provider that always passes is the fake-profile problem this
+   * pipeline exists to prevent, and shipping one by accident has to be loud.
+   *
+   * But the call sat outside the try, so a deployment still set to `stub` met a
+   * member at step 2 of signing up with an unhandled error rather than a
+   * sentence. Loud belongs in the logs, where whoever misconfigured it looks.
+   */
+  it("catches the stub's production refusal and returns null", () => {
+    const provider = code.slice(
+      code.indexOf("function providerFor"),
+      code.indexOf("export async function beginLiveness"),
+    );
+    expect(provider).toMatch(/try \{[\s\S]*?createStubLivenessProvider\(\)/);
+    expect(provider).toMatch(/return null/);
+    expect(provider, "and says so somewhere an operator will see it").toMatch(/console\.error/);
+  });
+
+  it("still refuses to run — null means the member is told it is unavailable", () => {
+    expect(code).toMatch(/if \(!provider\) return \{ \.\.\.previous, error: E\.unavailable/);
+  });
+});

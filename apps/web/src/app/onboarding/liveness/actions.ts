@@ -80,10 +80,27 @@ function stateFor({ status, attempts }: Attempted): verification.VerificationSta
   };
 }
 
+/**
+ * The configured provider, or null if there is not one we can use.
+ *
+ * Returns null rather than propagating, because the one case that throws is the
+ * stub in production — deliberately, since a provider that always passes IS the
+ * fake-profile problem this whole pipeline exists to prevent, and shipping one
+ * by accident has to be loud. But it was loud in the WRONG PLACE: the call sat
+ * outside the try, so a deployment with LIVENESS_PROVIDER=stub met a member at
+ * step 2 of signing up with an unhandled 500 rather than a sentence. It is
+ * logged here instead, which is where whoever misconfigured it will look, and
+ * the member gets the same "unavailable" any other outage produces.
+ */
 function providerFor(env: ReturnType<typeof parseServerEnv>): verification.LivenessProvider | null {
   switch (env.LIVENESS_PROVIDER) {
     case "stub":
-      return verification.createStubLivenessProvider();
+      try {
+        return verification.createStubLivenessProvider();
+      } catch (error) {
+        console.error(JSON.stringify({ at: "liveness.provider", problem: String(error) }));
+        return null;
+      }
     case "aws_rekognition":
       // The schema guarantees all three are present for this provider, so the
       // assertions cannot fire — they are here so a future widening of the env
