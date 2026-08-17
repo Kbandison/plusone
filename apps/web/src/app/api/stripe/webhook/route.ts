@@ -40,6 +40,47 @@ const HANDLED = new Set<Stripe.Event.Type>([
   "customer.subscription.deleted",
 ]);
 
+/**
+ * Writes a subscription row from Stripe's own object.
+ *
+ * Both branches go through this, and they did not used to. The checkout branch
+ * wrote `status: 'active'` with no `current_period_end` — which is_premium()
+ * reads as premium with no expiry, because the null arm of that check exists
+ * for §6.5 referral grants. customer.subscription.created corrected it a second
+ * later, so it was invisible in testing; if that event is not subscribed, or
+ * its delivery permanently fails, the correction never arrives and the member
+ * is premium forever with nothing left to revoke it.
+ *
+ * The period end still comes from Stripe and never from a clock, so replaying
+ * an old event cannot extend anybody's access.
+ */
+async function recordSubscription(
+  supabase: ReturnType<typeof serviceClient>,
+  subscription: Stripe.Subscription,
+  userId: string,
+  status: string,
+): Promise<void> {
+  const customerId =
+    typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+  const item = subscription.items.data[0];
+  const priceId = item?.price?.id ?? null;
+
+  await supabase.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      stripe_customer_id: customerId,
+      stripe_sub_id: subscription.id,
+      plan: priceId ? planIdForPrice(priceId) : null,
+      status,
+      current_period_end: item?.current_period_end
+        ? new Date(item.current_period_end * 1000).toISOString()
+        : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature) return NextResponse.json({ error: "unsigned" }, { status: 400 });
@@ -64,11 +105,14 @@ export async function POST(request: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const userId = session.client_reference_id ?? session.metadata?.["user_id"];
-      const customerId = typeof session.customer === "string" ? session.customer : null;
 
       // Without a member this payment cannot be honoured. Acknowledged so
       // Stripe stops retrying, and logged so somebody notices.
-      if (!userId || !customerId) {
+      //
+      // The session's customer id is deliberately NOT checked: the row takes it
+      // from the subscription, which always carries one, so refusing here on a
+      // field nothing reads would drop a real payment over nothing.
+      if (!userId) {
         console.error(
           JSON.stringify({
             at: "stripe.webhook",
@@ -79,23 +123,40 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true });
       }
 
-      await supabase.from("subscriptions").upsert(
-        {
-          user_id: userId,
-          stripe_customer_id: customerId,
-          status: "active",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
+      // The session carries a subscription id but no period end, so the
+      // subscription itself is fetched rather than assumed. One extra call, and
+      // in exchange this event alone is enough to record a correct row — the
+      // handler no longer depends on customer.subscription.created arriving to
+      // put a bound on what was just bought.
+      const subscriptionId =
+        typeof session.subscription === "string"
+          ? session.subscription
+          : (session.subscription?.id ?? null);
+
+      if (!subscriptionId) {
+        // mode: 'subscription' always produces one. If it is ever absent, the
+        // safe thing is to record nothing: a row with no period end is a
+        // subscription that never expires.
+        console.error(
+          JSON.stringify({
+            at: "stripe.webhook",
+            event: event.type,
+            problem: "no subscription on session",
+          }),
+        );
+        return NextResponse.json({ received: true });
+      }
+
+      // A failure here throws to the 500 below, which asks Stripe to retry —
+      // right, because the payment was real and we failed to record it.
+      const subscription = await stripe().subscriptions.retrieve(subscriptionId);
+      await recordSubscription(supabase, subscription, userId, subscription.status);
 
       return NextResponse.json({ received: true });
     }
 
     const subscription = event.data.object as Stripe.Subscription;
     const userId = subscription.metadata?.["user_id"];
-    const customerId =
-      typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
     if (!userId) {
       console.error(
@@ -108,27 +169,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const item = subscription.items.data[0];
-    const priceId = item?.price?.id ?? null;
-    // The period end comes from Stripe, never from now() — replaying a
-    // three-month-old event must not push anybody's access three months out.
-    const periodEnd = item?.current_period_end
-      ? new Date(item.current_period_end * 1000).toISOString()
-      : null;
-
-    await supabase.from("subscriptions").upsert(
-      {
-        user_id: userId,
-        stripe_customer_id: customerId,
-        stripe_sub_id: subscription.id,
-        plan: priceId ? planIdForPrice(priceId) : null,
-        // Stripe's own status, verbatim. is_premium() decides what counts as
-        // paying; translating it here would be a second opinion.
-        status: event.type === "customer.subscription.deleted" ? "canceled" : subscription.status,
-        current_period_end: periodEnd,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
+    // Stripe's own status, verbatim. is_premium() decides what counts as
+    // paying; translating it here would be a second opinion.
+    await recordSubscription(
+      supabase,
+      subscription,
+      userId,
+      event.type === "customer.subscription.deleted" ? "canceled" : subscription.status,
     );
 
     return NextResponse.json({ received: true });

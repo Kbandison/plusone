@@ -136,6 +136,36 @@ try {
     `premium sends more per day (${free_per.rows[0]?.value} -> ${prem_per.rows[0]?.value})`);
   check(Number(prem_per.rows[0]?.value) < 100, "and it is still a cap, not unlimited");
 
+  console.log("\n── premium cannot be permanent ──");
+  // The shape the checkout webhook used to write: status 'active' with no
+  // period end. is_premium() reads a null period end as "no expiry" — correct
+  // for a §6.5 referral grant, and forever-free-premium on a subscription row.
+  // If this insert ever succeeds again, a failed customer.subscription.created
+  // delivery leaves a member paid up for good with nothing left to revoke it.
+  // A member each: user_id is the primary key, so reusing one makes the second
+  // case fail on a key conflict rather than on the constraint — which reads as
+  // a pass when the constraint is gone.
+  const [everA, everB, everC] = [await member(), await member(), await member()];
+
+  const forever = await attempt(() => c.query(
+    `insert into public.subscriptions (user_id, stripe_customer_id, status, current_period_end)
+     values ($1, 'cus_test_forever', 'active', null)`, [everA]));
+  check(!forever, "an active subscription with no period end is refused");
+
+  const foreverTrial = await attempt(() => c.query(
+    `insert into public.subscriptions (user_id, stripe_customer_id, status, current_period_end)
+     values ($1, 'cus_test_forever_trial', 'trialing', null)`, [everB]));
+  check(!foreverTrial, "and so is a trialing one");
+
+  // Statuses that grant nothing are unconstrained — a cancelled subscription
+  // legitimately has no period left to record.
+  const cancelled = await attempt(() => c.query(
+    `insert into public.subscriptions (user_id, stripe_customer_id, status, current_period_end)
+     values ($1, 'cus_test_cancelled', 'canceled', null)`, [everC]));
+  check(cancelled, "a canceled subscription may still have no period end");
+  check((await c.query(`select public.is_premium($1) p`, [everC])).rows[0].p === false,
+    "and it grants nothing");
+
   console.log("\n── our database never learns who is paying ──");
   const cols = await c.query(
     `select column_name from information_schema.columns
