@@ -34,11 +34,23 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
   const { error } = await supabase.auth.signInWithOtp({ phone });
 
   if (error) {
-    const unconfigured = /provider|not enabled|disabled|unsupported/i.test(error.message);
-    return {
-      error: unconfigured ? E.notConfigured : E.sendFailed,
-      sentTo: null,
-    };
+    // The same classifier /sign-in uses, rather than a regex over the provider's
+    // own words. Twilio rejects a number it cannot route (error 60200) before
+    // sending anything, and that arrives as `sms_send_failed` — for which "try
+    // again in a moment" is advice that can never work.
+    switch (verification.classifySendFailure(error.code)) {
+      case "not_configured":
+        return { error: E.notConfigured, sentTo: null };
+      case "rate_limited":
+        return { error: E.rateLimited, sentTo: null };
+      case "undeliverable":
+        return { error: E.undeliverable, sentTo: null };
+      // A brand-new member has no account yet, so the enumeration concern that
+      // makes /sign-in pretend does not apply here — there is nothing to hide.
+      case "pretend_sent":
+      case "failed":
+        return { error: E.sendFailed, sentTo: null };
+    }
   }
 
   return { error: null, sentTo: phone };

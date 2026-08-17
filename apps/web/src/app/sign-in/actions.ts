@@ -54,6 +54,11 @@ export async function sendSignInCode(
         return { error: E.notConfigured, sentTo: null };
       case "rate_limited":
         return { error: E.rateLimited, sentTo: null };
+      case "undeliverable":
+        // NOT "pretend_sent". This says nothing about whether an account
+        // exists — the provider refused the number itself — so showing the
+        // code screen would strand somebody on a screen no code is coming to.
+        return { error: E.undeliverable, sentTo: null };
       case "failed":
         return { error: E.sendFailed, sentTo: null };
     }

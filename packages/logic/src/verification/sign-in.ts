@@ -163,6 +163,8 @@ export type SendFailureAction =
   | "not_configured"
   /** Too many sends. Ask them to wait. */
   | "rate_limited"
+  /** The provider would not accept that number. Retrying will not help. */
+  | "undeliverable"
   /** Anything else. */
   | "failed";
 
@@ -179,6 +181,18 @@ const NOT_CONFIGURED: readonly string[] = [
   "provider_disabled",
 ];
 
+/**
+ * The provider took the request and could not deliver.
+ *
+ * Distinct from a transient failure because the usual cause is not transient:
+ * Twilio rejects a number it cannot route with error 60200 before sending
+ * anything, and "try again in a moment" is advice that will never work. The
+ * message this maps to has to cover both that and a genuine provider outage,
+ * because the code alone cannot tell them apart — and the provider's own text
+ * must not be shown to a member.
+ */
+const UNDELIVERABLE: readonly string[] = ["sms_send_failed", "phone_number_invalid"];
+
 const RATE_LIMITED: readonly string[] = [
   "over_email_send_rate_limit",
   "over_sms_send_rate_limit",
@@ -190,5 +204,6 @@ export function classifySendFailure(code: string | undefined | null): SendFailur
   if (NO_SUCH_ACCOUNT.includes(code)) return "pretend_sent";
   if (NOT_CONFIGURED.includes(code)) return "not_configured";
   if (RATE_LIMITED.includes(code)) return "rate_limited";
+  if (UNDELIVERABLE.includes(code)) return "undeliverable";
   return "failed";
 }

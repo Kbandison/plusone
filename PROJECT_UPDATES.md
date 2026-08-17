@@ -1,5 +1,67 @@
 # Project Updates
 
+## 2026-08-17 — Twilio Verify is live, and the cheapest payment path is decided
+
+**Verify is running.** The project reports `sms_provider: twilio_verify` with the
+phone provider enabled — it had been off this whole time, separately from the
+A2P wait. `OTP_PROVIDER=supabase_twilio_verify` locally.
+
+Proved end to end without spending anything: a send to a reserved test number
+came back with Twilio's OWN error 60200, "Invalid parameter To". Supabase reached
+Twilio, the credentials worked, and the number was rejected before a message was
+sent. A misconfigured provider returns `phone_provider_disabled` instead, so the
+error is the evidence.
+
+That surfaced a gap. Twilio rejects an unroutable number BEFORE sending, and it
+arrives as `sms_send_failed` — which fell through to "We could not send a code
+just now. Try again in a moment." For the usual cause, a typo or a missing
+country code, that is advice which can never work. There is now an
+`undeliverable` classification saying to check the number, and the onboarding
+step uses the same classifier as /sign-in rather than a regex over the provider's
+own words.
+
+It deliberately does NOT pretend the way an unknown identifier does: the refusal
+is about the number itself and says nothing about whether an account exists, so
+showing the code screen would strand somebody waiting for a code that is not
+coming.
+
+**/dev/sign-in is now closed**, which is correct — the guard refuses whenever a
+real provider is set. The real phone flow is the way in.
+
+### Decision #22's mobile clause, resolved
+
+Kevin asked for whichever path costs less and said he would take the store's
+billing if it won. It wins, and the reason is that the ground moved: Google's
+30 June 2026 structure charges its 10% service fee on external links TOO, so
+linking out saves only the 5% billing fee and Stripe takes most of that back.
+
+| Plan    | Play Billing | Link out | Signing up on the web |
+| ------- | ------------ | -------- | --------------------- |
+| 1 month | $16.99       | $17.11   | **$19.11**            |
+| 3 month | $33.99       | $34.53   | **$38.53**            |
+| 6 month | $59.49       | $60.66   | **$67.66**            |
+
+Twelve cents a month, erased by 0.7% of drop-off at the browser handoff, and
+carrying a self-reporting obligation to Google from 1 October. **Play Billing in
+the app, Stripe on the web.** No code changed — there is no mobile app yet.
+
+The larger finding is the channel, not the mechanism: a member who signs up on
+the web nets $2.12 a month more than one who signs up in the app, because a
+transaction that never touched the app is not Google's to charge for. That is
+seventeen times the gap between the two in-app options. The app is worth building
+for retention and for being findable; it should not be the front door.
+
+### Functions moved to the database's region
+
+The Supabase project is `aws-0-us-west-2` and Vercel defaults to `iad1` —
+Washington DC. Every database round trip crossed the continent, and it is not one
+per page: the layout calls `getUser()`, `loadFacts()` fans out five queries, and
+only then does the page run its own. `regions: ["pdx1"]` puts the functions in
+the same AWS region as the data, with `sfo1` as failover. Latency and cost, since
+Vercel bills provisioned memory for as long as a function is alive and a function
+waiting on the network is alive the whole time. Reasoning kept in
+`apps/web/REGIONS.md`, because if the database moves this moves with it.
+
 ## 2026-08-17 — Decision #22's mobile clause is now the expensive option
 
 Kevin asked for whichever payment path is cheaper on Android, and said he would
@@ -1977,15 +2039,14 @@ Nothing below blocks Milestone 2 except where noted.
 sent in chat. It is in no file in this repo; `pnpm check:db` reads `SUPABASE_DB_URL`
 from the environment.)
 
-| #   | Held                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Blocks         |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| 1   | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Domain secured 2026-08-17 as loveplusone.app; `privacy@loveplusone.app` is the intended alias. Note Resend only _sends_ — receiving needs mail hosting or a forwarding rule.                                                                                                                                                                                                                                                                           | **launch**     |
-| 2   | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out.                                                                                                                                                                                                                                                                                                                                                                                                                                        | fast-follow    |
-| 3   | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim.                                                                                                                                                                                                                                                                                                                                            | Milestone 5    |
-| 4   | **Stripe keys** — secret, webhook secret, and the three price IDs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Milestone 6    |
-| 5   | **Resend API key.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Milestone 7    |
-| 7   | **Decision #22's mobile payment clause.** It says "mobile opens checkout in browser", written when linking out avoided a store cut. Google's 30 June 2026 structure charges its 10% service fee on external links too, so linking out saves only the 5% billing fee and Stripe takes most of that back — twelve cents a month on the monthly plan, against a browser handoff that costs far more in conversion, plus a self-reporting obligation from 1 October. Recommendation is Play Billing in the app and Stripe on the web. Needs Kevin, because the clause is locked. | before Android |
-| 6   | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above.                                                                                                                                                                                                                                                                                                                                                                                                   | before launch  |
+| #   | Held                                                                                                                                                                                                                                                                                               | Blocks        |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| 1   | **Privacy contact address.** The policy commits to rights with response clocks and has no route for making a request. Domain secured 2026-08-17 as loveplusone.app; `privacy@loveplusone.app` is the intended alias. Note Resend only _sends_ — receiving needs mail hosting or a forwarding rule. | **launch**    |
+| 2   | **Data export (§9.4).** Unbuilt, and second in the §10 cut order. The policy sentence is removed until it ships; a test keeps it out.                                                                                                                                                              | fast-follow   |
+| 3   | **Five room display titles.** §5.2 locks the slugs, not the titles. Slug-derived placeholders sit in `20260813000800_seed.sql`, flagged inline. Still the only user-facing strings in the build not taken from the spec verbatim.                                                                  | Milestone 5   |
+| 4   | **Stripe keys** — secret, webhook secret, and the three price IDs.                                                                                                                                                                                                                                 | Milestone 6   |
+| 5   | **Resend API key.**                                                                                                                                                                                                                                                                                | Milestone 7   |
+| 6   | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above.                                                                                                                         | before launch |
 
 ### Next
 

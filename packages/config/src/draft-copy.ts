@@ -77,6 +77,14 @@ export const DRAFT_COPY = {
       codeRequired: "Enter the code we sent.",
       codeInvalid: "That code is not right, or it has expired.",
       sendFailed: "We could not send a code just now. Try again in a moment.",
+      /** Too many sends — the provider's own limit, not ours. */
+      rateLimited: "That is a lot of codes. Wait a few minutes and try again.",
+      /**
+       * The provider refused the number itself. Usually a typo or a missing
+       * country code, and no amount of retrying fixes either.
+       */
+      undeliverable:
+        "We could not send a code to that number. Check it is right, including the country code.",
       notConfigured:
         "Phone sign-in is not switched on yet. This is a setup step on our side, not something you did.",
     },
@@ -138,6 +146,14 @@ export const DRAFT_COPY = {
       codeInvalid: "That code is not right, or it has expired.",
       sendFailed: "We could not send a code just now. Try again in a moment.",
       rateLimited: "That is a lot of codes. Wait a few minutes and try again.",
+      /**
+       * The provider refused the number. Covers both an unroutable number —
+       * the common case, which no amount of retrying fixes — and a genuine
+       * outage, because the error code cannot tell the two apart and the
+       * provider's own wording is not ours to show.
+       */
+      undeliverable:
+        "We could not send a code to that number. Check it is right, including the country code.",
       notConfigured:
         "Sign-in is not switched on yet. This is a setup step on our side, not something you did.",
     },

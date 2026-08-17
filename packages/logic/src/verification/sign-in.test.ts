@@ -181,6 +181,21 @@ describe("classifySendFailure — an unknown identifier tells no tales", () => {
     },
   );
 
+  /**
+   * Confirmed against the live provider: sending to a number Twilio cannot
+   * route returns `sms_send_failed`, carrying Twilio error 60200 "Invalid
+   * parameter To". That is not transient, so "try again in a moment" is advice
+   * that can never work — and it must NOT pretend, because it says nothing
+   * about whether an account exists and would strand somebody on a code screen
+   * no code is coming to.
+   */
+  it.each(["sms_send_failed", "phone_number_invalid"])(
+    "%s tells them to check the number",
+    (code) => {
+      expect(classifySendFailure(code)).toBe("undeliverable");
+    },
+  );
+
   it("does not pretend for an error it does not recognise", () => {
     // Pretending by default would hide a real outage behind a code screen.
     expect(classifySendFailure("unexpected_failure")).toBe("failed");
@@ -205,6 +220,7 @@ describe("classifySendFailure — an unknown identifier tells no tales", () => {
       "utf8",
     );
     for (const code of [
+      "sms_send_failed",
       "otp_disabled",
       "signup_disabled",
       "user_not_found",
