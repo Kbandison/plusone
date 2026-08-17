@@ -185,9 +185,22 @@ export const DRAFT_COPY = {
 
   liveness: {
     heading: "A quick selfie",
+    /**
+     * Reworded when the AWS adapter landed. It used to say the picture "is
+     * deleted the moment the check finishes", which was written when we
+     * expected to receive one. We do not: the video streams from the device
+     * straight to the checking service, no image is requested back, and none is
+     * ever stored here. "Deleted" implied we held it, which understated this.
+     */
     intro:
-      "Every profile here is a verified human. One selfie, checked automatically, and the picture is deleted the moment the check finishes. It is never shown to anyone.",
+      "Every profile here is a verified human. Point your camera at your face for a few seconds and the check runs automatically. The video goes straight to the service that checks it — it never reaches us, and it is never shown to anyone.",
     startLabel: "Take the selfie",
+    /**
+     * onUserCancel — backing out is not a failed attempt and must not read as
+     * one. There is no matching label here on purpose: the cancel control
+     * belongs to the camera component and carries its own text.
+     */
+    cancelledBody: "No problem. You can start the check whenever you are ready.",
     checkingLabel: "Checking…",
     retryLabel: "Try again",
     retriesLeft: (n: number) =>

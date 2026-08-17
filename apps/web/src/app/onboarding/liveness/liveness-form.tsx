@@ -1,21 +1,47 @@
 "use client";
 
-import { useActionState } from "react";
+import dynamic from "next/dynamic";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { runLivenessCheck } from "./actions";
+import { beginLiveness, finishLiveness } from "./actions";
 import { LIVENESS_INITIAL } from "./state";
 
 const C = DRAFT_COPY.liveness;
 
-export function LivenessForm() {
-  const [state, action, pending] = useActionState(runLivenessCheck, LIVENESS_INITIAL);
+/**
+ * Kept out of the main bundle, and out of the server render.
+ *
+ * The Amplify liveness runtime is large and touches getUserMedia on mount, so
+ * it loads only once a member actually starts a check. `ssr: false` is legal
+ * here specifically because this file is a Client Component.
+ */
+const LivenessCapture = dynamic(() => import("./liveness-capture").then((m) => m.LivenessCapture), {
+  ssr: false,
+});
 
-  // Out of attempts is not a rejection. §2 Decision #21 puts a human in the
-  // loop on a risk flag, and this is what that looks like from the member's
-  // side: told plainly, asked to do nothing.
-  if (state.attemptsLeft === 0 && !state.error) {
+export function LivenessForm() {
+  const [begun, begin, beginning] = useActionState(beginLiveness, LIVENESS_INITIAL);
+  const [finished, finish, finishing] = useActionState(finishLiveness, LIVENESS_INITIAL);
+  const [cancelled, setCancelled] = useState(false);
+
+  // The camera signals completion from a callback, not from a click, so the
+  // result has to be posted programmatically.
+  const finishRef = useRef<HTMLFormElement>(null);
+  const [completedSession, setCompletedSession] = useState<string | null>(null);
+  useEffect(() => {
+    if (completedSession) finishRef.current?.requestSubmit();
+  }, [completedSession]);
+
+  // Whichever phase spoke last. A finish overwrites a begin, because by then the
+  // begin's "0 attempts left" label is a phase behind.
+  const state = finished.error !== null || finishing ? finished : begun;
+
+  // Out of attempts is not a rejection. §2 Decision #21 puts a human in the loop
+  // on a risk flag, and this is what that looks like from the member's side:
+  // told plainly, asked to do nothing.
+  if (state.attemptsLeft === 0 && !state.error && !state.session && !beginning) {
     return (
       // role="status" and focusable. This replaces the whole form, including
       // the button the member just pressed — so without it they press Start,
@@ -33,25 +59,59 @@ export function LivenessForm() {
     );
   }
 
+  if (begun.session && !completedSession && !cancelled) {
+    return (
+      <LivenessCapture
+        sessionId={begun.session.sessionId}
+        region={begun.session.region}
+        credentials={begun.session.credentials}
+        onComplete={() => setCompletedSession(begun.session!.sessionId)}
+        // A camera error and a failed check are different things, but both mean
+        // this session is spent — the attempt was charged when the session
+        // opened, so there is nothing to reclaim by distinguishing them.
+        onFailed={() => setCompletedSession(begun.session!.sessionId)}
+        onCancel={() => setCancelled(true)}
+      />
+    );
+  }
+
   return (
-    <form action={action} className="mt-10 flex flex-col gap-6">
+    <div className="mt-10 flex flex-col gap-6">
       {state.error ? (
         <p role="alert" className="text-[14.5px] text-critical">
           {state.error}
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[210px] sm:self-start"
-      >
-        {pending ? C.checkingLabel : state.error ? C.retryLabel : C.startLabel}
-      </button>
+      {cancelled ? (
+        <p role="status" className="text-[15px] text-ink-2">
+          {C.cancelledBody}
+        </p>
+      ) : null}
 
-      {state.error ? (
+      <form
+        action={(formData) => {
+          setCompletedSession(null);
+          setCancelled(false);
+          begin(formData);
+        }}
+      >
+        <button
+          type="submit"
+          disabled={beginning || finishing}
+          className="ease-brand w-full rounded-lg bg-accent px-6 py-3.5 text-[16px] text-accent-ink transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.995] disabled:opacity-55 sm:w-auto sm:min-w-[210px] sm:self-start"
+        >
+          {beginning || finishing ? C.checkingLabel : state.error ? C.retryLabel : C.startLabel}
+        </button>
+      </form>
+
+      {state.error && state.attemptsLeft > 0 ? (
         <p className="text-[14px] text-ink-3">{C.retriesLeft(state.attemptsLeft)}</p>
       ) : null}
-    </form>
+
+      <form ref={finishRef} action={finish} className="hidden">
+        <input type="hidden" name="session_id" value={completedSession ?? ""} />
+      </form>
+    </div>
   );
 }

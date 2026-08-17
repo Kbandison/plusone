@@ -95,6 +95,11 @@ for (const [label, sql] of [
   ["intention — change_intention owns its cooldown", `update public.profiles set intention='casual' where id=$1`],
   ["intention_changed_at", `update public.profiles set intention_changed_at=null where id=$1`],
   ["last_active_at — a Drop weight", `update public.profiles set last_active_at=now() where id=$1`],
+  // The retry cap used to live in the browser, in useActionState, and the
+  // server trusted it. Now it is a column — and a column a member can reset is
+  // the same unlimited-retry hole with extra steps, plus an unbounded bill for
+  // every Face Liveness call it buys.
+  ["liveness_attempts — the member does not count their own tries", `update public.profiles set liveness_attempts=0 where id=$1`],
 ]) {
   const r = await attempt(viewer, sql, [viewer]);
   check(!r.ok, label, r.ok ? "WROTE IT" : "permission denied");

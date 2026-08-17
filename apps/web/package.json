@@ -11,11 +11,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-amplify/ui-react": "^6.15.5",
+    "@aws-amplify/ui-react-liveness": "^3.6.8",
+    "@aws-sdk/client-rekognition": "^3.1111.0",
+    "@aws-sdk/client-sts": "^3.1111.0",
     "@plusone/config": "workspace:*",
     "@plusone/db": "workspace:*",
     "@plusone/logic": "workspace:*",
     "@plusone/types": "workspace:*",
     "@plusone/ui-tokens": "workspace:*",
+    "aws-amplify": "^6.20.0",
     "next": "16.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",

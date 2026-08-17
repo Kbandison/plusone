@@ -6,56 +6,97 @@ import { DRAFT_COPY, VERIFICATION, parseServerEnv } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
 import { serviceClient } from "@/lib/cron";
+import { createAwsLivenessProvider, vendBrowserCredentials } from "@/lib/liveness-aws";
 import { requireStep } from "@/lib/onboarding";
-import { getServerSupabase } from "@/lib/supabase";
 import type { LivenessState } from "./state";
 
 const E = DRAFT_COPY.liveness.errors;
 
 /**
- * Runs one liveness attempt.
+ * The liveness step (§7.2 step 2, Decision #21).
  *
- * The decision is `packages/logic/verification`'s, not this function's — the
- * reducer decides verified vs another attempt vs flagged, and this only carries
- * the result to the database. That is what keeps the rule in one tested place
- * rather than in a route handler.
+ * TWO round trips, not one. The stub could decide in a single call because it
+ * invented its own answer; a real provider cannot. AWS Face Liveness needs a
+ * session opened server-side, a video streamed from the member's device to AWS,
+ * and only then a result read back — so `begin` and `finish` are separate, and
+ * the member's browser is in the middle of them.
  *
- * The raw selfie never reaches this process. §4.2 purges it at decision time and
- * keeps a boolean and a score; the provider seam has nowhere to return an image,
- * so there is nothing here to forget to delete.
+ * Which is exactly why nothing the browser says is trusted here. It does not
+ * report whether it passed, it does not report its score, and it no longer
+ * reports how many attempts it has left. It reports a session id, and the
+ * verdict is fetched from AWS against that id.
  */
-export async function runLivenessCheck(
+
+interface Attempted {
+  readonly status: verification.VerificationStatus;
+  readonly attempts: number;
+}
+
+/** Reads the member's real verification state. Never from the client. */
+async function readState(userId: string): Promise<Attempted> {
+  const { data } = await serviceClient()
+    .from("profiles")
+    .select("verification_status, liveness_attempts")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return {
+    status: (data?.verification_status ?? "phone_verified") as verification.VerificationStatus,
+    attempts: (data?.liveness_attempts as number | null) ?? 0,
+  };
+}
+
+function stateFor({ status, attempts }: Attempted): verification.VerificationState {
+  return {
+    status,
+    livenessAttempts: attempts,
+    lastScore: null,
+    decidedAt: null,
+    appealOpenedAt: null,
+    appealDecidedAt: null,
+  };
+}
+
+function providerFor(env: ReturnType<typeof parseServerEnv>): verification.LivenessProvider | null {
+  switch (env.LIVENESS_PROVIDER) {
+    case "stub":
+      return verification.createStubLivenessProvider();
+    case "aws_rekognition":
+      // The schema guarantees all three are present for this provider, so the
+      // assertions cannot fire — they are here so a future widening of the env
+      // fails to compile rather than at a member's selfie step.
+      return createAwsLivenessProvider({
+        region: env.AWS_REGION!,
+        accessKeyId: env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+      });
+    default:
+      return null;
+  }
+}
+
+/**
+ * Opens a check: a Rekognition session, plus credentials for the device to
+ * stream to it.
+ *
+ * The attempt is spent HERE, before the camera opens, rather than when a result
+ * comes back. A member who opens a session and closes the tab has still cost a
+ * Face Liveness call, and charging only for completed checks is what makes
+ * "abandon and retry" an unlimited loop.
+ */
+export async function beginLiveness(
   previous: LivenessState,
   _formData: FormData,
 ): Promise<LivenessState> {
   const { userId } = await requireStep("liveness");
 
   const env = parseServerEnv(process.env);
+  const provider = providerFor(env);
+  if (!provider) return { ...previous, error: E.unavailable, session: null };
 
-  // Only the stub exists so far; the real adapter slots in behind the same
-  // interface when a provider is chosen (see PROJECT_UPDATES.md).
-  const provider =
-    env.LIVENESS_PROVIDER === "stub" ? verification.createStubLivenessProvider() : null;
+  const current = await readState(userId);
 
-  if (!provider) return { ...previous, error: E.unavailable };
-
-  const supabase = await getServerSupabase();
-  const { data: row } = await supabase
-    .from("profiles")
-    .select("verification_status")
-    .eq("id", userId)
-    .maybeSingle();
-
-  const state: verification.VerificationState = {
-    status: (row?.verification_status ?? "phone_verified") as verification.VerificationStatus,
-    livenessAttempts: VERIFICATION.livenessMaxRetries - previous.attemptsLeft,
-    lastScore: null,
-    decidedAt: null,
-    appealOpenedAt: null,
-    appealDecidedAt: null,
-  };
-
-  const started = verification.transition(state, {
+  const started = verification.transition(stateFor(current), {
     type: "start_liveness",
     at: Date.now(),
   });
@@ -66,23 +107,81 @@ export async function runLivenessCheck(
     return {
       ...previous,
       error: started.code === "phone_not_verified" ? E.phoneFirst : E.unavailable,
+      session: null,
     };
   }
 
-  let outcome: verification.LivenessOutcome;
-  try {
-    const session = await provider.createSession();
-    outcome = await provider.fetchOutcome(session.sessionId);
-  } catch {
-    return { ...previous, error: E.unavailable };
+  // Out of attempts already: no session, no AWS call, no spend.
+  if (current.attempts >= VERIFICATION.livenessMaxRetries) {
+    return { error: null, attemptsLeft: 0, session: null };
   }
 
-  const decided = verification.transition(started.state, {
-    type: "liveness_result",
-    at: Date.now(),
-    outcome,
-  });
-  if (!decided.ok) return { ...previous, error: E.unavailable };
+  let sessionId: string;
+  let credentials;
+  try {
+    const session = await provider.createSession();
+    sessionId = session.sessionId;
+    credentials = await vendBrowserCredentials({
+      region: env.AWS_REGION!,
+      accessKeyId: env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+    });
+  } catch {
+    return { ...previous, error: E.unavailable, session: null };
+  }
+
+  const attempts = current.attempts + 1;
+  await serviceClient()
+    .from("profiles")
+    .update({ liveness_attempts: attempts, verification_status: "liveness_pending" })
+    .eq("id", userId);
+
+  return {
+    error: null,
+    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - attempts),
+    session: { sessionId, region: env.AWS_REGION!, credentials },
+  };
+}
+
+/**
+ * Reads the verdict AWS recorded for this session and lets the reducer decide.
+ *
+ * The session id comes from the client, which is fine and is the only thing
+ * that could: the browser is the only party that knows which session it just
+ * streamed. It is not a capability — the verdict is fetched from AWS, so a
+ * member substituting somebody else's session id gets somebody else's result
+ * written to their own row, which gains them nothing they could not get by
+ * doing the check.
+ */
+export async function finishLiveness(
+  previous: LivenessState,
+  formData: FormData,
+): Promise<LivenessState> {
+  const { userId } = await requireStep("liveness");
+
+  const sessionId = String(formData.get("session_id") ?? "").trim();
+  if (!sessionId) return { ...previous, error: E.unavailable, session: null };
+
+  const env = parseServerEnv(process.env);
+  const provider = providerFor(env);
+  if (!provider) return { ...previous, error: E.unavailable, session: null };
+
+  const current = await readState(userId);
+
+  let outcome: verification.LivenessOutcome;
+  try {
+    outcome = await provider.fetchOutcome(sessionId);
+  } catch {
+    return { ...previous, error: E.unavailable, session: null };
+  }
+
+  // The state machine already counted this attempt in beginLiveness, so the
+  // reducer is handed the state as it stands rather than one step behind.
+  const decided = verification.transition(
+    { ...stateFor(current), status: "liveness_pending" },
+    { type: "liveness_result", at: Date.now(), outcome },
+  );
+  if (!decided.ok) return { ...previous, error: E.unavailable, session: null };
 
   const next = decided.state;
 
@@ -114,6 +213,7 @@ export async function runLivenessCheck(
 
   return {
     error: next.status === "flagged" ? null : E.failed,
-    attemptsLeft: verification.attemptsRemaining(next),
+    attemptsLeft: Math.max(0, VERIFICATION.livenessMaxRetries - current.attempts),
+    session: null,
   };
 }
