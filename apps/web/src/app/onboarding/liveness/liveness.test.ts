@@ -124,7 +124,7 @@ describe("the review screen is the server's call", () => {
   });
 
   it("only ever sets flagged from the reducer or the cap", () => {
-    const sets = [...code.matchAll(/flagged:\s*([^,\n]+)/g)].map((m) => m[1].trim());
+    const sets = [...code.matchAll(/flagged:\s*([^,\n]+)/g)].map((m) => (m[1] ?? "").trim());
     for (const value of sets) {
       expect(
         value === "true" || value === "false" || value.includes('next.status === "flagged"'),
