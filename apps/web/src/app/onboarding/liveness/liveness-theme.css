@@ -1,0 +1,90 @@
+/*
+ * The AWS check, wearing this app's clothes.
+ *
+ * `@aws-amplify/ui-react/styles.css` defines its tokens on `:root, [data-amplify-theme]`
+ * and the liveness component emits no theme attribute of its own, so every
+ * value below is simply inherited from the document. Redeclaring them on a
+ * wrapper element beats that inheritance outright — custom properties resolve
+ * per element, and specificity only arbitrates between rules aimed at the SAME
+ * element, so there is no fight with `:root` to win here.
+ *
+ * Only tokens are set. No Amplify class name is targeted, because those are
+ * that package's private surface and a minor release is free to rename them —
+ * a themed widget that quietly reverts to AWS blue after a dependency bump is
+ * worse than one that never matched. Tokens are the documented seam.
+ *
+ * Everything resolves through this app's own variables, so Dusk comes for free:
+ * --surface and --ink are already redefined under the dark theme, and this
+ * inherits whatever they currently are rather than hardcoding a second palette.
+ */
+
+.liveness-theme {
+  /* Ground and type. */
+  --amplify-colors-background-primary: var(--surface);
+  --amplify-colors-background-secondary: var(--surface-2);
+  --amplify-colors-background-tertiary: var(--surface-2);
+  --amplify-colors-background-quaternary: var(--surface-2);
+  --amplify-colors-font-primary: var(--ink);
+  --amplify-colors-font-secondary: var(--ink-2);
+  --amplify-colors-font-tertiary: var(--ink-3);
+  --amplify-colors-font-inverse: var(--accent-ink);
+  --amplify-colors-font-interactive: var(--accent);
+  --amplify-colors-font-hover: var(--ink);
+  --amplify-colors-font-focus: var(--accent);
+  --amplify-colors-font-active: var(--accent);
+
+  /* Edges. line-control rather than line: WCAG 1.4.11 wants 3:1 for the
+     boundary of a control, and this widget is nothing but controls. */
+  --amplify-colors-border-primary: var(--line-control);
+  --amplify-colors-border-secondary: var(--line);
+  --amplify-colors-border-tertiary: var(--line-2);
+  --amplify-colors-border-focus: var(--accent);
+  --amplify-colors-border-pressed: var(--accent);
+
+  /* The one liveness-specific token the package exposes: the frame the camera
+     sits in. Surface-2 so the video reads as inset rather than floating. */
+  --amplify-components-liveness-camera-module-background-color: var(--surface-2);
+
+  /* Buttons. "Start the check" is the primary action on this screen and it was
+     arriving in AWS's blue next to this app's terracotta. */
+  --amplify-components-button-primary-background-color: var(--accent);
+  --amplify-components-button-primary-color: var(--accent-ink);
+  --amplify-components-button-primary-border-color: transparent;
+  --amplify-components-button-primary-hover-background-color: color-mix(
+    in oklab,
+    var(--accent) 88%,
+    var(--ink)
+  );
+  --amplify-components-button-primary-hover-color: var(--accent-ink);
+  --amplify-components-button-primary-active-background-color: color-mix(
+    in oklab,
+    var(--accent) 78%,
+    var(--ink)
+  );
+  --amplify-components-button-primary-active-color: var(--accent-ink);
+  --amplify-components-button-primary-focus-background-color: var(--accent);
+  --amplify-components-button-primary-focus-color: var(--accent-ink);
+  --amplify-components-button-primary-disabled-background-color: var(--surface-2);
+  --amplify-components-button-primary-disabled-color: var(--ink-3);
+
+  /* Failure states borrow the app's critical rather than AWS's red, so the one
+     screen where somebody is told "that did not finish" still looks like us. */
+  --amplify-colors-font-error: var(--critical);
+  --amplify-colors-border-error: var(--critical);
+  --amplify-colors-background-error: color-mix(in oklab, var(--critical) 10%, var(--surface));
+
+  /* Type and shape. */
+  --amplify-fonts-default-variable: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+  --amplify-fonts-default-static: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+  --amplify-radii-xs: var(--radius-xs);
+  --amplify-radii-small: var(--radius-sm);
+  --amplify-radii-medium: var(--radius-md);
+  --amplify-radii-large: var(--radius-lg);
+  --amplify-radii-xl: var(--radius-xl);
+}
+
+/*
+ * The oval and the countdown are drawn by the component, and the photosensitive
+ * warning is the one piece of it that must never be restyled into the
+ * background. Left entirely alone.
+ */

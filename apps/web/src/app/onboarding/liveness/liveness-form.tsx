@@ -188,7 +188,7 @@ function ReviewScreen({
          screen reader announces the review, and a ring on a focus the member did
          not move there themselves is noise. Every other instance of this class
          in the app was cancelling the keyboard focus ring globals.css defines. */
-      className="mt-10 rounded-lg border border-line-2 bg-surface p-6 focus:outline-none"
+      className="mt-10 rounded-xl border border-line-2 bg-surface p-6 focus:outline-none"
     >
       <h2 className="text-h3">{heading}</h2>
       <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{body}</p>

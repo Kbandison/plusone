@@ -272,6 +272,111 @@ export const DRAFT_COPY = {
        */
       phoneFirst: "Your number needs verifying first. Go back a step and we will send you a code.",
     },
+
+    /**
+     * Every word inside the camera itself.
+     *
+     * The check is an AWS component, and until this existed it spoke AWS's
+     * English in the middle of this app: "Move face in front of camera", "Rec",
+     * "Client error", "Check failed due to client issue". Fifty-odd strings, on
+     * the one screen where a member is being asked to point a camera at their
+     * own face for a product about a stigmatised condition — the screen where
+     * sounding like a stranger's software costs the most.
+     *
+     * The component takes every one of them as `displayText`, so none of it had
+     * to stay. Same meanings, this app's voice.
+     *
+     * Two rules held while rewriting them. The hints are read aloud by screen
+     * readers as they change, so they stay short and say what to DO rather than
+     * what is wrong. And nothing here names a condition, a diagnosis or a
+     * reason anybody is signing up — this is a camera screen and it knows
+     * nothing about who is in front of it.
+     */
+    camera: {
+      /* Live hints, swapped as the check runs. Short: they are announced. */
+      hintMoveFaceFrontOfCameraText: "Bring your face in front of the camera",
+      hintTooManyFacesText: "Just one face, please",
+      hintFaceDetectedText: "Got you",
+      hintCanNotIdentifyText: "Bring your face in front of the camera",
+      hintTooCloseText: "Move back a little",
+      hintTooFarText: "Move a little closer",
+      hintConnectingText: "Connecting…",
+      hintVerifyingText: "Checking…",
+      hintCheckCompleteText: "All done",
+      hintIlluminationTooBrightText: "A bit bright — try somewhere softer",
+      hintIlluminationTooDarkText: "A bit dark — try somewhere brighter",
+      hintIlluminationNormalText: "Lighting looks good",
+      hintHoldFaceForFreshnessText: "Hold still",
+      hintCenterFaceText: "Centre your face",
+      /**
+       * The long one, and the only one nobody sees: it is read to screen reader
+       * users before the check begins, in place of watching the oval. So it
+       * describes the whole shape of what is about to happen, in order.
+       */
+      hintCenterFaceInstructionText:
+        "Before you start: put your camera at the top centre of your screen and centre your face in it. When the check begins an oval appears in the middle. You will be asked to move forward until your face fills it, then to hold still for a few seconds. You will hear when it is complete.",
+      hintFaceOffCenterText: "Move your face into the oval",
+      hintMatchIndicatorText: "Halfway there. Keep moving closer.",
+
+      /* The camera itself will not open. */
+      cameraMinSpecificationsHeadingText: "This camera will not manage the check",
+      cameraMinSpecificationsMessageText:
+        "The check needs a camera that can do at least 320 by 240, at fifteen frames a second.",
+      cameraNotFoundHeadingText: "We cannot reach your camera",
+      cameraNotFoundMessageText:
+        "Check that this site is allowed to use your camera and that nothing else has it open. You may need to change it in your settings and reopen your browser.",
+      retryCameraPermissionsText: "Try again",
+      waitingCameraPermissionText: "Waiting for you to allow the camera.",
+      a11yVideoLabelText: "Camera view for the check",
+
+      /* The get-ready screen AWS recommends, which is where most people decide
+         whether this feels safe. */
+      goodFitCaptionText: "Good fit",
+      goodFitAltText: "A face filling an oval outline.",
+      tooFarCaptionText: "Too far",
+      tooFarAltText: "A face inside an oval outline, with a gap all the way around it.",
+      startScreenBeginCheckText: "Start the check",
+
+      /**
+       * Kept prominent and kept plain. The check really does flash colours at
+       * the member, and §9 does not get to be the only place this is said.
+       */
+      photosensitivityWarningHeadingText: "This check flashes colours",
+      photosensitivityWarningBodyText:
+        "The screen flashes different colours while the check runs. Take care if you are sensitive to flashing light.",
+      photosensitivityWarningInfoText:
+        "Some people can have epileptic seizures when they see flashing coloured light. Take care if you, or anyone in your family, has an epileptic condition.",
+      photosensitivityWarningLabelText: "More about the flashing colours",
+
+      /* While recording. */
+      recordingIndicatorText: "Rec",
+      cancelLivenessCheckText: "Cancel the check",
+
+      /**
+       * Errors. AWS's originals said "Client error" and "Check failed due to
+       * client issue" — true, and no help to somebody who now cannot get into
+       * the app. Each of these says what happened and what to do about it.
+       */
+      errorLabelText: "That did not finish",
+      connectionTimeoutHeaderText: "The connection dropped",
+      connectionTimeoutMessageText: "We lost the connection before the check finished.",
+      timeoutHeaderText: "That took too long",
+      timeoutMessageText:
+        "Your face did not fill the oval in time. Try again, and move close enough to fill it completely.",
+      faceDistanceHeaderText: "You moved in too early",
+      faceDistanceMessageText: "Hold still while it connects, then move closer when it asks.",
+      multipleFacesHeaderText: "More than one face",
+      multipleFacesMessageText:
+        "Make sure only your face is in front of the camera when the check starts.",
+      clientHeaderText: "The check stopped",
+      clientMessageText: "Something on this device stopped the check before it finished.",
+      serverHeaderText: "The check is having trouble",
+      serverMessageText: "We could not finish the check just now.",
+      landscapeHeaderText: "Turn your phone upright",
+      landscapeMessageText: "Rotate your device so it is upright, then start again.",
+      portraitMessageText: "Keep your device upright until the check finishes.",
+      tryAgainText: "Try again",
+    },
   },
 
   intention: {
