@@ -57,7 +57,7 @@ describe("the §7.2 order", () => {
     expect(INITIAL_ONBOARDING_STATE.step).toBe("phone");
   });
 
-  it("runs phone -> liveness -> basics -> community -> consent -> intention -> quiz -> photos -> radius -> done", () => {
+  it("runs phone -> liveness -> basics -> community -> consent -> intention -> preferences -> quiz -> photos -> radius -> done", () => {
     expect([...ONBOARDING_STEPS]).toEqual([
       "phone",
       "liveness",
@@ -65,6 +65,10 @@ describe("the §7.2 order", () => {
       "community_condition",
       "health_consent",
       "intention",
+      // Who a member wants to meet, next to what they want out of it. Both of
+      // the questions that actually filter the Drop sit before the one step
+      // §7.2 lets anybody skip.
+      "preferences",
       "quiz",
       "photos",
       "radius",
@@ -303,6 +307,7 @@ describe("resuming where you left off", () => {
       community_condition: "hasCommunity",
       health_consent: "hasHealthConsent",
       intention: "hasIntention",
+      preferences: "hasPreferences",
       quiz: "quizSettled",
       photos: "hasPhoto",
       radius: "radiusSet",

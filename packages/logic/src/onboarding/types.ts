@@ -30,6 +30,7 @@ export type OnboardingStep =
   | "community_condition"
   | "health_consent"
   | "intention"
+  | "preferences"
   | "quiz"
   | "photos"
   | "radius"
@@ -43,6 +44,11 @@ export const ONBOARDING_STEPS = [
   "community_condition",
   "health_consent",
   "intention",
+  // After intention and before the quiz. Intention is what a member wants out
+  // of this; preferences are who they want it with, and the pair reads as one
+  // thought. It also puts the two questions that actually filter the Drop
+  // before the step §7.2 marks skippable.
+  "preferences",
   "quiz",
   "photos",
   "radius",
@@ -115,6 +121,12 @@ export interface OnboardingFacts {
   readonly hasCommunity: boolean;
   readonly hasHealthConsent: boolean;
   readonly hasIntention: boolean;
+  /**
+   * Gender stated. Only gender — `seeking` empty is a real answer meaning
+   * "everyone", and age and lifestyle are optional, so requiring any of them
+   * would trap a member on a screen they had legitimately finished.
+   */
+  readonly hasPreferences: boolean;
   readonly quizSettled: boolean;
   readonly hasPhoto: boolean;
   readonly radiusSet: boolean;
@@ -127,6 +139,7 @@ export const NO_PROGRESS: OnboardingFacts = {
   hasCommunity: false,
   hasHealthConsent: false,
   hasIntention: false,
+  hasPreferences: false,
   quizSettled: false,
   hasPhoto: false,
   radiusSet: false,

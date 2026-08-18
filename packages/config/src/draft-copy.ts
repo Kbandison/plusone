@@ -399,6 +399,54 @@ export const DRAFT_COPY = {
     errors: { required: "Choose one." },
   },
 
+  /**
+   * The step that decides who anybody ever sees.
+   *
+   * Until this existed the Drop had no idea what gender anyone was or who they
+   * wanted to meet — `gender` and `seeking` were columns nothing read or wrote,
+   * so every member was shown to every member inside their radius.
+   *
+   * The order is deliberate: who you are, then who you would like to meet, then
+   * the parts that only colour a profile. The two that actually filter come
+   * first, so a member who abandons halfway has still answered the ones that
+   * make their Drop mean something.
+   */
+  preferences: {
+    heading: "Who you would like to meet",
+    intro:
+      "This shapes who turns up in your Drop, and who you turn up in. Only the first two questions decide that — the rest just help people know you.",
+
+    genderLabel: "You are",
+    seekingLabel: "You would like to meet",
+    /** Empty means everyone, and a member choosing nothing should know that. */
+    seekingHint: "Choose as many as you like. Leaving it empty means everyone.",
+
+    ageLabel: "Ages you are open to",
+    ageHint: "Both of you have to be in each other's range.",
+    ageFrom: "From",
+    ageTo: "To",
+
+    /**
+     * Named "about you" rather than "preferences": these are answers about the
+     * member, not filters on anybody else. Saying so matters, because a member
+     * who reads them as filters will answer strategically rather than honestly.
+     */
+    aboutHeading: "A bit more about you",
+    aboutHint: "None of these filter your Drop. They sit on your profile so people know you.",
+    smokesLabel: "Smoke",
+    drinksLabel: "Drink",
+    kidsLabel: "Kids",
+    kidsPlanLabel: "Feelings about kids",
+
+    skipLabel: "Prefer not to say",
+    errors: {
+      genderRequired: "Choose one, so people looking for you can find you.",
+      ageOrder: "The first age has to be lower than the second.",
+      ageRange: "Ages have to be between 18 and 120.",
+      failed: "That did not save. Try again.",
+    },
+  },
+
   photos: {
     heading: "Your photos",
     intro: "At least one photo, and you choose who gets to see it clearly.",
@@ -896,6 +944,61 @@ export const INTENTION_LABELS = {
 } as const;
 
 export type Intention = keyof typeof INTENTION_LABELS;
+
+/**
+ * Labels for the gender_identity enum.
+ *
+ * DRAFTS, and the ones on this page most worth reading: an option list for
+ * gender is a statement about who the product thinks its members are, and a
+ * member who does not find themselves in it learns something in the first two
+ * minutes that no later screen undoes.
+ *
+ * Four is the smallest set that is not exclusionary, and it is deliberately not
+ * a taxonomy — this app already asks people to disclose a diagnosis, and
+ * following that with a long identity questionnaire spends trust it needs
+ * elsewhere. Widening the enum later costs one migration; it is meant to be
+ * widened rather than treated as settled.
+ */
+export const GENDER_LABELS = {
+  woman: "Woman",
+  man: "Man",
+  non_binary: "Non-binary",
+  other: "Another identity",
+} as const;
+
+export type Gender = keyof typeof GENDER_LABELS;
+
+/**
+ * The same four, asked the other way round. Multi-select: "who you would like
+ * to meet" is a set, and a member open to more than one gender is not an edge
+ * case to be squeezed into a single radio.
+ *
+ * Choosing NOTHING means no preference rather than nobody — see the mutual
+ * filter in drop_candidates, which treats an empty set as "everyone".
+ */
+export const SEEKING_LABELS = GENDER_LABELS;
+
+/** Labels for the lifestyle_frequency enum, shared by smoking and drinking. */
+export const FREQUENCY_LABELS = {
+  never: "No",
+  sometimes: "Sometimes",
+  often: "Regularly",
+} as const;
+
+/** Labels for the kids_status enum — what is true now. */
+export const KIDS_LABELS = {
+  none: "No kids",
+  have: "Kids at home",
+  have_grown: "Kids, grown up",
+} as const;
+
+/** Labels for the kids_plan enum — what someone wants later. */
+export const KIDS_PLAN_LABELS = {
+  want: "Want kids",
+  open: "Open to kids",
+  no: "Do not want kids",
+  unsure: "Not sure yet",
+} as const;
 
 /**
  * Labels for the condition_detail enum. These are names for things, not

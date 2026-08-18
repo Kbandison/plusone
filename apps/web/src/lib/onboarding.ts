@@ -20,6 +20,7 @@ export const STEP_ROUTES: Record<Step, string> = {
   community_condition: "/onboarding/community",
   health_consent: "/onboarding/consent",
   intention: "/onboarding/intention",
+  preferences: "/onboarding/preferences",
   quiz: "/onboarding/quiz",
   photos: "/onboarding/photos",
   radius: "/onboarding/radius",
@@ -41,6 +42,8 @@ interface OwnProfile {
   readonly community: string | null;
   readonly condition: string | null;
   readonly intention: string | null;
+  /** gender_identity. Its presence is what settles the preferences step. */
+  readonly gender: string | null;
   readonly search_radius_mi: number | null;
   readonly liveness_passed_at: string | null;
 }
@@ -78,6 +81,10 @@ export async function loadFacts(userId: string): Promise<onboarding.OnboardingFa
     hasCommunity: Boolean(profile?.community && profile.condition),
     hasHealthConsent: Boolean(consent),
     hasIntention: Boolean(profile?.intention),
+    // Gender alone. An empty `seeking` is a real answer meaning "everyone", and
+    // the age range and the lifestyle answers are optional — requiring any of
+    // them would strand a member on a screen they had legitimately finished.
+    hasPreferences: Boolean(profile?.gender),
     // The step turns itself on with the questions. A skip writes an EMPTY row
     // rather than no row, so presence is the right thing to read: no row means
     // unanswered, and a member who skipped would otherwise meet the screen

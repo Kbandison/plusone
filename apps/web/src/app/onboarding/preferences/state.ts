@@ -1,0 +1,12 @@
+/**
+ * Action state for the preferences step.
+ *
+ * Its own module because a `"use server"` file may export only async functions —
+ * see state-exports.test.ts, which exists because that is a build error a long
+ * way from its cause.
+ */
+export interface PreferencesState {
+  readonly error: string | null;
+}
+
+export const PREFERENCES_INITIAL: PreferencesState = { error: null };

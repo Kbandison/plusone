@@ -27,6 +27,7 @@ const STEP_HEADINGS: Record<Exclude<onboarding.OnboardingStep, "done">, string> 
   community_condition: DRAFT_COPY.community.heading,
   health_consent: COPY.consent.heading,
   intention: DRAFT_COPY.intention.heading,
+  preferences: DRAFT_COPY.preferences.heading,
   quiz: DRAFT_COPY.quiz.heading,
   photos: DRAFT_COPY.photos.heading,
   radius: DRAFT_COPY.radius.heading,

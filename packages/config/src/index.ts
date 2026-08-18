@@ -56,6 +56,11 @@ export type { PolicySection } from "./legal";
 export {
   DRAFT_COPY,
   CONDITION_LABELS,
+  GENDER_LABELS,
+  SEEKING_LABELS,
+  FREQUENCY_LABELS,
+  KIDS_LABELS,
+  KIDS_PLAN_LABELS,
   COMMUNITY_LABELS,
   CONDITIONS_BY_COMMUNITY,
   allowsUEqualsU,

@@ -176,6 +176,7 @@ const SETTLED_BY: Record<Exclude<OnboardingStep, "done">, (f: OnboardingFacts) =
   community_condition: (f) => f.hasCommunity,
   health_consent: (f) => f.hasHealthConsent,
   intention: (f) => f.hasIntention,
+  preferences: (f) => f.hasPreferences,
   quiz: (f) => f.quizSettled,
   photos: (f) => f.hasPhoto,
   radius: (f) => f.radiusSet,
