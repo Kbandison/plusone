@@ -9,6 +9,10 @@ const read = (name: string) => readFileSync(fileURLToPath(new URL(name, import.m
 const actions = read("./actions.ts")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/\/\/.*$/gm, "");
+/** The rules themselves live here, shared with the profile editor. */
+const parser = read("../../../lib/preferences.ts")
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/\/\/.*$/gm, "");
 const form = read("./preferences-form.tsx");
 const page = read("./page.tsx");
 
@@ -19,7 +23,7 @@ const page = read("./page.tsx");
  */
 describe("the two answers that decide the Drop", () => {
   it("refuses to save without a gender", () => {
-    expect(actions).toMatch(/if \(!gender\) return \{ error: E\.genderRequired \}/);
+    expect(parser).toMatch(/if \(!gender\) return \{ error: E\.genderRequired \}/);
   });
 
   /**
@@ -30,31 +34,31 @@ describe("the two answers that decide the Drop", () => {
    */
   it("accepts choosing nobody as meaning everybody", () => {
     expect(form).toMatch(/type="checkbox"[\s\S]{0,120}name="seeking"/);
-    expect(actions).not.toMatch(/seeking\.length === 0[\s\S]{0,60}return \{ error/);
+    expect(parser).not.toMatch(/seeking\.length === 0[\s\S]{0,60}return \{ error/);
   });
 
   it("never writes a value the enum does not hold", () => {
     // Everything goes through oneOf or an explicit membership filter, so a
     // hand-posted body cannot reach the column.
-    expect(actions).toMatch(/function oneOf/);
-    expect(actions).toMatch(/raw in allowed/);
-    expect(actions).toMatch(/\.filter\(\(value\) => value in GENDER_LABELS\)/);
+    expect(parser).toMatch(/function oneOf/);
+    expect(parser).toMatch(/raw in allowed/);
+    expect(parser).toMatch(/\.filter\(\(value\) => value in GENDER_LABELS\)/);
   });
 
   it("does not let the same choice be counted twice", () => {
-    expect(actions).toMatch(/\[\.\.\.new Set\(seeking\)\]/);
+    expect(parser).toMatch(/\[\.\.\.new Set\(seeking\)\]/);
   });
 });
 
 describe("the age range", () => {
   /** Blank is "no preference", and no preference is not zero. */
   it("treats an empty box as unstated rather than as a number", () => {
-    expect(actions).toMatch(/if \(raw === ""\) return null/);
+    expect(parser).toMatch(/if \(raw === ""\) return null/);
   });
 
   it("refuses a range below eighteen or above the ceiling", () => {
-    expect(actions).toMatch(/age < AGE_FLOOR \|\| age > AGE_CEILING/);
-    expect(actions).toMatch(/const AGE_FLOOR = 18/);
+    expect(parser).toMatch(/age < AGE_FLOOR \|\| age > AGE_CEILING/);
+    expect(parser).toMatch(/const AGE_FLOOR = 18/);
   });
 
   /**
@@ -63,8 +67,8 @@ describe("the age range", () => {
    * that silently failed.
    */
   it("catches a swapped pair before the constraint does", () => {
-    expect(actions).toMatch(/ageMin > ageMax/);
-    expect(actions).toMatch(/E\.ageOrder/);
+    expect(parser).toMatch(/ageMin > ageMax/);
+    expect(parser).toMatch(/E\.ageOrder/);
   });
 });
 
@@ -101,7 +105,9 @@ describe("what the step promises about itself", () => {
 
   /** supabase-js resolves rather than rejects; an unchecked update reads as success. */
   it("checks the write", () => {
-    expect(actions).toMatch(/if \(error\) return \{ error: E\.failed \}/);
+    expect(actions).toMatch(
+      /if \(error\) return \{ error: DRAFT_COPY\.preferences\.errors\.failed \}/,
+    );
   });
 });
 

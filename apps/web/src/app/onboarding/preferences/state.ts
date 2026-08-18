@@ -7,6 +7,12 @@
  */
 export interface PreferencesState {
   readonly error: string | null;
+  /**
+   * Only the editor sets this. Onboarding redirects on success, so it has no
+   * "saved" state to be in; the editor stays on the page and needs to say
+   * something, or pressing Save looks like pressing nothing.
+   */
+  readonly saved?: boolean;
 }
 
 export const PREFERENCES_INITIAL: PreferencesState = { error: null };

@@ -11,8 +11,7 @@ import {
   KIDS_PLAN_LABELS,
 } from "@plusone/config";
 
-import { savePreferences } from "./actions";
-import { PREFERENCES_INITIAL } from "./state";
+import { PREFERENCES_INITIAL, type PreferencesState } from "./state";
 import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.preferences;
@@ -81,8 +80,26 @@ function Choice({
   );
 }
 
-export function PreferencesForm({ defaults }: { defaults: PreferencesDefaults }) {
-  const [state, action, pending] = useActionState(savePreferences, PREFERENCES_INITIAL);
+/**
+ * Used twice: once in onboarding, once in the profile editor.
+ *
+ * The action is passed in rather than imported, because the two differ only in
+ * where they leave you — onboarding continues to the next step, the editor
+ * stays put and says it saved. Everything else about the screen, including what
+ * the rules are, has to be identical or the two drift.
+ */
+export function PreferencesForm({
+  defaults,
+  action: save,
+  submitLabel = COPY.actions.continueLabel,
+  savedMessage,
+}: {
+  defaults: PreferencesDefaults;
+  action: (previous: PreferencesState, formData: FormData) => Promise<PreferencesState>;
+  submitLabel?: string;
+  savedMessage?: string;
+}) {
+  const [state, action, pending] = useActionState(save, PREFERENCES_INITIAL);
   const minId = useId();
   const maxId = useId();
 
@@ -193,12 +210,20 @@ export function PreferencesForm({ defaults }: { defaults: PreferencesDefaults })
         </p>
       ) : null}
 
+      {/* The editor does not navigate anywhere, so without this a member presses
+          Save and the page sits there looking exactly as it did. */}
+      {!state.error && state.saved && savedMessage ? (
+        <p role="status" className="text-[14.5px] text-ink-3">
+          {savedMessage}
+        </p>
+      ) : null}
+
       <button
         type="submit"
         disabled={pending}
         className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
       >
-        {COPY.actions.continueLabel}
+        {submitLabel}
       </button>
     </form>
   );

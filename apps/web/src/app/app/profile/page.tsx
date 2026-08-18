@@ -14,6 +14,8 @@ import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
 import { ModeToggle } from "./mode-toggle";
 import { BioEditor } from "./bio-editor";
+import { PreferencesForm } from "@/app/onboarding/preferences/preferences-form";
+import { updatePreferences } from "./preferences-actions";
 import { PromptEditor } from "./prompt-editor";
 import { redirect } from "next/navigation";
 
@@ -26,7 +28,12 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, intention, mode, search_radius_mi, bio, prompts")
+    // One literal, not a concatenation: supabase-js infers the row type FROM
+    // this string, and a `+` between two halves makes it a plain string and
+    // every field on the result an error type.
+    .select(
+      "display_name, intention, mode, search_radius_mi, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
+    )
     .eq("id", auth.user.id)
     .maybeSingle();
 
@@ -85,6 +92,28 @@ export default async function ProfilePage() {
       <PromptEditor answers={prompts} />
 
       <BioEditor bio={(profile?.bio as string | null) ?? null} />
+
+      {/* The answers that decide the Drop, changeable. Asking them once in
+          onboarding would have made them write-once, and they are the only
+          settings in the product that determine everything a member ever sees. */}
+      <section className="mt-16 border-t border-line pt-10">
+        <h2 className="text-[1.2rem]">{DRAFT_COPY.preferences.editHeading}</h2>
+        <PreferencesForm
+          action={updatePreferences}
+          submitLabel={DRAFT_COPY.preferences.editSaveLabel}
+          savedMessage={DRAFT_COPY.preferences.editSaved}
+          defaults={{
+            gender: (profile?.gender as string | null) ?? null,
+            seeking: (profile?.seeking as string[] | null) ?? [],
+            ageMin: (profile?.age_min as number | null) ?? null,
+            ageMax: (profile?.age_max as number | null) ?? null,
+            smokes: (profile?.smokes as string | null) ?? null,
+            drinks: (profile?.drinks as string | null) ?? null,
+            kids: (profile?.kids as string | null) ?? null,
+            kidsPlan: (profile?.kids_plan as string | null) ?? null,
+          }}
+        />
+      </section>
       <ModeToggle mode={mode} />
     </main>
   );

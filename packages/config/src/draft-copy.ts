@@ -439,6 +439,10 @@ export const DRAFT_COPY = {
     kidsPlanLabel: "Feelings about kids",
 
     skipLabel: "Prefer not to say",
+    /** The same questions on the profile, where they are changed rather than set. */
+    editHeading: "Who you would like to meet",
+    editSaveLabel: "Save",
+    editSaved: "Saved.",
     errors: {
       genderRequired: "Choose one, so people looking for you can find you.",
       ageOrder: "The first age has to be lower than the second.",

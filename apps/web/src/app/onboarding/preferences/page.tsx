@@ -5,6 +5,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { StepShell } from "../step-shell";
 import { requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
+import { savePreferences } from "./actions";
 import { PreferencesForm, type PreferencesDefaults } from "./preferences-form";
 
 export const metadata: Metadata = { title: "Who you would like to meet" };
@@ -47,7 +48,7 @@ export default async function PreferencesPage() {
       heading={DRAFT_COPY.preferences.heading}
       intro={DRAFT_COPY.preferences.intro}
     >
-      <PreferencesForm defaults={defaults} />
+      <PreferencesForm defaults={defaults} action={savePreferences} />
     </StepShell>
   );
 }
