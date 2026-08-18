@@ -112,3 +112,47 @@ describe("polling never turns impatience into a failed check", () => {
     expect(code).toMatch(/if \(isTerminalStatus\(response\.Status\)\)/);
   });
 });
+
+/**
+ * The one diagnostic that can answer "good camera, good light, still fails".
+ *
+ * FAILED and SUCCEEDED-under-our-floor are the same screen to a member and
+ * opposite problems to fix: the first went wrong at AWS, the second is our own
+ * threshold refusing a verdict AWS was happy with. Nothing else distinguishes
+ * them, and the log was gated to non-production — present in the one place
+ * nobody is failing checks, absent in the only place anybody is.
+ */
+describe("the AWS verdict is observable where members actually are", () => {
+  const source = readFileSync(fileURLToPath(new URL("./liveness-aws.ts", import.meta.url)), "utf8");
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const logged = code.slice(code.indexOf('at: "liveness.aws"'), code.indexOf("polls:") + 40);
+
+  it("is not gated on the environment", () => {
+    expect(code).not.toMatch(/NODE_ENV/);
+  });
+
+  it("records the two numbers that tell the cases apart", () => {
+    expect(logged).toMatch(/status:\s*response\.Status/);
+    expect(logged).toMatch(/confidence:\s*response\.Confidence/);
+  });
+
+  /**
+   * §4.2: purge raw media post-decision, keep boolean + score only. A log line
+   * that carried the member, the session id or any part of ReferenceImage would
+   * put a face and an identity into a log aggregator forever — and this app
+   * refuses to write a condition into any payload at all.
+   */
+  it("says nothing about who it was", () => {
+    for (const forbidden of [
+      "userId",
+      "user_id",
+      "sessionId",
+      "SessionId",
+      "ReferenceImage",
+      "AuditImages",
+      "Bytes",
+    ]) {
+      expect(logged).not.toContain(forbidden);
+    }
+  });
+});

@@ -53,12 +53,23 @@ describe("the suggestion never becomes an assumption", () => {
   });
 
   /**
-   * /sign-in takes a number OR an email in one field. A "+1" sitting in it
-   * would break every email sign-in, which is the path most members use after
-   * their first day.
+   * /sign-in takes a number OR an email in ONE field, so it must never carry a
+   * standing prefill: a "+1" sitting there on arrival is a character every
+   * member signing in with an address deletes first, and that is the path most
+   * members use after their first day.
+   *
+   * It still offers the code — at the first keystroke that proves this is a
+   * number, which is what applyDialCode decides. The rule this test protects is
+   * not "no country code here", it is "nothing in the field until the member
+   * has said which kind of thing they are typing".
    */
-  it("does not prefill the sign-in field, which also takes an email", () => {
-    expect(signIn).not.toMatch(/dialCode|suggestedDialCode/);
+  it("never prefills the sign-in field, which also takes an email", () => {
+    expect(signIn).not.toMatch(/defaultValue=\{suggestedDialCode\}/);
+    expect(signIn).not.toMatch(/value=\{suggestedDialCode\}/);
+  });
+
+  it("offers the code on the sign-in field only through the from-empty rule", () => {
+    expect(signIn).toMatch(/applyDialCode\(before\.current, input\.value, suggestedDialCode\)/);
   });
 
   /**

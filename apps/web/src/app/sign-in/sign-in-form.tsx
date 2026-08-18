@@ -1,20 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useId, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
 import { Field, RESEND_COOLDOWN_SECONDS, Submit } from "@/app/auth-fields";
+import { applyDialCode } from "@/lib/dial-code-input";
 import { sendSignInCode, verifySignInCode } from "./actions";
 import { SIGN_IN_INITIAL, type SignInState } from "./state";
 
 const C = DRAFT_COPY.signIn;
 
-export function SignInForm() {
+export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: string }) {
   const [sendState, send, sending] = useActionState(sendSignInCode, SIGN_IN_INITIAL);
   const [changing, setChanging] = useState(false);
   const identifierId = useId();
+  // What the field held before this keystroke. applyDialCode only acts on the
+  // transition from empty, and an uncontrolled input does not remember.
+  const before = useRef("");
 
   if (sendState.sentTo && !changing) {
     return <CodeForm sent={sendState} onChange={() => setChanging(true)} />;
@@ -44,6 +48,20 @@ export function SignInForm() {
         inputMode="text"
         autoComplete="username"
         required
+        // The country code /onboarding/phone prefills outright, offered here at
+        // the first keystroke that proves this is a number and not an address.
+        // See lib/dial-code-input.ts.
+        onInput={(event) => {
+          const input = event.currentTarget;
+          const prefixed = applyDialCode(before.current, input.value, suggestedDialCode);
+          if (prefixed !== null) {
+            input.value = prefixed;
+            // Without this the caret jumps to the front of the code the member
+            // did not type, and the next digit lands in the middle of it.
+            input.setSelectionRange(prefixed.length, prefixed.length);
+          }
+          before.current = input.value;
+        }}
         error={sendState.error}
       />
 

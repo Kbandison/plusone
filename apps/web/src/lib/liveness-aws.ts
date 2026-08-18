@@ -122,19 +122,29 @@ export function createAwsLivenessProvider(
         );
 
         if (isTerminalStatus(response.Status)) {
-          if (process.env["NODE_ENV"] !== "production") {
-            // Numbers only, no member and no image. The one thing that made
-            // "your webcam is blurry" and "we read the result too early"
-            // indistinguishable was having nothing to look at.
-            console.info(
-              JSON.stringify({
-                at: "liveness.aws",
-                status: response.Status,
-                confidence: response.Confidence ?? null,
-                polls: attempt + 1,
-              }),
-            );
-          }
+          // Numbers only, no member and no image. The one thing that made
+          // "your webcam is blurry" and "we read the result too early"
+          // indistinguishable was having nothing to look at.
+          //
+          // This used to be gated to NODE_ENV !== "production", which put the
+          // one diagnostic that can tell those apart in the only place nobody
+          // is failing checks. A member reporting "good phone camera, good
+          // light, still fails" is unanswerable without it: FAILED means the
+          // session or the challenge went wrong at AWS, while SUCCEEDED with a
+          // Confidence under our floor means AWS was satisfied and WE said no.
+          // Those have opposite fixes and the member sees the same screen.
+          //
+          // Safe to emit anywhere: Status is an enum, Confidence is a float,
+          // polls is an integer. No user id, no session id, no image, nothing
+          // that says who this was or what condition they live with.
+          console.info(
+            JSON.stringify({
+              at: "liveness.aws",
+              status: response.Status,
+              confidence: response.Confidence ?? null,
+              polls: attempt + 1,
+            }),
+          );
 
           // `response` also holds ReferenceImage — Base64 bytes of the member's
           // face. It stops here. Do not return it, log it, or widen this object.

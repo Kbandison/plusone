@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
+import { suggestedDialCode } from "@/lib/dial-code";
 import { getServerSupabase } from "@/lib/supabase";
 import { SignInForm } from "./sign-in-form";
 
@@ -41,7 +42,7 @@ export default async function SignInPage({
         </p>
       ) : null}
 
-      <SignInForm />
+      <SignInForm suggestedDialCode={await suggestedDialCode()} />
     </main>
   );
 }
