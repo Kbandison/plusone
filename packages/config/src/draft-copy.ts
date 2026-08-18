@@ -388,7 +388,17 @@ export const DRAFT_COPY = {
   photos: {
     heading: "Your photos",
     intro: "At least one photo, and you choose who gets to see it clearly.",
-    addLabel: "Add a photo",
+    /** Plural since the picker takes several at once. */
+    addLabel: "Add photos",
+    /**
+     * Picking files used to start an upload with no button press and no
+     * announcement. With several at once there is more silence to fill, so this
+     * says which one is going up rather than only that something is.
+     */
+    uploading: (done: number, total: number) =>
+      total === 1 ? "Uploading…" : `Uploading ${done} of ${total}…`,
+    /** Lived in the component as a bare template string, which this file exists to prevent. */
+    added: (n: number) => `${n} ${n === 1 ? "photo" : "photos"} added.`,
     privacyLabel: "Who sees your photos",
     clearLabel: "Everyone who can see my profile",
     blurredLabel: "Blurred until we connect",
@@ -403,6 +413,13 @@ export const DRAFT_COPY = {
       preparing: "Getting your photo ready…",
       wrongType: "Photos have to be JPEG, PNG, WebP or HEIC.",
       uploadFailed: "That did not upload. Try again.",
+      /**
+       * Reached by picking more files than there is room for, which is easy now
+       * that the picker takes several. Says the limit rather than "that did not
+       * upload", which is what the database constraint alone would have
+       * produced — and which would have been advice that could never work.
+       */
+      full: (max: number) => `You can have up to ${max} photos.`,
     },
   },
 

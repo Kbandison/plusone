@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { requireStep } from "@/lib/onboarding";
-import { MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
+import { MAX_PHOTOS, MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
 import { processPhoto } from "@/lib/photos";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhotosState } from "./state";
@@ -39,6 +39,22 @@ export async function uploadPhoto(
   if (!(file instanceof File) || file.size === 0) return { error: E.required };
   if (file.size > MAX_UPLOAD_BYTES) return { error: E.tooLarge };
   if (!isAcceptableUpload(file.type, file.size)) return { error: E.wrongType };
+
+  const supabaseForCount = await getServerSupabase();
+  const { count: held } = await supabaseForCount
+    .from("profile_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  // Refused here, not by the constraint.
+  //
+  // `profile_photos_position_range` CHECKs `position between 0 and 5`, so a
+  // seventh row is impossible either way — but reaching it that way meant
+  // paying for three image transforms and three storage writes first, then
+  // rolling all of them back and answering "that did not upload, try again",
+  // which is advice that could never work. The browser caps the picker too;
+  // this is the wall, that is the courtesy.
+  if ((held ?? 0) >= MAX_PHOTOS) return { error: E.full(MAX_PHOTOS) };
 
   let processed;
   try {
@@ -73,6 +89,9 @@ export async function uploadPhoto(
     return { error: E.uploadFailed };
   }
 
+  // Re-read rather than reusing `held`: the transforms and three uploads above
+  // take long enough that a second tab could have added one, and position is
+  // what `unique (user_id, position)` is checking.
   const { count } = await supabase
     .from("profile_photos")
     .select("id", { count: "exact", head: true })

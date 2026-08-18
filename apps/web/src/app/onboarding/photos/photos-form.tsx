@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 
 import { downscalePhoto, isTooLargeToSend } from "@/lib/downscale";
-import { ACCEPTED_TYPES } from "@/lib/photo-limits";
+import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
 import { savePhotoPrivacy, uploadPhoto } from "./actions";
@@ -13,9 +13,22 @@ import { buttonClass } from "@/app/ui";
 const C = DRAFT_COPY.photos;
 
 export function PhotoUploader({ count }: { count: number }) {
-  const [state, action, pending] = useActionState(uploadPhoto, PHOTOS_INITIAL);
-  const [preparing, setPreparing] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
+  /**
+   * The action is called directly rather than through useActionState.
+   *
+   * Several files now arrive at once and they have to go up ONE AT A TIME:
+   * `position` is chosen by counting existing rows and `unique (user_id,
+   * position)` refuses a duplicate, so two uploads in flight read the same
+   * count and one of them loses. Sequencing means awaiting each result, and a
+   * useActionState dispatch returns nothing to await.
+   *
+   * Calling it from an event handler inside startTransition is the documented
+   * way — and revalidatePath still lands, because Next re-renders the route and
+   * returns the new payload in the action's own response.
+   */
+  const [pending, startUploading] = useTransition();
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const inputId = useId();
 
   /**
@@ -30,27 +43,50 @@ export function PhotoUploader({ count }: { count: number }) {
    * type and the size and still strips the metadata; if the browser cannot do
    * this, the original goes as before and the server decides.
    */
-  async function onPick(file: File) {
-    setLocalError(null);
-    setPreparing(true);
-    try {
-      const { file: prepared } = await downscalePhoto(file);
-      if (isTooLargeToSend(prepared)) {
-        setLocalError(C.errors.tooLargeToShrink);
-        return;
-      }
-      const formData = new FormData();
-      formData.set("photo", prepared);
-      action(formData);
-    } finally {
-      setPreparing(false);
+  function onPick(picked: File[]) {
+    setError(null);
+
+    // How many will fit, decided before anything is sent. The database can only
+    // hold six, and finding that out one row at a time reads as a broken upload.
+    const room = MAX_PHOTOS - count;
+    if (room <= 0) {
+      setError(C.errors.full(MAX_PHOTOS));
+      return;
     }
+    const queue = picked.slice(0, room);
+    const overflowed = picked.length > queue.length;
+
+    startUploading(async () => {
+      for (const [index, file] of queue.entries()) {
+        setProgress({ done: index + 1, total: queue.length });
+
+        const { file: prepared } = await downscalePhoto(file);
+        if (isTooLargeToSend(prepared)) {
+          setError(C.errors.tooLargeToShrink);
+          break;
+        }
+
+        const formData = new FormData();
+        formData.set("photo", prepared);
+        const result = await uploadPhoto(PHOTOS_INITIAL, formData);
+
+        // Stop on the first refusal rather than pushing the rest at a server
+        // that has just said no — and keep the reason, which the next
+        // iteration's setError(null) would otherwise wipe.
+        if (result.error) {
+          setError(result.error);
+          break;
+        }
+      }
+
+      setProgress(null);
+      if (overflowed) setError(C.errors.full(MAX_PHOTOS));
+    });
   }
 
   return (
-    // Not a <form>. onPick dispatches the action itself after shrinking the
-    // file, so a form action here would be a second submit carrying the
-    // original.
+    // Not a <form>. onPick dispatches the action itself after shrinking each
+    // file, so a form action here would be a second submit carrying originals.
     <div className="mt-10 flex flex-col gap-5">
       <label
         htmlFor={inputId}
@@ -65,30 +101,32 @@ export function PhotoUploader({ count }: { count: number }) {
         id={inputId}
         name="photo"
         type="file"
+        multiple
         accept={ACCEPTED_TYPES.join(",")}
         className="sr-only"
+        disabled={pending}
         onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
+          const picked = Array.from(event.currentTarget.files ?? []);
+          // Cleared so picking the same file again still fires a change.
           event.currentTarget.value = "";
-          if (file) void onPick(file);
+          if (picked.length > 0) onPick(picked);
         }}
       />
 
-      {/* The form auto-submits on change, so picking a file starts an upload
-          with no button press and no announcement — total silence from choosing
-          the file through to the result. */}
+      {/* Picking a file starts an upload with no button press, so the only
+          thing that says anything is happening is this line. */}
       <p role="status" className="text-[14.5px] text-ink-3">
-        {preparing ? C.errors.preparing : pending ? "Uploading…" : ""}
+        {progress ? C.uploading(progress.done, progress.total) : pending ? C.errors.preparing : ""}
       </p>
 
-      {state.error || localError ? (
+      {error ? (
         <p role="alert" className="text-[14.5px] text-critical">
-          {localError ?? state.error}
+          {error}
         </p>
       ) : null}
 
       <p role="status" className="text-[14.5px] text-ink-3">
-        {count > 0 ? `${count} ${count === 1 ? "photo" : "photos"} added.` : ""}
+        {count > 0 ? C.added(count) : ""}
       </p>
     </div>
   );
