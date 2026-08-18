@@ -61,7 +61,7 @@ describe("the age range", () => {
     // The bounds are shared with the slider now, so this asserts they come from
     // the one definition rather than a literal repeated per module.
     expect(parser).toMatch(/AGE_FLOOR = profile\.MINIMUM_AGE/);
-    expect(parser).toMatch(/AGE_CEILING = profile\.MAXIMUM_AGE/);
+    expect(parser).toMatch(/AGE_CEILING = profile\.OLDEST_PREFERENCE/);
   });
 
   /**
@@ -104,8 +104,8 @@ describe("what the step promises about itself", () => {
     expect(form).toMatch(/defaultChecked=\{selected === value\}/);
     expect(form).toMatch(/defaultChecked=\{defaults\.seeking\.includes\(value\)\}/);
     // The age range is a two-thumb slider now; its ends seed the state.
-    expect(form).toMatch(/useState\(from \?\? AGE_FLOOR\)/);
-    expect(form).toMatch(/useState\(to \?\? AGE_CEILING\)/);
+    expect(form).toMatch(/useState\(clamp\(from \?\? AGE_FLOOR\)\)/);
+    expect(form).toMatch(/useState\(clamp\(to \?\? AGE_CEILING\)\)/);
     expect(form).toMatch(/<AgeRange from=\{defaults\.ageMin\} to=\{defaults\.ageMax\} \/>/);
   });
 

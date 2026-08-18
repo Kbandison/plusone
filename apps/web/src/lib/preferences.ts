@@ -19,7 +19,7 @@ const E = DRAFT_COPY.preferences.errors;
  * second thing to forget when the CHECK moves.
  */
 export const AGE_FLOOR = profile.MINIMUM_AGE;
-export const AGE_CEILING = profile.MAXIMUM_AGE;
+export const AGE_CEILING = profile.OLDEST_PREFERENCE;
 
 /** The columns this form owns, ready for an update. */
 export interface PreferenceValues {

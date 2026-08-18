@@ -71,6 +71,76 @@
   }
 }
 
+/*
+ * The two-thumb age range.
+ *
+ * Two native <input type="range"> stacked on one track. The second one is drawn
+ * over the first, and a range input is a full-width control — so every press
+ * anywhere on the track was landing on the top slider and the "from" thumb
+ * could not be grabbed at all. Reported exactly that way: only the "to" end
+ * moved.
+ *
+ * So the INPUT stops taking pointer events and only its THUMB takes them. That
+ * costs the click-anywhere-on-the-track gesture, which a two-ended control
+ * cannot answer anyway — a click halfway along is not obviously "move the near
+ * end here" — and it buys two thumbs that both work.
+ *
+ * The track is drawn by the element underneath rather than by either input,
+ * which is why both are transparent here. Thumbs are styled explicitly because
+ * `appearance: none` removes them along with the track.
+ */
+.range-overlay {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.range-overlay::-webkit-slider-runnable-track {
+  background: transparent;
+  border: none;
+}
+
+.range-overlay::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.range-overlay::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  height: 26px;
+  width: 26px;
+  border-radius: 999px;
+  background-color: var(--accent);
+  /* Against the filled span behind it, which is the same colour. */
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  cursor: grab;
+}
+
+.range-overlay::-moz-range-thumb {
+  pointer-events: auto;
+  height: 26px;
+  width: 26px;
+  border-radius: 999px;
+  background-color: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  cursor: grab;
+}
+
+.range-overlay:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.range-overlay:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 ::selection {
   background-color: var(--accent);
   color: var(--accent-ink);

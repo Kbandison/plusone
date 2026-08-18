@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { DRAFT_COPY } from "@plusone/config";
+import { profile } from "@plusone/logic";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const read = (p: string) => readFileSync(join(here, p), "utf8");
@@ -178,6 +179,46 @@ describe("the age range is one control with two ends", () => {
 
   it("takes both bounds from the one place that defines them", () => {
     expect(form).toMatch(/profile\.MINIMUM_AGE/);
-    expect(form).toMatch(/profile\.MAXIMUM_AGE/);
+    expect(form).toMatch(/profile\.OLDEST_PREFERENCE/);
+  });
+
+  /**
+   * Two range inputs stacked on one track: the second is drawn over the first,
+   * and a range input is full-width — so every press landed on the top slider
+   * and the "from" thumb could not be grabbed at all. Reported exactly that
+   * way: only the "to" end moved.
+   */
+  it("lets both thumbs be grabbed, not just the top slider", () => {
+    expect(form).toMatch(/className="range-overlay/);
+    const css = readFileSync(
+      fileURLToPath(new URL("../../styles/globals.css", import.meta.url)),
+      "utf8",
+    );
+    // The input takes no pointer events; only its thumb does.
+    expect(css).toMatch(/\.range-overlay \{[^}]*pointer-events: none/);
+    expect(css).toMatch(/::-webkit-slider-thumb \{[^}]*pointer-events: auto/);
+    expect(css).toMatch(/::-moz-range-thumb \{[^}]*pointer-events: auto/);
+  });
+
+  /** Stacked thumbs: the buried one has to come up or it cannot be moved. */
+  it("raises the lower thumb once it reaches the upper half", () => {
+    expect(form).toMatch(/zIndex: min > \(AGE_FLOOR \+ AGE_CEILING\) \/ 2/);
+  });
+
+  /**
+   * The cap is the PREFERENCE ceiling, not the column's. MAXIMUM_AGE still
+   * mirrors profiles_age_range_is_adult; this is what the slider offers.
+   */
+  it("caps the range at eighty without touching the database bound", () => {
+    expect(profile.OLDEST_PREFERENCE).toBe(80);
+    expect(profile.MAXIMUM_AGE).toBe(120);
+    expect(profile.OLDEST_PREFERENCE).toBeLessThan(profile.MAXIMUM_AGE);
+  });
+
+  /** A row saved under the old ceiling would put a thumb off its own track. */
+  it("clamps a saved value that predates the cap", () => {
+    expect(form).toMatch(/const clamp = \(age: number\) =>/);
+    expect(form).toMatch(/useState\(clamp\(from \?\? AGE_FLOOR\)\)/);
+    expect(form).toMatch(/useState\(clamp\(to \?\? AGE_CEILING\)\)/);
   });
 });

@@ -23,6 +23,22 @@ export const MINIMUM_AGE = 18;
  */
 export const MAXIMUM_AGE = 120;
 
+/**
+ * The oldest age a member can put at the top of their range.
+ *
+ * NOT the same number as MAXIMUM_AGE, and the difference is the point.
+ * MAXIMUM_AGE mirrors profiles_age_range_is_adult — a sanity bound on what the
+ * column will hold. This is a product choice about what the slider offers, and
+ * 120 was a track where nearly half the travel was ages nobody is.
+ *
+ * It applies to the PREFERENCE, never to a member's own age: nothing here stops
+ * anybody over 80 joining, or being shown. It does mean a member older than
+ * this cannot be reached by anyone who left their upper end where it started,
+ * which is the cost of the shorter track and worth revisiting if the community
+ * skews older than expected.
+ */
+export const OLDEST_PREFERENCE = 80;
+
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export interface CalendarDate {

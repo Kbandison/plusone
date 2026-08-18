@@ -17,7 +17,7 @@ import { StepActions } from "@/app/onboarding/step-actions";
 import { profile } from "@plusone/logic";
 
 const AGE_FLOOR = profile.MINIMUM_AGE;
-const AGE_CEILING = profile.MAXIMUM_AGE;
+const AGE_CEILING = profile.OLDEST_PREFERENCE;
 
 const C = DRAFT_COPY.preferences;
 
@@ -216,8 +216,12 @@ export function PreferencesForm({
  * each other so the pair can never cross.
  */
 function AgeRange({ from, to }: { from: number | null; to: number | null }) {
-  const [min, setMin] = useState(from ?? AGE_FLOOR);
-  const [max, setMax] = useState(to ?? AGE_CEILING);
+  // Clamped on the way in as well as on the way out: a row saved before the
+  // ceiling came down to 80 still holds a larger number, and seeding the state
+  // with it would put a thumb off the end of its own track.
+  const clamp = (age: number) => Math.min(Math.max(age, AGE_FLOOR), AGE_CEILING);
+  const [min, setMin] = useState(clamp(from ?? AGE_FLOOR));
+  const [max, setMax] = useState(clamp(to ?? AGE_CEILING));
   const minId = useId();
   const maxId = useId();
 
@@ -261,7 +265,11 @@ function AgeRange({ from, to }: { from: number | null; to: number | null }) {
           // Clamped, so the two ends cannot cross and produce a range the CHECK
           // would refuse after the member had filled in everything else.
           onChange={(event) => setMin(Math.min(Number(event.target.value), max))}
-          className="absolute inset-x-0 top-1/2 h-tap w-full -translate-y-1/2 cursor-pointer appearance-none bg-transparent accent-accent"
+          // Raised above the other slider once it is in the upper half of the
+          // track, where the two thumbs can end up on top of each other and the
+          // one underneath cannot be grabbed.
+          style={{ zIndex: min > (AGE_FLOOR + AGE_CEILING) / 2 ? 4 : 2 }}
+          className="range-overlay absolute inset-x-0 top-1/2 h-tap w-full -translate-y-1/2"
         />
 
         <label htmlFor={maxId} className="sr-only">
@@ -276,7 +284,8 @@ function AgeRange({ from, to }: { from: number | null; to: number | null }) {
           value={max}
           aria-valuetext={C.ageToValue(max)}
           onChange={(event) => setMax(Math.max(Number(event.target.value), min))}
-          className="absolute inset-x-0 top-1/2 h-tap w-full -translate-y-1/2 cursor-pointer appearance-none bg-transparent accent-accent"
+          style={{ zIndex: 3 }}
+          className="range-overlay absolute inset-x-0 top-1/2 h-tap w-full -translate-y-1/2"
         />
       </div>
     </fieldset>
