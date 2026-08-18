@@ -1,0 +1,30 @@
+diff --git a/dist/esm/components/FaceLivenessDetector/service/utils/liveness.mjs b/dist/esm/components/FaceLivenessDetector/service/utils/liveness.mjs
+index 1079897b6351de8b539a94dc2f2629b49b5554b9..d5f943df9100ceadb19c53856345b79bfb628705 100644
+--- a/dist/esm/components/FaceLivenessDetector/service/utils/liveness.mjs
++++ b/dist/esm/components/FaceLivenessDetector/service/utils/liveness.mjs
+@@ -102,9 +102,7 @@ function drawLivenessOvalInCanvas({ canvas, oval, scaleFactor, videoEl, isStartS
+         ctx.restore();
+         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+         // fill the canvas with a transparent rectangle
+-        ctx.fillStyle = isStartScreen
+-            ? getComputedStyle(canvas).getPropertyValue('--amplify-colors-background-primary')
+-            : '#fff';
++        ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--amplify-colors-background-primary') || '#fff';
+         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+         // On mobile our canvas is the width/height of the full screen.
+         // We need to calculate horizontal and vertical translation to reposition
+diff --git a/dist/index.js b/dist/index.js
+index 9bdf65e23761b3e269dcb7458632a3bb948b24ce..2770ab627ed4247e10f21e249d1cee01d2841506 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -267,9 +267,7 @@ function drawLivenessOvalInCanvas({ canvas, oval, scaleFactor, videoEl, isStartS
+         ctx.restore();
+         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+         // fill the canvas with a transparent rectangle
+-        ctx.fillStyle = isStartScreen
+-            ? getComputedStyle(canvas).getPropertyValue('--amplify-colors-background-primary')
+-            : '#fff';
++        ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--amplify-colors-background-primary') || '#fff';
+         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+         // On mobile our canvas is the width/height of the full screen.
+         // We need to calculate horizontal and vertical translation to reposition

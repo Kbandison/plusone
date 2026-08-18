@@ -1,3 +1,6 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
+
+patchedDependencies:
+  '@aws-amplify/ui-react-liveness@3.6.8': patches/@aws-amplify__ui-react-liveness@3.6.8.patch

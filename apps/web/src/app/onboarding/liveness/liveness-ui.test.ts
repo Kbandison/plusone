@@ -176,3 +176,46 @@ describe("the camera speaks this app's words", () => {
     }
   });
 });
+
+/**
+ * The one colour that is not CSS at all.
+ *
+ * During the check — not the start screen — Amplify paints the surround into a
+ * <canvas> and hardcodes it:
+ *
+ *   ctx.fillStyle = isStartScreen
+ *     ? getComputedStyle(canvas).getPropertyValue('--amplify-colors-background-primary')
+ *     : '#fff';
+ *
+ * That is why the start screen took this app's palette and the recording view
+ * stayed white. It is a canvas fill, so no token, class, prop or stylesheet can
+ * reach it, and `components` only exposes the photosensitivity warning and the
+ * error view.
+ *
+ * So it is patched, via pnpm's tracked patchedDependencies, to read the same
+ * variable the start-screen branch two lines up already reads — AWS's own code,
+ * applied to both branches. The `|| '#fff'` keeps their literal as the fallback.
+ *
+ * This test exists because a patch is the one kind of fix that can vanish
+ * without anybody touching this repo: bump the version and pnpm drops it. If
+ * that happens the check goes white again on a screen nobody looks at twice, so
+ * it fails here instead.
+ */
+describe("the canvas fill is patched to follow the theme", () => {
+  // The package's exports map refuses deep subpaths, so resolve the entry and
+  // walk from there. dist/index.js carries the same drawing code as the ESM
+  // build and both are patched; reading the entry keeps this independent of
+  // which one the bundler happens to pick.
+  const entry = createRequire(import.meta.url).resolve("@aws-amplify/ui-react-liveness");
+  const drawn = readFileSync(entry, "utf8");
+
+  it("reads the background token instead of hardcoding white", () => {
+    expect(drawn).toMatch(
+      /fillStyle = getComputedStyle\(canvas\)\.getPropertyValue\('--amplify-colors-background-primary'\)/,
+    );
+  });
+
+  it("no longer takes the white branch during the check", () => {
+    expect(drawn).not.toMatch(/fillStyle = isStartScreen/);
+  });
+});
