@@ -228,28 +228,6 @@ describe("photos are dragged into order", () => {
     expect(DRAFT_COPY.photos.orderHint).toMatch(/drag/i);
     expect(DRAFT_COPY.photos.orderHint).toMatch(/first/i);
   });
-
-  /**
-   * Dragging produces an arrangement, not a sequence of swaps. Sending moves
-   * would leave the browser and the database each holding their own idea of the
-   * result.
-   */
-  it("sends the whole order", () => {
-    const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
-    expect(action).toMatch(/formData\.get\("order"\)/);
-    expect(action).toMatch(/rpc\("reorder_photos", \{ p_ids: ids \}\)/);
-  });
-
-  /**
-   * A stale list means the browser and the database disagree about what exists.
-   * Writing an order built from it would be worse than doing nothing.
-   */
-  it("ignores an order that is not exactly the member's set", () => {
-    const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
-    expect(action).toMatch(
-      /mine\.size !== ids\.length \|\| ids\.some\(\(id\) => !mine\.has\(id\)\)/,
-    );
-  });
 });
 
 describe("the grid", () => {
@@ -285,21 +263,33 @@ describe("the grid", () => {
  * replacing the images with freshly signed copies of themselves and flashing
  * the whole grid to do it.
  */
-describe("a reorder does not re-render the page", () => {
-  const reorder = actions.slice(actions.indexOf("export async function reorderPhotos"));
-  const success = reorder.slice(reorder.indexOf('rpc("reorder_photos"'));
+describe("a reorder does not go through the router at all", () => {
+  const route = readFileSync(
+    fileURLToPath(new URL("../../api/photos/order/route.ts", import.meta.url)),
+    "utf8",
+  )
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "");
 
-  it("does not revalidate after a successful reorder", () => {
-    expect(success).not.toMatch(/revalidatePath/);
+  /**
+   * Removing revalidatePath stopped the images being re-signed and the page
+   * still reloaded on every drop. A Server Action's response can carry a
+   * re-rendered RSC payload, and the client cache is invalidated by
+   * `cookies.set` as well as by revalidation — which reading the session
+   * through supabase-ssr makes possible on any call.
+   *
+   * Nothing about saving an arrangement needs the router. The browser is
+   * already showing the result; this is a write and an acknowledgement.
+   */
+  it("saves through a route handler rather than a server action", () => {
+    expect(form).toMatch(/fetch\("\/api\/photos\/order"/);
+    expect(form).not.toMatch(/reorderPhotos/);
+    expect(actions).not.toMatch(/reorder_photos/);
+    expect(route).toMatch(/export async function POST/);
   });
 
-  /** The one case where the browser IS wrong and has to be corrected. */
-  it("still revalidates when the order did not match the member's set", () => {
-    const mismatch = reorder.slice(
-      reorder.indexOf("mine.size !== ids.length"),
-      reorder.indexOf('rpc("reorder_photos"'),
-    );
-    expect(mismatch).toMatch(/revalidatePath/);
+  it("never revalidates from the reorder path", () => {
+    expect(route).not.toMatch(/revalidatePath|revalidateTag|updateTag/);
   });
 
   /** Uploads and deletes DO change the set, so both must still revalidate. */
@@ -308,19 +298,34 @@ describe("a reorder does not re-render the page", () => {
       actions.indexOf("export async function uploadPhoto"),
       actions.indexOf("export async function savePhotoPrivacy"),
     );
-    const remove = actions.slice(
-      actions.indexOf("export async function deletePhoto"),
-      actions.indexOf("export async function reorderPhotos"),
-    );
+    const remove = actions.slice(actions.indexOf("export async function deletePhoto"));
     expect(upload).toMatch(/revalidatePath\("\/onboarding\/photos"\)/);
     expect(remove).toMatch(/revalidatePath\("\/onboarding\/photos"\)/);
   });
 
-  /**
-   * Without a re-render nothing else reports a failed reorder, and the grid
-   * would keep showing an arrangement the database never accepted.
-   */
-  it("shows a failed reorder to the member", () => {
-    expect(form).toMatch(/orderState\.error/);
+  it("refuses a caller with no session", () => {
+    expect(route).toMatch(
+      /if \(!auth\.user\) return NextResponse\.json\(\{ ok: false \}, \{ status: 401 \}\)/,
+    );
+  });
+
+  it("refuses anything that is not a list of ids", () => {
+    expect(route).toMatch(/!Array\.isArray\(ids\)/);
+    expect(route).toMatch(/typeof id !== "string"/);
+  });
+
+  /** The RPC is the wall; this stops a stale browser writing a wrong order. */
+  it("writes nothing when the list is not exactly the member's set", () => {
+    expect(route).toMatch(/mine\.size !== ids\.length/);
+    expect(route).toMatch(/status: 409/);
+  });
+
+  /** A stale list is not the member's doing, so it must not be shouted about. */
+  it("does not report a stale list as an error", () => {
+    expect(form).toMatch(/response\.status !== 409/);
+  });
+
+  it("shows a genuine failure", () => {
+    expect(form).toMatch(/setOrderError\(C\.errors\.uploadFailed\)/);
   });
 });

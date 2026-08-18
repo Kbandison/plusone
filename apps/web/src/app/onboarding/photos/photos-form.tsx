@@ -7,7 +7,7 @@ import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
 import type { OwnPhoto } from "@/lib/photo-urls";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { deletePhoto, reorderPhotos, savePhotoPrivacy, uploadPhoto } from "./actions";
+import { deletePhoto, savePhotoPrivacy, uploadPhoto } from "./actions";
 import { PHOTOS_INITIAL } from "./state";
 import { Badge, buttonClass } from "@/app/ui";
 import { StepActions } from "@/app/onboarding/step-actions";
@@ -253,7 +253,16 @@ export function PhotoGallery({
   children?: React.ReactNode;
 }) {
   const [removeState, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
-  const [orderState, saveOrder, saving] = useActionState(reorderPhotos, PHOTOS_INITIAL);
+  // A plain fetch to a route handler, not a Server Action.
+  //
+  // A Server Action's response can carry a re-rendered RSC payload, and the
+  // client cache is invalidated by `cookies.set` as well as by revalidation —
+  // which reading the session makes possible on any call. Removing
+  // revalidatePath stopped the images being re-signed and the page still
+  // reloaded on every drop. Nothing about saving an arrangement needs the
+  // router: the browser is already showing the result.
+  const [saving, setSaving] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   // The order the member is looking at, which during a drag is ahead of the
   // server. Re-seeded whenever the server sends a different set — an upload or
@@ -271,9 +280,21 @@ export function PhotoGallery({
 
   function commit(next: readonly OwnPhoto[]) {
     setOrder(next);
-    const formData = new FormData();
-    formData.set("order", next.map((photo) => photo.id).join(","));
-    saveOrder(formData);
+    setOrderError(null);
+    setSaving(true);
+    void fetch("/api/photos/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: next.map((photo) => photo.id) }),
+    })
+      .then((response) => {
+        // 409 is a stale list — the browser and the database disagree about
+        // which photos exist. Not the member's doing and not theirs to fix; the
+        // next render settles it.
+        if (!response.ok && response.status !== 409) setOrderError(C.errors.uploadFailed);
+      })
+      .catch(() => setOrderError(C.errors.uploadFailed))
+      .finally(() => setSaving(false));
   }
 
   function moveTo(id: string, index: number) {
@@ -409,9 +430,9 @@ export function PhotoGallery({
 
       {/* A failed reorder is silent otherwise: the grid keeps showing the
           arrangement the member dragged while the database holds the old one. */}
-      {(removeState.error ?? orderState.error) ? (
+      {(removeState.error ?? orderError) ? (
         <p role="alert" className="mt-4 text-center text-[14.5px] text-critical">
-          {removeState.error ?? orderState.error}
+          {removeState.error ?? orderError}
         </p>
       ) : null}
     </section>
