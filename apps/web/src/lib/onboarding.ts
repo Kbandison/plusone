@@ -139,7 +139,14 @@ export async function requireStep(step: Step): Promise<{ userId: string }> {
   const facts = await loadFacts(data.user.id);
   const actual = onboarding.resolveStep(facts);
 
-  if (actual !== step) redirect(STEP_ROUTES[actual]);
+  // Backwards yes, forwards no.
+  //
+  // This used to be `actual !== step`, which forbade both directions equally —
+  // so a member who mistyped their name on step 3 had no way back to it, and
+  // the reducer's own `go_back` event had nothing on any screen that could send
+  // it. Skipping AHEAD is still impossible, which is the reason this guard
+  // exists at all: §9.1 consent that can be navigated around is not consent.
+  if (!onboarding.mayVisitStep(step, actual)) redirect(STEP_ROUTES[actual]);
 
   return { userId: data.user.id };
 }

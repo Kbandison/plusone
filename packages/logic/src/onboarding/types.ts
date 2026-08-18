@@ -52,6 +52,15 @@ export const ONBOARDING_STEPS = [
 /** The terminal step. Not something a member "completes". */
 export const FINAL_STEP = "done" satisfies OnboardingStep;
 
+/**
+ * The earliest step a member may walk back into.
+ *
+ * Everything before it is verification rather than profile data — a confirmed
+ * number and a passed liveness check — and neither is corrected by revisiting
+ * the screen that produced it.
+ */
+export const FIRST_EDITABLE_STEP = "profile_basics" satisfies OnboardingStep;
+
 /** §7.2 marks the quiz "skippable-but-nudged" and marks nothing else. */
 export const SKIPPABLE_STEPS = ["quiz"] as const satisfies readonly OnboardingStep[];
 

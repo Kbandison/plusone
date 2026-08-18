@@ -1,5 +1,6 @@
 import {
   FINAL_STEP,
+  FIRST_EDITABLE_STEP,
   ONBOARDING_STEPS,
   SKIPPABLE_STEPS,
   type OnboardingErrorCode,
@@ -97,6 +98,46 @@ export function transition(state: OnboardingState, event: OnboardingEvent): Onbo
       return ok({ ...state, step: previous });
     }
   }
+}
+
+/**
+ * The step a Back control should return to, or null when there is none.
+ *
+ * Not simply `ONBOARDING_STEPS[i - 1]`. The first two steps are verification,
+ * not profile data: `phone` owns a number that has already been confirmed by
+ * SMS and `liveness` owns a check that has already passed, and neither is
+ * edited by walking backwards into it — going back to liveness would start a
+ * fresh check a member already cleared, and going back to phone would strand
+ * them mid-flow on a screen that spends a text. So Back exists from
+ * `profile_basics` onward and stops there.
+ *
+ * The reducer has had `go_back` since it was written and nothing ever offered
+ * it: every step rendered Continue and no way to correct the answer before it.
+ * This is the half of that loop that faces the member.
+ */
+export function backStep(step: OnboardingStep): Exclude<OnboardingStep, typeof FINAL_STEP> | null {
+  const first = stepIndex(FIRST_EDITABLE_STEP);
+  const here = stepIndex(step);
+  if (here <= first || here > stepIndex(FINAL_STEP)) return null;
+  const previous = ONBOARDING_STEPS[here - 1];
+  // `done` is last, so a previous step is never it — said in the type so
+  // callers naming each step's heading do not need a branch that cannot run.
+  if (previous === undefined || previous === FINAL_STEP) return null;
+  return previous;
+}
+
+/**
+ * Whether a member on `actual` may look at `wanted`.
+ *
+ * Backwards yes, forwards no. Typing a URL still cannot skip a step — which is
+ * the whole reason requireStep exists, and §9.1 consent is the reason it
+ * matters — but a member who mistyped their name four screens ago can now
+ * reach it, which before this meant finishing onboarding and finding Settings.
+ */
+export function mayVisitStep(wanted: OnboardingStep, actual: OnboardingStep): boolean {
+  if (wanted === actual) return true;
+  if (stepIndex(wanted) > stepIndex(actual)) return false;
+  return stepIndex(wanted) >= stepIndex(FIRST_EDITABLE_STEP);
 }
 
 /**

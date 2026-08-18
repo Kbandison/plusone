@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import {
   FINAL_STEP,
   INITIAL_ONBOARDING_STATE,
+  backStep,
+  mayVisitStep,
   ONBOARDING_STEPS,
   SKIPPABLE_STEPS,
   hasHealthConsent,
@@ -431,5 +433,72 @@ describe("health_consent is not a trap", () => {
     const forward = transition(back.state, { type: "complete", at: T0 + 99_999 });
     expect(forward.ok).toBe(true);
     if (forward.ok) expect(forward.state.consentGrantedAt).toBe(T0);
+  });
+});
+
+/**
+ * Every step offered Continue and none offered a way back, while the reducer
+ * had carried a `go_back` event since it was written. A member who mistyped
+ * their name on step 3 could only fix it by finishing onboarding and finding
+ * Settings — nine screens later, on a flow §7.2 wants finished in eight
+ * minutes.
+ */
+describe("walking back", () => {
+  it("offers the previous step from the first editable one onward", () => {
+    expect(backStep("community_condition")).toBe("profile_basics");
+    expect(backStep("health_consent")).toBe("community_condition");
+    expect(backStep("radius")).toBe("photos");
+  });
+
+  /**
+   * phone and liveness are verification, not answers. Going back to liveness
+   * would start a fresh check a member has already passed; going back to phone
+   * strands them on a screen that spends a text.
+   */
+  it("stops at the first editable step and never reaches verification", () => {
+    expect(backStep("profile_basics")).toBeNull();
+    expect(backStep("liveness")).toBeNull();
+    expect(backStep("phone")).toBeNull();
+  });
+
+  it("never points at a step that is not in the flow", () => {
+    for (const step of ONBOARDING_STEPS) {
+      const previous = backStep(step);
+      if (previous !== null) expect(ONBOARDING_STEPS).toContain(previous);
+    }
+  });
+});
+
+/**
+ * The guard that makes typing a URL unable to skip a step. It refused BOTH
+ * directions, which is what left a member with no way back — but the forward
+ * half is the reason it exists: §9.1 consent that can be navigated around is
+ * not consent.
+ */
+describe("mayVisitStep", () => {
+  it("lets a member revisit a step they have already passed", () => {
+    expect(mayVisitStep("profile_basics", "radius")).toBe(true);
+    expect(mayVisitStep("intention", "photos")).toBe(true);
+  });
+
+  it("still refuses to let anyone jump ahead", () => {
+    expect(mayVisitStep("radius", "profile_basics")).toBe(false);
+    expect(mayVisitStep("photos", "health_consent")).toBe(false);
+  });
+
+  /** The one that matters most: consent cannot be walked past. */
+  it("cannot be used to skip the consent screen", () => {
+    expect(mayVisitStep("intention", "health_consent")).toBe(false);
+    expect(mayVisitStep("photos", "health_consent")).toBe(false);
+  });
+
+  /** Backwards, but not into verification. */
+  it("refuses to reopen phone or liveness", () => {
+    expect(mayVisitStep("phone", "radius")).toBe(false);
+    expect(mayVisitStep("liveness", "radius")).toBe(false);
+  });
+
+  it("always allows the step the member is actually on", () => {
+    for (const step of ONBOARDING_STEPS) expect(mayVisitStep(step, step)).toBe(true);
   });
 });

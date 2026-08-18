@@ -13,6 +13,20 @@
 
 export const DRAFT_COPY = {
   /**
+   * Shared across every onboarding step.
+   *
+   * `COPY.actions.continueLabel` is spec-verbatim and there was no counterpart:
+   * every screen offered a way forward and none offered a way back, so a
+   * mistyped name on step 3 was only fixable by finishing onboarding and
+   * finding Settings.
+   */
+  steps: {
+    backLabel: "Back",
+    /** Named, because "Back" alone tells a screen reader nothing about where. */
+    backTo: (heading: string) => `Back to ${heading.toLowerCase()}`,
+  },
+
+  /**
    * The home page's way in.
    *
    * §3.4 gives the hero and the sub but no call to action, and §7.1's marketing

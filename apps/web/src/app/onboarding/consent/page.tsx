@@ -6,6 +6,7 @@ import { onboarding } from "@plusone/logic";
 
 import { requireStep } from "@/lib/onboarding";
 import { ConsentForm } from "./consent-form";
+import { BackLink } from "../step-shell";
 
 /**
  * The §9.1 health-data consent screen.
@@ -54,7 +55,9 @@ export default async function ConsentPage() {
         <div className="h-px bg-accent" style={{ width: `${((current + 1) / total) * 100}%` }} />
       </div>
 
-      <h1 className="mt-12 text-h2 text-balance">{COPY.consent.heading}</h1>
+      <BackLink step="health_consent" />
+
+      <h1 className="mt-4 text-h2 text-balance">{COPY.consent.heading}</h1>
 
       {/* §9.1, verbatim. This paragraph is the consent — it is not a summary of
           one, and it is not shortened behind a "read more". */}
