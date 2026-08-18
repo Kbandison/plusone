@@ -20,9 +20,20 @@ import { StepActions } from "@/app/onboarding/step-actions";
 const C = DRAFT_COPY.community;
 const INITIAL: CommunityState = { error: null };
 
-export function CommunityForm() {
+export function CommunityForm({
+  community: chosen = null,
+  condition = null,
+  uEqualsU = false,
+}: {
+  community?: Community | null;
+  condition?: string | null;
+  uEqualsU?: boolean;
+}) {
   const [state, action, pending] = useActionState(saveCommunity, INITIAL);
-  const [community, setCommunity] = useState<Community | null>(null);
+  // Seeded from the row, because this control is CONTROLLED — a defaultChecked
+  // would be overwritten by the state on first render, so the answer has to
+  // start in the state itself.
+  const [community, setCommunity] = useState<Community | null>(chosen);
   const uEqualsUId = useId();
   const uEqualsUHintId = useId();
 
@@ -71,6 +82,9 @@ export function CommunityForm() {
                 type="radio"
                 name="condition"
                 value={value}
+                // Uncontrolled, unlike the community radios above, so the
+                // answer goes on the element rather than into state.
+                defaultChecked={condition === value}
                 required
                 className="size-[18px] accent-accent"
               />
@@ -85,6 +99,7 @@ export function CommunityForm() {
           <input
             id={uEqualsUId}
             name="u_equals_u"
+            defaultChecked={uEqualsU}
             type="checkbox"
             aria-describedby={uEqualsUHintId}
             className="mt-[3px] size-[22px] shrink-0 accent-accent"

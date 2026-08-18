@@ -35,7 +35,6 @@ export default async function BrowsePage({
   }>;
 }) {
   const filters = await searchParams;
-  const distanceMi = Number(filters.distance) || RADIUS.maxMi;
   const intention = filters.intention as Intention | undefined;
   const activeOnly = filters.active === "1";
 
@@ -50,11 +49,24 @@ export default async function BrowsePage({
   // can_view_profile's mode wall passes every dating target for a support-only
   // viewer and Browse reads clear photos and display names straight off
   // visible_profiles. The preview only means something if this is closed.
-  const { data: me } = await supabase.rpc("my_profile").maybeSingle<{ mode: string | null }>();
+  const { data: me } = await supabase
+    .rpc("my_profile")
+    .maybeSingle<{ mode: string | null; search_radius_mi: number | null }>();
   if (me?.mode === "support_only") redirect("/app");
 
+  // The member's OWN radius is the default, not the maximum.
+  //
+  // It was `Number(filters.distance) || RADIUS.maxMi` — two hundred and fifty
+  // miles — so the last step of onboarding decided nothing here until a member
+  // found this filter and set the same number a second time. An explicit
+  // ?distance= still wins: this is a default, not a ceiling.
+  const distanceMi = Number(filters.distance) || me?.search_radius_mi || RADIUS.defaultMi;
+
   let query = supabase
-    .from("visible_profiles")
+    // matched_profiles, not visible_profiles: the same gender, seeking and age
+    // rule the Drop obeys. Reading the wider view meant a member seeking women
+    // saw every man in range one tab away from a Drop that had excluded them.
+    .from("matched_profiles")
     .select("id, display_name, age, intention, distance_mi, last_active_at")
     .lte("distance_mi", distanceMi)
     .order("last_active_at", { ascending: false })

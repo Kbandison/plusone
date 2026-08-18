@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import { DRAFT_COPY, QUIZ_QUESTIONS } from "@plusone/config";
+import { COPY, DRAFT_COPY, QUIZ_QUESTIONS } from "@plusone/config";
 
 import { saveQuiz } from "./actions";
 import { QUIZ_INITIAL } from "./state";
@@ -22,9 +22,13 @@ const C = DRAFT_COPY.quiz;
  * something true, and throwing it away to insist on twelve would be the app
  * preferring completeness to honesty.
  */
-export function QuizForm() {
+export function QuizForm({ answered: given = {} }: { answered?: Record<string, string> }) {
   const [state, act, pending] = useActionState(saveQuiz, QUIZ_INITIAL);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Seeded from the saved response. The radios are CONTROLLED, so a
+  // defaultChecked would lose to the state on first render — a member walking
+  // back into the quiz found twelve blank questions and no sign they had ever
+  // answered them.
+  const [answers, setAnswers] = useState<Record<string, string>>(given);
 
   const answered = Object.keys(answers).length;
 
@@ -73,7 +77,7 @@ export function QuizForm() {
           answer to the questions above. */}
       <StepActions step="quiz">
         <button type="submit" disabled={pending} className={buttonClass("primary")}>
-          {C.finishLabel}
+          {COPY.actions.continueLabel}
         </button>
 
         <button

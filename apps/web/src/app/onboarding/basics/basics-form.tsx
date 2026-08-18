@@ -12,7 +12,13 @@ import { StepActions } from "@/app/onboarding/step-actions";
 const C = DRAFT_COPY.basics;
 const INITIAL: BasicsState = { error: null };
 
-export function BasicsForm() {
+export function BasicsForm({
+  displayName = "",
+  birthdate = "",
+}: {
+  displayName?: string;
+  birthdate?: string;
+}) {
   const [state, action, pending] = useActionState(saveBasics, INITIAL);
   const nameId = useId();
   const nameHintId = useId();
@@ -30,6 +36,10 @@ export function BasicsForm() {
           id={nameId}
           name="display_name"
           type="text"
+          // Filled from the row, so walking back to fix one field does not mean
+          // retyping the other — and so a member who only looked does not
+          // submit an empty form over a real answer.
+          defaultValue={displayName}
           required
           maxLength={40}
           autoComplete="nickname"
@@ -56,6 +66,7 @@ export function BasicsForm() {
           id={dobId}
           name="birthdate"
           type="date"
+          defaultValue={birthdate}
           required
           aria-describedby={state.error ? `${dobHintId} ${errorId}` : dobHintId}
           className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[260px]"

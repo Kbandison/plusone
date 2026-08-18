@@ -217,7 +217,16 @@ export const DRAFT_COPY = {
       "Twelve quick ones. They shape who you see, and there are no right answers — only ways of being. You can skip this and it will not count against you.",
     skipLabel: "Skip for now",
     skipNudge: "Answering even a few makes your Drop better.",
-    finishLabel: "Done",
+    /**
+     * No finishLabel any more. It said "Done", which was wrong twice over: the
+     * quiz is step 8 of 10, so it finishes nothing, and next to a Back button
+     * it read as a way out of onboarding rather than a way through it.
+     *
+     * The right word is the one every other step already uses, and that word is
+     * approved copy — so the quiz uses COPY.actions.continueLabel rather than
+     * keeping a draft that happens to spell it the same. A draft identical to a
+     * spec string is a second place for it to drift.
+     */
     progress: (answered: number, total: number) => `${answered} of ${total}`,
   },
 
@@ -465,6 +474,13 @@ export const DRAFT_COPY = {
       total === 1 ? "Uploading…" : `Uploading ${done} of ${total}…`,
     /** Lived in the component as a bare template string, which this file exists to prevent. */
     added: (n: number) => `${n} ${n === 1 ? "photo" : "photos"} added.`,
+    /** The photos themselves, which the step never showed — only counted. */
+    yoursHeading: "Your photos so far",
+    removeLabel: "Remove",
+    /** Named, because a page of identical Remove buttons is unusable by ear. */
+    removeNamed: (position: number) => `Remove photo ${position}`,
+    /** Six is the ceiling; this is what is left of it. */
+    roomLeft: (n: number) => (n === 0 ? "That is the most you can add." : `You can add ${n} more.`),
     privacyLabel: "Who sees your photos",
     clearLabel: "Everyone who can see my profile",
     blurredLabel: "Blurred until we connect",
@@ -486,6 +502,14 @@ export const DRAFT_COPY = {
        * produced — and which would have been advice that could never work.
        */
       full: (max: number) => `You can have up to ${max} photos.`,
+      /**
+       * Picking MORE than there is room for now cancels the whole batch rather
+       * than uploading the ones that fit. Half a selection arriving is worse
+       * than none: the member cannot tell which of their photos made it, and
+       * the ones that did are not the ones they would have chosen.
+       */
+      tooMany: (picked: number, room: number) =>
+        `You picked ${picked} and there is room for ${room}. Nothing was uploaded — choose again.`,
     },
   },
 

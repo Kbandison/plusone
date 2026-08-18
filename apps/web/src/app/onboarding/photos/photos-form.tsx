@@ -4,9 +4,10 @@ import { useActionState, useId, useState, useTransition } from "react";
 
 import { downscalePhoto, isTooLargeToSend } from "@/lib/downscale";
 import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
+import type { OwnPhoto } from "@/lib/photo-urls";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { savePhotoPrivacy, uploadPhoto } from "./actions";
+import { deletePhoto, savePhotoPrivacy, uploadPhoto } from "./actions";
 import { PHOTOS_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
 import { StepActions } from "@/app/onboarding/step-actions";
@@ -55,15 +56,16 @@ export function PhotoUploader({ count }: { count: number }) {
       setError(C.errors.full(MAX_PHOTOS));
       return;
     }
-    const queue = picked.slice(0, room);
-
-    // Said NOW, not after the ones that fit have finished.
-    //
-    // It used to be set at the end, so picking seven photos meant waiting out
-    // six uploads before being told the seventh was never going anywhere — and
-    // the message arrived attached to a batch that had actually succeeded. The
-    // count is known the moment the picker closes, so it is said then.
-    if (picked.length > queue.length) setError(C.errors.full(MAX_PHOTOS));
+    // Too many CANCELS THE BATCH. It used to upload the ones that fit and then
+    // complain, which is the worst of both: the member waits out six uploads to
+    // be told something failed, and the six that arrived are whichever the file
+    // picker happened to list first rather than the ones they would have
+    // chosen. Nothing is sent, and the message says exactly that.
+    if (picked.length > room) {
+      setError(C.errors.tooMany(picked.length, room));
+      return;
+    }
+    const queue = picked;
 
     startUploading(async () => {
       // Shrink them all first, in parallel.
@@ -153,7 +155,14 @@ export function PhotoUploader({ count }: { count: number }) {
   );
 }
 
-export function PrivacyChoice({ canContinue }: { canContinue: boolean }) {
+export function PrivacyChoice({
+  canContinue,
+  privacy,
+}: {
+  canContinue: boolean;
+  /** Remembered, so walking back does not silently reset a member to "clear". */
+  privacy?: string | null;
+}) {
   const blockedId = useId();
   const [state, action, pending] = useActionState(savePhotoPrivacy, PHOTOS_INITIAL);
 
@@ -167,7 +176,7 @@ export function PrivacyChoice({ canContinue }: { canContinue: boolean }) {
             type="radio"
             name="photo_privacy"
             value="clear"
-            defaultChecked
+            defaultChecked={privacy !== "blurred_until_connected"}
             className="size-[18px] accent-accent"
           />
           {C.clearLabel}
@@ -178,6 +187,7 @@ export function PrivacyChoice({ canContinue }: { canContinue: boolean }) {
             type="radio"
             name="photo_privacy"
             value="blurred_until_connected"
+            defaultChecked={privacy === "blurred_until_connected"}
             className="mt-1 size-[18px] shrink-0 accent-accent"
           />
           <span>
@@ -213,5 +223,65 @@ export function PrivacyChoice({ canContinue }: { canContinue: boolean }) {
         </p>
       ) : null}
     </form>
+  );
+}
+
+/**
+ * The photos themselves.
+ *
+ * The step counted them and never showed them: "3 photos added." and no way to
+ * see which three, replace a bad one, or make room once the ceiling was hit. A
+ * member who uploaded the wrong picture had no move left except a new account.
+ *
+ * Replace is delete-then-add rather than its own control. With six slots and a
+ * visible grid, "remove that one, add another" is the same two taps and one
+ * fewer concept — and it cannot half-fail the way an in-place swap can.
+ */
+export function PhotoGallery({ photos }: { photos: readonly OwnPhoto[] }) {
+  const [state, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
+  if (photos.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-[15px]">{C.yoursHeading}</h2>
+
+      <ul className="mt-4 flex flex-wrap gap-3">
+        {photos.map((photo, index) => (
+          <li key={photo.id} className="flex flex-col items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed
+                storage URLs expire in ten minutes, so the image optimiser would
+                cache a URL that outlives its own signature. */}
+            <img
+              src={photo.url}
+              alt=""
+              width={96}
+              height={96}
+              className="size-24 rounded-lg border border-line-2 object-cover"
+            />
+            <form action={remove}>
+              <input type="hidden" name="photo_id" value={photo.id} />
+              <button
+                type="submit"
+                disabled={removing}
+                // Named, or a grid of identical "Remove" buttons is unusable by
+                // ear — every one of them reads the same out of context.
+                aria-label={C.removeNamed(index + 1)}
+                className={buttonClass("quiet", "text-[13.5px]")}
+              >
+                {C.removeLabel}
+              </button>
+            </form>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-4 text-[14px] text-ink-3">{C.roomLeft(MAX_PHOTOS - photos.length)}</p>
+
+      {state.error ? (
+        <p role="alert" className="mt-3 text-[14.5px] text-critical">
+          {state.error}
+        </p>
+      ) : null}
+    </section>
   );
 }

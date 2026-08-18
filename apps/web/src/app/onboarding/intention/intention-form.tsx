@@ -12,7 +12,7 @@ import { StepActions } from "@/app/onboarding/step-actions";
 const C = DRAFT_COPY.intention;
 const INITIAL: IntentionState = { error: null };
 
-export function IntentionForm() {
+export function IntentionForm({ intention }: { intention: string | null }) {
   const [state, action, pending] = useActionState(saveIntention, INITIAL);
 
   return (
@@ -28,6 +28,7 @@ export function IntentionForm() {
               type="radio"
               name="intention"
               value={value}
+              defaultChecked={intention === value}
               required
               className="size-[18px] accent-accent"
             />

@@ -137,3 +137,43 @@ export async function ownPhotos(userId: string): Promise<readonly MemberPhoto[]>
     s.signedUrl ? [{ url: s.signedUrl, isBlurred: false }] : [],
   );
 }
+
+/** One of the member's own photos, addressable — which `MemberPhoto` is not. */
+export interface OwnPhoto {
+  readonly id: string;
+  readonly url: string;
+  readonly position: number;
+}
+
+/**
+ * The member's own photos WITH their ids.
+ *
+ * `ownPhotos` returns urls alone, which is all a profile page renders — but
+ * nothing could remove one, because nothing could name one. The photo step
+ * showed a count and no way to change what it was counting, so a wrong photo
+ * meant starting the account again.
+ */
+export async function ownPhotoList(userId: string): Promise<readonly OwnPhoto[]> {
+  const supabase = await getServerSupabase();
+  const { data: rows } = await supabase
+    .from("profile_photos")
+    .select("id, storage_path, card_path, position")
+    .eq("user_id", userId)
+    .order("position", { ascending: true });
+
+  if (!rows?.length) return [];
+
+  const service = serviceClient();
+  const { data: signed } = await service.storage.from("photos").createSignedUrls(
+    rows.map((r) => (r.card_path as string | null) ?? (r.storage_path as string)),
+    TTL_SECONDS,
+  );
+
+  // Zipped by index rather than matched by path: createSignedUrls answers in
+  // the order it was asked, and a failed signature must drop that ONE photo
+  // rather than shift every id onto the wrong picture.
+  return rows.flatMap((row, index) => {
+    const url = signed?.[index]?.signedUrl;
+    return url ? [{ id: row.id as string, url, position: row.position as number }] : [];
+  });
+}

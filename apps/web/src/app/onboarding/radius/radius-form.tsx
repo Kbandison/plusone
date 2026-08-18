@@ -12,11 +12,15 @@ import { StepActions } from "@/app/onboarding/step-actions";
 const C = DRAFT_COPY.radius;
 const INITIAL: RadiusState = { error: null };
 
-export function RadiusForm() {
+export function RadiusForm({ radiusMi }: { radiusMi?: number | null }) {
   const [state, action, pending] = useActionState(saveRadius, INITIAL);
   // RADIUS.defaultMi is `as const`, so it infers as the literal 50 and the state
   // would refuse every other value.
-  const [radius, setRadius] = useState<number>(RADIUS.defaultMi);
+  //
+  // Seeded from the row: the slider is controlled, so a member walking back
+  // into this step used to find it snapped back to 50 whatever they had chosen,
+  // and continuing would have written 50 over it.
+  const [radius, setRadius] = useState<number>(radiusMi ?? RADIUS.defaultMi);
   const sliderId = useId();
 
   return (

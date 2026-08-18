@@ -143,3 +143,52 @@ export async function savePhotoPrivacy(
 
   redirect(nextRoute("photos"));
 }
+
+/**
+ * Removes one of the member's own photos, and the three objects behind it.
+ *
+ * There was no way to remove a photo at all. The step showed a count and no way
+ * to change what it was counting, so one wrong picture meant a new account —
+ * and with a ceiling of six, a member who filled it had no way to make room.
+ *
+ * The row goes first. If the storage removal fails afterwards the member still
+ * sees the photo gone, and what is left behind is three unreferenced objects
+ * the purge job already knows how to sweep — the other order would show them a
+ * photo that no longer exists anywhere.
+ */
+export async function deletePhoto(
+  _previous: PhotosState,
+  formData: FormData,
+): Promise<PhotosState> {
+  const { userId } = await requireStep("photos");
+
+  const id = String(formData.get("photo_id") ?? "");
+  if (!id) return { error: E.uploadFailed };
+
+  const supabase = await getServerSupabase();
+  // `eq(user_id)` as well as the id, so a crafted body cannot name somebody
+  // else's photo. RLS says the same thing; this says it here too.
+  const { data: row, error } = await supabase
+    .from("profile_photos")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("storage_path, card_path, blurred_path")
+    .maybeSingle();
+
+  if (error) return { error: E.uploadFailed };
+  // Already gone. Not a failure — a member who double-taps Remove should not be
+  // told something went wrong.
+  if (!row) {
+    revalidatePath("/onboarding/photos");
+    return { error: null };
+  }
+
+  const paths = [row.storage_path, row.card_path, row.blurred_path].filter(
+    (path): path is string => typeof path === "string" && path.length > 0,
+  );
+  if (paths.length > 0) await supabase.storage.from(BUCKET).remove(paths);
+
+  revalidatePath("/onboarding/photos");
+  return { error: null };
+}

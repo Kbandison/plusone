@@ -98,10 +98,16 @@ describe("the way back sits with the way forward", () => {
     expect(withActions.length).toBeGreaterThanOrEqual(8);
   });
 
-  it("puts the forward action first, so a keyboard reaches it first", () => {
+  /**
+   * An earlier version put Continue first so a keyboard would reach the primary
+   * action before a way out of the flow. That was the wrong trade: tab order
+   * that disagrees with reading order is its own bug, and back-then-forward is
+   * the order every wizard a member has ever used puts them in.
+   */
+  it("puts Back on the left, in the DOM as well as on screen", () => {
     const shell = readFileSync(join(here, "step-actions.tsx"), "utf8");
     const row = shell.slice(shell.indexOf("export function StepActions"));
-    expect(row.indexOf("{children}")).toBeLessThan(row.indexOf("<BackLink"));
+    expect(row.indexOf("<BackLink")).toBeLessThan(row.indexOf("{children}"));
   });
 
   it("is no longer rendered at the top of the shell", () => {

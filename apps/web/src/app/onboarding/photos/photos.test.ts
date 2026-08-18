@@ -69,18 +69,19 @@ describe("the six-photo ceiling is told, not discovered", () => {
    */
   it("is checked in the browser before anything is sent", () => {
     expect(form).toMatch(/const room = MAX_PHOTOS - count/);
-    expect(form).toMatch(/picked\.slice\(0, room\)/);
+    expect(form).toMatch(/if \(picked\.length > room\)/);
   });
 
   /**
    * Said the moment the picker closes, not after the ones that fit have gone
    * up. Picking seven meant sitting through six uploads to be told the seventh
    * was never going anywhere — a message attached to a batch that had in fact
-   * succeeded.
+   * succeeded. It now cancels the whole selection, which the batch tests below
+   * cover; this only asserts that the decision happens before any network work.
    */
-  it("says so before a single upload starts", () => {
+  it("decides before a single upload starts", () => {
     const beforeLoop = form.slice(0, form.indexOf("startUploading("));
-    expect(beforeLoop).toMatch(/if \(picked\.length > queue\.length\) setError\(C\.errors\.full/);
+    expect(beforeLoop).toMatch(/setError\(C\.errors\.tooMany\(picked\.length, room\)\)/);
   });
 
   /**
@@ -107,5 +108,65 @@ describe("the strings live in draft copy, not in the component", () => {
     expect(DRAFT_COPY.photos.uploading(1, 1)).toBe("Uploading…");
     expect(DRAFT_COPY.photos.added(1)).toBe("1 photo added.");
     expect(DRAFT_COPY.photos.added(3)).toBe("3 photos added.");
+  });
+});
+
+/**
+ * Picking more than fits used to upload the ones that did and complain
+ * afterwards. That is the worst of both: the member waits out six uploads to be
+ * told something failed, and the six that landed are whichever the file picker
+ * listed first rather than the ones they would have chosen.
+ */
+describe("too many photos cancels the batch", () => {
+  it("sends nothing at all when the selection overflows", () => {
+    const beforeUpload = form.slice(0, form.indexOf("startUploading("));
+    expect(beforeUpload).toMatch(/if \(picked\.length > room\) \{[\s\S]{0,200}?return;/);
+  });
+
+  it("no longer trims the selection down to what fits", () => {
+    expect(form).not.toMatch(/picked\.slice\(0, room\)/);
+  });
+
+  it("says how many were picked and how many fit", () => {
+    const message = DRAFT_COPY.photos.errors.tooMany(7, 6);
+    expect(message).toMatch(/7/);
+    expect(message).toMatch(/6/);
+    expect(message).toMatch(/nothing was uploaded/i);
+  });
+});
+
+/**
+ * The step counted photos and never showed them — "3 photos added." and no way
+ * to see which three. A member who uploaded the wrong picture, or filled all
+ * six, had no move left except a new account.
+ */
+describe("the photos are shown, and can be removed", () => {
+  it("renders the member's own photos", () => {
+    expect(form).toMatch(/export function PhotoGallery/);
+    expect(form).toMatch(/photos\.map\(/);
+  });
+
+  it("offers a remove control per photo", () => {
+    expect(form).toMatch(/action=\{remove\}/);
+    expect(form).toMatch(/name="photo_id"/);
+  });
+
+  /** A grid of identical "Remove" buttons is unusable by ear. */
+  it("names each remove control", () => {
+    expect(form).toMatch(/aria-label=\{C\.removeNamed\(index \+ 1\)\}/);
+    expect(DRAFT_COPY.photos.removeNamed(2)).toMatch(/2/);
+  });
+
+  it("deletes the row and the objects behind it, scoped to the owner", () => {
+    expect(actions).toMatch(/export async function deletePhoto/);
+    const del = actions.slice(actions.indexOf("export async function deletePhoto"));
+    expect(del).toMatch(/\.eq\("user_id", userId\)/);
+    expect(del).toMatch(/storage\.from\(BUCKET\)\.remove\(paths\)/);
+  });
+
+  /** Double-tapping Remove is not an error. */
+  it("treats an already-deleted photo as done", () => {
+    const del = actions.slice(actions.indexOf("export async function deletePhoto"));
+    expect(del).toMatch(/if \(!row\) \{[\s\S]{0,160}?return \{ error: null \}/);
   });
 });
