@@ -91,7 +91,22 @@ try {
     // Everybody wants somebody: a seed seeking nothing matches everyone, which
     // would make the mutual filter look broken rather than permissive.
     const seeking = [pick(GENDERS, i + 1), pick(GENDERS, i + 2)];
-    const age = 22 + ((i * 5) % 40);
+    /**
+     * Every gender spans the same range of ages.
+     *
+     * It was `22 + (i * 5) % 40`, whose period of 40 against a gender cycle of
+     * 4 gave each gender its own fixed lattice: the women came out 22, 22 and
+     * 42, so a member seeking women aged 24 to 38 matched nobody and the filter
+     * looked broken while working perfectly.
+     *
+     * Changing the stride does not fix it. With twelve seeds and four genders
+     * each gender gets three slots, and any arithmetic sequence can still miss
+     * a band that narrow. So the age is built from the position WITHIN a
+     * gender, which puts every gender at the same ages give or take a year —
+     * whoever a member is looking for, somebody of that gender is 24 and
+     * somebody is 40.
+     */
+    const age = 24 + Math.floor(i / GENDERS.length) * 9 + (i % GENDERS.length);
     const birthdate = new Date(Date.UTC(new Date().getUTCFullYear() - age, 5, 15))
       .toISOString()
       .slice(0, 10);

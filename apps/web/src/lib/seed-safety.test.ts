@@ -61,3 +61,35 @@ describe("test members can always be told apart and taken back out", () => {
     expect(seed).toMatch(/ST_MakePoint/);
   });
 });
+
+/**
+ * The first spread was `22 + (i * 5) % 40`, whose period of 40 against a gender
+ * cycle of 4 gave each gender its own lattice: the women came out 22, 22 and
+ * 42. A member seeking women aged 24 to 38 matched nobody, and the mutual
+ * filter looked broken while working perfectly.
+ */
+describe("seeded ages cover every gender", () => {
+  const GENDERS = 4;
+  const age = (i: number) => 24 + Math.floor(i / GENDERS) * 9 + (i % GENDERS);
+
+  it("uses the position within a gender, not a stride across everybody", () => {
+    // The script's own comment quotes the formula it replaced.
+    const code = seed.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    expect(code).toMatch(/Math\.floor\(i \/ GENDERS\.length\) \* 9/);
+    expect(code).not.toMatch(/\(i \* 5\) % 40/);
+  });
+
+  it("gives every gender somebody in a common preference band", () => {
+    for (let g = 0; g < GENDERS; g += 1) {
+      const ages = [0, 1, 2].map((nth) => age(nth * GENDERS + g));
+      const inBand = ages.filter((a) => a >= 24 && a <= 38);
+      expect(inBand.length, `gender ${g} has ${ages.join(",")}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("spreads them rather than stacking them on one age", () => {
+    const all = Array.from({ length: 12 }, (_, i) => age(i));
+    expect(new Set(all).size).toBe(all.length);
+    expect(Math.max(...all) - Math.min(...all)).toBeGreaterThan(15);
+  });
+});

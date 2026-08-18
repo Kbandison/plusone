@@ -546,6 +546,14 @@ export const DRAFT_COPY = {
       "We ask your device where you are so we can measure this. Your exact position is never stored — it is rounded to about a kilometre before it is saved, and nobody is ever shown your coordinates.",
     locationDenied:
       "No problem. We will work from your approximate area instead, which is less precise.",
+    /**
+     * Both the prompt and the fallback came back with nothing. Said plainly,
+     * because the alternative is a member finishing onboarding into an empty
+     * app with no idea why — which is what a country centroid stored as a
+     * location produces, and it looks identical to nobody being nearby.
+     */
+    locationUnknown:
+      "We could not work out where you are, so we cannot show you anyone nearby yet. Allow location access and finish this step again, and everything else will work.",
     unit: (mi: number) => `${mi} miles`,
     continueLabel: "Finish",
   },

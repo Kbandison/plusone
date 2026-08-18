@@ -88,3 +88,41 @@ describe("the location wall", () => {
     expect(migration).toMatch(/security invoker/);
   });
 });
+
+/**
+ * A member in New York was stored at 37.75, -97.82 — a field in Kansas, which
+ * is what a geolocation database returns for "somewhere in the United States".
+ * They then matched nobody, a thousand miles from every other member, with
+ * nothing on screen suggesting why.
+ *
+ * Storing that is worse than storing nothing: nothing reads as "no matches
+ * near you yet" and is fixed by granting the prompt, while a confident wrong
+ * answer reads as an empty product.
+ */
+describe("a country is not a location", () => {
+  const lib = read("../../../lib/dial-code.ts");
+
+  it("refuses the published country centroids", () => {
+    expect(lib).toMatch(/COUNTRY_CENTROIDS/);
+    expect(lib).toMatch(/37\.751, -97\.822/);
+    expect(lib).toMatch(/isCountryCentroid\(lat, lon\)/);
+  });
+
+  /** A city header means the lookup got finer than the country. */
+  it("requires the lookup to have resolved past the country", () => {
+    expect(lib).toMatch(/x-vercel-ip-city/);
+  });
+
+  /**
+   * "We used your rough area" and "we have no idea where you are" have
+   * completely different consequences, and only the second leaves the app
+   * empty. A member who is told the first while the second is true finishes
+   * onboarding into nothing.
+   */
+  it("tells the two failures apart on screen", () => {
+    expect(form).toMatch(/setOutcome\(approximate \? "approximate" : "unknown"\)/);
+    expect(form).toMatch(/outcome === "unknown"/);
+    expect(DRAFT_COPY.radius.locationUnknown).toMatch(/could not/i);
+    expect(DRAFT_COPY.radius.locationUnknown).toMatch(/allow/i);
+  });
+});

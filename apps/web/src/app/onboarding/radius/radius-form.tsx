@@ -21,7 +21,7 @@ export function RadiusForm({
   approximate?: { lat: number; lon: number } | null;
 }) {
   const [state, action, pending] = useActionState(saveRadius, INITIAL);
-  const [denied, setDenied] = useState(false);
+  const [outcome, setOutcome] = useState<"asking" | "approximate" | "unknown" | null>(null);
 
   /**
    * Where the member is, asked for at the moment it means something.
@@ -37,13 +37,19 @@ export function RadiusForm({
    * where they were standing before.
    */
   async function locate(): Promise<{ lat: number; lon: number } | null> {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return approximate ?? null;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setOutcome(approximate ? "approximate" : "unknown");
+      return approximate ?? null;
+    }
 
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
         () => {
-          setDenied(true);
+          // Told apart on purpose: "we used your rough area" and "we have no
+          // idea where you are" have completely different consequences, and
+          // only the second one leaves the app empty.
+          setOutcome(approximate ? "approximate" : "unknown");
           resolve(approximate ?? null);
         },
         // Low accuracy on purpose: the answer is rounded to about a kilometre
@@ -108,9 +114,15 @@ export function RadiusForm({
 
       <p className="max-w-[46ch] text-[13.5px] leading-[1.6] text-ink-3">{C.locationHint}</p>
 
-      {denied ? (
+      {outcome === "approximate" ? (
         <p role="status" className="text-[13.5px] text-ink-3">
           {C.locationDenied}
+        </p>
+      ) : null}
+
+      {outcome === "unknown" ? (
+        <p role="status" className="max-w-[46ch] text-[13.5px] leading-[1.6] text-critical">
+          {C.locationUnknown}
         </p>
       ) : null}
 

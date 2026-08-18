@@ -57,7 +57,49 @@ export async function approximateLocation(): Promise<{ lat: number; lon: number 
   const lat = Number(store.get("x-vercel-ip-latitude"));
   const lon = Number(store.get("x-vercel-ip-longitude"));
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  /**
+   * A country is not a location.
+   *
+   * When a lookup can only place an address in a country it still answers with
+   * coordinates — the country's centroid — and those coordinates look exactly
+   * like a real answer. A member in New York was stored at 37.75, -97.82: a
+   * field in Kansas, which is what MaxMind returns for "somewhere in the United
+   * States". They then matched nobody, a thousand miles from every other
+   * member, with nothing on screen suggesting why.
+   *
+   * Storing that is worse than storing nothing. Nothing reads as "no matches
+   * near you yet" and can be fixed by granting the prompt; a confident wrong
+   * answer reads as an empty product.
+   *
+   * Two tests, because either alone is thin. A city header means the lookup got
+   * finer than the country, and the known centroids are rejected by name in
+   * case a city is reported anyway.
+   */
   // 0,0 is in the Atlantic and is what a missing lookup often reads as.
   if (lat === 0 && lon === 0) return null;
+  if (!store.get("x-vercel-ip-city")) return null;
+  if (isCountryCentroid(lat, lon)) return null;
+
   return { lat, lon };
+}
+
+/**
+ * Coordinates a geolocation database returns when it only knows the country.
+ *
+ * Listed rather than inferred: they are specific published values, and a member
+ * who genuinely lives near one should not be refused, so the tolerance is tight
+ * enough to mean "this is the sentinel" rather than "this is nearby".
+ */
+const COUNTRY_CENTROIDS: readonly (readonly [number, number])[] = [
+  [37.751, -97.822], // United States
+  [-25.0, 133.0], // Australia
+  [56.13, -106.35], // Canada
+];
+
+function isCountryCentroid(lat: number, lon: number): boolean {
+  return COUNTRY_CENTROIDS.some(
+    ([centroidLat, centroidLon]) =>
+      Math.abs(lat - centroidLat) < 0.02 && Math.abs(lon - centroidLon) < 0.02,
+  );
 }
