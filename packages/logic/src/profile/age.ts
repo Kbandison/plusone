@@ -13,6 +13,16 @@
 
 export const MINIMUM_AGE = 18;
 
+/**
+ * The other end of the age range a member may ask for.
+ *
+ * Beside MINIMUM_AGE rather than in the web app, because both ends are the same
+ * rule and profiles_age_range_is_adult CHECKs them as one. It also has to be
+ * reachable from a Client Component — the age slider is one — and the web
+ * module that used to hold it is server-only.
+ */
+export const MAXIMUM_AGE = 120;
+
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export interface CalendarDate {

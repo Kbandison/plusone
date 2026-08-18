@@ -9,7 +9,12 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { nextRoute, requireStep } from "@/lib/onboarding";
-import { MAX_PHOTOS, MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
+import {
+  MAX_PHOTOS,
+  MAX_UPLOAD_BYTES,
+  isAcceptableUpload,
+  lowestFreeSlot,
+} from "@/lib/photo-limits";
 import { processPhoto } from "@/lib/photos";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhotosState } from "./state";
@@ -41,10 +46,11 @@ export async function uploadPhoto(
   if (!isAcceptableUpload(file.type, file.size)) return { error: E.wrongType };
 
   const supabaseForCount = await getServerSupabase();
-  const { count: held } = await supabaseForCount
+  const { data: heldRows } = await supabaseForCount
     .from("profile_photos")
-    .select("id", { count: "exact", head: true })
+    .select("position")
     .eq("user_id", userId);
+  const held = heldRows?.length ?? 0;
 
   // Refused here, not by the constraint.
   //
@@ -54,7 +60,7 @@ export async function uploadPhoto(
   // rolling all of them back and answering "that did not upload, try again",
   // which is advice that could never work. The browser caps the picker too;
   // this is the wall, that is the courtesy.
-  if ((held ?? 0) >= MAX_PHOTOS) return { error: E.full(MAX_PHOTOS) };
+  if (held >= MAX_PHOTOS) return { error: E.full(MAX_PHOTOS) };
 
   let processed;
   try {
@@ -89,21 +95,45 @@ export async function uploadPhoto(
     return { error: E.uploadFailed };
   }
 
-  // Re-read rather than reusing `held`: the transforms and three uploads above
-  // take long enough that a second tab could have added one, and position is
-  // what `unique (user_id, position)` is checking.
-  const { count } = await supabase
-    .from("profile_photos")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
+  // The LOWEST FREE slot, not the count.
+  //
+  // `position: count` was a bug the moment photos could be deleted. Positions
+  // are a set with holes in it, not a length: delete the first of three and the
+  // rows left are 1 and 2, so a count of 2 picks position 2 — which exists —
+  // and `unique (user_id, position)` refuses the insert. The member saw "that
+  // did not upload", correctly, forever, while three slots stood empty. It only
+  // ever worked because nothing could delete a photo.
+  //
+  // Re-read rather than reusing the rows from the cap check: the transforms and
+  // three storage uploads above take long enough for another tab to have taken
+  // a slot.
+  const insertAt = async (): Promise<{ error: unknown }> => {
+    const { data: rows } = await supabase
+      .from("profile_photos")
+      .select("position")
+      .eq("user_id", userId);
 
-  const { error } = await supabase.from("profile_photos").insert({
-    user_id: userId,
-    storage_path: fullPath,
-    card_path: cardPath,
-    blurred_path: blurredPath,
-    position: count ?? 0,
-  });
+    const slot = lowestFreeSlot((rows ?? []).map((row) => row.position as number));
+    if (slot === null) return { error: { code: "FULL" } };
+
+    return await supabase.from("profile_photos").insert({
+      user_id: userId,
+      storage_path: fullPath,
+      card_path: cardPath,
+      blurred_path: blurredPath,
+      position: slot,
+    });
+  };
+
+  let { error } = await insertAt();
+  // 23505 is `unique (user_id, position)`: another tab took the slot between
+  // the read and the write. Reading again is the whole fix — retried once,
+  // because a second collision is a pattern, not a race.
+  if (error && (error as { code?: string }).code === "23505") ({ error } = await insertAt());
+  if (error && (error as { code?: string }).code === "FULL") {
+    await supabase.storage.from(BUCKET).remove([fullPath, cardPath, blurredPath]);
+    return { error: E.full(MAX_PHOTOS) };
+  }
 
   if (error) {
     // All three, not two: the card variant was being left behind, so a failed

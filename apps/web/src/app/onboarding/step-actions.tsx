@@ -46,7 +46,7 @@ export function BackLink({ step }: { step: onboarding.OnboardingStep }) {
     <Link
       href={STEP_ROUTES[back]}
       aria-label={DRAFT_COPY.steps.backTo(STEP_HEADINGS[back])}
-      className={buttonClass("secondary", "w-full sm:w-auto sm:min-w-[130px]")}
+      className={backButtonClass}
     >
       {DRAFT_COPY.steps.backLabel}
     </Link>
@@ -69,15 +69,27 @@ export function BackLink({ step }: { step: onboarding.OnboardingStep }) {
  */
 export function StepActions({
   step,
+  back,
   children,
 }: {
   step: onboarding.OnboardingStep;
+  /**
+   * A different way back, for a step that has to SAVE before it leaves.
+   *
+   * A plain link cannot: it never submits, so anything typed since the last
+   * Continue is gone. That is invisible on a screen with one field whose saved
+   * value comes straight back, and it is twelve questions on the quiz.
+   */
+  back?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-wrap-reverse items-center gap-x-4 gap-y-3">
-      <BackLink step={step} />
+      {back ?? <BackLink step={step} />}
       {children}
     </div>
   );
 }
+
+/** The Back control's classes, so a step rendering its own still matches. */
+export const backButtonClass = buttonClass("secondary", "w-full sm:w-auto sm:min-w-[130px]");

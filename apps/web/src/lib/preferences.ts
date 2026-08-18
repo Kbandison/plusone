@@ -7,12 +7,19 @@ import {
   KIDS_LABELS,
   KIDS_PLAN_LABELS,
 } from "@plusone/config";
+import { profile } from "@plusone/logic";
 
 const E = DRAFT_COPY.preferences.errors;
 
-/** 18 is the floor everywhere in this product; profiles_age_range_is_adult agrees. */
-export const AGE_FLOOR = 18;
-export const AGE_CEILING = 120;
+/**
+ * One definition of each end, shared with the slider.
+ *
+ * They were literals here, in a server-only module, so the Client Component
+ * that draws the range could not see them — and a second copy of "18" is a
+ * second thing to forget when the CHECK moves.
+ */
+export const AGE_FLOOR = profile.MINIMUM_AGE;
+export const AGE_CEILING = profile.MAXIMUM_AGE;
 
 /** The columns this form owns, ready for an update. */
 export interface PreferenceValues {

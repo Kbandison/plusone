@@ -58,7 +58,10 @@ describe("the age range", () => {
 
   it("refuses a range below eighteen or above the ceiling", () => {
     expect(parser).toMatch(/age < AGE_FLOOR \|\| age > AGE_CEILING/);
-    expect(parser).toMatch(/const AGE_FLOOR = 18/);
+    // The bounds are shared with the slider now, so this asserts they come from
+    // the one definition rather than a literal repeated per module.
+    expect(parser).toMatch(/AGE_FLOOR = profile\.MINIMUM_AGE/);
+    expect(parser).toMatch(/AGE_CEILING = profile\.MAXIMUM_AGE/);
   });
 
   /**
@@ -100,7 +103,10 @@ describe("what the step promises about itself", () => {
     expect(page).toMatch(/my_profile/);
     expect(form).toMatch(/defaultChecked=\{selected === value\}/);
     expect(form).toMatch(/defaultChecked=\{defaults\.seeking\.includes\(value\)\}/);
-    expect(form).toMatch(/defaultValue=\{defaults\.ageMin \?\? ""\}/);
+    // The age range is a two-thumb slider now; its ends seed the state.
+    expect(form).toMatch(/useState\(from \?\? AGE_FLOOR\)/);
+    expect(form).toMatch(/useState\(to \?\? AGE_CEILING\)/);
+    expect(form).toMatch(/<AgeRange from=\{defaults\.ageMin\} to=\{defaults\.ageMax\} \/>/);
   });
 
   /** supabase-js resolves rather than rejects; an unchecked update reads as success. */

@@ -7,7 +7,8 @@ import { COPY, DRAFT_COPY, QUIZ_QUESTIONS } from "@plusone/config";
 import { saveQuiz } from "./actions";
 import { QUIZ_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
-import { StepActions } from "@/app/onboarding/step-actions";
+import { StepActions, backButtonClass } from "@/app/onboarding/step-actions";
+import { onboarding } from "@plusone/logic";
 
 const C = DRAFT_COPY.quiz;
 
@@ -75,7 +76,26 @@ export function QuizForm({ answered: given = {} }: { answered?: Record<string, s
           three ways out of it, and §7.2 marks it skippable — so the skip has to
           stay as visible as it was, and Back cannot look like a fourth kind of
           answer to the questions above. */}
-      <StepActions step="quiz">
+      <StepActions
+        step="quiz"
+        // A submit, not a link. Back has to carry the answers with it here —
+        // twelve questions are too many to lose to a glance at the screen
+        // before — so this posts the form and saveQuiz sends it backwards
+        // instead of forwards. It writes nothing when nothing is answered.
+        back={
+          onboarding.backStep("quiz") ? (
+            <button
+              type="submit"
+              name="back"
+              value="1"
+              disabled={pending}
+              className={backButtonClass}
+            >
+              {DRAFT_COPY.steps.backLabel}
+            </button>
+          ) : null
+        }
+      >
         <button type="submit" disabled={pending} className={buttonClass("primary")}>
           {COPY.actions.continueLabel}
         </button>

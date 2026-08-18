@@ -102,3 +102,82 @@ describe("the way out of a step", () => {
     expect(row.indexOf("<BackLink")).toBeLessThan(row.indexOf("{children}"));
   });
 });
+
+/**
+ * Reported: "the quiz doesn't save the answers if the user goes back a page,
+ * but everything else does."
+ *
+ * Back is a link everywhere else, which is fine there — one field, and its
+ * saved value comes back on a revisit. Here it is twelve questions, and a link
+ * never submits, so everything answered since the last Continue was gone the
+ * moment a member checked something on the screen before.
+ */
+describe("the quiz carries its answers backwards", () => {
+  const actions = read("quiz/actions.ts")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "");
+  const form = read("quiz/quiz-form.tsx");
+
+  it("makes Back a submit rather than a link", () => {
+    expect(form).toMatch(/name="back"\s+value="1"/);
+    expect(form).toMatch(/back=\{/);
+  });
+
+  it("still looks like every other Back", () => {
+    expect(form).toMatch(/className=\{backButtonClass\}/);
+  });
+
+  it("saves before it leaves, and leaves backwards", () => {
+    expect(actions).toMatch(/const goingBack = formData\.get\("back"\) === "1"/);
+    expect(actions).toMatch(
+      /redirect\(goingBack && backTo \? STEP_ROUTES\[backTo\] : nextRoute\("quiz"\)\)/,
+    );
+  });
+
+  /**
+   * Presence of the row is what resolveStep reads as "settled". An empty one
+   * written on the way back would mark the quiz done and skip it on the next
+   * resume — the step would vanish because the member glanced backwards.
+   */
+  it("writes no row when nothing has been answered", () => {
+    const guard = actions.slice(
+      actions.indexOf("const goingBack"),
+      actions.indexOf("getServerSupabase()"),
+    );
+    expect(guard).toMatch(/Object\.keys\(answers\)\.length === 0/);
+    expect(guard).toMatch(/redirect\(STEP_ROUTES\[backTo\]\)/);
+  });
+});
+
+/**
+ * Two number boxes made the member do the comparing: nothing said they were the
+ * two ends of one thing, and nothing stopped 40 in the first and 25 in the
+ * second — which profiles_age_range_is_adult then refused at the bottom of a
+ * filled-in form.
+ */
+describe("the age range is one control with two ends", () => {
+  const form = read("preferences/preferences-form.tsx");
+
+  it("is a slider, not a pair of number fields", () => {
+    expect(form).toMatch(
+      /type="range"[\s\S]{0,400}name="age_min"|name="age_min"[\s\S]{0,400}type="range"/,
+    );
+    expect(form).not.toMatch(/name="age_min"[\s\S]{0,200}type="number"/);
+  });
+
+  it("clamps the two ends so they cannot cross", () => {
+    expect(form).toMatch(/setMin\(Math\.min\(Number\(event\.target\.value\), max\)\)/);
+    expect(form).toMatch(/setMax\(Math\.max\(Number\(event\.target\.value\), min\)\)/);
+  });
+
+  /** "18" on its own says nothing about which end it is. */
+  it("tells a screen reader which end each thumb is", () => {
+    expect(form).toMatch(/aria-valuetext=\{C\.ageFromValue\(min\)\}/);
+    expect(form).toMatch(/aria-valuetext=\{C\.ageToValue\(max\)\}/);
+  });
+
+  it("takes both bounds from the one place that defines them", () => {
+    expect(form).toMatch(/profile\.MINIMUM_AGE/);
+    expect(form).toMatch(/profile\.MAXIMUM_AGE/);
+  });
+});

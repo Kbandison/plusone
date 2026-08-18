@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { QUIZ_QUESTIONS } from "@plusone/config";
 import { quiz } from "@plusone/logic";
 
+import { onboarding } from "@plusone/logic";
+
 import { nextRoute, requireStep } from "@/lib/onboarding";
+import { STEP_ROUTES } from "@/lib/step-routes";
 import { getServerSupabase } from "@/lib/supabase";
 import type { QuizState } from "./state";
 
@@ -34,6 +37,23 @@ export async function saveQuiz(_previous: QuizState, formData: FormData): Promis
     }
   }
 
+  // Going BACK saves too.
+  //
+  // Back is a link on every other step, which is fine there: one field, and its
+  // saved value comes straight back on a revisit. Here it is twelve questions,
+  // and a link means every one of them typed since the last Continue is gone
+  // the moment a member checks something on the screen before.
+  //
+  // With nothing answered it does NOT write a row. Presence of the row is what
+  // `resolveStep` reads as "settled", so an empty one would quietly mark the
+  // quiz done and skip it on the member's next resume — the step would vanish
+  // because they glanced backwards.
+  const goingBack = formData.get("back") === "1";
+  const backTo = onboarding.backStep("quiz");
+  if (goingBack && Object.keys(answers).length === 0 && backTo) {
+    redirect(STEP_ROUTES[backTo]);
+  }
+
   const supabase = await getServerSupabase();
   const { error } = await supabase.from("quiz_responses").upsert(
     {
@@ -46,5 +66,5 @@ export async function saveQuiz(_previous: QuizState, formData: FormData): Promis
 
   if (error) return { error: "That didn't save. Try again." };
 
-  redirect(nextRoute("quiz"));
+  redirect(goingBack && backTo ? STEP_ROUTES[backTo] : nextRoute("quiz"));
 }

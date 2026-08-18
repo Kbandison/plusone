@@ -432,8 +432,13 @@ export const DRAFT_COPY = {
 
     ageLabel: "Ages you are open to",
     ageHint: "Both of you have to be in each other's range.",
-    ageFrom: "From",
-    ageTo: "To",
+    ageFrom: "Youngest",
+    ageTo: "Oldest",
+    /** One control with two ends, so it reads as a span rather than two numbers. */
+    ageSpan: (from: number, to: number) => `${from} to ${to}`,
+    /** Each thumb announces which end it is; "18" alone says nothing useful. */
+    ageFromValue: (age: number) => `Youngest ${age}`,
+    ageToValue: (age: number) => `Oldest ${age}`,
 
     /**
      * Named "about you" rather than "preferences": these are answers about the

@@ -49,3 +49,24 @@ export function isAcceptableUpload(type: string, size: number): boolean {
     (ACCEPTED_TYPES as readonly string[]).includes(type) && size > 0 && size <= MAX_UPLOAD_BYTES
   );
 }
+
+/**
+ * The slot a new photo takes: the lowest one nobody is using.
+ *
+ * `position: count` was correct exactly as long as nothing could be deleted.
+ * Positions are a SET WITH HOLES, not a length — delete the first of three and
+ * the rows left are 1 and 2, so a count of 2 picks position 2, which exists,
+ * and `unique (user_id, position)` refuses the insert. The member is told "that
+ * did not upload" and told it every time, while three slots stand empty.
+ *
+ * Lowest-free also reuses the hole rather than pushing the next photo past the
+ * ceiling: with rows at 0 and 5, `max + 1` is 6 and
+ * `profile_photos_position_range` refuses that too.
+ */
+export function lowestFreeSlot(taken: Iterable<number>, max = MAX_PHOTOS): number | null {
+  const used = new Set(taken);
+  for (let slot = 0; slot < max; slot += 1) {
+    if (!used.has(slot)) return slot;
+  }
+  return null;
+}

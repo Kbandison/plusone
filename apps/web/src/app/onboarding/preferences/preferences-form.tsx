@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 
 import {
   COPY,
@@ -14,6 +14,10 @@ import {
 import { PREFERENCES_INITIAL, type PreferencesState } from "./state";
 import { buttonClass } from "@/app/ui";
 import { StepActions } from "@/app/onboarding/step-actions";
+import { profile } from "@plusone/logic";
+
+const AGE_FLOOR = profile.MINIMUM_AGE;
+const AGE_CEILING = profile.MAXIMUM_AGE;
 
 const C = DRAFT_COPY.preferences;
 
@@ -138,42 +142,7 @@ export function PreferencesForm({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-[15px]">{C.ageLabel}</legend>
-        <p className="mb-2 text-[13.5px] text-ink-3">{C.ageHint}</p>
-        <div className="flex items-end gap-4">
-          <span className="flex flex-col gap-2">
-            <label htmlFor={minId} className="text-[13.5px] text-ink-3">
-              {C.ageFrom}
-            </label>
-            <input
-              id={minId}
-              name="age_min"
-              type="number"
-              inputMode="numeric"
-              min={18}
-              max={120}
-              defaultValue={defaults.ageMin ?? ""}
-              className="ease-brand w-[92px] rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] tabular-nums transition-colors duration-200 focus:border-accent"
-            />
-          </span>
-          <span className="flex flex-col gap-2">
-            <label htmlFor={maxId} className="text-[13.5px] text-ink-3">
-              {C.ageTo}
-            </label>
-            <input
-              id={maxId}
-              name="age_max"
-              type="number"
-              inputMode="numeric"
-              min={18}
-              max={120}
-              defaultValue={defaults.ageMax ?? ""}
-              className="ease-brand w-[92px] rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] tabular-nums transition-colors duration-200 focus:border-accent"
-            />
-          </span>
-        </div>
-      </fieldset>
+      <AgeRange from={defaults.ageMin} to={defaults.ageMax} />
 
       {/* Below a rule and named as being about the member, because they are.
           Read as filters they would be answered strategically instead of
@@ -229,5 +198,87 @@ export function PreferencesForm({
         </button>
       </StepActions>
     </form>
+  );
+}
+
+/**
+ * The age range, as one control with two ends.
+ *
+ * Two number boxes made the member do the comparing: nothing on screen said
+ * these were the two ends of one thing, and nothing stopped them typing 40 in
+ * the first and 25 in the second — which the CHECK then refused at the bottom
+ * of a filled-in form.
+ *
+ * Two range inputs stacked on one track, which is the accessible way to build
+ * this: a genuine double-thumb slider is a div with ARIA bolted on, whereas two
+ * native sliders arrive already keyboard-operable, already announced, and
+ * already understood by every assistive technology. They are clamped against
+ * each other so the pair can never cross.
+ */
+function AgeRange({ from, to }: { from: number | null; to: number | null }) {
+  const [min, setMin] = useState(from ?? AGE_FLOOR);
+  const [max, setMax] = useState(to ?? AGE_CEILING);
+  const minId = useId();
+  const maxId = useId();
+
+  const span = AGE_CEILING - AGE_FLOOR;
+  const left = ((min - AGE_FLOOR) / span) * 100;
+  const right = ((max - AGE_FLOOR) / span) * 100;
+
+  return (
+    <fieldset className="flex flex-col gap-3">
+      <legend className="mb-1 text-[15px]">{C.ageLabel}</legend>
+      <p className="text-[13.5px] text-ink-3">{C.ageHint}</p>
+
+      <output className="mt-2 font-display text-h3 leading-none tabular-nums">
+        {C.ageSpan(min, max)}
+      </output>
+
+      <div className="relative mt-4 h-tap">
+        {/* The track and the chosen span, drawn once and shared by both thumbs.
+            aria-hidden: the sliders themselves say all of this out loud. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-surface-2"
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent"
+          style={{ left: `${left}%`, right: `${100 - right}%` }}
+        />
+
+        <label htmlFor={minId} className="sr-only">
+          {C.ageFrom}
+        </label>
+        <input
+          id={minId}
+          name="age_min"
+          type="range"
+          min={AGE_FLOOR}
+          max={AGE_CEILING}
+          value={min}
+          aria-valuetext={C.ageFromValue(min)}
+          // Clamped, so the two ends cannot cross and produce a range the CHECK
+          // would refuse after the member had filled in everything else.
+          onChange={(event) => setMin(Math.min(Number(event.target.value), max))}
+          className="absolute inset-x-0 top-1/2 h-tap w-full -translate-y-1/2 cursor-pointer appearance-none bg-transparent accent-accent"
+        />
+
+        <label htmlFor={maxId} className="sr-only">
+          {C.ageTo}
+        </label>
+        <input
+          id={maxId}
+          name="age_max"
+          type="range"
+          min={AGE_FLOOR}
+          max={AGE_CEILING}
+          value={max}
+          aria-valuetext={C.ageToValue(max)}
+          onChange={(event) => setMax(Math.max(Number(event.target.value), min))}
+          className="absolute inset-x-0 top-1/2 h-tap w-full -translate-y-1/2 cursor-pointer appearance-none bg-transparent accent-accent"
+        />
+      </div>
+    </fieldset>
   );
 }
