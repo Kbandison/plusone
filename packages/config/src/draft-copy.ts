@@ -482,6 +482,17 @@ export const DRAFT_COPY = {
     /** The photos themselves, which the step never showed — only counted. */
     yoursHeading: "Your photos so far",
     removeLabel: "Remove",
+    /**
+     * position 0 is not a label, it is the photo every card, drop and profile
+     * shows. Saying which one that is was the missing half of letting anybody
+     * change it.
+     */
+    mainBadge: "Main",
+    makeMainLabel: "Make main",
+    makeMainNamed: (position: number) => `Make photo ${position} the main one`,
+    moveEarlierNamed: (position: number) => `Move photo ${position} earlier`,
+    moveLaterNamed: (position: number) => `Move photo ${position} later`,
+    orderHint: "The first photo is the one people see first.",
     /** Named, because a page of identical Remove buttons is unusable by ear. */
     removeNamed: (position: number) => `Remove photo ${position}`,
     /** Six is the ceiling; this is what is left of it. */
@@ -971,8 +982,16 @@ export const QUIZ_QUESTION_COUNT = QUIZ_QUESTIONS.length;
  */
 export const INTENTION_LABELS = {
   long_term: "Something long term",
-  open_to_either: "Open to either",
   casual: "Something casual",
+  /**
+   * After the two it refers to, not between them. "Open to either" listed
+   * second asked a member to hold an option they had not been offered yet.
+   *
+   * Display order only. The enum's own order is unchanged, and intentionCompat
+   * scores off a keyed affinity matrix rather than a position, so nothing about
+   * matching moves with this.
+   */
+  open_to_either: "Open to either",
   friends_support: "Friends and support",
 } as const;
 

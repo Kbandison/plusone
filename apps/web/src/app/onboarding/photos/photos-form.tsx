@@ -7,9 +7,9 @@ import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
 import type { OwnPhoto } from "@/lib/photo-urls";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { deletePhoto, savePhotoPrivacy, uploadPhoto } from "./actions";
+import { deletePhoto, reorderPhotos, savePhotoPrivacy, uploadPhoto } from "./actions";
 import { PHOTOS_INITIAL } from "./state";
-import { buttonClass } from "@/app/ui";
+import { Badge, buttonClass } from "@/app/ui";
 import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.photos;
@@ -238,35 +238,91 @@ export function PrivacyChoice({
  * fewer concept — and it cannot half-fail the way an in-place swap can.
  */
 export function PhotoGallery({ photos }: { photos: readonly OwnPhoto[] }) {
-  const [state, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
+  const [removeState, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
+  const [moveState, move, moving] = useActionState(reorderPhotos, PHOTOS_INITIAL);
   if (photos.length === 0) return null;
+
+  const busy = removing || moving;
+  const error = removeState.error ?? moveState.error;
 
   return (
     <section className="mt-10">
       <h2 className="text-[15px]">{C.yoursHeading}</h2>
+      <p className="mt-2 text-[13.5px] text-ink-3">{C.orderHint}</p>
 
-      <ul className="mt-4 flex flex-wrap gap-3">
+      <ul className="mt-4 flex flex-wrap gap-4">
         {photos.map((photo, index) => (
-          <li key={photo.id} className="flex flex-col items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element -- signed
-                storage URLs expire in ten minutes, so the image optimiser would
-                cache a URL that outlives its own signature. */}
-            <img
-              src={photo.url}
-              alt=""
-              width={96}
-              height={96}
-              className="size-24 rounded-lg border border-line-2 object-cover"
-            />
+          <li key={photo.id} className="flex w-24 flex-col gap-2">
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed
+                  storage URLs expire in ten minutes, so the image optimiser
+                  would cache a URL that outlives its own signature. */}
+              <img
+                src={photo.url}
+                alt=""
+                width={96}
+                height={96}
+                className="size-24 rounded-lg border border-line-2 object-cover"
+              />
+              {/* Which one is the main is not decoration: it is the only photo
+                  a card, a drop or a search result ever shows. */}
+              {index === 0 ? (
+                <Badge className="absolute bottom-1 left-1">{C.mainBadge}</Badge>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-between gap-1">
+              <form action={move}>
+                <input type="hidden" name="photo_id" value={photo.id} />
+                <input type="hidden" name="move" value="earlier" />
+                <button
+                  type="submit"
+                  disabled={busy || index === 0}
+                  aria-label={C.moveEarlierNamed(index + 1)}
+                  className={buttonClass("quiet", "px-1.5 text-[15px] disabled:opacity-30")}
+                >
+                  <span aria-hidden="true">&larr;</span>
+                </button>
+              </form>
+
+              <form action={move}>
+                <input type="hidden" name="photo_id" value={photo.id} />
+                <input type="hidden" name="move" value="later" />
+                <button
+                  type="submit"
+                  disabled={busy || index === photos.length - 1}
+                  aria-label={C.moveLaterNamed(index + 1)}
+                  className={buttonClass("quiet", "px-1.5 text-[15px] disabled:opacity-30")}
+                >
+                  <span aria-hidden="true">&rarr;</span>
+                </button>
+              </form>
+            </div>
+
+            {index > 0 ? (
+              <form action={move}>
+                <input type="hidden" name="photo_id" value={photo.id} />
+                <input type="hidden" name="move" value="main" />
+                <button
+                  type="submit"
+                  disabled={busy}
+                  aria-label={C.makeMainNamed(index + 1)}
+                  className={buttonClass("quiet", "text-[13px]")}
+                >
+                  {C.makeMainLabel}
+                </button>
+              </form>
+            ) : null}
+
             <form action={remove}>
               <input type="hidden" name="photo_id" value={photo.id} />
               <button
                 type="submit"
-                disabled={removing}
+                disabled={busy}
                 // Named, or a grid of identical "Remove" buttons is unusable by
                 // ear — every one of them reads the same out of context.
                 aria-label={C.removeNamed(index + 1)}
-                className={buttonClass("quiet", "text-[13.5px]")}
+                className={buttonClass("quiet", "text-[13px]")}
               >
                 {C.removeLabel}
               </button>
@@ -277,9 +333,9 @@ export function PhotoGallery({ photos }: { photos: readonly OwnPhoto[] }) {
 
       <p className="mt-4 text-[14px] text-ink-3">{C.roomLeft(MAX_PHOTOS - photos.length)}</p>
 
-      {state.error ? (
+      {error ? (
         <p role="alert" className="mt-3 text-[14.5px] text-critical">
-          {state.error}
+          {error}
         </p>
       ) : null}
     </section>

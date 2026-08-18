@@ -124,6 +124,30 @@ export function Wordmark({
  * surfaces — and an empty chat is guaranteed at creation, so the first thing
  * both people saw after matching was a blank rectangle.
  */
+/**
+ * A small filled label sitting on top of something else.
+ *
+ * Here because the first one written — "Main", over a photo — spelled the
+ * accent fill and its ink by hand, which is precisely the duplication this file
+ * exists to end. It reads as the primary tone because it marks the ONE item
+ * that matters in a set, and there is exactly one per set.
+ */
+export function Badge({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`rounded bg-accent px-1.5 py-0.5 text-[11px] tracking-[0.03em] text-accent-ink uppercase ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function EmptyState({ heading, body }: { heading: string; body: string }) {
   return (
     <Card className="mt-8">

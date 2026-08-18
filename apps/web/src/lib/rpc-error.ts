@@ -92,6 +92,15 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "a drop is at most ",
   "a drop card must be someone you can see",
   "a referral grant is for a conversion or a tier",
+  // reorder_photos' bounds. The gallery always sends the member's complete,
+  // de-duplicated order, so only a forged call reaches any of them — and
+  // "that is not your photo" in particular answers a question about somebody
+  // else's row, which is exactly the kind of text this list exists to keep off
+  // a screen. reorderPhotos returns its own message.
+  "nothing to reorder",
+  "the same photo cannot appear twice",
+  "that is not the whole set",
+  "that is not your photo",
   "% is not callable by a member",
   "policies call an is_admin overload that end users cannot execute: ",
   "policies still calling is_admin(uuid): ",

@@ -170,3 +170,56 @@ describe("the photos are shown, and can be removed", () => {
     expect(del).toMatch(/if \(!row\) \{[\s\S]{0,160}?return \{ error: null \}/);
   });
 });
+
+/**
+ * `position` has always decided which photo is the main one — every card, drop
+ * and profile reads the lowest — and nothing could change it. A member whose
+ * best picture went up third had no way to promote it, and no way to reorder at
+ * all.
+ */
+describe("photos can be reordered, and one of them is the main", () => {
+  it("says which photo is the main one", () => {
+    expect(form).toMatch(/index === 0 \? \([\s\S]{0,300}C\.mainBadge/);
+  });
+
+  it("offers make-main on every photo that is not already it", () => {
+    expect(form).toMatch(/value="main"/);
+    expect(form).toMatch(/index > 0 \? \(/);
+  });
+
+  it("offers a move in each direction, disabled at the ends", () => {
+    expect(form).toMatch(/value="earlier"/);
+    expect(form).toMatch(/value="later"/);
+    expect(form).toMatch(/disabled=\{busy \|\| index === 0\}/);
+    expect(form).toMatch(/disabled=\{busy \|\| index === photos\.length - 1\}/);
+  });
+
+  /** A grid of identical arrows is unusable by ear. */
+  it("names every control", () => {
+    for (const named of ["moveEarlierNamed", "moveLaterNamed", "makeMainNamed", "removeNamed"]) {
+      expect(form).toMatch(new RegExp(`C\\.${named}\\(index \\+ 1\\)`));
+    }
+  });
+
+  /**
+   * The whole order goes to the database, not a swap. reorder_photos takes the
+   * array AS the order, so make-main is that id moved to the front and a move
+   * is a neighbouring exchange — one operation rather than three that could
+   * disagree.
+   */
+  it("sends the whole order rather than a pair to swap", () => {
+    const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
+    expect(action).toMatch(/order\.splice\(from, 1\)/);
+    expect(action).toMatch(/order\.splice\(to, 0, id\)/);
+    expect(action).toMatch(/rpc\("reorder_photos", \{ p_ids: order \}\)/);
+  });
+
+  /** Moving a photo that is not theirs, or already gone, is not an error. */
+  it("says nothing went wrong when there is nothing to move", () => {
+    const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
+    expect(action).toMatch(/if \(from === -1\) return \{ error: null \}/);
+    expect(action).toMatch(
+      /if \(to === from \|\| to < 0 \|\| to >= order\.length\) return \{ error: null \}/,
+    );
+  });
+});

@@ -222,3 +222,53 @@ export async function deletePhoto(
   revalidatePath("/onboarding/photos");
   return { error: null };
 }
+
+/**
+ * Moves one photo, and with it the whole order.
+ *
+ * `position` has always decided which photo is the main one — every card, drop
+ * and profile reads the lowest — and nothing could change it. A member whose
+ * best picture went up third had no way to promote it.
+ *
+ * The whole order is sent, not a swap. reorder_photos takes the array AS the
+ * order, so "make this the main one" is that id moved to the front and "move it
+ * earlier" is a neighbouring exchange — one operation rather than three that
+ * could disagree with each other. It refuses anything that is not exactly the
+ * caller's own set before a row moves.
+ */
+export async function reorderPhotos(
+  _previous: PhotosState,
+  formData: FormData,
+): Promise<PhotosState> {
+  const { userId } = await requireStep("photos");
+
+  const id = String(formData.get("photo_id") ?? "");
+  const move = String(formData.get("move") ?? "");
+  if (!id) return { error: E.uploadFailed };
+
+  const supabase = await getServerSupabase();
+  const { data: rows } = await supabase
+    .from("profile_photos")
+    .select("id")
+    .eq("user_id", userId)
+    .order("position", { ascending: true });
+
+  const order = (rows ?? []).map((row) => row.id as string);
+  const from = order.indexOf(id);
+  // Not theirs, or already gone. Nothing to do and nothing to apologise for.
+  if (from === -1) return { error: null };
+
+  const to =
+    move === "main" ? 0 : move === "earlier" ? from - 1 : move === "later" ? from + 1 : from;
+  // Already at the end it is being sent towards.
+  if (to === from || to < 0 || to >= order.length) return { error: null };
+
+  order.splice(from, 1);
+  order.splice(to, 0, id);
+
+  const { error } = await supabase.rpc("reorder_photos", { p_ids: order });
+  if (error) return { error: E.uploadFailed };
+
+  revalidatePath("/onboarding/photos");
+  return { error: null };
+}
