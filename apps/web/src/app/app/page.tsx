@@ -44,17 +44,48 @@ export default async function TonightPage() {
           <p className="mt-3 text-[16px] leading-[1.7] text-ink-2">{COPY.drop.thin}</p>
         </div>
       ) : drop.preview ? (
-        <ul className="mt-8 flex flex-col gap-5">
-          {drop.cards.map((card) => (
-            <PreviewDropCard key={card.id} card={card} photo={photos.get(card.id)} />
-          ))}
-        </ul>
+        <>
+          {/* Decision #19 — density stats and mechanics explainers on the same
+              screen as the preview. Without them a support-only member is shown
+              three redacted cards and asked to give up a shield to see them,
+              with nothing to weigh that against. */}
+          <p className="mt-6 text-[15px] text-ink-2">
+            {DRAFT_COPY.app.previewDensity(drop.poolSize, drop.radiusUsedMi)}
+          </p>
+
+          <ul className="mt-8 flex flex-col gap-5">
+            {drop.cards.map((card) => (
+              <PreviewDropCard key={card.id} card={card} photo={photos.get(card.id)} />
+            ))}
+          </ul>
+
+          <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+            <h2 className="text-[1.1rem]">{DRAFT_COPY.app.previewHowHeading}</h2>
+            <ul className="mt-4 flex flex-col gap-3">
+              {DRAFT_COPY.app.previewHow.map((line) => (
+                <li key={line} className="text-[15px] leading-[1.65] text-ink-2">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       ) : (
-        <ul className="mt-8 flex flex-col gap-5">
-          {drop.cards.map((card) => (
-            <FullCard key={card.id} card={card} photo={photos.get(card.id)} />
-          ))}
-        </ul>
+        <>
+          <ul className="mt-8 flex flex-col gap-5">
+            {drop.cards.map((card) => (
+              <FullCard key={card.id} card={card} photo={photos.get(card.id)} />
+            ))}
+          </ul>
+
+          {/* Once, under the list, rather than on every card. A percentage with
+              no stated basis invites a member to read it as a measurement of
+              two people; it is intention and twelve questions, and saying so is
+              the difference between a hint and a claim. */}
+          <p className="mt-6 text-[13.5px] leading-[1.6] text-ink-3">
+            {DRAFT_COPY.app.compatibilityNote}
+          </p>
+        </>
       )}
     </main>
   );

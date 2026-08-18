@@ -5,7 +5,7 @@ import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/con
 import type { DropCard as Card, PreviewCard } from "@/lib/drop";
 import type { MemberPhoto } from "@/lib/photo-urls";
 import { MemberPhotoFrame } from "./member-photo";
-import { buttonClass } from "@/app/ui";
+import { Badge, buttonClass } from "@/app/ui";
 
 /**
  * The enum is a database value, not something to show a member. Rendering
@@ -30,33 +30,65 @@ export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | un
     .join(" · ");
 
   return (
-    <li className="rounded-xl border border-line-2 bg-surface p-6">
-      <div className="flex items-center gap-4">
-        <MemberPhotoFrame photo={photo} size={64} />
+    // The photo leads.
+    //
+    // It was a 64px thumbnail beside a name, which is the shape of a search
+    // result — three of them read as a list of records rather than as three
+    // people chosen for tonight. Decision #11 serves exactly three, so each one
+    // can afford the room.
+    <li className="overflow-hidden rounded-xl border border-line-2 bg-surface">
+      <div className="relative">
+        <MemberPhotoFrame photo={photo} fill className="aspect-[4/5] w-full" />
+
+        {/* Over the photo rather than under the name: it is the first thing
+            worth knowing about a card that was chosen rather than searched. */}
+        {card.compatibility != null ? (
+          <Badge className="absolute top-3 right-3">
+            {DRAFT_COPY.app.compatibilityLabel(card.compatibility)}
+          </Badge>
+        ) : null}
+      </div>
+
+      <div className="p-6">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-[1.45rem]">{card.displayName}</h2>
           {meta ? <span className="text-[14.5px] text-ink-3">{meta}</span> : null}
         </div>
+
+        {intentionLabel(card.intention) ? (
+          <p className="mt-2 text-[15px] text-ink-2">{intentionLabel(card.intention)}</p>
+        ) : null}
+
+        {photo?.isBlurred ? (
+          <p className="mt-3 text-[13.5px] text-ink-3">{DRAFT_COPY.app.photoBlurredNote}</p>
+        ) : null}
+
+        {/* Something they said, not another measurement of them. Decision #14
+            makes a connect a reply to a prompt, so this is also the thing the
+            next screen will ask about — seeing it here is what makes that
+            screen make sense. */}
+        {card.prompt ? (
+          <figure className="mt-5 border-l-2 border-line-2 pl-4">
+            <figcaption className="text-[13px] tracking-[0.02em] text-ink-3 uppercase">
+              {card.prompt.question}
+            </figcaption>
+            <blockquote className="mt-1.5 text-[16px] leading-[1.6] text-ink">
+              {card.prompt.answer}
+            </blockquote>
+          </figure>
+        ) : null}
+
+        {/* Decision #14 — a connect is a reply to a prompt, so this goes to a
+            compose screen rather than sending anything. An earlier version
+            POSTed straight to an RPC with a null prompt_id, which the NOT NULL
+            column would have refused: the button could never have worked. */}
+        <Link
+          href={`/app/connect/${card.id}?source=drop`}
+          className={buttonClass("primary", "mt-6 inline-block")}
+        >
+          {DRAFT_COPY.app.connectLabel}
+        </Link>
       </div>
-
-      {photo?.isBlurred ? (
-        <p className="mt-3 text-[13.5px] text-ink-3">{DRAFT_COPY.app.photoBlurredNote}</p>
-      ) : null}
-
-      {intentionLabel(card.intention) ? (
-        <p className="mt-3 text-[15px] text-ink-2">{intentionLabel(card.intention)}</p>
-      ) : null}
-
-      {/* Decision #14 — a connect is a reply to a prompt, so this goes to a
-          compose screen rather than sending anything. An earlier version POSTed
-          straight to an RPC with a null prompt_id, which the NOT NULL column
-          would have refused: the button could never have worked. */}
-      <Link
-        href={`/app/connect/${card.id}?source=drop`}
-        className={buttonClass("primary", "mt-5 inline-block")}
-      >
-        {DRAFT_COPY.app.connectLabel}
-      </Link>
     </li>
   );
 }
@@ -94,6 +126,13 @@ export function PreviewDropCard({
           <p className="text-[1.1rem]">{meta || "Someone nearby"}</p>
           {intentionLabel(card.intention) ? (
             <p className="mt-1 text-[14.5px] text-ink-2">{intentionLabel(card.intention)}</p>
+          ) : null}
+          {/* Decision #19 lists compat% among the things a preview DOES show —
+              it is what makes the redacted card worth looking at. */}
+          {card.compatibility != null ? (
+            <p className="mt-1.5 text-[14.5px] text-accent">
+              {DRAFT_COPY.app.compatibilityLabel(card.compatibility)}
+            </p>
           ) : null}
         </div>
       </div>

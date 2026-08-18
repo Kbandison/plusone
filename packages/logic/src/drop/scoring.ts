@@ -102,3 +102,45 @@ export function underexposure(timesServed: number): number {
   if (!Number.isFinite(timesServed)) return NEUTRAL_UNDEREXPOSURE;
   return 1 / (1 + Math.max(0, timesServed));
 }
+
+/**
+ * The number a member is shown as a compatibility percentage (Decision #19).
+ *
+ * NOT the ranking score. The ranking mixes in `recencyActive` and
+ * `underexposure`, and neither says anything about these two people:
+ * underexposure exists to stop the same faces winning every night, so a card
+ * would read "82% compatible" partly because that person had not been served
+ * much lately. Somebody active this morning would score higher than the same
+ * person a week later, with no change in what they have in common. That is not
+ * a compatibility figure, it is a scheduling figure, and putting it on a card
+ * as the former would be a quiet lie.
+ *
+ * So this is the person-to-person half alone — intention and quiz — renormalised
+ * against its own weights so it still spans 0..1. It moves only when one of
+ * them changes something about themselves.
+ *
+ * A skipped quiz scores NEUTRAL, not zero, exactly as it does in the ranking:
+ * §7.2 makes the quiz skippable, and a member who skipped it must not appear
+ * incompatible with everybody.
+ */
+export function compatibility(
+  a: { readonly intention: Intention; readonly quizVector: readonly number[] | null },
+  b: { readonly intention: Intention; readonly quizVector: readonly number[] | null },
+  weights: { readonly intentionCompat: number; readonly quizCompat: number },
+): number {
+  const total = weights.intentionCompat + weights.quizCompat;
+  // Both weights zeroed is a configuration nobody should ship, but it must not
+  // divide by zero on a member's card.
+  if (total <= 0) return NEUTRAL_QUIZ_COMPAT;
+
+  const blended =
+    weights.intentionCompat * intentionCompat(a.intention, b.intention) +
+    weights.quizCompat * quizCompat(a.quizVector, b.quizVector);
+
+  return clamp01(blended / total);
+}
+
+/** What a card shows: a whole percent, never rounded up to a promise. */
+export function compatibilityPercent(value: number): number {
+  return Math.round(clamp01(value) * 100);
+}

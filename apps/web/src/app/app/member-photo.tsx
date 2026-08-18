@@ -20,6 +20,8 @@ export function MemberPhotoFrame({
   size = 64,
   rounded = "rounded-full",
   emptyLabel,
+  fill = false,
+  className = "",
 }: {
   photo: MemberPhoto | undefined;
   size?: number;
@@ -33,7 +35,45 @@ export function MemberPhotoFrame({
    * added one", which is the whole point of the screen.
    */
   emptyLabel?: string;
+  /**
+   * Fill the container instead of sitting at a fixed size.
+   *
+   * A card that leads with the photo needs it to span the card, and a square
+   * thumbnail cannot do that by growing — the aspect ratio belongs to the
+   * layout, not to the image. The caller supplies the box; this fills it.
+   */
+  fill?: boolean;
+  /** The box, when filling it. */
+  className?: string;
 }) {
+  if (fill) {
+    if (!photo) {
+      return (
+        <div
+          aria-hidden={emptyLabel ? undefined : true}
+          role={emptyLabel ? "img" : undefined}
+          aria-label={emptyLabel}
+          className={`bg-surface-2 ${className}`}
+        />
+      );
+    }
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        <Image
+          src={photo.url}
+          alt={photo.isBlurred ? DRAFT_COPY.app.photoBlurredNote : DRAFT_COPY.app.photoAlt}
+          fill
+          // One card wide on a phone, a column on anything larger.
+          sizes="(max-width: 640px) 100vw, 420px"
+          className="object-cover"
+          // Unoptimised for the same reason as below: these bytes differ by
+          // viewer and the optimiser caches by URL.
+          unoptimized
+        />
+      </div>
+    );
+  }
+
   if (!photo) {
     return (
       <div

@@ -559,6 +559,26 @@ export const DRAFT_COPY = {
   },
 
   app: {
+    /**
+     * Decision #19 puts a compatibility percentage on the card. Said as a
+     * MATCH rather than a score: "82% compatible" claims a measurement of two
+     * people, which nothing here can honestly make — it is intention and a
+     * twelve-question quiz, and it should read as a hint rather than a verdict.
+     */
+    compatibilityLabel: (percent: number) => `${percent}% match`,
+    /** What the number is, for anybody who wonders what it measured. */
+    compatibilityNote: "Based on what you are each looking for and your answers to the questions.",
+    /** §6.1 step 2 — how many people the pool was drawn from (Decision #19). */
+    previewDensity: (count: number, radiusMi: number) =>
+      count === 1
+        ? `1 person within ${radiusMi} miles tonight.`
+        : `${count} people within ${radiusMi} miles tonight.`,
+    previewHowHeading: "How this works",
+    previewHow: [
+      "Three profiles arrive at 8pm, chosen for you rather than scrolled through.",
+      "Nobody can message you first. A connect is a reply to one of your prompts.",
+      "Every chat has a seven-day fuse, so no conversation is left hanging.",
+    ],
     dropEmptyHeading: "Nothing tonight",
     navHome: "Tonight",
     navBrowse: "Browse",
