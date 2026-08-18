@@ -12,8 +12,47 @@ import { StepActions } from "@/app/onboarding/step-actions";
 const C = DRAFT_COPY.radius;
 const INITIAL: RadiusState = { error: null };
 
-export function RadiusForm({ radiusMi }: { radiusMi?: number | null }) {
+export function RadiusForm({
+  radiusMi,
+  approximate,
+}: {
+  radiusMi?: number | null;
+  /** From the request's IP. Used only if the device will not say. */
+  approximate?: { lat: number; lon: number } | null;
+}) {
   const [state, action, pending] = useActionState(saveRadius, INITIAL);
+  const [denied, setDenied] = useState(false);
+
+  /**
+   * Where the member is, asked for at the moment it means something.
+   *
+   * The prompt is fired on SUBMIT rather than on load. A permission dialogue
+   * appearing the instant a screen renders is the thing people refuse by
+   * reflex; one that appears when they press a button labelled with a distance
+   * has a reason attached to it.
+   *
+   * Never blocks. A refusal, a timeout or a browser without geolocation all
+   * fall through to the coarse IP position, and no position at all still lets
+   * the member finish — they match nobody until one arrives, which is exactly
+   * where they were standing before.
+   */
+  async function locate(): Promise<{ lat: number; lon: number } | null> {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return approximate ?? null;
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
+        () => {
+          setDenied(true);
+          resolve(approximate ?? null);
+        },
+        // Low accuracy on purpose: the answer is rounded to about a kilometre
+        // the moment it lands, so asking for a GPS fix would spend a member's
+        // battery and seconds to produce digits that are then thrown away.
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 },
+      );
+    });
+  }
   // RADIUS.defaultMi is `as const`, so it infers as the literal 50 and the state
   // would refuse every other value.
   //
@@ -24,7 +63,17 @@ export function RadiusForm({ radiusMi }: { radiusMi?: number | null }) {
   const sliderId = useId();
 
   return (
-    <form action={action} className="mt-10 flex flex-col gap-8">
+    <form
+      action={async (formData) => {
+        const where = await locate();
+        if (where) {
+          formData.set("lat", String(where.lat));
+          formData.set("lon", String(where.lon));
+        }
+        action(formData);
+      }}
+      className="mt-10 flex flex-col gap-8"
+    >
       <div className="flex flex-col gap-4">
         <label htmlFor={sliderId} className="text-[15px]">
           {C.label}
@@ -56,6 +105,14 @@ export function RadiusForm({ radiusMi }: { radiusMi?: number | null }) {
           className="min-h-tap w-full cursor-pointer accent-accent"
         />
       </div>
+
+      <p className="max-w-[46ch] text-[13.5px] leading-[1.6] text-ink-3">{C.locationHint}</p>
+
+      {denied ? (
+        <p role="status" className="text-[13.5px] text-ink-3">
+          {C.locationDenied}
+        </p>
+      ) : null}
 
       {state.error ? (
         <p role="alert" className="text-[14.5px] text-critical">

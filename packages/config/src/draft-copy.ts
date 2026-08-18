@@ -535,6 +535,17 @@ export const DRAFT_COPY = {
     intro:
       "We look for people within this distance first. If there are not many nearby, we widen the search for that night and tell you we did.",
     label: "Search radius",
+    /**
+     * The location ask, on the step that is ABOUT distance. §7.2's first screen
+     * was the wrong place for it — "asking somebody to share their location on
+     * the first screen of an app about a stigmatised condition is the wrong
+     * trade for saving them three keystrokes" — but a radius with nothing to
+     * measure from is not a setting, it is a number.
+     */
+    locationHint:
+      "We ask your device where you are so we can measure this. Your exact position is never stored — it is rounded to about a kilometre before it is saved, and nobody is ever shown your coordinates.",
+    locationDenied:
+      "No problem. We will work from your approximate area instead, which is less precise.",
     unit: (mi: number) => `${mi} miles`,
     continueLabel: "Finish",
   },

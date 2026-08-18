@@ -40,3 +40,24 @@ export function dialCodeForCountry(country: string | null | undefined): string {
 export async function suggestedDialCode(): Promise<string> {
   return dialCodeForCountry((await headers()).get("x-vercel-ip-country"));
 }
+
+/**
+ * A coarse position from the request's IP, for a member who refuses the browser
+ * prompt or whose device cannot answer it.
+ *
+ * City-level at best, and that is the point: §12 stores location rounded to
+ * about a kilometre anyway, so an IP guess is only a little worse than the
+ * precise answer once it has been through round_location. Absent off Vercel.
+ *
+ * Never used INSTEAD of the browser when the browser answers — a member who
+ * grants the prompt gets the accurate one.
+ */
+export async function approximateLocation(): Promise<{ lat: number; lon: number } | null> {
+  const store = await headers();
+  const lat = Number(store.get("x-vercel-ip-latitude"));
+  const lon = Number(store.get("x-vercel-ip-longitude"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  // 0,0 is in the Atlantic and is what a missing lookup often reads as.
+  if (lat === 0 && lon === 0) return null;
+  return { lat, lon };
+}

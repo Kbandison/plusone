@@ -97,6 +97,10 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // "that is not your photo" in particular answers a question about somebody
   // else's row, which is exactly the kind of text this list exists to keep off
   // a screen. reorderPhotos returns its own message.
+  // set_my_location's bound. The member never sees it: the action only calls
+  // the RPC with finite numbers, and a browser that returns a coordinate off
+  // the globe is a broken browser rather than something anyone can act on.
+  "that is not a place",
   "nothing to reorder",
   "the same photo cannot appear twice",
   "that is not the whole set",
