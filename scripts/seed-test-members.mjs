@@ -207,9 +207,18 @@ try {
      * a band that narrow. So the age is built from the position WITHIN a
      * gender, which puts every gender at the same ages give or take a year —
      * whoever a member is looking for, somebody of that gender is 24 and
-     * somebody is 40.
+     * somebody is 50.
+     *
+     * It spreads across a FIXED range rather than a fixed step, so raising
+     * SEED_COUNT packs more people into the same span instead of pushing them
+     * further apart. A step widened the range: twenty-four seeds reached into
+     * the seventies and still left only three inside a typical preference,
+     * which is the opposite of what a bigger pool is for — the Drop picks three
+     * from whoever qualifies, so with three qualifying it ranks nothing.
      */
-    const age = 24 + Math.floor(i / GENDERS.length) * 9 + (i % GENDERS.length);
+    const perGender = Math.ceil(COUNT / GENDERS.length);
+    const nth = Math.floor(i / GENDERS.length);
+    const age = 24 + Math.round((nth / Math.max(1, perGender - 1)) * 26) + (i % GENDERS.length);
     const birthdate = new Date(Date.UTC(new Date().getUTCFullYear() - age, 5, 15))
       .toISOString()
       .slice(0, 10);

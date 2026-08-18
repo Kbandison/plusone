@@ -70,25 +70,48 @@ describe("test members can always be told apart and taken back out", () => {
  */
 describe("seeded ages cover every gender", () => {
   const GENDERS = 4;
-  const age = (i: number) => 24 + Math.floor(i / GENDERS) * 9 + (i % GENDERS);
+  const age = (i: number, count: number) => {
+    const perGender = Math.ceil(count / GENDERS);
+    const nth = Math.floor(i / GENDERS);
+    return 24 + Math.round((nth / Math.max(1, perGender - 1)) * 26) + (i % GENDERS);
+  };
 
   it("uses the position within a gender, not a stride across everybody", () => {
     // The script's own comment quotes the formula it replaced.
     const code = seed.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-    expect(code).toMatch(/Math\.floor\(i \/ GENDERS\.length\) \* 9/);
+    expect(code).toMatch(/const perGender = Math\.ceil\(COUNT \/ GENDERS\.length\)/);
     expect(code).not.toMatch(/\(i \* 5\) % 40/);
+  });
+
+  /**
+   * A bigger pool has to mean more people a member can actually match, not the
+   * same few spread thinner. A fixed STEP widened the range as SEED_COUNT rose
+   * — twenty-four seeds reached into the seventies and still left three inside
+   * a typical preference, so the Drop, which picks three, ranked nothing.
+   */
+  it("packs a larger count into the same range rather than widening it", () => {
+    const spanOf = (count: number) => {
+      const ages = Array.from({ length: count }, (_, i) => age(i, count));
+      return Math.max(...ages) - Math.min(...ages);
+    };
+    expect(spanOf(24)).toBeLessThanOrEqual(spanOf(12) + 2);
+
+    const inBand = (count: number) =>
+      Array.from({ length: count }, (_, i) => age(i, count)).filter((a) => a >= 24 && a <= 48)
+        .length;
+    expect(inBand(24)).toBeGreaterThan(inBand(12));
   });
 
   it("gives every gender somebody in a common preference band", () => {
     for (let g = 0; g < GENDERS; g += 1) {
-      const ages = [0, 1, 2].map((nth) => age(nth * GENDERS + g));
+      const ages = [0, 1, 2].map((nth) => age(nth * GENDERS + g, 12));
       const inBand = ages.filter((a) => a >= 24 && a <= 38);
       expect(inBand.length, `gender ${g} has ${ages.join(",")}`).toBeGreaterThan(0);
     }
   });
 
   it("spreads them rather than stacking them on one age", () => {
-    const all = Array.from({ length: 12 }, (_, i) => age(i));
+    const all = Array.from({ length: 12 }, (_, i) => age(i, 12));
     expect(new Set(all).size).toBe(all.length);
     expect(Math.max(...all) - Math.min(...all)).toBeGreaterThan(15);
   });
