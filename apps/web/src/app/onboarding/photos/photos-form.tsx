@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState, useTransition } from "react";
+import { useActionState, useId, useRef, useState, useTransition } from "react";
 
 import { downscalePhoto, isTooLargeToSend } from "@/lib/downscale";
 import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
@@ -110,14 +110,21 @@ export function PhotoUploader({ count }: { count: number }) {
   return (
     // Not a <form>. onPick dispatches the action itself after shrinking each
     // file, so a form action here would be a second submit carrying originals.
-    <div className="mt-10 flex flex-col gap-5">
+    //
+    // A TILE, sized like a photo and sitting beside the last one. It was a wide
+    // dashed panel above the grid, which read as the subject of the screen —
+    // and once there were photos to look at, the subject is the photos.
+    <div className="flex flex-col items-center gap-2">
       <label
         htmlFor={inputId}
         // focus-within, because the real input is sr-only. A keyboard user
         // tabbed to it and NOTHING on screen changed — the only visible thing
         // is this label, and the focus ring was on the clipped input.
-        className="ease-brand flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-line-2 bg-surface px-6 py-10 text-[15.5px] text-ink-2 transition-colors duration-200 hover:border-accent hover:text-ink focus-within:border-accent focus-within:text-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]"
+        className="ease-brand flex size-[132px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-control bg-surface text-center text-[13.5px] text-ink-2 transition-colors duration-200 hover:border-accent hover:text-ink focus-within:border-accent focus-within:text-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]"
       >
+        <span aria-hidden="true" className="text-[22px] leading-none">
+          +
+        </span>
         {C.addLabel}
       </label>
       <input
@@ -138,19 +145,19 @@ export function PhotoUploader({ count }: { count: number }) {
 
       {/* Picking a file starts an upload with no button press, so the only
           thing that says anything is happening is this line. */}
-      <p role="status" className="text-[14.5px] text-ink-3">
-        {progress ? C.uploading(progress.done, progress.total) : pending ? C.errors.preparing : ""}
+      <p role="status" className="max-w-[132px] text-center text-[13px] text-ink-3">
+        {preparing
+          ? C.errors.preparing
+          : progress
+            ? C.uploading(progress.done, progress.total)
+            : ""}
       </p>
 
       {error ? (
-        <p role="alert" className="text-[14.5px] text-critical">
+        <p role="alert" className="max-w-[16rem] text-center text-[13.5px] text-critical">
           {error}
         </p>
       ) : null}
-
-      <p role="status" className="text-[14.5px] text-ink-3">
-        {count > 0 ? C.added(count) : ""}
-      </p>
     </div>
   );
 }
@@ -237,107 +244,193 @@ export function PrivacyChoice({
  * visible grid, "remove that one, add another" is the same two taps and one
  * fewer concept — and it cannot half-fail the way an in-place swap can.
  */
-export function PhotoGallery({ photos }: { photos: readonly OwnPhoto[] }) {
+export function PhotoGallery({
+  photos,
+  children,
+}: {
+  photos: readonly OwnPhoto[];
+  /** The add tile, so it sits with the photos rather than above them. */
+  children?: React.ReactNode;
+}) {
   const [removeState, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
-  const [moveState, move, moving] = useActionState(reorderPhotos, PHOTOS_INITIAL);
-  if (photos.length === 0) return null;
+  const [saveOrder, saving] = useActionState(reorderPhotos, PHOTOS_INITIAL).slice(1) as [
+    (formData: FormData) => void,
+    boolean,
+  ];
 
-  const busy = removing || moving;
-  const error = removeState.error ?? moveState.error;
+  // The order the member is looking at, which during a drag is ahead of the
+  // server. Re-seeded whenever the server sends a different set — an upload or
+  // a delete — but NOT on every render, or a drag would snap back mid-gesture.
+  const [order, setOrder] = useState<readonly OwnPhoto[]>(photos);
+  const signature = photos.map((photo) => photo.id).join(",");
+  const seeded = useRef(signature);
+  if (seeded.current !== signature && !saving) {
+    seeded.current = signature;
+    setOrder(photos);
+  }
+
+  const [dragging, setDragging] = useState<string | null>(null);
+  const tiles = useRef(new Map<string, HTMLElement>());
+
+  function commit(next: readonly OwnPhoto[]) {
+    setOrder(next);
+    const formData = new FormData();
+    formData.set("order", next.map((photo) => photo.id).join(","));
+    saveOrder(formData);
+  }
+
+  function moveTo(id: string, index: number) {
+    const from = order.findIndex((photo) => photo.id === id);
+    if (from === -1 || index < 0 || index >= order.length || index === from) return;
+    const next = [...order];
+    const [moved] = next.splice(from, 1);
+    if (moved) next.splice(index, 0, moved);
+    commit(next);
+  }
+
+  /** Which tile the pointer is over, by hit-testing the rendered rectangles. */
+  function tileAt(x: number, y: number): string | null {
+    for (const [id, node] of tiles.current) {
+      const box = node.getBoundingClientRect();
+      if (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) return id;
+    }
+    return null;
+  }
+
+  if (order.length === 0) {
+    return <div className="mt-10 flex justify-center">{children}</div>;
+  }
 
   return (
     <section className="mt-10">
-      <h2 className="text-[15px]">{C.yoursHeading}</h2>
-      <p className="mt-2 text-[13.5px] text-ink-3">{C.orderHint}</p>
+      <h2 className="text-center text-[15px]">{C.yoursHeading}</h2>
+      <p className="mx-auto mt-2 max-w-[34ch] text-center text-[13.5px] text-ink-3">
+        {C.orderHint}
+      </p>
 
-      <ul className="mt-4 flex flex-wrap gap-4">
-        {photos.map((photo, index) => (
-          <li key={photo.id} className="flex w-24 flex-col gap-2">
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element -- signed
-                  storage URLs expire in ten minutes, so the image optimiser
-                  would cache a URL that outlives its own signature. */}
-              <img
-                src={photo.url}
-                alt=""
-                width={96}
-                height={96}
-                className="size-24 rounded-lg border border-line-2 object-cover"
-              />
-              {/* Which one is the main is not decoration: it is the only photo
-                  a card, a drop or a search result ever shows. */}
-              {index === 0 ? (
-                <Badge className="absolute bottom-1 left-1">{C.mainBadge}</Badge>
-              ) : null}
-            </div>
+      <ul className="mt-6 flex flex-wrap justify-center gap-4">
+        {order.map((photo, index) => (
+          <li
+            key={photo.id}
+            ref={(node) => {
+              if (node) tiles.current.set(photo.id, node);
+              else tiles.current.delete(photo.id);
+            }}
+            /**
+             * Pointer events, not the HTML5 drag API.
+             *
+             * `draggable` fires nothing on a touchscreen — dragstart/dragover
+             * simply do not exist there — so the whole gesture would have
+             * worked on a desktop and been invisible on the phones most members
+             * are holding. Pointer events are one code path for both.
+             */
+            onPointerDown={(event) => {
+              // Not the trash: pressing it must not start a drag.
+              if ((event.target as HTMLElement).closest("[data-no-drag]")) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragging(photo.id);
+            }}
+            onPointerMove={(event) => {
+              if (dragging !== photo.id) return;
+              const over = tileAt(event.clientX, event.clientY);
+              if (!over || over === photo.id) return;
+              const to = order.findIndex((other) => other.id === over);
+              // Reordered live, so the gap follows the finger rather than
+              // everything jumping into place when it lifts.
+              const from = order.findIndex((other) => other.id === photo.id);
+              if (to === -1 || from === -1) return;
+              const next = [...order];
+              const [moved] = next.splice(from, 1);
+              if (moved) next.splice(to, 0, moved);
+              setOrder(next);
+            }}
+            onPointerUp={() => {
+              if (dragging !== photo.id) return;
+              setDragging(null);
+              commit(order);
+            }}
+            onPointerCancel={() => setDragging(null)}
+            // Dragging is not available to a keyboard, and reordering is not
+            // decoration — position 0 is the photo everybody sees. The arrows
+            // do the same move without a visible control to press.
+            tabIndex={0}
+            aria-label={C.dragNamed(index + 1, order.length)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                moveTo(photo.id, index - 1);
+              } else if (event.key === "ArrowRight") {
+                event.preventDefault();
+                moveTo(photo.id, index + 1);
+              }
+            }}
+            className={`ease-brand relative touch-none transition-[transform,box-shadow] duration-150 ${
+              dragging === photo.id ? "z-10 scale-105 cursor-grabbing shadow-lg" : "cursor-grab"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed
+                storage URLs expire in ten minutes, so the image optimiser would
+                cache a URL that outlives its own signature. */}
+            <img
+              src={photo.url}
+              alt=""
+              width={132}
+              height={132}
+              draggable={false}
+              className="size-[132px] rounded-xl border border-line-2 object-cover select-none"
+            />
 
-            <div className="flex items-center justify-between gap-1">
-              <form action={move}>
-                <input type="hidden" name="photo_id" value={photo.id} />
-                <input type="hidden" name="move" value="earlier" />
-                <button
-                  type="submit"
-                  disabled={busy || index === 0}
-                  aria-label={C.moveEarlierNamed(index + 1)}
-                  className={buttonClass("quiet", "px-1.5 text-[15px] disabled:opacity-30")}
-                >
-                  <span aria-hidden="true">&larr;</span>
-                </button>
-              </form>
-
-              <form action={move}>
-                <input type="hidden" name="photo_id" value={photo.id} />
-                <input type="hidden" name="move" value="later" />
-                <button
-                  type="submit"
-                  disabled={busy || index === photos.length - 1}
-                  aria-label={C.moveLaterNamed(index + 1)}
-                  className={buttonClass("quiet", "px-1.5 text-[15px] disabled:opacity-30")}
-                >
-                  <span aria-hidden="true">&rarr;</span>
-                </button>
-              </form>
-            </div>
-
-            {index > 0 ? (
-              <form action={move}>
-                <input type="hidden" name="photo_id" value={photo.id} />
-                <input type="hidden" name="move" value="main" />
-                <button
-                  type="submit"
-                  disabled={busy}
-                  aria-label={C.makeMainNamed(index + 1)}
-                  className={buttonClass("quiet", "text-[13px]")}
-                >
-                  {C.makeMainLabel}
-                </button>
-              </form>
+            {index === 0 ? (
+              <Badge className="absolute bottom-1.5 left-1.5">{C.mainBadge}</Badge>
             ) : null}
 
-            <form action={remove}>
+            <form action={remove} data-no-drag className="absolute -top-2 -right-2">
               <input type="hidden" name="photo_id" value={photo.id} />
               <button
                 type="submit"
-                disabled={busy}
-                // Named, or a grid of identical "Remove" buttons is unusable by
-                // ear — every one of them reads the same out of context.
+                disabled={removing}
+                // Named, or a grid of identical bins is unusable by ear — every
+                // one of them reads the same out of context.
                 aria-label={C.removeNamed(index + 1)}
-                className={buttonClass("quiet", "text-[13px]")}
+                className="ease-brand flex size-8 items-center justify-center rounded-full border border-line-2 bg-surface text-ink-2 shadow-sm transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-40"
               >
-                {C.removeLabel}
+                <TrashIcon />
               </button>
             </form>
           </li>
         ))}
+
+        {children ? <li className="flex items-center">{children}</li> : null}
       </ul>
 
-      <p className="mt-4 text-[14px] text-ink-3">{C.roomLeft(MAX_PHOTOS - photos.length)}</p>
+      {/* Said before the picker opens, not after seven files are chosen and
+          refused. The add tile disappearing at six says the same thing a moment
+          too late. */}
+      <p className="mt-4 text-center text-[13.5px] text-ink-3">
+        {C.roomLeft(MAX_PHOTOS - order.length)}
+      </p>
 
-      {error ? (
-        <p role="alert" className="mt-3 text-[14.5px] text-critical">
-          {error}
+      {removeState.error ? (
+        <p role="alert" className="mt-4 text-center text-[14.5px] text-critical">
+          {removeState.error}
         </p>
       ) : null}
     </section>
+  );
+}
+
+/** Drawn rather than imported: one icon does not justify a dependency. */
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[17px]">
+      <path
+        d="M4 7h16M10 4h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1ZM6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

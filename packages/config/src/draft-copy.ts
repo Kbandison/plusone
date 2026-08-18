@@ -477,22 +477,23 @@ export const DRAFT_COPY = {
      */
     uploading: (done: number, total: number) =>
       total === 1 ? "Uploading…" : `Uploading ${done} of ${total}…`,
-    /** Lived in the component as a bare template string, which this file exists to prevent. */
-    added: (n: number) => `${n} ${n === 1 ? "photo" : "photos"} added.`,
     /** The photos themselves, which the step never showed — only counted. */
     yoursHeading: "Your photos so far",
-    removeLabel: "Remove",
     /**
      * position 0 is not a label, it is the photo every card, drop and profile
      * shows. Saying which one that is was the missing half of letting anybody
      * change it.
      */
     mainBadge: "Main",
-    makeMainLabel: "Make main",
-    makeMainNamed: (position: number) => `Make photo ${position} the main one`,
-    moveEarlierNamed: (position: number) => `Move photo ${position} earlier`,
-    moveLaterNamed: (position: number) => `Move photo ${position} later`,
-    orderHint: "The first photo is the one people see first.",
+    /** The instruction that replaced the buttons. */
+    orderHint: "Drag your photos to reorder them. The first one is what people see first.",
+    /**
+     * Dragging is unusable by keyboard, so the same move has to exist there.
+     * Announced on each photo rather than written on screen, because a member
+     * using a mouse has already been told what to do by the line above.
+     */
+    dragNamed: (position: number, total: number) =>
+      `Photo ${position} of ${total}. Press the left or right arrow keys to move it.`,
     /** Named, because a page of identical Remove buttons is unusable by ear. */
     removeNamed: (position: number) => `Remove photo ${position}`,
     /** Six is the ceiling; this is what is left of it. */

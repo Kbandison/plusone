@@ -9,6 +9,7 @@ import { MAX_PHOTOS } from "@/lib/photo-limits";
 
 const read = (name: string) => readFileSync(fileURLToPath(new URL(name, import.meta.url)), "utf8");
 const form = read("./photos-form.tsx");
+const page = read("./page.tsx");
 const actions = read("./actions.ts")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/\/\/.*$/gm, "");
@@ -106,8 +107,9 @@ describe("the strings live in draft copy, not in the component", () => {
     expect(form).not.toMatch(/photos" : "photo/);
     expect(DRAFT_COPY.photos.uploading(2, 5)).toBe("Uploading 2 of 5…");
     expect(DRAFT_COPY.photos.uploading(1, 1)).toBe("Uploading…");
-    expect(DRAFT_COPY.photos.added(1)).toBe("1 photo added.");
-    expect(DRAFT_COPY.photos.added(3)).toBe("3 photos added.");
+    // The count line went with the redesign: the grid IS the count, and a
+    // sentence repeating it under six visible photos was noise.
+    expect(DRAFT_COPY.photos).not.toHaveProperty("added");
   });
 });
 
@@ -177,49 +179,98 @@ describe("the photos are shown, and can be removed", () => {
  * best picture went up third had no way to promote it, and no way to reorder at
  * all.
  */
-describe("photos can be reordered, and one of them is the main", () => {
-  it("says which photo is the main one", () => {
-    expect(form).toMatch(/index === 0 \? \([\s\S]{0,300}C\.mainBadge/);
+describe("photos are dragged into order", () => {
+  /**
+   * `draggable` and dragstart/dragover fire NOTHING on a touchscreen. Building
+   * this on the HTML5 drag API would have worked on a desktop and been
+   * invisible on the phones most members are holding.
+   */
+  it("uses pointer events rather than the HTML5 drag API", () => {
+    expect(form).toMatch(/onPointerDown=/);
+    expect(form).toMatch(/onPointerMove=/);
+    expect(form).toMatch(/onPointerUp=/);
+    expect(form).toMatch(/setPointerCapture/);
+    expect(form).not.toMatch(/onDragStart=|onDragOver=|onDrop=/);
+    // On the image, so a long-press does not try to drag the picture itself.
+    expect(form).toMatch(/draggable=\{false\}/);
   });
 
-  it("offers make-main on every photo that is not already it", () => {
-    expect(form).toMatch(/value="main"/);
-    expect(form).toMatch(/index > 0 \? \(/);
+  /** Without touch-action the browser scrolls the page instead of dragging. */
+  it("stops the browser claiming the gesture", () => {
+    expect(form).toMatch(/touch-none/);
   });
 
-  it("offers a move in each direction, disabled at the ends", () => {
-    expect(form).toMatch(/value="earlier"/);
-    expect(form).toMatch(/value="later"/);
-    expect(form).toMatch(/disabled=\{busy \|\| index === 0\}/);
-    expect(form).toMatch(/disabled=\{busy \|\| index === photos\.length - 1\}/);
-  });
-
-  /** A grid of identical arrows is unusable by ear. */
-  it("names every control", () => {
-    for (const named of ["moveEarlierNamed", "moveLaterNamed", "makeMainNamed", "removeNamed"]) {
-      expect(form).toMatch(new RegExp(`C\\.${named}\\(index \\+ 1\\)`));
-    }
+  it("does not start a drag from the delete control", () => {
+    expect(form).toMatch(/data-no-drag/);
+    expect(form).toMatch(/closest\("\[data-no-drag\]"\)/);
   });
 
   /**
-   * The whole order goes to the database, not a swap. reorder_photos takes the
-   * array AS the order, so make-main is that id moved to the front and a move
-   * is a neighbouring exchange — one operation rather than three that could
-   * disagree.
+   * Dragging is unusable by keyboard, and reordering is not decoration —
+   * position 0 is the photo everybody sees. The arrows do the same move without
+   * putting a visible control back on screen.
    */
-  it("sends the whole order rather than a pair to swap", () => {
-    const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
-    expect(action).toMatch(/order\.splice\(from, 1\)/);
-    expect(action).toMatch(/order\.splice\(to, 0, id\)/);
-    expect(action).toMatch(/rpc\("reorder_photos", \{ p_ids: order \}\)/);
+  it("can be reordered from the keyboard", () => {
+    expect(form).toMatch(/tabIndex=\{0\}/);
+    expect(form).toMatch(/event\.key === "ArrowLeft"/);
+    expect(form).toMatch(/event\.key === "ArrowRight"/);
+    expect(form).toMatch(/aria-label=\{C\.dragNamed\(index \+ 1, order\.length\)\}/);
   });
 
-  /** Moving a photo that is not theirs, or already gone, is not an error. */
-  it("says nothing went wrong when there is nothing to move", () => {
+  it("has no arrow buttons or make-main link left", () => {
+    expect(form).not.toMatch(/value="earlier"|value="later"|value="main"/);
+    expect(form).not.toMatch(/makeMainLabel/);
+  });
+
+  /** The first photo is the main one, and the member is told so and told how. */
+  it("marks the first as main and says to drag", () => {
+    expect(form).toMatch(/index === 0 \? \(?\s*<Badge/);
+    expect(DRAFT_COPY.photos.orderHint).toMatch(/drag/i);
+    expect(DRAFT_COPY.photos.orderHint).toMatch(/first/i);
+  });
+
+  /**
+   * Dragging produces an arrangement, not a sequence of swaps. Sending moves
+   * would leave the browser and the database each holding their own idea of the
+   * result.
+   */
+  it("sends the whole order", () => {
     const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
-    expect(action).toMatch(/if \(from === -1\) return \{ error: null \}/);
+    expect(action).toMatch(/formData\.get\("order"\)/);
+    expect(action).toMatch(/rpc\("reorder_photos", \{ p_ids: ids \}\)/);
+  });
+
+  /**
+   * A stale list means the browser and the database disagree about what exists.
+   * Writing an order built from it would be worse than doing nothing.
+   */
+  it("ignores an order that is not exactly the member's set", () => {
+    const action = actions.slice(actions.indexOf("export async function reorderPhotos"));
     expect(action).toMatch(
-      /if \(to === from \|\| to < 0 \|\| to >= order\.length\) return \{ error: null \}/,
+      /mine\.size !== ids\.length \|\| ids\.some\(\(id\) => !mine\.has\(id\)\)/,
     );
+  });
+});
+
+describe("the grid", () => {
+  it("is centred", () => {
+    expect(form).toMatch(/flex flex-wrap justify-center/);
+  });
+
+  it("deletes from a bin on the photo, not a button under it", () => {
+    expect(form).toMatch(/function TrashIcon/);
+    expect(form).toMatch(/absolute -top-2 -right-2/);
+    expect(form).not.toMatch(/\{C\.removeLabel\}/);
+  });
+
+  /** The add control is a tile beside the last photo, not a panel above them. */
+  it("puts the add tile in the grid", () => {
+    expect(form).toMatch(/size-\[132px\][\s\S]{0,400}border-dashed/);
+    expect(page).toMatch(/<PhotoGallery photos=\{photos\}>/);
+    expect(page).toMatch(/uploaded < MAX_PHOTOS \? <PhotoUploader/);
+  });
+
+  it("uses the same tile size for photos and for the add control", () => {
+    expect((form.match(/size-\[132px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });

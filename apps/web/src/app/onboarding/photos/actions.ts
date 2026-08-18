@@ -224,17 +224,13 @@ export async function deletePhoto(
 }
 
 /**
- * Moves one photo, and with it the whole order.
+ * Writes the order the member just dragged the photos into.
  *
- * `position` has always decided which photo is the main one — every card, drop
- * and profile reads the lowest — and nothing could change it. A member whose
- * best picture went up third had no way to promote it.
- *
- * The whole order is sent, not a swap. reorder_photos takes the array AS the
- * order, so "make this the main one" is that id moved to the front and "move it
- * earlier" is a neighbouring exchange — one operation rather than three that
- * could disagree with each other. It refuses anything that is not exactly the
- * caller's own set before a row moves.
+ * The whole list, not a move: dragging produces an arrangement, and describing
+ * it as a sequence of swaps would mean the browser and the database each
+ * holding their own idea of the result. reorder_photos takes the array AS the
+ * order — element 0 is position 0, which is the main photo — and refuses
+ * anything that is not exactly the caller's own set.
  */
 export async function reorderPhotos(
   _previous: PhotosState,
@@ -242,31 +238,27 @@ export async function reorderPhotos(
 ): Promise<PhotosState> {
   const { userId } = await requireStep("photos");
 
-  const id = String(formData.get("photo_id") ?? "");
-  const move = String(formData.get("move") ?? "");
-  if (!id) return { error: E.uploadFailed };
+  const ids = String(formData.get("order") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (ids.length === 0) return { error: null };
 
+  // Checked here too, not only in the RPC. The RPC is the wall — it refuses a
+  // set that is not the caller's — but a mismatch reaching it means the browser
+  // and the database disagree about what exists, and the right answer to that
+  // is to do nothing and let the next render settle it rather than to write an
+  // order built from a stale list.
   const supabase = await getServerSupabase();
-  const { data: rows } = await supabase
-    .from("profile_photos")
-    .select("id")
-    .eq("user_id", userId)
-    .order("position", { ascending: true });
+  const { data: rows } = await supabase.from("profile_photos").select("id").eq("user_id", userId);
 
-  const order = (rows ?? []).map((row) => row.id as string);
-  const from = order.indexOf(id);
-  // Not theirs, or already gone. Nothing to do and nothing to apologise for.
-  if (from === -1) return { error: null };
+  const mine = new Set((rows ?? []).map((row) => row.id as string));
+  if (mine.size !== ids.length || ids.some((id) => !mine.has(id))) {
+    revalidatePath("/onboarding/photos");
+    return { error: null };
+  }
 
-  const to =
-    move === "main" ? 0 : move === "earlier" ? from - 1 : move === "later" ? from + 1 : from;
-  // Already at the end it is being sent towards.
-  if (to === from || to < 0 || to >= order.length) return { error: null };
-
-  order.splice(from, 1);
-  order.splice(to, 0, id);
-
-  const { error } = await supabase.rpc("reorder_photos", { p_ids: order });
+  const { error } = await supabase.rpc("reorder_photos", { p_ids: ids });
   if (error) return { error: E.uploadFailed };
 
   revalidatePath("/onboarding/photos");
