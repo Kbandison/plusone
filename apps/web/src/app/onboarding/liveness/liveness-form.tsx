@@ -6,7 +6,12 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { beginLiveness, finishLiveness, openAppeal } from "./actions";
-import { LIVENESS_INITIAL, type LivenessState } from "./state";
+import {
+  LIVENESS_INITIAL,
+  pickLivenessState,
+  type LivenessSpeaker,
+  type LivenessState,
+} from "./state";
 import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.liveness;
@@ -26,6 +31,8 @@ export function LivenessForm() {
   const [begun, begin, beginning] = useActionState(beginLiveness, LIVENESS_INITIAL);
   const [finished, finish, finishing] = useActionState(finishLiveness, LIVENESS_INITIAL);
   const [cancelled, setCancelled] = useState(false);
+  // Nothing in either action state says which is newer, so the form remembers.
+  const [speaker, setSpeaker] = useState<LivenessSpeaker>("begin");
   const [cameraFailed, setCameraFailed] = useState(false);
 
   // The camera signals completion from a callback, not from a click, so the
@@ -33,25 +40,15 @@ export function LivenessForm() {
   const finishRef = useRef<HTMLFormElement>(null);
   const [completedSession, setCompletedSession] = useState<string | null>(null);
   useEffect(() => {
-    if (completedSession) finishRef.current?.requestSubmit();
+    if (!completedSession) return;
+    setSpeaker("finish");
+    finishRef.current?.requestSubmit();
   }, [completedSession]);
 
-  // Whichever phase spoke last, asked rather than inferred.
-  //
-  // This used to read `finished.error !== null || finishing ? finished : begun`,
-  // which is wrong in the one case that matters most: a member flagged for human
-  // review comes back with `error: null`, so the result was thrown away and the
-  // stale begin state rendered a retry button — for a step they can no longer
-  // pass, which then answered "the check is unavailable, try again in a moment"
-  // every time they pressed it.
-  // Whichever phase spoke MOST RECENTLY.
-  //
-  // "finished, once it has ever settled" was wrong in the other direction: after
-  // one failed check a later begin error — the provider down, the cap reached —
-  // could never reach the screen, because finish had settled once and won
-  // forever. A begin that has moved past idle since is the newer word.
-  const state =
-    finishing || (finished.phase !== "idle" && begun.phase === "idle") ? finished : begun;
+  // Whichever action spoke last, recorded rather than inferred — see
+  // pickLivenessState for the two inferences that were tried and why both lost
+  // the verdict a member was waiting for.
+  const state = pickLivenessState(speaker, begun, finished);
 
   // Out of attempts is not a rejection. §2 Decision #21 puts a human in the loop
   // on a risk flag, and this is what that looks like from the member's side:
@@ -64,7 +61,18 @@ export function LivenessForm() {
     return <ReviewScreen review={state.review} error={state.error} />;
   }
 
-  if (begun.session && !completedSession && !cancelled && !cameraFailed) {
+  // `!beginning` matters: pressing Try again clears completedSession while
+  // `begun` still holds the PREVIOUS round's session, so without it the old
+  // session's camera flashes back on for the length of the round trip — and a
+  // stream against a spent session id is an attempt thrown away.
+  if (
+    !beginning &&
+    !finishing &&
+    begun.session &&
+    !completedSession &&
+    !cancelled &&
+    !cameraFailed
+  ) {
     return (
       <LivenessCapture
         sessionId={begun.session.sessionId}
@@ -110,6 +118,7 @@ export function LivenessForm() {
           // Try again re-ran begin and then refused to show the camera — and
           // the member had no way to reach it again short of a reload.
           setCameraFailed(false);
+          setSpeaker("begin");
           begin(formData);
         }}
       >

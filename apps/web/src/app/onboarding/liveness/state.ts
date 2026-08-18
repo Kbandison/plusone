@@ -67,3 +67,36 @@ export const LIVENESS_INITIAL: LivenessState = {
   phase: "idle",
   session: null,
 };
+
+/** Which of the two actions produced the state now on screen. */
+export type LivenessSpeaker = "begin" | "finish";
+
+/**
+ * Which action's state the form should render.
+ *
+ * The form runs two `useActionState` pairs and only one of them is the news.
+ * Both earlier attempts at this rule inferred the answer from the states
+ * themselves and both were wrong:
+ *
+ *   `finished.error !== null` — a member flagged for review comes back with no
+ *   error at all, so the verdict was discarded and a retry button was offered
+ *   for a step they can no longer pass.
+ *
+ *   `finished.phase !== "idle" && begun.phase === "idle"` — `begun` is idle only
+ *   until the member first presses Start, and it never returns. So from the
+ *   first press onward the finish result could NEVER win, and every completed
+ *   check rendered the stale open-session state: no pass, no fail, no review,
+ *   just the start screen again. That is what a member reported, and the test
+ *   that was supposed to cover it asserted the shape of this expression rather
+ *   than what it decides.
+ *
+ * There is nothing in either state that says which is newer, so the form
+ * records which action it dispatched last and that is what is asked here.
+ */
+export function pickLivenessState(
+  speaker: LivenessSpeaker,
+  begun: LivenessState,
+  finished: LivenessState,
+): LivenessState {
+  return speaker === "finish" ? finished : begun;
+}

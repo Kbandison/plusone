@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { pickLivenessState, type LivenessState } from "./state";
+
 const source = readFileSync(fileURLToPath(new URL("./actions.ts", import.meta.url)), "utf8");
 /** Comments discuss these properties at length; strip them before matching. */
 const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
@@ -170,18 +172,74 @@ describe("a flagged member is never told to try again", () => {
     .replace(/\/\/.*$/gm, "");
 
   /**
-   * What Kevin hit after three real failures. `finishLiveness` flagged him and
-   * returned `error: null, flagged: true` — and the form picked between its two
-   * action states by asking whether finish had an ERROR. It had not, so the
+   * What a member hit after three real failures. `finishLiveness` flagged him
+   * and returned `error: null` with a review — and the form picked between its
+   * two action states by asking whether finish had an ERROR. It had not, so the
    * flagged result was discarded, the stale begin state rendered a retry
    * button, and pressing it hit the reducer's `under_review` refusal, which
    * this file collapsed into "the check is unavailable right now".
    *
    * A member handed to a human, told to try again, forever.
    */
-  it("picks the live phase explicitly, not by whether an error is set", () => {
+  it("never picks the live phase by whether an error is set", () => {
     expect(form).not.toMatch(/finished\.error\s*!==\s*null/);
-    expect(form).toMatch(/finished\.phase\s*!==\s*"idle"/);
+  });
+
+  /**
+   * The SECOND wrong rule, and the one that actually shipped:
+   * `finished.phase !== "idle" && begun.phase === "idle"`.
+   *
+   * `begun` is idle only until the member first presses Start and never returns
+   * to it, so from the first press onward finish could not win. Every completed
+   * check rendered the stale open-session state — no pass, no fail, no review,
+   * the start screen again — which is exactly what was reported from
+   * production. The test that was meant to cover this asserted the SHAPE of the
+   * expression rather than what it decides, so it stayed green throughout.
+   *
+   * Hence: no inference at all. The form records which action it dispatched.
+   */
+  it("does not decide the phase by comparing the two states", () => {
+    expect(form).not.toMatch(/begun\.phase\s*===\s*"idle"/);
+    expect(form).toMatch(/pickLivenessState\(speaker, begun, finished\)/);
+    expect(form).toMatch(/setSpeaker\("finish"\)/);
+    expect(form).toMatch(/setSpeaker\("begin"\)/);
+  });
+
+  describe("pickLivenessState", () => {
+    const open: LivenessState = {
+      error: null,
+      attemptsLeft: 2,
+      review: null,
+      phase: "open",
+      session: { sessionId: "s-1", region: "us-west-2", credentials: {} as never },
+    };
+    const flagged: LivenessState = {
+      error: null,
+      attemptsLeft: 0,
+      review: { status: "flagged", appealOpen: false },
+      phase: "settled",
+      session: null,
+    };
+
+    /** The exact production case: begin is open, finish came back flagged. */
+    it("shows the verdict once finish has spoken, even with a session open", () => {
+      expect(pickLivenessState("finish", open, flagged)).toBe(flagged);
+    });
+
+    it("shows the open session while begin is the last word", () => {
+      expect(pickLivenessState("begin", open, flagged)).toBe(open);
+    });
+
+    /**
+     * Pressing Try again after a failed check has to reach begin's answer —
+     * "the provider is down", "you are out of attempts" — and not replay the
+     * settled finish state forever.
+     */
+    it("hands the page back to begin on a retry", () => {
+      const failed: LivenessState = { ...flagged, review: null, error: "no" };
+      const refused: LivenessState = { ...flagged, error: "unavailable", review: null };
+      expect(pickLivenessState("begin", refused, failed)).toBe(refused);
+    });
   });
 
   /**
