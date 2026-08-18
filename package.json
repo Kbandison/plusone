@@ -30,7 +30,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css}\"",
     "seed": "node scripts/seed-test-members.mjs",
     "seed:remove": "node scripts/remove-test-members.mjs",
-    "check:seed": "node scripts/verify-no-test-members.mjs"
+    "check:seed": "node scripts/verify-no-test-members.mjs",
+    "check:launch": "node scripts/verify-launch.mjs"
   },
   "devDependencies": {
     "libpg-query": "17.7.4",
