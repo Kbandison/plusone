@@ -226,14 +226,29 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
   // The error is destructured now. A Drop that cannot be recorded is still shown
   // — the member should not lose their evening to our bookkeeping — but it is
   // reported rather than swallowed.
-  const { error: recordError } = await supabase.rpc("record_drop", {
-    p_drop_date: dropDate,
-    p_served_profile_ids: servedIds,
-    p_radius_used_mi: result.radiusUsedMi,
-    p_is_preview: result.preview,
-  });
-  if (recordError) {
-    console.error(JSON.stringify({ at: "drop.record", problem: recordError.message }));
+  // An EMPTY drop is not recorded, and that is the difference between a quiet
+  // evening and a lost day.
+  //
+  // The row is what makes a Drop stick: the read at the top of this function
+  // returns it verbatim for the rest of the member's local day. Writing one
+  // with no ids froze "nobody nearby" in place — a member who opened the app at
+  // one minute past midnight, before anybody within their radius had been
+  // verified, got an empty Drop and then kept getting it until tomorrow, while
+  // people they could have met sat one query away.
+  //
+  // Nothing depends on the empty row either. It exists to stop a re-roll and to
+  // let Decision #15's free connect check `source = 'drop'` against the ids it
+  // holds, and neither applies to a Drop with nothing in it.
+  if (servedIds.length > 0) {
+    const { error: recordError } = await supabase.rpc("record_drop", {
+      p_drop_date: dropDate,
+      p_served_profile_ids: servedIds,
+      p_radius_used_mi: result.radiusUsedMi,
+      p_is_preview: result.preview,
+    });
+    if (recordError) {
+      console.error(JSON.stringify({ at: "drop.record", problem: recordError.message }));
+    }
   }
 
   const shared = {
