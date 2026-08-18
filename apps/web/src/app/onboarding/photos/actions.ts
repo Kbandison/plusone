@@ -261,6 +261,18 @@ export async function reorderPhotos(
   const { error } = await supabase.rpc("reorder_photos", { p_ids: ids });
   if (error) return { error: E.uploadFailed };
 
-  revalidatePath("/onboarding/photos");
+  // NO revalidatePath, deliberately, and this is the only write here without
+  // one.
+  //
+  // Revalidation re-renders the route and ships a new RSC payload in the
+  // action's own response — which is exactly right for an upload or a delete,
+  // where the set of photos changed and the browser cannot know the new signed
+  // URLs. A reorder changes nothing the browser does not already have: it is
+  // showing the arrangement the member just dragged, and re-rendering only
+  // replaces those images with freshly signed copies of themselves. Every drop
+  // flashed the whole grid.
+  //
+  // The mismatch branch above still revalidates, because that is the case where
+  // the browser IS wrong and needs correcting.
   return { error: null };
 }

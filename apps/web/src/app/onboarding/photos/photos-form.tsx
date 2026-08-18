@@ -253,10 +253,7 @@ export function PhotoGallery({
   children?: React.ReactNode;
 }) {
   const [removeState, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
-  const [saveOrder, saving] = useActionState(reorderPhotos, PHOTOS_INITIAL).slice(1) as [
-    (formData: FormData) => void,
-    boolean,
-  ];
+  const [orderState, saveOrder, saving] = useActionState(reorderPhotos, PHOTOS_INITIAL);
 
   // The order the member is looking at, which during a drag is ahead of the
   // server. Re-seeded whenever the server sends a different set — an upload or
@@ -410,9 +407,11 @@ export function PhotoGallery({
         {C.roomLeft(MAX_PHOTOS - order.length)}
       </p>
 
-      {removeState.error ? (
+      {/* A failed reorder is silent otherwise: the grid keeps showing the
+          arrangement the member dragged while the database holds the old one. */}
+      {(removeState.error ?? orderState.error) ? (
         <p role="alert" className="mt-4 text-center text-[14.5px] text-critical">
-          {removeState.error}
+          {removeState.error ?? orderState.error}
         </p>
       ) : null}
     </section>

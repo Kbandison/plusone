@@ -274,3 +274,53 @@ describe("the grid", () => {
     expect((form.match(/size-\[132px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });
+
+/**
+ * Reported: the page refreshes on every drop.
+ *
+ * revalidatePath re-renders the route and ships a new RSC payload in the
+ * action's own response. That is right for an upload or a delete — the set
+ * changed and the browser cannot know the new signed URLs — and wrong for a
+ * reorder, which changes nothing the browser does not already have. It was
+ * replacing the images with freshly signed copies of themselves and flashing
+ * the whole grid to do it.
+ */
+describe("a reorder does not re-render the page", () => {
+  const reorder = actions.slice(actions.indexOf("export async function reorderPhotos"));
+  const success = reorder.slice(reorder.indexOf('rpc("reorder_photos"'));
+
+  it("does not revalidate after a successful reorder", () => {
+    expect(success).not.toMatch(/revalidatePath/);
+  });
+
+  /** The one case where the browser IS wrong and has to be corrected. */
+  it("still revalidates when the order did not match the member's set", () => {
+    const mismatch = reorder.slice(
+      reorder.indexOf("mine.size !== ids.length"),
+      reorder.indexOf('rpc("reorder_photos"'),
+    );
+    expect(mismatch).toMatch(/revalidatePath/);
+  });
+
+  /** Uploads and deletes DO change the set, so both must still revalidate. */
+  it("leaves upload and delete revalidating", () => {
+    const upload = actions.slice(
+      actions.indexOf("export async function uploadPhoto"),
+      actions.indexOf("export async function savePhotoPrivacy"),
+    );
+    const remove = actions.slice(
+      actions.indexOf("export async function deletePhoto"),
+      actions.indexOf("export async function reorderPhotos"),
+    );
+    expect(upload).toMatch(/revalidatePath\("\/onboarding\/photos"\)/);
+    expect(remove).toMatch(/revalidatePath\("\/onboarding\/photos"\)/);
+  });
+
+  /**
+   * Without a re-render nothing else reports a failed reorder, and the grid
+   * would keep showing an arrangement the database never accepted.
+   */
+  it("shows a failed reorder to the member", () => {
+    expect(form).toMatch(/orderState\.error/);
+  });
+});
