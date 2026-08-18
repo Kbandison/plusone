@@ -81,6 +81,83 @@
   --amplify-radii-medium: var(--radius-md);
   --amplify-radii-large: var(--radius-lg);
   --amplify-radii-xl: var(--radius-xl);
+
+  /*
+   * The raw palette underneath.
+   *
+   * The recording view does not use the semantic tokens above. Its rules reach
+   * straight past them into Amplify's base ramp — the toast is primary-80, the
+   * progress bar is `white` with a primary-80 fill, the camera frame's border
+   * is neutral-40, the photosensitivity warning is blue-10 on blue-90. Themed
+   * only at the semantic layer, the start screen turned and the check itself
+   * stayed AWS's, which is exactly the half-done result reported.
+   */
+  --amplify-colors-white: var(--surface);
+  --amplify-colors-black: var(--ink);
+  --amplify-colors-neutral-10: var(--surface);
+  --amplify-colors-neutral-20: var(--surface-2);
+  --amplify-colors-neutral-40: var(--line-control);
+  --amplify-colors-neutral-60: var(--ink-3);
+  --amplify-colors-neutral-80: var(--ink-2);
+  --amplify-colors-neutral-90: var(--ink);
+  --amplify-colors-neutral-100: var(--ink);
+
+  /* The accent ramp: the countdown fill, the match indicator, the primary
+     toast — everything that says "this is working" during the check. */
+  --amplify-colors-primary-10: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  --amplify-colors-primary-20: color-mix(in oklab, var(--accent) 24%, var(--surface));
+  --amplify-colors-primary-40: color-mix(in oklab, var(--accent) 55%, var(--surface));
+  --amplify-colors-primary-60: color-mix(in oklab, var(--accent) 80%, var(--surface));
+  --amplify-colors-primary-80: var(--accent);
+  --amplify-colors-primary-90: color-mix(in oklab, var(--accent) 88%, var(--ink));
+  --amplify-colors-primary-100: color-mix(in oklab, var(--accent) 76%, var(--ink));
+
+  /* The photosensitivity warning, which arrives in AWS blue. It has to keep
+     reading as a warning rather than dissolve into the card, so it takes the
+     app's caution rather than its surface. */
+  --amplify-colors-blue-10: color-mix(in oklab, var(--caution) 16%, var(--surface));
+  --amplify-colors-blue-90: var(--ink);
+  --amplify-colors-blue-100: var(--ink);
+
+  /* Failure and success. */
+  --amplify-colors-red-10: color-mix(in oklab, var(--critical) 12%, var(--surface));
+  --amplify-colors-red-80: var(--critical);
+  --amplify-colors-red-90: var(--critical);
+  --amplify-colors-green-90: var(--positive);
+
+  /* The scrim behind the error modal. */
+  --amplify-colors-overlay-40: color-mix(in oklab, var(--ink) 42%, transparent);
+  --amplify-colors-overlay-50: color-mix(in oklab, var(--ink) 52%, transparent);
+}
+
+/*
+ * THE THREE VENDOR HARDCODES.
+ *
+ * Everything above is a token, which is the documented seam and survives a
+ * dependency bump. These three cannot be: the shipped stylesheet writes
+ * `background-color: #fff` literally, so there is no variable to redefine and
+ * no way to reach them except by class name.
+ *
+ * That breaks the rule stated at the top of this file, deliberately and in
+ * exactly three places. The alternative is a white cancel button, a white "Rec"
+ * badge and white figure panels sitting on this app's ground during the one
+ * screen a member cannot look away from — which is the report that prompted
+ * this. The list is pinned by a test: if Amplify tokenises one of these, or
+ * adds a fourth, the test says so rather than the screen.
+ *
+ * The cancel button also ships AWS's teal — hsl(190, 95%, 30%) — as its text.
+ */
+.liveness-theme .amplify-liveness-cancel-button {
+  background-color: var(--surface);
+  color: var(--accent);
+}
+
+.liveness-theme .amplify-liveness-recording-icon {
+  background-color: var(--surface);
+}
+
+.liveness-theme .amplify-liveness-figure__image {
+  background-color: var(--surface);
 }
 
 /*

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -8,6 +9,12 @@ import { DRAFT_COPY } from "@plusone/config";
 const read = (name: string) => readFileSync(fileURLToPath(new URL(name, import.meta.url)), "utf8");
 const capture = read("./liveness-capture.tsx");
 const theme = read("./liveness-theme.css");
+/** Comments here quote the vendor's own hex values; strip before matching. */
+const themeCode = theme.replace(/\/\*[\s\S]*?\*\//g, "");
+const vendorCss = readFileSync(
+  createRequire(import.meta.url).resolve("@aws-amplify/ui-react/styles.css"),
+  "utf8",
+);
 
 describe("the check is centred on the screen, not tucked into the step column", () => {
   /**
@@ -47,11 +54,62 @@ describe("the AWS widget wears this app's palette", () => {
    * silently reverts to AWS blue after a dependency bump is worse than one that
    * never matched, because nobody goes looking.
    */
-  it("styles only through tokens, never through Amplify class names", () => {
-    expect(theme).not.toMatch(/\.amplify-/);
-    const declarations = theme.match(/^\s+[a-z-]+:/gm) ?? [];
+  it("sets nothing but tokens inside the theme block", () => {
+    const block = themeCode.slice(themeCode.indexOf(".liveness-theme {"));
+    const declarations = block.slice(0, block.indexOf("\n}")).match(/^\s+[a-z-]+:/gm) ?? [];
+    expect(declarations.length).toBeGreaterThan(30);
     for (const declaration of declarations) {
       expect(declaration.trim()).toMatch(/^--amplify-/);
+    }
+  });
+
+  /**
+   * The exceptions, pinned.
+   *
+   * Three rules in the shipped stylesheet write `background-color: #fff`
+   * literally, so there is no variable to redefine and no way to reach them
+   * except by class name. Overriding them breaks the rule above on purpose, in
+   * exactly these three places — a white cancel button and a white "Rec" badge
+   * on this app's ground during the check is the report that prompted it.
+   *
+   * Each is verified against the vendor stylesheet as it exists in the tree, so
+   * the day Amplify tokenises one of these the test fails and the override
+   * comes out, rather than quietly fighting a variable that now works.
+   */
+  const HARDCODED = [
+    "amplify-liveness-cancel-button",
+    "amplify-liveness-recording-icon",
+    "amplify-liveness-figure__image",
+  ];
+
+  it("reaches for class names only where the vendor hardcoded a colour", () => {
+    const targeted = [...themeCode.matchAll(/\.liveness-theme \.([a-z0-9_-]+)/gi)].map((m) => m[1]);
+    expect([...new Set(targeted)].sort()).toEqual([...HARDCODED].sort());
+  });
+
+  it("each override still corresponds to a literal #fff upstream", () => {
+    for (const className of HARDCODED) {
+      const rule = new RegExp(`\\.${className}\\s*\\{[^}]*\\}`).exec(vendorCss);
+      expect(rule, `${className} no longer exists in the Amplify stylesheet`).not.toBeNull();
+      expect(rule![0], `${className} is tokenised now — drop the override`).toMatch(/#fff\b/i);
+    }
+  });
+
+  /**
+   * The recording view reaches past the semantic tokens into the base ramp, so
+   * mapping only the semantic layer themed the start screen and left the check
+   * itself in AWS's colours — which is exactly what came back.
+   */
+  it("maps the raw ramp the recording view actually uses", () => {
+    for (const token of [
+      "--amplify-colors-white",
+      "--amplify-colors-primary-80",
+      "--amplify-colors-neutral-40",
+      "--amplify-colors-blue-10",
+      "--amplify-colors-red-80",
+      "--amplify-colors-overlay-40",
+    ]) {
+      expect(themeCode).toContain(token);
     }
   });
 
@@ -62,8 +120,9 @@ describe("the AWS widget wears this app's palette", () => {
    * be wrong in one of the two themes the day it was written.
    */
   it("hardcodes no colour of its own", () => {
-    expect(theme).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(theme).not.toMatch(/\brgba?\(/);
+    expect(themeCode).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(themeCode).not.toMatch(/\brgba?\(/);
+    expect(themeCode).not.toMatch(/\bhsla?\(/);
   });
 });
 
