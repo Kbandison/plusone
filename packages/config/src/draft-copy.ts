@@ -587,13 +587,32 @@ export const DRAFT_COPY = {
     navRooms: "Rooms",
     navProfile: "You",
     connectLabel: "Connect",
+    /**
+     * One section, because a connect and the chat it becomes are the same
+     * thread. Accepting used to make a row vanish from Inbox and reappear under
+     * Chats with nothing on screen joining the two — the strongest argument
+     * against the split was never tidiness, it was that the transition was
+     * invisible.
+     *
+     * Decision #14 calls the whole pipeline the "Inbox model", so the section
+     * keeps that name rather than inventing one.
+     */
+    needsYouHeading: "Needs you",
+    conversationsHeading: "Conversations",
+    /** Both halves empty. Two separate empty states read as two broken screens. */
+    inboxAllEmpty: "Nothing waiting. Your Drop arrives at 8pm.",
+    /**
+     * The two clocks are different and must stay so. A pending connect expires
+     * because no interaction may end in silence (#14); a chat's fuse runs
+     * because a conversation without a plan closes kindly (#13). One counts
+     * down to "answer this", the other to "meet or it ends".
+     */
+    connectExpires: (on: string) => `Waiting for a reply · expires ${on}`,
     inboxHeading: "Waiting on you",
     inboxSentHeading: "Sent",
-    inboxEmpty: "Nothing waiting.",
     acceptLabel: "Accept",
     declineLabel: "Decline",
     chatsHeading: "Chats",
-    chatsEmpty: "No chats yet.",
     /**
      * The two message lists were the only ones in the app with no empty state,
      * and an empty chat is guaranteed at creation — so the first thing both

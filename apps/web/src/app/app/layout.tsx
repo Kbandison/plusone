@@ -27,12 +27,21 @@ export const metadata: Metadata = {
 };
 
 /**
- * §7.4's six sections, and no more.
+ * The sections §7.4 names, minus the one that is not a destination.
  *
  * Invite and Premium were here too, which made nine items on a bar sized for a
  * phone — and gave the two screens a member opens least the same weight as
- * tonight's Drop. The spec puts both inside Profile & Settings, and they are
- * reachable from there now; the routes are unchanged.
+ * tonight's Drop. The spec puts both inside Profile & Settings.
+ *
+ * Chats has folded into Inbox. A connect and the chat it becomes are one
+ * thread, and Decision #14 describes one pipeline — accepting used to make the
+ * row vanish from one tab and reappear under another with nothing joining them.
+ *
+ * Settings has moved to the header. It is the one entry that is not somewhere a
+ * member goes to DO the thing the app is for: five of these are people, and
+ * that was the sixth competing with them for a thumb. A corner is where a
+ * settings control is looked for, and it takes a row off the bar on the phones
+ * this is used on.
  */
 const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   { href: "/app", label: DRAFT_COPY.app.navHome },
@@ -41,11 +50,30 @@ const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   // only stops the link existing, so nobody is bounced by their own nav.
   { href: "/app/browse", label: DRAFT_COPY.app.navBrowse, datingOnly: true },
   { href: "/app/inbox", label: DRAFT_COPY.app.navInbox },
-  { href: "/app/chats", label: DRAFT_COPY.app.navChats },
   { href: "/app/rooms", label: DRAFT_COPY.app.navRooms },
   { href: "/app/profile", label: DRAFT_COPY.app.navProfile },
-  { href: "/app/settings", label: DRAFT_COPY.app.navSettings },
 ];
+
+/** Drawn rather than imported: one icon does not justify a dependency. */
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[21px]">
+      <path
+        d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.5-2-3.4-2.3 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.3-1-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await getServerSupabase();
@@ -61,8 +89,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col px-6">
-      <header className="flex items-baseline justify-between py-7">
+      <header className="flex items-center justify-between py-7">
         <Wordmark className="text-[26px]" />
+
+        {/* Labelled, because a gear on its own is a shape. The 44px box is the
+            LAYOUT.minTapTarget floor — an 18px icon is not a target. */}
+        <Link
+          href="/app/settings"
+          aria-label={DRAFT_COPY.app.navSettings}
+          className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+        >
+          <GearIcon />
+        </Link>
       </header>
 
       {/* Clears the nav, which is two rows on a narrow screen. */}

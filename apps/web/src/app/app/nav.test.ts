@@ -36,15 +36,47 @@ describe("the bottom nav", () => {
    */
   it("carries the sections the spec names, and no more", () => {
     const items = [...LAYOUT.matchAll(/\{ href: "([^"]+)"/g)].map((m) => m[1]!);
-    expect(items).toEqual([
-      "/app",
-      "/app/browse",
-      "/app/inbox",
-      "/app/chats",
-      "/app/rooms",
-      "/app/profile",
-      "/app/settings",
-    ]);
+    expect(items).toEqual(["/app", "/app/browse", "/app/inbox", "/app/rooms", "/app/profile"]);
+  });
+
+  /**
+   * A connect and the chat it becomes are one thread (Decision #14 describes
+   * one pipeline). Split across two entries, accepting made the row vanish from
+   * one and reappear under the other with nothing on screen joining them.
+   */
+  it("folds chats into the inbox, and keeps the old route working", () => {
+    const chatsIndex = readFileSync(join(import.meta.dirname, "chats/page.tsx"), "utf8");
+    expect(chatsIndex).toMatch(/redirect\("\/app\/inbox"\)/);
+
+    const inbox = readFileSync(join(import.meta.dirname, "inbox/page.tsx"), "utf8");
+    // Both halves, and the requests first.
+    expect(inbox).toMatch(/needsYouHeading/);
+    expect(inbox).toMatch(/conversationsHeading/);
+    expect(inbox.indexOf("needsYouHeading")).toBeLessThan(inbox.indexOf("conversationsHeading"));
+  });
+
+  /**
+   * The clocks mean opposite things. A connect expires because no interaction
+   * may end in silence (#14); a fuse runs because a chat without a plan closes
+   * kindly (#13). One says "answer this", the other "meet or it ends".
+   */
+  it("keeps the two countdowns distinct", () => {
+    const inbox = readFileSync(join(import.meta.dirname, "inbox/page.tsx"), "utf8");
+    expect(inbox).toMatch(/C\.connectExpires\(/);
+    expect(inbox).toMatch(/fuse\.countdown\(/);
+    expect(inbox).not.toMatch(/connectExpires[\s\S]{0,80}fuseDaysLeft/);
+  });
+
+  /**
+   * Settings is the one entry that is not somewhere a member goes to do the
+   * thing the app is for. Five of the others are people; this was the sixth
+   * competing with them for a thumb.
+   */
+  it("puts settings in the header, with a real target and a name", () => {
+    expect(LAYOUT).toMatch(/<header[\s\S]{0,400}href="\/app\/settings"/);
+    expect(LAYOUT).toMatch(/aria-label=\{DRAFT_COPY\.app\.navSettings\}/);
+    // A 21px icon is not a tap target; LAYOUT.minTapTarget is 44px.
+    expect(LAYOUT).toMatch(/size-tap/);
   });
 
   /** Moved, not removed — both screens still exist and are still reachable. */
