@@ -110,4 +110,33 @@ export const VERIFICATION = {
   targetSeconds: 120,
   /** Manual review only on risk flags; retries before a human sees it. */
   livenessMaxRetries: 3,
+  /**
+   * The liveness score a member must clear, on 0–1.
+   *
+   * AWS publishes the bands: "a moderate confidence score threshold (e.g., 50
+   * or 60) may be suitable to detect presentation attacks and some digital
+   * injection attacks, while a high confidence score threshold (e.g., 80 or 90)
+   * may be suitable to detect sophisticated digital injection attacks, such as
+   * deep fake or pre-recorded videos."
+   *
+   * This was 0.8 — the deepfake band — and it was rejecting real people. Two
+   * checks from one member, good light, screen brightness at maximum, scored
+   * 78.448 and 78.412: SUCCEEDED at AWS both times, refused here both times, by
+   * a point and a half. A score that reproducible is the member's face and
+   * camera, not their conditions, so no amount of retrying would have moved it.
+   *
+   * 0.7 is chosen against the threat this product actually has. A dating app's
+   * fake profile is somebody holding up a photograph, a printed face or a
+   * screen — a PRESENTATION attack, which AWS covers from the moderate band up.
+   * Defending against pre-recorded deepfakes at the cost of turning away real
+   * members inverts the risk: this app's members are people with HSV or HIV who
+   * may try once, and a member wrongly refused does not come back to argue.
+   *
+   * It is also what the floor was always documented to be — a backstop UNDER
+   * the vendor's own threshold, not the gate itself. At 0.8 it was the gate.
+   *
+   * The net under this is Decision #21: three failures reach a human, so a
+   * borderline score delays somebody rather than ending them.
+   */
+  livenessMinScore: 0.7,
 } as const;

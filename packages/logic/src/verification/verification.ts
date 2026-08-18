@@ -15,9 +15,14 @@ export const DEFAULT_VERIFICATION_CONFIG: VerificationConfig = {
   /**
    * Providers already return a verdict; this is a second, independent floor so
    * that swapping vendors cannot quietly lower the bar. Deliberately below the
-   * typical vendor threshold — it is a backstop, not the primary gate.
+   * vendor's own threshold — it is a backstop, not the primary gate.
+   *
+   * It held a literal 0.8, which made that last sentence false: AWS returned
+   * SUCCEEDED and this refused it. A tunable that decides who gets into the
+   * product belongs with every other tunable, where changing it is a visible
+   * act rather than a number edited inside a reducer. See VERIFICATION.
    */
-  minScore: 0.8,
+  minScore: VERIFICATION.livenessMinScore,
 };
 
 export const INITIAL_STATE: VerificationState = {

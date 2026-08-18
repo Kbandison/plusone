@@ -478,3 +478,40 @@ describe("the cap is three attempts, counted once", () => {
     expect(state.status, "the third failure is where a human comes in").toBe("flagged");
   });
 });
+
+/**
+ * The floor is a backstop, not the gate — and it stopped being one.
+ *
+ * AWS publishes the bands: 50–60 catches presentation attacks (a photograph, a
+ * printed face, a screen), 80–90 catches sophisticated digital injection like
+ * deepfakes and pre-recorded video. The floor sat at 0.8, so a member scoring
+ * 78.4 twice over — SUCCEEDED at AWS both times, good light, screen brightness
+ * at maximum — was refused here by a point and a half.
+ *
+ * A fake profile on a dating app is a presentation attack. Tuning for deepfakes
+ * at the price of turning real members away inverts the risk this app carries.
+ */
+describe("the liveness floor stays under the vendor's own threshold", () => {
+  const AWS_HIGH_BAND = 0.8;
+
+  it("does not sit in the band AWS reserves for deepfake defence", () => {
+    expect(DEFAULT_VERIFICATION_CONFIG.minScore).toBeLessThan(AWS_HIGH_BAND);
+  });
+
+  /** Below AWS's moderate band it stops defending against anything. */
+  it("still clears the band that catches a held-up photograph", () => {
+    expect(DEFAULT_VERIFICATION_CONFIG.minScore).toBeGreaterThanOrEqual(0.6);
+  });
+
+  /**
+   * The two real scores from production. Both SUCCEEDED at AWS; both were
+   * refused. They are here so that raising the floor back over them has to be
+   * a deliberate act with a failing test in the way.
+   */
+  it("admits the member it was turning away", () => {
+    for (const observed of [0.78448, 0.78412]) {
+      const outcome = { passed: true, score: observed };
+      expect(outcome.score >= DEFAULT_VERIFICATION_CONFIG.minScore).toBe(true);
+    }
+  });
+});
