@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { RADIUS } from "@plusone/config";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import type { RadiusState } from "./state";
 
@@ -36,5 +36,5 @@ export async function saveRadius(_previous: RadiusState, formData: FormData): Pr
 
   if (error) return { error: "That didn't save. Try again." };
 
-  redirect("/onboarding");
+  redirect(nextRoute("radius"));
 }

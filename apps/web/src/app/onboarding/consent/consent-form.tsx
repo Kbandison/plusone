@@ -7,6 +7,7 @@ import { COPY } from "@plusone/config";
 import { grantHealthDataConsent } from "./actions";
 import { type ConsentActionState } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const INITIAL: ConsentActionState = { error: null };
 
@@ -44,13 +45,15 @@ export function ConsentForm() {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className={buttonClass("primary", "mt-9 w-full sm:w-auto sm:min-w-[190px]")}
-      >
-        {COPY.actions.continueLabel}
-      </button>
+      <StepActions step="health_consent">
+        <button
+          type="submit"
+          disabled={pending}
+          className={buttonClass("primary", "mt-9 w-full sm:w-auto sm:min-w-[190px]")}
+        >
+          {COPY.actions.continueLabel}
+        </button>
+      </StepActions>
     </form>
   );
 }

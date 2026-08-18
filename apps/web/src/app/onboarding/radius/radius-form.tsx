@@ -7,6 +7,7 @@ import { DRAFT_COPY, RADIUS } from "@plusone/config";
 import { saveRadius } from "./actions";
 import { type RadiusState } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.radius;
 const INITIAL: RadiusState = { error: null };
@@ -58,13 +59,15 @@ export function RadiusForm() {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
-      >
-        {C.continueLabel}
-      </button>
+      <StepActions step="radius">
+        <button
+          type="submit"
+          disabled={pending}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
+        >
+          {C.continueLabel}
+        </button>
+      </StepActions>
     </form>
   );
 }

@@ -15,6 +15,7 @@ import {
 import { saveCommunity } from "./actions";
 import { type CommunityState } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.community;
 const INITIAL: CommunityState = { error: null };
@@ -105,13 +106,15 @@ export function CommunityForm() {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending || !community}
-        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
-      >
-        {COPY.actions.continueLabel}
-      </button>
+      <StepActions step="community_condition">
+        <button
+          type="submit"
+          disabled={pending || !community}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
+        >
+          {COPY.actions.continueLabel}
+        </button>
+      </StepActions>
     </form>
   );
 }

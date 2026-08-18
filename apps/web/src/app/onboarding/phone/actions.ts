@@ -8,6 +8,7 @@ import { verification } from "@plusone/logic";
 import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
+import { nextRoute } from "@/lib/onboarding";
 
 const E = DRAFT_COPY.phone.errors;
 
@@ -112,5 +113,5 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
     }
   }
 
-  redirect("/onboarding");
+  redirect(nextRoute("phone"));
 }

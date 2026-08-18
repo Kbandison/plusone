@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { CONSENT_COPY_VERSION } from "@plusone/config";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import type { ConsentActionState } from "./state";
 
@@ -49,5 +49,5 @@ export async function grantHealthDataConsent(
 
   // Back to the one door. Each screen knowing only "I am finished" keeps the
   // §7.2 order in a single place.
-  redirect("/onboarding");
+  redirect(nextRoute("health_consent"));
 }

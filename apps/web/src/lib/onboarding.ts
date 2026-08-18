@@ -5,27 +5,12 @@ import { CONSENT_COPY_VERSION, QUIZ_QUESTIONS } from "@plusone/config";
 import { onboarding } from "@plusone/logic";
 
 import { getServerSupabase } from "./supabase";
+// Re-exported so every existing caller keeps working. They live in their own
+// module because Client Components need them and this one reaches for cookies().
+export { STEP_ROUTES, nextRoute } from "./step-routes";
+import { STEP_ROUTES } from "./step-routes";
 
 type Step = onboarding.OnboardingStep;
-
-/**
- * Where each §7.2 step lives. Exhaustive by type: adding a step to the machine
- * without giving it a route stops compiling, rather than routing someone to a
- * 404 halfway through signing up.
- */
-export const STEP_ROUTES: Record<Step, string> = {
-  phone: "/onboarding/phone",
-  liveness: "/onboarding/liveness",
-  profile_basics: "/onboarding/basics",
-  community_condition: "/onboarding/community",
-  health_consent: "/onboarding/consent",
-  intention: "/onboarding/intention",
-  preferences: "/onboarding/preferences",
-  quiz: "/onboarding/quiz",
-  photos: "/onboarding/photos",
-  radius: "/onboarding/radius",
-  done: "/app",
-};
 
 /**
  * Reads the member's progress from the database.

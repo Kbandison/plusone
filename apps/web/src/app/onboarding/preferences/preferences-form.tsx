@@ -13,6 +13,7 @@ import {
 
 import { PREFERENCES_INITIAL, type PreferencesState } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.preferences;
 
@@ -218,13 +219,15 @@ export function PreferencesForm({
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
-      >
-        {submitLabel}
-      </button>
+      <StepActions step="preferences">
+        <button
+          type="submit"
+          disabled={pending}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
+        >
+          {submitLabel}
+        </button>
+      </StepActions>
     </form>
   );
 }

@@ -33,8 +33,16 @@ export function isFinished(state: OnboardingState): boolean {
   return state.step === FINAL_STEP;
 }
 
-/** The step after `step`, or `done` at the end. */
-function nextStep(step: OnboardingStep): OnboardingStep {
+/**
+ * The step after `step`, or `done` at the end.
+ *
+ * Exported because "where does Continue go" and "where does the reducer go" are
+ * the same question, and answering it twice is how they drift. Every step used
+ * to send the member to /onboarding, which resolves to the first UNSETTLED
+ * step — so walking back to step 3 and pressing Continue jumped straight over
+ * every completed step to the end, and the way back into them was gone again.
+ */
+export function nextStep(step: OnboardingStep): OnboardingStep {
   const next = ONBOARDING_STEPS[stepIndex(step) + 1];
   return next ?? FINAL_STEP;
 }

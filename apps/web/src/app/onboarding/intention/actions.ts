@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/config";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import type { IntentionState } from "./state";
 
@@ -36,5 +36,5 @@ export async function saveIntention(
 
   if (error) return { error: "That didn't save. Try again." };
 
-  redirect("/onboarding");
+  redirect(nextRoute("intention"));
 }

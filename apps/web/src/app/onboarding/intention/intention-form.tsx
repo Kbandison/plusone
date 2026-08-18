@@ -7,6 +7,7 @@ import { COPY, DRAFT_COPY, INTENTION_LABELS, type Intention } from "@plusone/con
 import { saveIntention } from "./actions";
 import { type IntentionState } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.intention;
 const INITIAL: IntentionState = { error: null };
@@ -45,13 +46,15 @@ export function IntentionForm() {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
-      >
-        {COPY.actions.continueLabel}
-      </button>
+      <StepActions step="intention">
+        <button
+          type="submit"
+          disabled={pending}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
+        >
+          {COPY.actions.continueLabel}
+        </button>
+      </StepActions>
     </form>
   );
 }

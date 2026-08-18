@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { MAX_PHOTOS, MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
 import { processPhoto } from "@/lib/photos";
 import { getServerSupabase } from "@/lib/supabase";
@@ -141,5 +141,5 @@ export async function savePhotoPrivacy(
 
   if (error) return { error: "That didn't save. Try again." };
 
-  redirect("/onboarding");
+  redirect(nextRoute("photos"));
 }

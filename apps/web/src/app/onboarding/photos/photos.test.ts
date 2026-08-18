@@ -26,7 +26,7 @@ describe("the picker takes more than one photo", () => {
    * awaiting each result, which a useActionState dispatch cannot give.
    */
   it("uploads them one at a time rather than all at once", () => {
-    expect(form).toMatch(/for \(const \[index, file\] of queue\.entries\(\)\)/);
+    expect(form).toMatch(/for \(const \[index, file\] of prepared\.entries\(\)\)/);
     expect(form).toMatch(/await uploadPhoto\(/);
     // The tell for a parallel rewrite creeping back in.
     expect(form).not.toMatch(/Promise\.all\([^)]*uploadPhoto/);
@@ -34,6 +34,18 @@ describe("the picker takes more than one photo", () => {
   });
 
   /** Stop on the first refusal instead of pushing the rest at a server that said no. */
+  /**
+   * The uploads cannot overlap — `position` is counted and `unique (user_id,
+   * position)` refuses a duplicate — but shrinking is pure browser work on
+   * independent files. Inline, every upload waited on a canvas resize before it
+   * could start, and six photos paid that six times in series.
+   */
+  it("shrinks them all in parallel before uploading in series", () => {
+    expect(form).toMatch(/await Promise\.all\(queue\.map\(/);
+    const loop = form.slice(form.indexOf("for (const [index, file] of prepared"));
+    expect(loop).not.toMatch(/downscalePhoto/);
+  });
+
   it("stops the queue when one is refused", () => {
     const loop = form.slice(
       form.indexOf("for (const [index, file]"),
@@ -58,6 +70,17 @@ describe("the six-photo ceiling is told, not discovered", () => {
   it("is checked in the browser before anything is sent", () => {
     expect(form).toMatch(/const room = MAX_PHOTOS - count/);
     expect(form).toMatch(/picked\.slice\(0, room\)/);
+  });
+
+  /**
+   * Said the moment the picker closes, not after the ones that fit have gone
+   * up. Picking seven meant sitting through six uploads to be told the seventh
+   * was never going anywhere — a message attached to a batch that had in fact
+   * succeeded.
+   */
+  it("says so before a single upload starts", () => {
+    const beforeLoop = form.slice(0, form.indexOf("startUploading("));
+    expect(beforeLoop).toMatch(/if \(picked\.length > queue\.length\) setError\(C\.errors\.full/);
   });
 
   /**

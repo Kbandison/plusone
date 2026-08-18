@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { parsePreferences } from "@/lib/preferences";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PreferencesState } from "./state";
@@ -37,5 +37,5 @@ export async function savePreferences(
   // bounce them straight back from.
   if (error) return { error: DRAFT_COPY.preferences.errors.failed };
 
-  redirect("/onboarding");
+  redirect(nextRoute("preferences"));
 }

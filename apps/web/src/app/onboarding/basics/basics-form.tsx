@@ -7,6 +7,7 @@ import { COPY, DRAFT_COPY } from "@plusone/config";
 import { saveBasics } from "./actions";
 import { type BasicsState } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.basics;
 const INITIAL: BasicsState = { error: null };
@@ -70,13 +71,15 @@ export function BasicsForm() {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
-      >
-        {COPY.actions.continueLabel}
-      </button>
+      <StepActions step="profile_basics">
+        <button
+          type="submit"
+          disabled={pending}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
+        >
+          {COPY.actions.continueLabel}
+        </button>
+      </StepActions>
     </form>
   );
 }

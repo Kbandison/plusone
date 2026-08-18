@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 import { profile } from "@plusone/logic";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import type { BasicsState } from "./state";
 
@@ -55,5 +55,5 @@ export async function saveBasics(_previous: BasicsState, formData: FormData): Pr
 
   // Back to the one door, which works out what comes next (§7.2 order) rather
   // than each screen carrying its own copy of the sequence.
-  redirect("/onboarding");
+  redirect(nextRoute("profile_basics"));
 }

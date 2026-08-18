@@ -9,6 +9,7 @@ import { COPY, DRAFT_COPY } from "@plusone/config";
 import { savePhotoPrivacy, uploadPhoto } from "./actions";
 import { PHOTOS_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.photos;
 
@@ -28,6 +29,7 @@ export function PhotoUploader({ count }: { count: number }) {
    */
   const [pending, startUploading] = useTransition();
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputId = useId();
 
@@ -54,25 +56,45 @@ export function PhotoUploader({ count }: { count: number }) {
       return;
     }
     const queue = picked.slice(0, room);
-    const overflowed = picked.length > queue.length;
+
+    // Said NOW, not after the ones that fit have finished.
+    //
+    // It used to be set at the end, so picking seven photos meant waiting out
+    // six uploads before being told the seventh was never going anywhere — and
+    // the message arrived attached to a batch that had actually succeeded. The
+    // count is known the moment the picker closes, so it is said then.
+    if (picked.length > queue.length) setError(C.errors.full(MAX_PHOTOS));
 
     startUploading(async () => {
-      for (const [index, file] of queue.entries()) {
-        setProgress({ done: index + 1, total: queue.length });
+      // Shrink them all first, in parallel.
+      //
+      // The uploads cannot overlap — `position` is chosen by counting rows and
+      // `unique (user_id, position)` refuses a duplicate — but the shrinking is
+      // pure browser work on independent files, and doing it inline meant every
+      // upload waited on a canvas resize before it could even start. Six photos
+      // paid that cost six times, one after another.
+      setPreparing(true);
+      let prepared: File[];
+      try {
+        prepared = await Promise.all(queue.map(async (file) => (await downscalePhoto(file)).file));
+      } finally {
+        setPreparing(false);
+      }
 
-        const { file: prepared } = await downscalePhoto(file);
-        if (isTooLargeToSend(prepared)) {
+      for (const [index, file] of prepared.entries()) {
+        setProgress({ done: index + 1, total: prepared.length });
+
+        if (isTooLargeToSend(file)) {
           setError(C.errors.tooLargeToShrink);
           break;
         }
 
         const formData = new FormData();
-        formData.set("photo", prepared);
+        formData.set("photo", file);
         const result = await uploadPhoto(PHOTOS_INITIAL, formData);
 
         // Stop on the first refusal rather than pushing the rest at a server
-        // that has just said no — and keep the reason, which the next
-        // iteration's setError(null) would otherwise wipe.
+        // that has just said no.
         if (result.error) {
           setError(result.error);
           break;
@@ -80,7 +102,6 @@ export function PhotoUploader({ count }: { count: number }) {
       }
 
       setProgress(null);
-      if (overflowed) setError(C.errors.full(MAX_PHOTOS));
     });
   }
 
@@ -172,17 +193,19 @@ export function PrivacyChoice({ canContinue }: { canContinue: boolean }) {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending || !canContinue}
-        // The reason it is disabled was a loose <p> associated with nothing,
-        // and a disabled button is skipped in the tab order — so a member who
-        // could not continue was never told why by anything they would reach.
-        aria-describedby={!canContinue ? blockedId : undefined}
-        className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
-      >
-        {COPY.actions.continueLabel}
-      </button>
+      <StepActions step="photos">
+        <button
+          type="submit"
+          disabled={pending || !canContinue}
+          // The reason it is disabled was a loose <p> associated with nothing,
+          // and a disabled button is skipped in the tab order — so a member who
+          // could not continue was never told why by anything they would reach.
+          aria-describedby={!canContinue ? blockedId : undefined}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[190px] sm:self-start")}
+        >
+          {COPY.actions.continueLabel}
+        </button>
+      </StepActions>
 
       {!canContinue ? (
         <p id={blockedId} className="text-[14px] text-ink-3">

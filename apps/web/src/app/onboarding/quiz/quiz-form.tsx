@@ -7,6 +7,7 @@ import { DRAFT_COPY, QUIZ_QUESTIONS } from "@plusone/config";
 import { saveQuiz } from "./actions";
 import { QUIZ_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { StepActions } from "@/app/onboarding/step-actions";
 
 const C = DRAFT_COPY.quiz;
 
@@ -66,7 +67,11 @@ export function QuizForm() {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+      {/* Finish, skip and back on one line. The quiz is the only step with
+          three ways out of it, and §7.2 marks it skippable — so the skip has to
+          stay as visible as it was, and Back cannot look like a fourth kind of
+          answer to the questions above. */}
+      <StepActions step="quiz">
         <button type="submit" disabled={pending} className={buttonClass("primary")}>
           {C.finishLabel}
         </button>
@@ -80,7 +85,7 @@ export function QuizForm() {
         >
           {C.skipLabel}
         </button>
-      </div>
+      </StepActions>
 
       {answered === 0 ? <p className="text-[14px] text-ink-3">{C.skipNudge}</p> : null}
     </form>

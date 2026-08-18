@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { QUIZ_QUESTIONS } from "@plusone/config";
 import { quiz } from "@plusone/logic";
 
-import { requireStep } from "@/lib/onboarding";
+import { nextRoute, requireStep } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import type { QuizState } from "./state";
 
@@ -46,5 +46,5 @@ export async function saveQuiz(_previous: QuizState, formData: FormData): Promis
 
   if (error) return { error: "That didn't save. Try again." };
 
-  redirect("/onboarding");
+  redirect(nextRoute("quiz"));
 }
