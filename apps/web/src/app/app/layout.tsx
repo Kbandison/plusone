@@ -26,6 +26,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/**
+ * §7.4's six sections, and no more.
+ *
+ * Invite and Premium were here too, which made nine items on a bar sized for a
+ * phone — and gave the two screens a member opens least the same weight as
+ * tonight's Drop. The spec puts both inside Profile & Settings, and they are
+ * reachable from there now; the routes are unchanged.
+ */
 const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   { href: "/app", label: DRAFT_COPY.app.navHome },
   // Hidden from a support-only member: Browse is a dating surface (Decision #17)
@@ -35,9 +43,7 @@ const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   { href: "/app/inbox", label: DRAFT_COPY.app.navInbox },
   { href: "/app/chats", label: DRAFT_COPY.app.navChats },
   { href: "/app/rooms", label: DRAFT_COPY.app.navRooms },
-  { href: "/app/invite", label: DRAFT_COPY.app.navInvite },
   { href: "/app/profile", label: DRAFT_COPY.app.navProfile },
-  { href: "/app/premium", label: DRAFT_COPY.app.navPremium },
   { href: "/app/settings", label: DRAFT_COPY.app.navSettings },
 ];
 

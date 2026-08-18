@@ -24,11 +24,34 @@ const GLOBALS = readFileSync(join(import.meta.dirname, "../../styles/globals.css
 const LINKS = readFileSync(join(import.meta.dirname, "nav-links.tsx"), "utf8");
 
 describe("the bottom nav", () => {
-  it("has the destinations we think it has", () => {
+  /**
+   * §7.4 names six sections: Home, Browse, Inbox, Chats, Rooms, and Profile &
+   * Settings — and puts "referral screen w/ share sheet + counter" and
+   * "subscription mgmt via Stripe portal" INSIDE the last of them.
+   *
+   * Invite and Premium had been promoted onto the bar, which made nine items on
+   * something sized for a phone and gave the two screens a member opens least
+   * the same weight as tonight's Drop. This asserted `>= 9`, so it held the
+   * deviation in place rather than catching it.
+   */
+  it("carries the sections the spec names, and no more", () => {
     const items = [...LAYOUT.matchAll(/\{ href: "([^"]+)"/g)].map((m) => m[1]!);
-    expect(items.length).toBeGreaterThanOrEqual(9);
-    expect(items).toContain("/app");
-    expect(items).toContain("/app/settings");
+    expect(items).toEqual([
+      "/app",
+      "/app/browse",
+      "/app/inbox",
+      "/app/chats",
+      "/app/rooms",
+      "/app/profile",
+      "/app/settings",
+    ]);
+  });
+
+  /** Moved, not removed — both screens still exist and are still reachable. */
+  it("reaches invite and premium from Settings instead", () => {
+    const settings = readFileSync(join(import.meta.dirname, "settings/page.tsx"), "utf8");
+    expect(settings).toMatch(/href="\/app\/invite"/);
+    expect(settings).toMatch(/href="\/app\/premium"/);
   });
 
   it("wraps rather than overflowing, because the overflow is clipped", () => {

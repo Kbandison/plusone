@@ -667,13 +667,29 @@ export const DRAFT_COPY = {
     roomPostPlaceholder: "Say something to the room",
     roomPostLabel: "Post",
     roomSlowMode: (seconds: number) => `Slow mode: one message every ${seconds} seconds.`,
+    /**
+     * Invite and Premium moved off the bottom bar and into here.
+     *
+     * §7.4 lists six sections — Home, Browse, Inbox, Chats, Rooms, Profile &
+     * Settings — and puts "referral screen w/ share sheet + counter" and
+     * "subscription mgmt via Stripe portal" INSIDE the last one. They had been
+     * promoted to top-level, which made nine items on a bar sized for a phone
+     * and gave the two things a member touches least the same weight as the
+     * Drop.
+     */
+    inviteSettingsHeading: "Invite someone",
+    inviteSettingsBody:
+      "Every person who joins and gets verified adds free premium time to your account, and to theirs.",
+    inviteSettingsLink: "Open invites",
+    premiumSettingsHeading: "Premium",
+    premiumSettingsBody: "More connects a day, and filters that narrow who reaches you.",
+    premiumSettingsLink: "Manage premium",
     settingsHeading: "Settings",
     signOutHeading: "Sign out",
     signOutBody:
       "Signs you out on this device. Your account and everything in it stay exactly as they are.",
     signOutLabel: "Sign out",
     premiumHeading: "Premium",
-    navPremium: "Premium",
     premiumIntro:
       "The free version is a real app. Premium raises how far you can reach — and there are things it will never buy.",
     premiumIncludesHeading: "What it gives you",

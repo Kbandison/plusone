@@ -8,6 +8,7 @@ import { UnblockButton } from "@/app/app/safety/safety-controls";
 import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
 import { buttonClass } from "@/app/ui";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navSettings };
 
@@ -52,6 +53,29 @@ export default async function SettingsPage() {
       <h1 className="text-h2">{DRAFT_COPY.app.settingsHeading}</h1>
 
       <CrossCommunityToggle optIn={Boolean(profile?.cross_community_opt_in)} />
+
+      {/* §7.4 puts the referral screen and subscription management inside
+          Settings. They sit above signing out because they are things a member
+          might want, not things they do on the way out. */}
+      <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+        <h2 className="text-[1.2rem]">{DRAFT_COPY.app.premiumSettingsHeading}</h2>
+        <p className="mt-3 text-[15px] leading-[1.65] text-ink-2">
+          {DRAFT_COPY.app.premiumSettingsBody}
+        </p>
+        <Link href="/app/premium" className={buttonClass("secondary", "mt-5 inline-block")}>
+          {DRAFT_COPY.app.premiumSettingsLink}
+        </Link>
+      </section>
+
+      <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+        <h2 className="text-[1.2rem]">{DRAFT_COPY.app.inviteSettingsHeading}</h2>
+        <p className="mt-3 text-[15px] leading-[1.65] text-ink-2">
+          {DRAFT_COPY.app.inviteSettingsBody}
+        </p>
+        <Link href="/app/invite" className={buttonClass("secondary", "mt-5 inline-block")}>
+          {DRAFT_COPY.app.inviteSettingsLink}
+        </Link>
+      </section>
 
       {/* Above the block list and well above deletion. Signing out is the
           ordinary thing; deleting is not, and they should not sit together. */}
