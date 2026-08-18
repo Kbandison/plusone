@@ -4,6 +4,7 @@ import { DRAFT_COPY } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { AcceptForm, DeclineForm } from "./inbox-forms";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navInbox };
 
@@ -20,7 +21,8 @@ interface ConnectRow {
 export default async function InboxPage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
-  const me = auth.user!.id;
+  if (!auth.user) redirect("/sign-in");
+  const me = auth.user.id;
 
   const { data } = await supabase
     .from("connects")

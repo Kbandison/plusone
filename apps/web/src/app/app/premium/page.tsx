@@ -4,6 +4,7 @@ import { DRAFT_COPY, PREMIUM_INCLUDES, PREMIUM_NEVER } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { ManageBilling, PlanChooser } from "./plan-buttons";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.premiumHeading };
 
@@ -12,18 +13,19 @@ const C = DRAFT_COPY.app;
 export default async function PremiumPage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   const [{ data: subscription }, { data: grants }, { data: isPremium, error: premiumError }] =
     await Promise.all([
       supabase
         .from("subscriptions")
         .select("status, current_period_end")
-        .eq("user_id", auth.user!.id)
+        .eq("user_id", auth.user.id)
         .maybeSingle(),
       supabase
         .from("premium_grants")
         .select("expires_at")
-        .eq("user_id", auth.user!.id)
+        .eq("user_id", auth.user.id)
         .order("expires_at", { ascending: false })
         .limit(1),
       // The same rule the walls use — a second opinion about who is premium is how

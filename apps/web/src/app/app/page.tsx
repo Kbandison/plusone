@@ -6,6 +6,7 @@ import { getTonightsDrop } from "@/lib/drop";
 import { photosFor, previewPhotosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { FullCard, PreviewDropCard } from "./drop-card";
+import { redirect } from "next/navigation";
 
 // COPY.drop.header is spec copy (§3.4). DRAFT_COPY must never shadow it.
 export const metadata: Metadata = { title: COPY.drop.header };
@@ -13,7 +14,8 @@ export const metadata: Metadata = { title: COPY.drop.header };
 export default async function TonightPage() {
   const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
-  const drop = await getTonightsDrop(data.user!.id);
+  if (!data.user) redirect("/sign-in");
+  const drop = await getTonightsDrop(data.user.id);
   // The preview reads a different view, one that cannot return a clear path.
   // Calling photosFor() for both variants is what put a fully identifiable
   // photograph above "30–39 · within 10 mi" on a screen that promised blurred.

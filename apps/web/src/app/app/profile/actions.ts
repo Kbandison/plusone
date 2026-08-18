@@ -14,6 +14,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
 import type { ProfileState } from "./state";
+import { redirect } from "next/navigation";
 
 /**
  * §6.4 — the mode toggle. `switch_mode` holds the cooldown; this does not
@@ -86,10 +87,11 @@ export async function savePrompts(
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
   const { error } = await supabase
     .from("profiles")
     .update({ prompts: answers })
-    .eq("id", auth.user!.id);
+    .eq("id", auth.user.id);
 
   if (error) return { error: "That didn't save. Try again.", message: null };
 
@@ -107,10 +109,11 @@ export async function saveBio(_previous: ProfileState, formData: FormData): Prom
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
   const { error } = await supabase
     .from("profiles")
     .update({ bio: bio || null })
-    .eq("id", auth.user!.id);
+    .eq("id", auth.user.id);
 
   if (error) return { error: "That didn't save. Try again.", message: null };
 

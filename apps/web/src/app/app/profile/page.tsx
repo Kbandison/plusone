@@ -15,23 +15,25 @@ import { MemberPhotoFrame } from "../member-photo";
 import { ModeToggle } from "./mode-toggle";
 import { BioEditor } from "./bio-editor";
 import { PromptEditor } from "./prompt-editor";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "You" };
 
 export default async function ProfilePage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, intention, mode, search_radius_mi, bio, prompts")
-    .eq("id", auth.user!.id)
+    .eq("id", auth.user.id)
     .maybeSingle();
 
   const mode = profile?.mode === "support_only" ? "support_only" : "dating";
   const intention = profile?.intention as Intention | null;
   const prompts = (profile?.prompts ?? []) as ProfilePromptAnswer[];
-  const photos = await ownPhotos(auth.user!.id);
+  const photos = await ownPhotos(auth.user.id);
 
   return (
     <main id="main">

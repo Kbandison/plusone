@@ -4,12 +4,14 @@ import { COPY, DRAFT_COPY, parseClientEnv } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { InviteLink } from "./invite-link";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navInvite };
 
 export default async function InvitePage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   // Allocated on first view and permanent thereafter (§6.5 — the link stays
   // live forever, past the reward cap and past everything else).
@@ -18,7 +20,7 @@ export default async function InvitePage() {
   const { count } = await supabase
     .from("referral_conversions")
     .select("id", { count: "exact", head: true })
-    .eq("referrer_id", auth.user!.id)
+    .eq("referrer_id", auth.user.id)
     .not("verified_at", "is", null);
 
   const { NEXT_PUBLIC_SITE_URL } = parseClientEnv(process.env);

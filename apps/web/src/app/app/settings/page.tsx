@@ -7,6 +7,7 @@ import { signOut } from "./sign-out";
 import { UnblockButton } from "@/app/app/safety/safety-controls";
 import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
 import { buttonClass } from "@/app/ui";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navSettings };
 
@@ -20,17 +21,14 @@ interface BlockedMember {
 export default async function SettingsPage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   const [{ data: profile }, { data: deletion }, { data: blockedData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("cross_community_opt_in")
-      .eq("id", auth.user!.id)
-      .maybeSingle(),
+    supabase.from("profiles").select("cross_community_opt_in").eq("id", auth.user.id).maybeSingle(),
     supabase
       .from("deletion_requests")
       .select("purge_after, status")
-      .eq("user_id", auth.user!.id)
+      .eq("user_id", auth.user.id)
       .maybeSingle(),
     // Names ARE resolved here, and this reverses what the comment used to say.
     //

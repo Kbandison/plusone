@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -16,6 +16,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
   const { roomId } = await params;
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   const { data: room } = await supabase
     .from("rooms")
@@ -32,7 +33,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       .from("room_members")
       .select("user_id")
       .eq("room_id", room.id as string)
-      .eq("user_id", auth.user!.id)
+      .eq("user_id", auth.user.id)
       .maybeSingle(),
     supabase
       .from("room_messages")
@@ -90,7 +91,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
             <p id={`post-${message.id as string}`} className="text-[15.5px] leading-[1.65]">
               {message.body as string}
             </p>
-            {message.user_id !== auth.user!.id ? (
+            {message.user_id !== auth.user.id ? (
               <div className="mt-3 flex items-center gap-4">
                 {/* Neither control takes the author's id. Posts render with no
                     author, so shipping one to the client turned an unattributed

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
 import { fuse } from "@plusone/logic";
@@ -68,7 +68,8 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
-  const me = auth.user!.id;
+  if (!auth.user) redirect("/sign-in");
+  const me = auth.user.id;
 
   // RLS decides whether this chat is the member's to read. A row coming back
   // empty here is the wall working, not a missing record.

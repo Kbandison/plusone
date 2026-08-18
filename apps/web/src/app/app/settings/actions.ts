@@ -9,6 +9,7 @@ import { DRAFT_COPY, parseClientEnv } from "@plusone/config";
 import { getServerSupabase } from "@/lib/supabase";
 import { memberFacingError } from "@/lib/rpc-error";
 import type { SettingsState } from "./state";
+import { redirect } from "next/navigation";
 
 const E = DRAFT_COPY.app.emailErrors;
 
@@ -61,10 +62,11 @@ export async function setCrossCommunityOptIn(
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
   const { error } = await supabase
     .from("profiles")
     .update({ cross_community_opt_in: optIn })
-    .eq("id", auth.user!.id);
+    .eq("id", auth.user.id);
 
   if (error) return { error: "That didn't save.", message: null };
   revalidatePath("/app/settings");
@@ -95,7 +97,8 @@ export async function addSignInEmail(
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
-  const user = auth.user!;
+  if (!auth.user) redirect("/sign-in");
+  const user = auth.user;
 
   const decision = verification.canAddSignInEmail(raw, {
     phoneConfirmed: Boolean(user.phone_confirmed_at),

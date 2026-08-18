@@ -9,15 +9,17 @@ import { memberFacingError } from "@/lib/rpc-error";
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import type { RoomState } from "./state";
+import { redirect } from "next/navigation";
 
 export async function joinRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
   const { error } = await supabase
     .from("room_members")
-    .insert({ room_id: roomId, user_id: auth.user!.id });
+    .insert({ room_id: roomId, user_id: auth.user.id });
 
   // Already a member is not a failure.
   if (error && error.code !== "23505") return { error: "That didn't work. Try again." };
@@ -63,9 +65,10 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
   const { error } = await supabase
     .from("room_messages")
-    .insert({ room_id: roomId, user_id: auth.user!.id, body });
+    .insert({ room_id: roomId, user_id: auth.user.id, body });
 
   // memberFacingError, not a blanket string. 20260817000800 raises
   // "slow mode: wait N more seconds" and rpc-error.ts was extended to allow it

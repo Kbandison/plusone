@@ -9,6 +9,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
 import type { ChatState } from "./state";
+import { redirect } from "next/navigation";
 
 const C = DRAFT_COPY.app;
 
@@ -19,12 +20,13 @@ export async function sendMessage(_prev: ChatState, formData: FormData): Promise
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   // Whether this chat still accepts messages is decided by RLS
   // (chat_accepts_messages), not here. A closed chat rejects the insert.
   const { error } = await supabase
     .from("messages")
-    .insert({ chat_id: chatId, sender_id: auth.user!.id, body });
+    .insert({ chat_id: chatId, sender_id: auth.user.id, body });
 
   if (error) {
     // A closed chat is not a failed send, and saying so leaves the member
@@ -71,6 +73,7 @@ export async function sendVoiceNote(_prev: ChatState, formData: FormData): Promi
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   // Whether this chat still accepts messages is RLS's decision, here and on the
   // storage object. A closed chat rejects both.
@@ -102,7 +105,7 @@ export async function sendVoiceNote(_prev: ChatState, formData: FormData): Promi
   const { error: insertError } = await supabase.from("messages").insert({
     id: messageId,
     chat_id: chatId,
-    sender_id: auth.user!.id,
+    sender_id: auth.user.id,
     voice_note_path: path,
     voice_note_seconds: seconds,
   });

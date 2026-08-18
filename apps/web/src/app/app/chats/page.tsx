@@ -5,6 +5,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { fuse } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
@@ -28,7 +29,8 @@ interface ChatRow {
 export default async function ChatsPage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
-  const me = auth.user!.id;
+  if (!auth.user) redirect("/sign-in");
+  const me = auth.user.id;
 
   const { data } = await supabase
     .from("chats")

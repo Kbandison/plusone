@@ -11,6 +11,7 @@ import {
 
 import { getServerSupabase } from "./supabase";
 import type { SafetyState } from "./safety-state";
+import { redirect } from "next/navigation";
 
 /**
  * Blocking (§5.3).
@@ -36,6 +37,7 @@ import type { SafetyState } from "./safety-state";
 export async function blockMember(_prev: SafetyState, formData: FormData): Promise<SafetyState> {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   // A room post can be blocked by message id instead of author id.
   //
@@ -59,7 +61,7 @@ export async function blockMember(_prev: SafetyState, formData: FormData): Promi
   if (!blockedId) return { error: "That didn't work.", message: null };
   const { error } = await supabase
     .from("blocks")
-    .insert({ blocker_id: auth.user!.id, blocked_id: blockedId });
+    .insert({ blocker_id: auth.user.id, blocked_id: blockedId });
 
   // Already blocked is not a failure.
   if (error && error.code !== "23505") return { error: "That didn't work.", message: null };
@@ -73,10 +75,11 @@ export async function unblockMember(_prev: SafetyState, formData: FormData): Pro
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
   const { error } = await supabase
     .from("blocks")
     .delete()
-    .eq("blocker_id", auth.user!.id)
+    .eq("blocker_id", auth.user.id)
     .eq("blocked_id", blockedId);
 
   if (error) return { error: "That didn't work.", message: null };
@@ -114,12 +117,13 @@ export async function reportMember(_prev: SafetyState, formData: FormData): Prom
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
 
   // Deliberately NOT tone-checked. A report describes something that happened,
   // and the words for it are often the words that were used. Refusing a report
   // for its language would silence the person it is meant to protect.
   const { error } = await supabase.from("reports").insert({
-    reporter_id: auth.user!.id,
+    reporter_id: auth.user.id,
     reported_user_id: reportedUserId,
     reported_message_id: reportedMessageId,
     reported_room_message_id: reportedRoomMessageId,
@@ -130,7 +134,7 @@ export async function reportMember(_prev: SafetyState, formData: FormData): Prom
   if (error) return { error: "That didn't send. Try again.", message: null };
 
   if (formData.get("also_block") === "on" && reportedUserId) {
-    await supabase.from("blocks").insert({ blocker_id: auth.user!.id, blocked_id: reportedUserId });
+    await supabase.from("blocks").insert({ blocker_id: auth.user.id, blocked_id: reportedUserId });
     for (const path of ["/app", "/app/browse", "/app/chats"]) revalidatePath(path);
   }
 
