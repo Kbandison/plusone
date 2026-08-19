@@ -8,6 +8,8 @@ import { getServerSupabase } from "@/lib/supabase";
 import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
 import { ChatMenu } from "./chat-menu";
+import { MemberPhotoFrame } from "../../member-photo";
+import { photosFor } from "@/lib/photo-urls";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { EmptyState } from "@/app/ui";
 
@@ -124,6 +126,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     ? await supabase.from("visible_profiles").select("display_name").eq("id", other).maybeSingle()
     : { data: null };
   const otherName = (otherProfile?.display_name as string | null) ?? null;
+  const otherPhoto = other ? (await photosFor([other])).get(other) : undefined;
   const myName = (profile?.display_name as string | null) ?? null;
 
   const plan = (chat.date_plan ?? null) as Plan | null;
@@ -141,14 +144,22 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main id="main">
-      {/* Every page needs one. Without it the first heading here was an h2 and
-          a member navigating by heading landed mid-hierarchy with no idea whose
-          chat they were in. */}
-      {/* The name, and everything that ends the conversation folded behind one
+      {/* The h1 this page needs, and no longer sr-only. It was hidden because
+          nothing else identified the chat; now it is the identification —
+          a member navigating by heading lands on whose conversation this is,
+          and so does everyone else.
+
+          Beside it, everything that ends the conversation, folded behind one
           press. Close, report and block were three controls stacked under the
           composer, which put ending it in the same column as continuing it. */}
       <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
-        <h1 className="truncate text-[15px]">{otherName ?? C.chatsHeading}</h1>
+        {/* A face with the name. Every other surface that names a member shows
+            them — the inbox rows, the Drop, the connect screen — and the chat,
+            the one place you are actually talking to them, showed a string. */}
+        <div className="flex min-w-0 items-center gap-3">
+          <MemberPhotoFrame photo={otherPhoto} size={34} />
+          <h1 className="truncate text-[15px]">{otherName ?? C.chatsHeading}</h1>
+        </div>
 
         {/* Report and block hung off the live-chat branch, so they vanished the
             moment a chat closed — taking them away from the member most likely
@@ -156,19 +167,24 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
             Closing is the only part of this that a terminal chat has no use
             for. */}
         <ChatMenu>
-          <div className="flex flex-col gap-3">
-            {!isTerminal ? (
+          {/* Each in its own row, so the menu's divide-y rules between them.
+              A fragment here would not do — its children become siblings of the
+              menu, and the dividers would land in the wrong places. */}
+          {!isTerminal ? (
+            <div className="py-3">
               <CloseChat chatId={id} senderName={(profile?.display_name as string) ?? ""} />
-            ) : null}
-            {other ? (
-              <div
-                className={`flex items-center gap-4 ${!isTerminal ? "border-t border-line pt-3" : ""}`}
-              >
-                <ReportControl memberId={other} />
-                <BlockButton memberId={other} />
-              </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
+          {other ? (
+            <div className="py-3">
+              <ReportControl memberId={other} />
+            </div>
+          ) : null}
+          {other ? (
+            <div className="py-3">
+              <BlockButton memberId={other} />
+            </div>
+          ) : null}
         </ChatMenu>
       </div>
 

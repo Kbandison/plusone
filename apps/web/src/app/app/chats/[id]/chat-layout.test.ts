@@ -8,6 +8,7 @@ const page = read("./page.tsx");
 const forms = read("./chat-forms.tsx");
 const recorder = read("./voice-recorder.tsx");
 const menu = read("./chat-menu.tsx");
+const icons = read("./chat-icons.tsx");
 
 /**
  * Close, report and block were three controls stacked under the composer —
@@ -97,6 +98,65 @@ describe("reporting survives the chat", () => {
   });
 
   it("drops only the close control when there is nothing left to close", () => {
-    expect(page).toMatch(/\{!isTerminal \? \(\s*<CloseChat/);
+    expect(page).toMatch(/\{!isTerminal \? \([\s\S]{0,80}<CloseChat/);
+  });
+});
+
+describe("the menu reads as a list", () => {
+  /** Report and block were a horizontal pair — a toolbar, not a menu. */
+  it("rules a divider between every item", () => {
+    expect(menu).toMatch(/divide-y divide-line/);
+  });
+
+  it("gives each control its own row rather than a shared line", () => {
+    const block = page.slice(page.indexOf("<ChatMenu>"), page.indexOf("</ChatMenu>"));
+    expect(block.match(/<div className="py-3">/g)).toHaveLength(3);
+    expect(block).not.toMatch(/flex items-center gap-4/);
+  });
+
+  /**
+   * mt-10 was breathing room for the bottom of the composer column. Carried
+   * into a popover it became 40px of empty space above the first item.
+   */
+  it("leaves the close trigger no margin of its own", () => {
+    const trigger = forms.slice(forms.indexOf("export function CloseChat"));
+    const className = /className="ease-brand[^"]*"/.exec(trigger)![0];
+    expect(className).not.toMatch(/\bmt-\d/);
+  });
+
+  /** These open forms in place; a 232px popover clipped the closure note. */
+  it("is wide enough and scrolls when one opens", () => {
+    expect(menu).toMatch(/overflow-y-auto/);
+    expect(menu).toMatch(/max-h-\[70vh\]/);
+  });
+});
+
+describe("the header shows who you are talking to", () => {
+  it("puts their photo beside the name", () => {
+    expect(page).toMatch(/<MemberPhotoFrame photo=\{otherPhoto\}/);
+    expect(page).toMatch(/photosFor\(\[other\]\)/);
+  });
+});
+
+describe("the icons are big enough to see", () => {
+  /**
+   * 17px centred in a 44px bordered box read as an empty button. Width and
+   * height attributes as well as the class, so the glyph does not vanish if the
+   * utility is ever purged.
+   */
+  it("sizes the microphone in the icon itself", () => {
+    const mic = icons.slice(
+      icons.indexOf("export function MicIcon"),
+      icons.indexOf("export function CalendarIcon"),
+    );
+    expect(mic).toMatch(/width="22"/);
+    expect(mic).toMatch(/height="22"/);
+    expect(mic).toMatch(/size-\[22px\]/);
+  });
+
+  it("keeps all three above the 16px floor", () => {
+    for (const size of icons.match(/size-\[(\d+)px\]/g) ?? []) {
+      expect(Number(/(\d+)/.exec(size)![1])).toBeGreaterThanOrEqual(18);
+    }
   });
 });

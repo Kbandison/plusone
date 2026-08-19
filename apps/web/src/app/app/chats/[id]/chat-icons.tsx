@@ -8,7 +8,16 @@
  */
 export function MicIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[17px]">
+    // Sized in the icon, not by the caller: at 17px inside a 44px tap target it
+    // read as an empty bordered box with a smudge in it.
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      focusable="false"
+      className="size-[22px]"
+    >
       <path
         d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"
         fill="none"
@@ -28,7 +37,14 @@ export function MicIcon() {
 
 export function CalendarIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[16px]">
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+      className="size-[18px]"
+    >
       <rect
         x="3.5"
         y="5"
@@ -52,7 +68,14 @@ export function CalendarIcon() {
 
 export function MoreIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[18px]">
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      aria-hidden="true"
+      focusable="false"
+      className="size-[20px]"
+    >
       <circle cx="5" cy="12" r="1.6" fill="currentColor" />
       <circle cx="12" cy="12" r="1.6" fill="currentColor" />
       <circle cx="19" cy="12" r="1.6" fill="currentColor" />

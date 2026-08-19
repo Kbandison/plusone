@@ -243,7 +243,10 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
       type="button"
       onClick={() => setOpen((current) => !current)}
       aria-expanded={open}
-      className="ease-brand mt-10 self-start text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      // No margin of its own: the mt-10 here was breathing room for the bottom
+      // of the composer column, and inside the header menu it was 40px of empty
+      // popover above the first item. Spacing is the menu's business now.
+      className="ease-brand text-left text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
     >
       {C.closeHeading}
     </button>
