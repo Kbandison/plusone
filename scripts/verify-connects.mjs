@@ -116,6 +116,40 @@ console.log("\nThe daily budget:");
   check(sent === 3, "claiming source='drop' without a drop still costs budget", `sent ${sent} of 8`);
 }
 
+console.log("\n§7.4 — a decline lasts:");
+{
+  const asker = await member();
+  const target = await member();
+
+  const first = await act(asker, INSERT, [asker, target, "browse"]);
+  check(first.ok, "the first ask goes through", first.ok ? "" : first.err.message.slice(0, 60));
+
+  await c.query(
+    `update public.connects set status = 'declined', decided_at = now(), decline_template = 0 where id = $1`,
+    [first.res.rows[0].id],
+  );
+
+  // connects_one_pending_ix is a unique index WHERE status = 'pending', so it
+  // stops two live asks and nothing more: the moment this went to 'declined' it
+  // left the index and a fresh row inserted cleanly. Somebody could be asked,
+  // decline, and be asked again the same minute, indefinitely.
+  const inside = await act(asker, INSERT, [asker, target, "browse"]);
+  check(!inside.ok, "and the same person cannot be asked again inside it");
+
+  // Being declined must not stop the person who declined from asking back.
+  const back = await act(target, INSERT, [target, asker, "browse"]);
+  check(back.ok, "but they may ask back", back.ok ? "" : back.err.message.slice(0, 60));
+
+  await c.query(
+    `update public.connects
+        set decided_at = now() - make_interval(days => public.config_int('cooldowns.decline_days', 30) + 1)
+      where id = $1`,
+    [first.res.rows[0].id],
+  );
+  const after = await act(asker, INSERT, [asker, target, "browse"]);
+  check(after.ok, "and it lifts when the cooldown is up", after.ok ? "" : after.err.message.slice(0, 60));
+}
+
 console.log("\nDecision #15 — a real drop card is free:");
 {
   const member1 = await member();
@@ -130,10 +164,16 @@ console.log("\nDecision #15 — a real drop card is free:");
   check(first.ok, "a genuine drop card connects", first.ok ? "" : first.err.message.slice(0, 60));
   check((await spent(member1)) === 0, "and consumes no daily budget", `used ${await spent(member1)}`);
 
-  // The exemption is per person, not per send: after a decline the second
-  // approach to the same member is an ordinary connect.
+  // A decline now holds for cooldowns.decline_days, so the re-approach below is
+  // dated past it. Testing the budget rule through a fresh decline stopped
+  // working the moment that cooldown existed — and the failure looked like the
+  // exemption breaking rather than like the wall doing its job.
   await c.query(
-    `update public.connects set status = 'declined', decided_at = now(), decline_template = 0 where id = $1`,
+    `update public.connects
+        set status = 'declined',
+            decided_at = now() - make_interval(days => public.config_int('cooldowns.decline_days', 30) + 1),
+            decline_template = 0
+      where id = $1`,
     [first.res.rows[0].id],
   );
   const again = await act(member1, INSERT, [member1, target, "drop"]);

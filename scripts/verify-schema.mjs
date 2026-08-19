@@ -31,7 +31,7 @@ if (!DB_URL) {
 
 // Expected counts. These are assertions about the migrations, so a drift here
 // means either the schema changed or this file did not keep up.
-const EXPECT = { tables: 25, views: 5, functions: 79, enums: 21, rooms: 5, config: 20 };
+const EXPECT = { tables: 25, views: 5, functions: 81, enums: 21, rooms: 5, config: 22 };
 const INVOKER_VIEWS = [];
 const DEFINER_VIEWS = ["visible_profile_photos", "visible_profiles", "preview_profiles"];
 const NO_UPDATE_PATH = ["connects", "chats"];
