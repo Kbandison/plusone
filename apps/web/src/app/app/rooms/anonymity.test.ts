@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const room = read("./[roomId]/page.tsx");
+const row = read("./[roomId]/post-row.tsx");
 const forms = read("./[roomId]/room-forms.tsx");
 const actions = read("./[roomId]/actions.ts");
 const safety = read("../../../lib/safety.ts");
@@ -102,8 +103,8 @@ describe("what a member sees and chooses", () => {
 
   /** A pseudonym that does not announce itself is taken for a real name. */
   it("says a post is anonymous next to the name", () => {
-    expect(room).toMatch(/post\.anonymous \?/);
-    expect(room).toMatch(/C\.postAnonymous\b/);
+    expect(row).toMatch(/post\.anonymous \?/);
+    expect(row).toMatch(/C\.postAnonymous\b/);
   });
 
   /** The same neutral shape a member with no photo gets, not a second symbol. */

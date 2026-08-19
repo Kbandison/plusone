@@ -84,3 +84,56 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   revalidatePath(`/app/rooms/${roomId}`);
   return { error: null };
 }
+
+/**
+ * Liking, and unliking, which is the same press.
+ *
+ * No state and no error path back to the UI: LikeButton is optimistic, and
+ * React reverts it if this throws. A returned error would be a second way to
+ * say the same thing, and the two would disagree.
+ */
+export async function toggleLike(messageId: string): Promise<void> {
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+
+  const { error } = await supabase.rpc("toggle_room_like", { p_message_id: messageId });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * A comment, which is a post with a parent.
+ *
+ * The same action as postToRoom in every respect that matters — the tone check,
+ * the anonymity choice, the slow-mode trigger — because a comment IS a post.
+ * Room id is deliberately not taken from the client: enforce_flat_comments sets
+ * it from the parent, so a comment cannot be filed under a room its post is not
+ * in.
+ */
+export async function postComment(_prev: RoomState, formData: FormData): Promise<RoomState> {
+  const parentId = String(formData.get("parent_id") ?? "");
+  const roomId = String(formData.get("room_id") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return { error: C.emptyPost };
+
+  const result = tone.checkTone(body, { maxChars: 2000, allowConditionWords: true });
+  if (!result.ok) return { error: describeViolations(result.violations) };
+
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+
+  const { error } = await supabase.from("room_messages").insert({
+    room_id: roomId,
+    parent_id: parentId,
+    user_id: auth.user.id,
+    body,
+    anonymous: formData.get("anonymous") === "on",
+  });
+
+  if (error) return { error: memberFacingError(error, "That didn't post.") };
+
+  revalidatePath(`/app/rooms/${roomId}/${parentId}`);
+  revalidatePath(`/app/rooms/${roomId}`);
+  return { error: null };
+}

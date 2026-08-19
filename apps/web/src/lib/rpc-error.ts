@@ -96,6 +96,10 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // saying "no such post" back would confirm to a prober that other ids do
   // exist, which is the oracle the check was written to close.
   "no such post",
+  // enforce_flat_comments. The UI offers no reply control on a comment, so only
+  // a forged insert reaches this — and "a reply cannot be replied to" describes
+  // the schema rather than anything the member did.
+  "a reply cannot be replied to",
   "could not allocate a referral code",
   // record_drop refuses a backdated date. Only a forged call can produce it —
   // the app always sends today — so it says nothing a member needs.

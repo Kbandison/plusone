@@ -703,6 +703,18 @@ export const DRAFT_COPY = {
      * least says what it is more OF.
      */
     postMenuLabel: "Post options",
+    /** The reaction. No counterpart — see Decision #26 and the 000800 migration. */
+    postLikeLabel: "Like",
+    postUnlikeLabel: "Remove like",
+    postLikeCount: (n: number) => `${n} ${n === 1 ? "like" : "likes"}`,
+    postCommentCount: (n: number) => (n === 1 ? "1 comment" : `${n} comments`),
+    postCommentNone: "No comments yet",
+    /** Author-only, so it is addressed to them: "your post", not "this post". */
+    postViewCount: (n: number) => `Seen by ${n} ${n === 1 ? "person" : "people"}`,
+    postReplyPlaceholder: "Write a comment",
+    postReplyLabel: "Comment",
+    postThreadHeading: "Post",
+    postBackToRoom: "Back to the room",
     /**
      * Said plainly beside a pseudonym. A made-up name that does not announce
      * itself is a name a reader will take for a real one — and the person who

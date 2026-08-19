@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { joinRoom, postToRoom } from "./actions";
+import { joinRoom, postComment, postToRoom } from "./actions";
 import { ROOM_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
 
@@ -54,6 +54,55 @@ export function RoomComposer({ roomId }: { roomId: string }) {
           who has decided to be anonymous will say so. The note is there because
           "anonymous" alone does not answer the two questions a member actually
           has: anonymous to whom, and is it the same me next time. */}
+      <label className="flex items-start gap-3 text-[11.7px]">
+        <input
+          type="checkbox"
+          name="anonymous"
+          className="mt-0.5 size-[14.6px] shrink-0 accent-accent"
+        />
+        <span className="flex flex-col gap-1">
+          {C.postAnonymousLabel}
+          <span className="text-[10.5px] leading-[1.5] text-ink-3">{C.postAnonymousNote}</span>
+        </span>
+      </label>
+
+      {state.error ? (
+        <p role="alert" className="text-[11.3px] text-critical">
+          {state.error}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+/**
+ * A comment, which is the composer again with a parent on it.
+ *
+ * Deliberately the same controls, including the anonymity checkbox: a member
+ * who posted anonymously and then replied under their own name would have
+ * undone their own cover in the one place it matters most. The choice is per
+ * post, so it has to be offered per post.
+ */
+export function CommentComposer({ roomId, parentId }: { roomId: string; parentId: string }) {
+  const [state, act, pending] = useActionState(postComment, ROOM_INITIAL);
+  return (
+    <form action={act} className="mt-6 flex flex-col gap-3">
+      <input type="hidden" name="room_id" value={roomId} />
+      <input type="hidden" name="parent_id" value={parentId} />
+      <div className="flex gap-3">
+        <input
+          name="body"
+          type="text"
+          maxLength={2000}
+          placeholder={C.postReplyPlaceholder}
+          aria-label={C.postReplyPlaceholder}
+          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] focus:border-accent"
+        />
+        <button type="submit" disabled={pending} className={buttonClass("primary")}>
+          {C.postReplyLabel}
+        </button>
+      </div>
+
       <label className="flex items-start gap-3 text-[11.7px]">
         <input
           type="checkbox"

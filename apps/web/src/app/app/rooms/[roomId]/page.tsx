@@ -6,9 +6,8 @@ import { chat as chatLogic } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
-import { OverflowMenu } from "../../overflow-menu";
-import { MemberPhotoFrame } from "../../member-photo";
 import { photosFor } from "@/lib/photo-urls";
+import { PostRow, type Post } from "./post-row";
 import { JoinRoom, RoomComposer } from "./room-forms";
 import { EmptyState } from "@/app/ui";
 
@@ -64,15 +63,17 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
   // Everything the client is allowed to know about who wrote what. There is no
   // branch in room_feed where an anonymous post carries an author id, so there
   // is no bug here that could reveal one — the shape of the data is the wall.
-  const posts = (feed ?? []) as {
-    id: string;
-    body: string;
-    created_at: string;
-    anonymous: boolean;
-    author_id: string | null;
-    author_name: string | null;
-    is_mine: boolean;
-  }[];
+  const posts = (feed ?? []) as Post[];
+
+  // Seen, recorded once for the page. Fire-and-forget like mark_room_read: a
+  // failed write means a count is one short, which is a far better outcome than
+  // a room that will not open because bookkeeping failed.
+  //
+  // "Seen" means it came up in your feed, which is what every feed counts and
+  // is why the copy says seen rather than read.
+  if (posts.length > 0) {
+    void supabase.rpc("record_room_views", { p_message_ids: posts.map((post) => post.id) });
+  }
 
   // Photos only for the authors who chose to be named. photosFor reads
   // visible_profile_photos, so a member whose photos are blurred until
@@ -161,73 +162,20 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
           </li>
         ) : null}
 
-        {posts.map((post) => {
-          const postedAt = Date.parse(post.created_at);
-
-          return (
-            <li
-              key={post.id}
-              className="ease-brand border-b border-line px-6 py-4 transition-colors duration-200 hover:bg-surface"
-            >
-              <div className="flex items-start gap-3">
-                {/* An anonymous author has no photo to show, so the frame's
-                    empty state is the placeholder — the same neutral shape a
-                    member with no photo gets, rather than a second thing to
-                    learn the meaning of. */}
-                <MemberPhotoFrame
-                  photo={post.author_id ? authorPhotos.get(post.author_id) : undefined}
-                  size={34}
-                />
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="flex min-w-0 items-baseline gap-2">
-                      <span className="truncate text-[13px]">
-                        {post.author_name ?? C.threadUnknownPerson}
-                      </span>
-                      {post.anonymous ? (
-                        // Said plainly. A pseudonym that does not announce
-                        // itself is a name a reader will take for a real one.
-                        <span className="shrink-0 text-[10.5px] text-ink-3">{C.postAnonymous}</span>
-                      ) : null}
-                      <time
-                        dateTime={new Date(postedAt).toISOString()}
-                        title={chatLogic.messageTimeExact(postedAt, zone)}
-                        className="shrink-0 text-[11px] text-ink-3 tabular-nums"
-                      >
-                        {chatLogic.compactAge(postedAt, now, zone)}
-                      </time>
-                    </p>
-
-                    {!post.is_mine ? (
-                      <OverflowMenu label={C.postMenuLabel} compact>
-                        <div className="py-3">
-                          {/* Neither control takes an author id, and for an
-                              anonymous post the client does not have one.
-                              Both resolve it server-side from the message. */}
-                          <ReportControl roomMessageId={post.id} describedBy={`post-${post.id}`} />
-                        </div>
-                        <div className="py-3">
-                          <BlockButton roomMessageId={post.id} describedBy={`post-${post.id}`} />
-                        </div>
-                      </OverflowMenu>
-                    ) : null}
-                  </div>
-
-                  {/* The controls above point at this id, which is what tells a
-                      screen reader user which post they are about to report —
-                      every one of them is otherwise just "Report, button". */}
-                  <p
-                    id={`post-${post.id}`}
-                    className="mt-1 text-[13.5px] leading-[1.6] whitespace-pre-wrap"
-                  >
-                    {post.body}
-                  </p>
-                </div>
-              </div>
-            </li>
-          );
-        })}
+        {posts.map((post) => (
+          <li
+            key={post.id}
+            className="ease-brand border-b border-line px-6 py-4 transition-colors duration-200 hover:bg-surface"
+          >
+            <PostRow
+              post={post}
+              photo={post.author_id ? authorPhotos.get(post.author_id) : undefined}
+              zone={zone}
+              now={now}
+              commentHref={`/app/rooms/${room.id as string}/${post.id}`}
+            />
+          </li>
+        ))}
       </ul>
     </main>
   );

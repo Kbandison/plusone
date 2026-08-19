@@ -8,6 +8,8 @@ const tabs = read("./room-tabs.tsx");
 const layout = read("./layout.tsx");
 const index = read("./page.tsx");
 const room = read("./[roomId]/page.tsx");
+// The row markup lives here now; the page composes it.
+const row = read("./[roomId]/post-row.tsx");
 const reads = read(
   "../../../../../../supabase/migrations/20260819000500_which_rooms_have_moved.sql",
 );
@@ -156,9 +158,9 @@ describe("the room reads as a feed", () => {
   });
 
   it("gives each row the age of the post", () => {
-    expect(room).toMatch(/chatLogic\.compactAge\(postedAt, now, zone\)/);
-    expect(room).toMatch(/dateTime=\{new Date\(postedAt\)\.toISOString\(\)\}/);
-    expect(room).toMatch(/title=\{chatLogic\.messageTimeExact\(postedAt, zone\)\}/);
+    expect(row).toMatch(/chatLogic\.compactAge\(postedAt, now, zone\)/);
+    expect(row).toMatch(/dateTime=\{new Date\(postedAt\)\.toISOString\(\)\}/);
+    expect(row).toMatch(/title=\{chatLogic\.messageTimeExact\(postedAt, zone\)\}/);
   });
 
   /** One reading of the clock for the page, not one per row. */
@@ -177,8 +179,8 @@ describe("the room reads as a feed", () => {
 
   /** Report and block on every row was two text links per post. */
   it("folds the per-post controls behind one press", () => {
-    expect(room).toMatch(/<OverflowMenu label=\{C\.postMenuLabel\} compact>/);
-    expect(room).toMatch(/<ReportControl\s+roomMessageId=/);
+    expect(row).toMatch(/<OverflowMenu label=\{C\.postMenuLabel\} compact>/);
+    expect(row).toMatch(/<ReportControl roomMessageId=/);
   });
 
   /**
@@ -189,9 +191,8 @@ describe("the room reads as a feed", () => {
    * otherwise, and never from a column the client could have read itself.
    */
   it("takes every name from the projection, never from the table", () => {
-    const feed = room.slice(room.indexOf('<ul className="-mx-6'));
-    expect(feed).toMatch(/post\.author_name/);
-    expect(feed).not.toMatch(/display_name/);
+    expect(row).toMatch(/post\.author_name/);
+    expect(row).not.toMatch(/display_name/);
     expect(room).not.toMatch(/\.from\("room_messages"\)/);
   });
 });
