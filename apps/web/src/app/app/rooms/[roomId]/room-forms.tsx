@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
 import { joinRoom, postComment, postToRoom } from "./actions";
 import { ROOM_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { useReply } from "./reply-context";
 
 const C = DRAFT_COPY.app;
 
@@ -85,14 +86,59 @@ export function RoomComposer({ roomId }: { roomId: string }) {
  */
 export function CommentComposer({ roomId, parentId }: { roomId: string; parentId: string }) {
   const [state, act, pending] = useActionState(postComment, ROOM_INITIAL);
+  const { replyTo, setReplyTo, register } = useReply();
+  const [body, setBody] = useState("");
+
+  // The name goes into the box, the way Facebook does it, so what is sent is
+  // just a message that says who it is for. Nothing structured, nothing stored
+  // — and for somebody posting anonymously it is their alias, which is not an
+  // id and gives nothing away.
+  const previous = useRef<string | null>(null);
+  if (replyTo !== previous.current) {
+    previous.current = replyTo;
+    if (replyTo) setBody((current) => (current.startsWith(replyTo) ? current : `${replyTo} `));
+  }
+
   return (
-    <form action={act} className="mt-6 flex flex-col gap-3">
+    <form
+      action={(formData) => {
+        act(formData);
+        setBody("");
+        setReplyTo(null);
+      }}
+      className="mt-6 flex flex-col gap-3"
+    >
       <input type="hidden" name="room_id" value={roomId} />
       <input type="hidden" name="parent_id" value={parentId} />
+
+      {/* Said above the box as well as put in it. The name alone in the field
+          could be something the member typed; this is the part that says the
+          product is in a mode, and the part that offers a way out of it. */}
+      {replyTo ? (
+        <p className="flex items-center gap-3 text-[11px] text-ink-3">
+          {C.postReplyingTo(replyTo)}
+          <button
+            type="button"
+            onClick={() => {
+              setBody((current) =>
+                current.startsWith(replyTo) ? current.slice(replyTo.length).trimStart() : current,
+              );
+              setReplyTo(null);
+            }}
+            className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          >
+            {C.postReplyCancel}
+          </button>
+        </p>
+      ) : null}
+
       <div className="flex gap-3">
         <input
+          ref={register}
           name="body"
           type="text"
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
           maxLength={2000}
           placeholder={C.postReplyPlaceholder}
           aria-label={C.postReplyPlaceholder}

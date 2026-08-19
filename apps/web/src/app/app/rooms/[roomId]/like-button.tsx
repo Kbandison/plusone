@@ -117,8 +117,12 @@ export function CommentIcon() {
       focusable="false"
       className="size-[16px] shrink-0"
     >
+      {/* A speech bubble sitting upright with its tail at the bottom left.
+          The first attempt drew the body as one big arc and hung the tail off
+          the side of it, which came out lying on its face. This is a rounded
+          rectangle and a tail, which is what the shape actually is. */}
       <path
-        d="M20 12a7 7 0 0 1-7 7H8l-4 3v-4.5A7 7 0 0 1 11 5h2a7 7 0 0 1 7 7Z"
+        d="M5 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"

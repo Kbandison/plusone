@@ -258,3 +258,70 @@ describe("the counts are always there", () => {
     expect(row).not.toMatch(/comment_count > 0 \?/);
   });
 });
+
+const thread2 = read("./[roomId]/[post]/page.tsx");
+const replyCtx = read("./[roomId]/reply-context.tsx");
+const replyBtn = read("./[roomId]/reply-button.tsx");
+
+/**
+ * A comment cannot have a comment — the database refuses one, and one level is
+ * the whole shape of this. So answering a commenter is not a deeper row: it is
+ * the same box, addressed to somebody, which is what the second level of a
+ * Facebook thread is once you stop drawing the indent.
+ */
+describe("replying to a commenter", () => {
+  it("offers Reply on comments and not on the post", () => {
+    expect(thread2).toMatch(/post=\{comment\}[\s\S]{0,200}replyable/);
+    const rootRender = thread2.slice(thread2.indexOf("post={root}"));
+    expect(rootRender.slice(0, 160)).not.toMatch(/replyable/);
+  });
+
+  it("puts the name in the box the way Facebook does", () => {
+    expect(forms).toMatch(
+      /setBody\(\(current\) => \(current\.startsWith\(replyTo\) \? current : `\$\{replyTo\} `\)\)/,
+    );
+  });
+
+  /** Without the move a member types in front of the person they are answering. */
+  it("focuses the field and puts the caret after the name", () => {
+    expect(replyCtx).toMatch(/field\.focus\(\)/);
+    expect(replyCtx).toMatch(/setSelectionRange\(end, end\)/);
+  });
+
+  /** The name alone in a field could be something the member typed. */
+  it("says who it is answering, and offers a way out", () => {
+    expect(forms).toMatch(/C\.postReplyingTo\(replyTo\)/);
+    expect(forms).toMatch(/C\.postReplyCancel/);
+  });
+
+  /**
+   * The name is whatever the projection gave the row — a display name, or the
+   * alias of somebody posting anonymously. Neither is an id, so addressing a
+   * reply to an anonymous member gives nothing away.
+   */
+  it("addresses the projected name, never an id", () => {
+    expect(row).toMatch(/<ReplyButton name=\{post\.author_name\}/);
+    expect(replyBtn).not.toMatch(/author_id|user_id/);
+  });
+
+  /** Nothing structured and nothing stored: it is a message that says who it is for. */
+  it("stores no reply target of its own", () => {
+    const migration = read(
+      "../../../../../../supabase/migrations/20260819000900_a_like_that_answers_and_a_reply_that_does_not_wait.sql",
+    );
+    expect(migration).not.toMatch(/reply_to|mention/);
+  });
+});
+
+/**
+ * The first attempt drew the bubble as one big arc with the tail hung off the
+ * side of it, and it came out lying on its face.
+ */
+describe("the comment icon is a speech bubble", () => {
+  it("is a rounded rectangle with a tail, not an arc", () => {
+    const icon = like.slice(like.indexOf("export function CommentIcon"));
+    expect(icon).toMatch(
+      /d="M5 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/,
+    );
+  });
+});

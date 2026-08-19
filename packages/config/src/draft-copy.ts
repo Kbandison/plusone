@@ -713,6 +713,10 @@ export const DRAFT_COPY = {
     postViewCount: (n: number) => `Seen by ${n} ${n === 1 ? "person" : "people"}`,
     postReplyPlaceholder: "Write a comment",
     postReplyLabel: "Comment",
+    /** On a comment. It answers that person, in the same one level of replies. */
+    postReplyToLabel: "Reply",
+    postReplyingTo: (name: string) => `Replying to ${name}`,
+    postReplyCancel: "Cancel reply",
     postThreadHeading: "Post",
     postBackToRoom: "Back to the room",
     /**

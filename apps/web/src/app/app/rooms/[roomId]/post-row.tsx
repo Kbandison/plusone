@@ -8,6 +8,7 @@ import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { MemberPhotoFrame } from "../../member-photo";
 import { OverflowMenu } from "../../overflow-menu";
 import { CommentIcon, LikeButton } from "./like-button";
+import { ReplyButton } from "./reply-button";
 
 const C = DRAFT_COPY.app;
 
@@ -47,6 +48,7 @@ export function PostRow({
   zone,
   now,
   commentHref,
+  replyable = false,
 }: {
   post: Post;
   photo: MemberPhoto | undefined;
@@ -54,6 +56,15 @@ export function PostRow({
   now: number;
   /** Absent for a comment, and for the post you are already looking at. */
   commentHref?: string;
+  /**
+   * Shows a Reply control that addresses this row's author.
+   *
+   * On a comment, because a comment cannot have a comment — the database
+   * refuses one. Answering somebody puts their name in the same box everyone
+   * else is using, which is what the second level of a Facebook thread
+   * actually is once you stop drawing the indent.
+   */
+  replyable?: boolean;
 }) {
   const postedAt = Date.parse(post.created_at);
 
@@ -121,6 +132,8 @@ export function PostRow({
               <span className="tabular-nums">{post.comment_count}</span>
             </Link>
           ) : null}
+
+          {replyable && post.author_name ? <ReplyButton name={post.author_name} /> : null}
 
           {/* Author only, and phrased for them. "2 views" under somebody's
               diagnosis story reads worse than no number at all; the question

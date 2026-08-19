@@ -8,6 +8,7 @@ import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { PostRow, type Post } from "../post-row";
 import { CommentComposer } from "../room-forms";
+import { ReplyProvider } from "../reply-context";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.postThreadHeading };
 
@@ -76,30 +77,39 @@ export default async function PostPage({
 
       <h1 className="sr-only">{C.postThreadHeading}</h1>
 
-      <div className="-mx-6 mt-2 border-y border-line px-6 py-4">
-        <PostRow post={root} photo={photos.get(root.author_id ?? "")} zone={zone} now={now} />
-      </div>
+      {/* The Reply buttons sit inside the rows below and the box they fill sits
+          above them, so the two share state through here rather than through a
+          prop nobody could thread. */}
+      <ReplyProvider>
+        <div className="-mx-6 mt-2 border-y border-line px-6 py-4">
+          <PostRow post={root} photo={photos.get(root.author_id ?? "")} zone={zone} now={now} />
+        </div>
 
-      <CommentComposer roomId={roomId} parentId={root.id} />
+        <CommentComposer roomId={roomId} parentId={root.id} />
 
-      <ul className="-mx-6 mt-6 border-t border-line">
-        {comments.length === 0 ? (
-          <li className="px-6 py-6 text-[12.6px] text-ink-2">{C.postCommentNone}</li>
-        ) : null}
+        <ul className="-mx-6 mt-6 border-t border-line">
+          {comments.length === 0 ? (
+            <li className="px-6 py-6 text-[12.6px] text-ink-2">{C.postCommentNone}</li>
+          ) : null}
 
-        {comments.map((comment) => (
-          <li key={comment.id} className="border-b border-line px-6 py-4">
-            {/* No commentHref: a reply cannot be replied to, and the database
-                refuses one rather than trusting this not to offer it. */}
-            <PostRow
-              post={comment}
-              photo={photos.get(comment.author_id ?? "")}
-              zone={zone}
-              now={now}
-            />
-          </li>
-        ))}
-      </ul>
+          {comments.map((comment) => (
+            <li key={comment.id} className="border-b border-line px-6 py-4">
+              {/* No commentHref — a reply cannot be replied to, and the
+                  database refuses one rather than trusting this not to offer
+                  it. Replyable instead: answering somebody puts their name in
+                  the same box, which is the same conversation without a second
+                  level to store. */}
+              <PostRow
+                post={comment}
+                photo={photos.get(comment.author_id ?? "")}
+                zone={zone}
+                now={now}
+                replyable
+              />
+            </li>
+          ))}
+        </ul>
+      </ReplyProvider>
     </main>
   );
 }
