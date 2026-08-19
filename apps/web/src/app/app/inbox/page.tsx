@@ -197,6 +197,16 @@ export default async function InboxPage() {
         }),
         daysLeft: thread.deadlineAt == null ? null : Math.ceil((thread.deadlineAt - now) / DAY),
         href: thread.kind === "chat" ? `/app/chats/${thread.id}` : null,
+        // A connect the member sent carries what they wrote, so the row can be
+        // opened and re-read. Incoming ones never reach a row — they are the
+        // faces above the list — so this is only ever the outgoing side.
+        sent:
+          thread.kind === "connect"
+            ? {
+                question: promptQuestion(connectById.get(thread.id)!.prompt_id),
+                reply: connectById.get(thread.id)!.prompt_reply,
+              }
+            : undefined,
         photo: photos.get(otherId),
       };
     });

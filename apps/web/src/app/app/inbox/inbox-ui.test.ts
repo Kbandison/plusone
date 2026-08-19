@@ -109,3 +109,42 @@ describe("the headings say different things", () => {
     expect(inboxHeading).not.toBe(decisionHeading);
   });
 });
+
+/**
+ * Reported: the threads waiting for a response could not be opened.
+ *
+ * `href` was set only for chats, so a connect the member had SENT rendered as a
+ * plain div — no link, no button, nothing to press. A thread you cannot open is
+ * a thread you cannot re-read, and what you wrote to somebody is the one thing
+ * you might want to check while you are waiting on them.
+ */
+describe("every row can be opened", () => {
+  const row = read("./thread-row.tsx");
+
+  it("gives a sent connect something to press", () => {
+    expect(row).toMatch(/if \(thread\.sent\) \{/);
+    expect(row).toMatch(/onClick=\{\(\) => dialog\.current\?\.showModal\(\)\}/);
+    expect(row).not.toMatch(/<div className="flex items-start gap-3\.5 rounded-xl/);
+  });
+
+  it("carries what was written so it can be read back", () => {
+    expect(page).toMatch(/question: promptQuestion\(connectById/);
+    expect(page).toMatch(/reply: connectById\.get\(thread\.id\)!\.prompt_reply/);
+    expect(row).toMatch(/thread\.sent\.reply/);
+  });
+
+  /** Same dismissal as the decision dialog: a click outside, and an X. */
+  it("closes the same ways the decision dialog does", () => {
+    expect(row).toMatch(/if \(event\.target === dialog\.current\) dialog\.current\?\.close\(\)/);
+    expect(row).toMatch(/method="dialog"/);
+  });
+
+  /** Read-only. Nothing here accepts, declines or withdraws anything. */
+  it("offers no action it cannot honour", () => {
+    const sentBlock = row.slice(
+      row.indexOf("if (thread.sent) {"),
+      row.indexOf("return (\n    <li>"),
+    );
+    expect(sentBlock).not.toMatch(/AcceptForm|DeclineForm/);
+  });
+});

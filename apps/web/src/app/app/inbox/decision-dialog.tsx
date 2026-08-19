@@ -119,7 +119,7 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
 }
 
 /** Drawn rather than imported: one icon does not justify a dependency. */
-function CloseIcon() {
+export function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[17.1px]">
       <path
