@@ -34,8 +34,26 @@ const TONE: Record<ButtonTone, string> = {
     "border border-line-control text-ink hover:border-critical hover:text-critical disabled:opacity-55",
 };
 
-const SHAPE =
-  "ease-brand inline-flex min-h-tap items-center justify-center rounded-lg px-5 text-body-sm transition-[opacity,transform,border-color,color] duration-200";
+const SHAPE_BASE =
+  "ease-brand inline-flex min-h-tap items-center justify-center rounded-lg text-body-sm transition-[opacity,transform,border-color,color] duration-200";
+
+const SHAPE = `${SHAPE_BASE} px-5`;
+
+/**
+ * A square button holding one glyph.
+ *
+ * Not `buttonClass(tone, "size-tap px-0")`, which is what this was and which
+ * silently did nothing. Tailwind resolves same-property utilities by their
+ * order in the generated stylesheet, not by the order they appear in the class
+ * attribute — `.px-5` is emitted after `.px-0`, so the override lost. The
+ * microphone ended up in a 44px box with 20px of padding a side: two pixels of
+ * content, and an SVG flex item shrinks to fit. It rendered as an empty border.
+ *
+ * So the padding is never added rather than added and argued with.
+ */
+export function iconButtonClass(tone: ButtonTone = "secondary", extra = ""): string {
+  return `${SHAPE_BASE} size-tap shrink-0 ${TONE[tone]} ${extra}`.trim();
+}
 
 export function buttonClass(tone: ButtonTone = "primary", extra = ""): string {
   const shape =

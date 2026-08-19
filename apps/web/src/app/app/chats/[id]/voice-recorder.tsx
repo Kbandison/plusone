@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { sendVoiceNote } from "./actions";
-import { buttonClass } from "@/app/ui";
+import { buttonClass, iconButtonClass } from "@/app/ui";
 import { MicIcon } from "./chat-icons";
 
 const C = DRAFT_COPY.app;
@@ -156,7 +156,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
           type="button"
           onClick={start}
           aria-label={C.voiceRecordLabel}
-          className={buttonClass("secondary", "size-tap justify-center px-0")}
+          className={iconButtonClass("secondary")}
         >
           <MicIcon />
         </button>

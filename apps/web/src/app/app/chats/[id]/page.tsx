@@ -158,7 +158,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
             the one place you are actually talking to them, showed a string. */}
         <div className="flex min-w-0 items-center gap-3">
           <MemberPhotoFrame photo={otherPhoto} size={34} />
-          <h1 className="truncate text-[15px]">{otherName ?? C.chatsHeading}</h1>
+          <h1 className="truncate text-h3">{otherName ?? C.chatsHeading}</h1>
         </div>
 
         {/* Report and block hung off the live-chat branch, so they vanished the

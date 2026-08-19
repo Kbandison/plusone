@@ -115,7 +115,7 @@ export function CloseIcon() {
       height="18"
       aria-hidden="true"
       focusable="false"
-      className="size-[18px]"
+      className="size-[18px] shrink-0"
     >
       <path
         d="M6 6l12 12M18 6L6 18"

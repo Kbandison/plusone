@@ -16,7 +16,7 @@ export function MicIcon() {
       height="22"
       aria-hidden="true"
       focusable="false"
-      className="size-[22px]"
+      className="size-[22px] shrink-0"
     >
       <path
         d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"
@@ -43,7 +43,7 @@ export function CalendarIcon() {
       height="18"
       aria-hidden="true"
       focusable="false"
-      className="size-[18px]"
+      className="size-[18px] shrink-0"
     >
       <rect
         x="3.5"
@@ -74,7 +74,7 @@ export function MoreIcon() {
       height="20"
       aria-hidden="true"
       focusable="false"
-      className="size-[20px]"
+      className="size-[20px] shrink-0"
     >
       <circle cx="5" cy="12" r="1.6" fill="currentColor" />
       <circle cx="12" cy="12" r="1.6" fill="currentColor" />
