@@ -611,12 +611,14 @@ export const DRAFT_COPY = {
      * Three sections, because one flat list made a live conversation and an
      * unanswered ask render as the same object — told apart by a three-word
      * state label most people never read.
+     *
+     * The sent section reuses threadSentWaiting above rather than owning a
+     * second word for the same fact. "Sent" described how the row got there;
+     * "Waiting on them" describes what it is doing, which is what the row
+     * itself already says.
      */
     inboxChatsHeading: "Conversations",
-    inboxSentHeading: "Sent",
     inboxClosedHeading: "Closed",
-    /** The collapsed count, so it says how much is behind it before you open it. */
-    inboxClosedCount: (n: number) => `${n} ${n === 1 ? "thread" : "threads"}`,
     /**
      * The same fact, said on a Browse card.
      *
@@ -810,6 +812,17 @@ export const DRAFT_COPY = {
     blockConfirmLabel: "Block them",
     blockKeepLabel: "Never mind",
     blockedHeading: "Blocked",
+    /**
+     * A conversation a member reported, kept where they can still reach it.
+     *
+     * Blocking takes the thread out of the inbox for both people, and the
+     * blocked member does not keep a copy. Reporting is the act that says "I
+     * may need this again", so it is the one that keeps the reporter's.
+     */
+    reportedThreadsHeading: "Conversations you reported",
+    reportedThreadsEmpty: "Nothing here. Conversations you report stay readable from this page.",
+    reportedThreadsNote: (days: number) =>
+      `Kept for ${days} days, or until a moderator has finished with the report.`,
     blockedEmpty: "You have not blocked anyone.",
     unblockLabel: "Unblock",
     reportLabel: "Report",

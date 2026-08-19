@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
-const closed = read("./closed-section.tsx");
+const section = read("./collapsible-section.tsx");
 const browse = read("../browse/page.tsx");
 const migration = read(
   "../../../../../../supabase/migrations/20260819000200_a_no_is_allowed_to_last.sql",
@@ -24,25 +24,47 @@ describe("the inbox says what kind of thing each row is", () => {
 
   it("gives conversations and sent connects their own headings", () => {
     expect(page).toMatch(/C\.inboxChatsHeading/);
-    expect(page).toMatch(/C\.inboxSentHeading/);
+    expect(page).toMatch(/heading=\{C\.threadSentWaiting\}/);
   });
 
-  /** Nothing to do with a sent connect but wait, so it carries less weight. */
-  it("renders sent connects lighter than conversations", () => {
-    const sent = page.slice(page.indexOf("C.inboxSentHeading"));
-    expect(sent.slice(0, sent.indexOf("</section>"))).toMatch(/opacity-80/);
+  /**
+   * "Sent" described how the row got there. "Waiting on them" describes what it
+   * is doing, which is what the row already says — and reusing the string means
+   * one fact with one spelling rather than two to keep true.
+   */
+  it("names the sent section for what it is doing", () => {
+    expect(page).not.toMatch(/inboxSentHeading/);
+  });
+
+  /** Nothing to do with one of these but wait, so it folds away. */
+  it("folds sent connects, and the endings, behind a count", () => {
+    expect(page.match(/<CollapsibleSection heading=/g)).toHaveLength(2);
+    expect(section).toMatch(/tabular-nums/);
   });
 
   it("puts conversations above the ones you cannot act on", () => {
-    expect(page.indexOf("C.inboxChatsHeading")).toBeLessThan(page.indexOf("C.inboxSentHeading"));
+    expect(page.indexOf("C.inboxChatsHeading")).toBeLessThan(
+      page.indexOf("heading={C.threadSentWaiting}"),
+    );
+  });
+
+  /** Every section heading at one size, and bigger than the rows under it. */
+  it("sizes all three headings the same", () => {
+    expect(page).toMatch(/<h2 className="flex items-center gap-2 text-\[15px\] text-ink-2">/);
+    expect(section).toMatch(/text-\[15px\] text-ink-2/);
+  });
+
+  /** The one section that is the reason the page exists does not fold. */
+  it("leaves conversations open", () => {
+    const chats = page.slice(page.indexOf("C.inboxChatsHeading"));
+    expect(chats.slice(0, chats.indexOf("</section>"))).not.toMatch(/CollapsibleSection/);
   });
 });
 
 describe("endings fold away", () => {
   it("collapses them behind a count", () => {
-    expect(page).toMatch(/<ClosedSection count=\{settled\.length\}>/);
-    expect(closed).toMatch(/C\.inboxClosedCount\(count\)/);
-    expect(closed).toMatch(/aria-expanded=\{open\}/);
+    expect(page).toMatch(/heading=\{C\.inboxClosedHeading\} count=\{settled\.length\}/);
+    expect(section).toMatch(/aria-expanded=\{open\}/);
   });
 
   /** §6.2 — an ending is a thing you can go back and look at. */
@@ -51,7 +73,7 @@ describe("endings fold away", () => {
   });
 
   it("sits under a real heading, not a bare button", () => {
-    expect(closed).toMatch(/<h2>\s*<button/);
+    expect(section).toMatch(/<h2>\s*<button/);
   });
 });
 

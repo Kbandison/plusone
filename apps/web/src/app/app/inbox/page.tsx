@@ -8,7 +8,7 @@ import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { DecisionBubble, type Decision } from "./decision-dialog";
 import { ThreadRow, type ThreadView } from "./thread-row";
-import { ClosedSection } from "./closed-section";
+import { CollapsibleSection } from "./collapsible-section";
 
 const C = DRAFT_COPY.app;
 const DAY = 86_400_000;
@@ -282,11 +282,14 @@ export default async function InboxPage() {
       {/* Conversations first, and named. A live chat and an ask nobody has
           answered were the same row with a different three-word label, which is
           not a distinction anyone reads — the one you can walk into and the one
-          you can only wait on looked identical. */}
+          you can only wait on looked identical.
+
+          This one does not fold. It is the reason the page exists. */}
       {live.length > 0 ? (
         <section className="mt-8">
-          <h2 className="text-[12.2px] tracking-[0.02em] text-ink-3 uppercase">
+          <h2 className="flex items-center gap-2 text-[15px] text-ink-2">
             {C.inboxChatsHeading}
+            <span className="text-[13px] text-ink-3 tabular-nums">{live.length}</span>
           </h2>
           <ul className="rise-in mt-3 flex flex-col gap-2.5">
             {live.map((thread) => (
@@ -296,30 +299,26 @@ export default async function InboxPage() {
         </section>
       ) : null}
 
-      {/* Lighter than a conversation, deliberately. There is nothing to do with
-          one of these except wait, so it should not carry the weight of a row
-          that is asking for something. */}
+      {/* Folded, because there is nothing to do with one of these but wait —
+          and named for what it is doing rather than for how it got here. */}
       {sent.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="text-[12.2px] tracking-[0.02em] text-ink-3 uppercase">
-            {C.inboxSentHeading}
-          </h2>
-          <ul className="rise-in mt-3 flex flex-col gap-2.5 opacity-80">
+        <CollapsibleSection heading={C.threadSentWaiting} count={sent.length}>
+          <ul className="flex flex-col gap-2.5">
             {sent.map((thread) => (
               <ThreadRow key={thread.id} thread={thread} />
             ))}
           </ul>
-        </section>
+        </CollapsibleSection>
       ) : null}
 
       {settled.length > 0 ? (
-        <ClosedSection count={settled.length}>
+        <CollapsibleSection heading={C.inboxClosedHeading} count={settled.length}>
           <ul className="flex flex-col gap-2.5">
             {settled.map((thread) => (
               <ThreadRow key={thread.id} thread={thread} />
             ))}
           </ul>
-        </ClosedSection>
+        </CollapsibleSection>
       ) : null}
     </main>
   );

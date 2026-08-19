@@ -139,10 +139,42 @@ export async function POST(request: Request) {
     }
   }
 
+  // Blocked threads past retention, in the same nightly pass.
+  //
+  // Separate from the hard delete above and deliberately after it: this one
+  // removes messages from accounts that still exist, so a failure here must not
+  // be able to abandon a member's deletion request half-done.
+  //
+  // The same storage rule applies. A voice note lives at
+  // voice-notes/<chat_id>/<message_id> and the row holding that path is exactly
+  // what the delete removes, so the function hands the paths back rather than
+  // leaving an unreferenced recording of somebody's voice in the bucket.
+  const { data: blockedRows, error: blockedError } = await supabase.rpc(
+    "sweep_purge_blocked_threads",
+  );
+  if (blockedError) orphaned.push(`blocked-threads:${blockedError.message}`);
+
+  const blockedThreads = (blockedRows ?? []) as {
+    chat_id: string;
+    voice_note_paths: string[] | null;
+  }[];
+
+  for (const thread of blockedThreads) {
+    const paths = thread.voice_note_paths ?? [];
+    if (paths.length === 0) continue;
+    const { error: voiceError } = await supabase.storage.from("voice-notes").remove(paths);
+    if (voiceError) orphaned.push(`voice-notes/${thread.chat_id}`);
+  }
+
   // Reported rather than swallowed: an orphaned object is a file that should
   // not exist, and a billing failure is a card still being charged. Nobody
   // finds out unless the job says so.
-  return NextResponse.json({ purged: purged.length, orphaned, billingFailures });
+  return NextResponse.json({
+    purged: purged.length,
+    blockedThreadsPurged: blockedThreads.length,
+    orphaned,
+    billingFailures,
+  });
 }
 
 /**

@@ -21,6 +21,7 @@ export {
   DELETION,
   ROOMS,
   VERIFICATION,
+  RETENTION,
 } from "./mechanics";
 
 export {

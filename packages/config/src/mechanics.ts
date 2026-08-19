@@ -33,21 +33,6 @@ export const CONNECTS = {
   pendingExpiryDays: 7,
   /** §3.5 — optional personal line appended to a closure template. */
   personalLineMaxChars: 140,
-  /**
-   * How long after a decline before the same person may be asked again.
-   *
-   * §7.4 step 4 has every state-transition RPC validate cooldowns; this is the
-   * one for a decline, which had none. connect_permitted checks blocks and
-   * modes, and connects_one_pending_ix only stops two SIMULTANEOUS asks — the
-   * moment a connect went to 'declined' its status left 'pending' and a fresh
-   * one inserted cleanly. So somebody could be asked, decline, and be asked
-   * again the same minute, indefinitely.
-   *
-   * THE NUMBER IS NOT KEVIN'S. Thirty days is a guess that felt long enough to
-   * be a real answer and short enough not to be a permanent ban on a person who
-   * simply was not ready. It wants confirming.
-   */
-  declineCooldownDays: 30,
 } as const;
 
 export const RADIUS = {
@@ -87,6 +72,21 @@ export const COOLDOWNS = {
   intentionChangeDays: 30,
   /** Decision #20 — blocks toggle-flicker gaming of the support-only shield. */
   datingReentryDays: 30,
+  /**
+   * How long after a decline before the same person may be asked again.
+   *
+   * §7.4 step 4 has every state-transition RPC validate cooldowns; this is the
+   * one for a decline, which had none. connect_permitted checked blocks and
+   * modes, and connects_one_pending_ix only stops two SIMULTANEOUS asks — the
+   * moment a connect went to 'declined' its status left 'pending' and a fresh
+   * one inserted cleanly. Somebody could be asked, decline, and be asked again
+   * the same minute, indefinitely.
+   *
+   * THE NUMBER IS NOT KEVIN'S. Thirty days is long enough to be a real answer
+   * and short enough not to be a permanent ban on a person who simply was not
+   * ready. It wants confirming. `app_config` key `cooldowns.decline_days`.
+   */
+  declineDays: 30,
 } as const;
 
 export const REFERRALS = {
@@ -154,4 +154,27 @@ export const VERIFICATION = {
    * borderline score delays somebody rather than ending them.
    */
   livenessMinScore: 0.7,
+} as const;
+
+export const RETENTION = {
+  /**
+   * How long a blocked-away thread's messages survive before the nightly purge.
+   *
+   * THE NUMBER IS CLAUDE'S RECOMMENDATION, NOT KEVIN'S DECISION.
+   *
+   * Under thirty days loses the late report, which is the common one — people
+   * block in the moment and file afterwards. Much beyond ninety and the most
+   * sensitive rows in this database sit around for a reason nobody can name:
+   * these are the messages of a health community, and §9's posture is to keep
+   * less for less long. Ninety is the ordinary safety-retention window and is
+   * defensible as data minimisation rather than as convenience.
+   *
+   * An open report holds a thread past this, and a resolved one holds it for
+   * the same window again from its RESOLUTION — so a slow moderation queue
+   * cannot quietly destroy the evidence it has not read yet.
+   *
+   * The database reads app_config key `retention.blocked_thread_days`, so it is
+   * tunable from the config editor. This constant is what the member is told.
+   */
+  blockedThreadDays: 90,
 } as const;
