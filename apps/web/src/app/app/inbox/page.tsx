@@ -236,9 +236,13 @@ export default async function InboxPage() {
 
       {decisions.length > 0 ? (
         <section>
-          <h1 className="text-[12.5px] tracking-[0.04em] text-ink-3 uppercase">
+          {/* The heading scale, not the small-uppercase-label one. It stopped
+              being a section label the moment it became the page's h1, and a
+              heading that is smaller than the rows beneath it is not a heading
+              — it reads as a caption on the first row. */}
+          <h1 className="text-h2">
             {C.threadNeedsDecision}
-            <span className="ml-1.5 text-ink-2 tabular-nums">{decisions.length}</span>
+            <span className="ml-2 text-ink-3 tabular-nums">{decisions.length}</span>
           </h1>
 
           {/* Horizontal, because this is a queue rather than a list: it grows
