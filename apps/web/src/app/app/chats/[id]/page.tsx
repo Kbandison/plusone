@@ -1,13 +1,17 @@
+import { Fragment } from "react";
+
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
-import { fuse } from "@plusone/logic";
+import { DRAFT_COPY, promptQuestion, renderClosureTemplate } from "@plusone/config";
+import { chat as chatLogic, fuse } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
 import { ChatMenu } from "./chat-menu";
+import { ShowTimes } from "./show-times";
+import { VoiceNote } from "./voice-note";
 import { MemberPhotoFrame } from "../../member-photo";
 import { photosFor } from "@/lib/photo-urls";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
@@ -36,35 +40,6 @@ interface Plan {
   plan: { date: string; time: string; place: string };
   proposed_by: string;
   confirmed_by: string | null;
-}
-
-/**
- * Plays a voice note through a signed URL, minted per render.
- *
- * The bucket is private and the storage policy checks chat participation, so
- * the URL is short-lived and only obtainable by someone already entitled to
- * hear it. A public path would be a permanent link to somebody's actual voice.
- */
-async function VoiceNote({ path, seconds }: { path: string; seconds: number | null }) {
-  const supabase = await getServerSupabase();
-  const { data } = await supabase.storage.from("voice-notes").createSignedUrl(path, 60 * 10);
-
-  if (!data?.signedUrl) return <span className="text-[11.7px] text-ink-3">Voice note</span>;
-
-  return (
-    <span className="flex items-center gap-3">
-      {/* A bare <audio controls> is announced as "audio player" with no
-          indication of whose voice it is or how long it runs. */}
-      <audio
-        src={data.signedUrl}
-        controls
-        preload="none"
-        aria-label={C.voiceNoteAria(seconds)}
-        className="max-w-full"
-      />
-      {seconds ? <span className="text-[11px] text-ink-3">{seconds}s</span> : null}
-    </span>
-  );
 }
 
 export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
@@ -101,7 +76,9 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    // timezone, so a message sent at 22:30 says 22:30 to the person who sent
+    // it rather than whatever that was in UTC.
+    .select("display_name, timezone")
     .eq("id", me)
     .maybeSingle();
 
@@ -109,7 +86,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   // rather than the messages, so it is present even in a chat with none.
   const { data: connect } = await supabase
     .from("connects")
-    .select("initiator_id, target_id")
+    .select("initiator_id, target_id, prompt_id, prompt_reply")
     .eq("id", chat.connect_id as string)
     .maybeSingle();
   const other = connect
@@ -128,6 +105,12 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   const otherName = (otherProfile?.display_name as string | null) ?? null;
   const otherPhoto = other ? (await photosFor([other])).get(other) : undefined;
   const myName = (profile?.display_name as string | null) ?? null;
+  const zone = (profile?.timezone as string | null) ?? "UTC";
+
+  // Read once, and passed down, so every label on the page agrees with every
+  // other one — and so the server's answer is the answer, rather than a value
+  // each bubble reads for itself as it renders.
+  const now = Date.now();
 
   const plan = (chat.date_plan ?? null) as Plan | null;
   const countdown = fuse.countdown(
@@ -188,45 +171,96 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         </ChatMenu>
       </div>
 
-      <ul className="mt-6 flex flex-col gap-3">
-        {(messages ?? []).length === 0 ? (
-          <EmptyState heading={C.chatEmptyHeading} body={C.chatEmptyBody} />
-        ) : null}
+      {/* What was actually said first.
+          A connect IS a prompt and a reply (Decision #14) — no name, no photo,
+          you decide on what somebody wrote. Accepting one opened a chat that
+          said "Nobody has written yet", which was not true and threw away the
+          only thing the two people had between them at the moment it stopped
+          being a decision and became a conversation. */}
+      {connect?.prompt_reply ? (
+        <figure className="mt-8 rounded-xl border border-line-2 bg-ground p-5">
+          <figcaption className="text-[11px] tracking-[0.02em] text-ink-3 uppercase">
+            {promptQuestion(connect.prompt_id as string)}
+          </figcaption>
+          <blockquote className="mt-2 text-[13.5px] leading-[1.6]">
+            {connect.prompt_reply as string}
+          </blockquote>
+          <p className="mt-3 text-[10.5px] text-ink-3">{C.chatOriginNote}</p>
+        </figure>
+      ) : null}
 
-        {(messages ?? []).map((message) => (
-          <li
-            key={message.id as string}
-            /* Own messages are surface-2 with an accent edge, not an accent
-               FILL. The token file's own contract reads "CTAs, links,
-               highlights, interactive states — never large fills", restating
-               the design system's colour rule; a column of accent-filled
-               bubbles is the largest fill in the app and it makes every real
-               control on the screen compete with the conversation. Alignment
-               and the edge carry the same distinction more quietly. */
-            className={`max-w-[85%] rounded-xl px-4 py-3 text-[12.6px] leading-[1.6] ${
-              message.sender_id === me
-                ? "self-end border-r-2 border-accent bg-surface-2 text-ink"
-                : "border-l-2 border-line-2 bg-surface text-ink"
-            }`}
-          >
-            {/* Who said it. Colour and alignment were the only signal, so a
-                screen reader heard an undifferentiated run of sentences with no
-                way to tell your own words from theirs. Names the page already
-                has, rather than a label invented for the purpose. */}
-            {(message.sender_id === me ? myName : otherName) ? (
-              <span className="sr-only">{message.sender_id === me ? myName : otherName}: </span>
-            ) : null}
-            {message.voice_note_path ? (
-              <VoiceNote
-                path={message.voice_note_path as string}
-                seconds={message.voice_note_seconds as number | null}
-              />
-            ) : (
-              (message.body as string)
-            )}
-          </li>
-        ))}
-      </ul>
+      <ShowTimes>
+        <ul className="mt-6 flex flex-col gap-3">
+          {(messages ?? []).length === 0 ? (
+            <EmptyState heading={C.chatEmptyHeading} body={C.chatEmptyBody} />
+          ) : null}
+
+          {(messages ?? []).map((message, index) => {
+            const sentAt = Date.parse(message.created_at as string);
+            const previous =
+              index > 0 ? Date.parse((messages ?? [])[index - 1]!.created_at as string) : null;
+
+            return (
+              <Fragment key={message.id as string}>
+                {/* A day between two messages is a different conversation
+                    wearing the same thread. Said once, not on every bubble. */}
+                {chatLogic.needsDateSeparator(previous, sentAt, zone) ? (
+                  <li className="mt-4 self-center text-[11px] text-ink-3 first:mt-0">
+                    {chatLogic.dateSeparatorLabel(sentAt, now, zone)}
+                  </li>
+                ) : null}
+
+                <li
+                  /* Own messages are surface-2 with an accent edge, not an
+                     accent FILL. The token file's own contract reads "CTAs,
+                     links, highlights, interactive states — never large fills",
+                     restating the design system's colour rule; a column of
+                     accent-filled bubbles is the largest fill in the app and it
+                     makes every real control on the screen compete with the
+                     conversation. Alignment and the edge carry the same
+                     distinction more quietly. */
+                  className={`max-w-[85%] rounded-xl px-4 py-3 text-[12.6px] leading-[1.6] ${
+                    message.sender_id === me
+                      ? "self-end border-r-2 border-accent bg-surface-2 text-ink"
+                      : "border-l-2 border-line-2 bg-surface text-ink"
+                  }`}
+                >
+                  {/* Who said it. Colour and alignment were the only signal, so
+                      a screen reader heard an undifferentiated run of sentences
+                      with no way to tell your own words from theirs. Names the
+                      page already has, rather than a label invented for it. */}
+                  {(message.sender_id === me ? myName : otherName) ? (
+                    <span className="sr-only">
+                      {message.sender_id === me ? myName : otherName}:{" "}
+                    </span>
+                  ) : null}
+
+                  {message.voice_note_path ? (
+                    <VoiceNote
+                      path={message.voice_note_path as string}
+                      seconds={message.voice_note_seconds as number | null}
+                    />
+                  ) : (
+                    (message.body as string)
+                  )}
+
+                  {/* Always in the markup, so a reader always has it; visible
+                      when the thread's toggle is on. Hiding a time from the one
+                      member who cannot see the layout is the wrong half to
+                      keep. */}
+                  <time
+                    dateTime={new Date(sentAt).toISOString()}
+                    title={chatLogic.messageTimeExact(sentAt, zone)}
+                    className="sr-only group-data-[times=on]:not-sr-only group-data-[times=on]:mt-1.5 group-data-[times=on]:block group-data-[times=on]:text-[10.5px] group-data-[times=on]:text-ink-3"
+                  >
+                    {chatLogic.messageTimeLabel(sentAt, now, zone)}
+                  </time>
+                </li>
+              </Fragment>
+            );
+          })}
+        </ul>
+      </ShowTimes>
 
       {isTerminal ? (
         // Every terminal state carries a note. Silence is impossible by

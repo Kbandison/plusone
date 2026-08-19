@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plusone/config";
+import { connects as connectsLogic } from "@plusone/logic";
 
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
@@ -49,6 +50,10 @@ export default async function BrowsePage({
   // can_view_profile's mode wall passes every dating target for a support-only
   // viewer and Browse reads clear photos and display names straight off
   // visible_profiles. The preview only means something if this is closed.
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+  const viewer = auth.user.id;
+
   const { data: me } = await supabase
     .rpc("my_profile")
     .maybeSingle<{ mode: string | null; search_radius_mi: number | null }>();
@@ -79,6 +84,38 @@ export default async function BrowsePage({
   const rows = data ?? [];
 
   const photos = await photosFor(rows.map((row) => row.id as string));
+
+  // What you already have with each of them.
+  //
+  // Browse had no memory at all: a member mid-conversation with you sat in the
+  // grid looking exactly like a stranger, and the only thing that said
+  // otherwise was the connect screen behind the card — after you had tapped
+  // through to it and, on a Drop card, after you had decided to.
+  //
+  // One query for the whole page rather than one per row. RLS already limits
+  // this to the viewer's own connects; the filter says which end they are.
+  const { data: myConnects } = await supabase
+    .from("connects")
+    .select("initiator_id, target_id, status")
+    .or(`initiator_id.eq.${viewer},target_id.eq.${viewer}`);
+
+  const history = new Map<string, ReturnType<typeof connectsLogic.historyWith>>();
+  for (const row of myConnects ?? []) {
+    const initiated = (row.initiator_id as string) === viewer;
+    const them = initiated ? (row.target_id as string) : (row.initiator_id as string);
+    const state = connectsLogic.historyWith(row.status as connectsLogic.ConnectStatus, initiated);
+    // A member can have several connects with the same person over time. The
+    // live one is what a card should say — "Connected before" on somebody who
+    // is waiting on your answer right now is worse than saying nothing.
+    if (state !== "past" || !history.has(them)) history.set(them, state);
+  }
+
+  const HISTORY_LABEL: Record<string, string> = {
+    waiting_on_you: C.threadNeedsDecision,
+    waiting_on_them: C.threadSentWaiting,
+    talking: C.browseTalking,
+    past: C.browsePast,
+  };
 
   const activeThisWeek = rows.filter(
     (row) => Date.parse(row.last_active_at as string) >= Date.now() - 7 * DAY,
@@ -160,6 +197,13 @@ export default async function BrowsePage({
                 {row.intention ? (
                   <p className="mt-3 text-[11.7px] text-ink-2">
                     {INTENTION_LABELS[row.intention as Intention]}
+                  </p>
+                ) : null}
+
+                {history.get(row.id as string) ? (
+                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-line-2 bg-ground px-3 py-1 text-[11px] text-ink-2">
+                    <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+                    {HISTORY_LABEL[history.get(row.id as string)!]}
                   </p>
                 ) : null}
               </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 
 import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "@plusone/config";
 
@@ -21,8 +21,55 @@ function Error({ message }: { message: string | null }) {
   );
 }
 
+/** Where an unsent line waits. One key per chat, so two drafts never collide. */
+const draftKey = (chatId: string) => `plusone:draft:${chatId}`;
+
 export function Composer({ chatId }: { chatId: string }) {
   const [state, act, pending] = useActionState(sendMessage, CHAT_INITIAL);
+  const [body, setBody] = useState("");
+
+  /**
+   * A half-written message survives leaving the screen.
+   *
+   * Every navigation away threw it out — the safety controls, the profile
+   * behind the name, a notification, the back button. On this product that is
+   * worse than the usual annoyance: what people are part-way through writing
+   * here is often the hard paragraph, and losing it once is a reason not to
+   * write it again.
+   *
+   * localStorage rather than a cookie or the server. The text has not been sent
+   * and the decision to send it has not been made, so it should not leave the
+   * device — a draft on a server is a message somebody never chose to share.
+   */
+  useEffect(() => {
+    setBody(window.localStorage.getItem(draftKey(chatId)) ?? "");
+  }, [chatId]);
+
+  useEffect(() => {
+    if (body) window.localStorage.setItem(draftKey(chatId), body);
+    else window.localStorage.removeItem(draftKey(chatId));
+  }, [chatId, body]);
+
+  /**
+   * Cleared after a send that worked, and only then.
+   *
+   * Not on submit: the action can fail, and wiping the field on a send that did
+   * not happen is the same loss with a worse cause. And not on "no error"
+   * alone, because CHAT_INITIAL is also {error: null} — that test is true on
+   * mount, so it would throw away the draft this component had just restored,
+   * every single time the screen opened.
+   *
+   * So it waits for a submission to have actually been in flight.
+   */
+  const sent = useRef(false);
+  useEffect(() => {
+    if (pending) sent.current = true;
+    else if (sent.current && state.error === null) {
+      sent.current = false;
+      setBody("");
+    }
+  }, [pending, state.error]);
+
   return (
     <form action={act} className="mt-6 flex flex-col gap-3">
       <input type="hidden" name="chat_id" value={chatId} />
@@ -30,6 +77,8 @@ export function Composer({ chatId }: { chatId: string }) {
         <input
           name="body"
           type="text"
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
           // Pressing Send on an empty field did nothing at all: the action
           // early-returned {error: null}, so there was no error, no message and
           // no change. Sighted members saw nothing happen; everyone else heard

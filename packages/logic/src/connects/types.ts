@@ -51,3 +51,16 @@ export interface ConnectConfig {
   readonly supportOnlyPerWeek: number;
   readonly pendingExpiryDays: number;
 }
+
+/** The lifecycle of a connect, as `connects.status` stores it. */
+export type ConnectStatus = "pending" | "accepted" | "declined" | "expired";
+
+/**
+ * What a directory row should say about somebody you already have history with.
+ *
+ * Deliberately coarser than the status it is derived from. "declined" is a
+ * decision one person made about another and saying so on a browsable card
+ * would publish it back at them every time they scrolled past — see
+ * `historyWith`.
+ */
+export type ConnectionState = "none" | "waiting_on_you" | "waiting_on_them" | "talking" | "past";

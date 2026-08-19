@@ -1,6 +1,13 @@
 import { CONNECTS } from "@plusone/config";
 
-import type { ConnectBudgetState, ConnectCheck, ConnectConfig, ConnectSource } from "./types";
+import type {
+  ConnectBudgetState,
+  ConnectCheck,
+  ConnectConfig,
+  ConnectSource,
+  ConnectionState,
+  ConnectStatus,
+} from "./types";
 
 export const DEFAULT_CONNECT_CONFIG: ConnectConfig = {
   freePerDay: CONNECTS.freePerDay,
@@ -148,4 +155,28 @@ export function isPendingExpired(
   config: ConnectConfig = DEFAULT_CONNECT_CONFIG,
 ): boolean {
   return now >= pendingExpiresAt(sentAt, config);
+}
+
+/**
+ * What Browse should say about a member you have history with.
+ *
+ * Browse listed everyone in range with no memory at all, so a member you had
+ * connected with last week looked exactly like a stranger — and the connect
+ * screen behind the card is the only thing that told you otherwise, after you
+ * had already tapped through to it.
+ *
+ * A decline collapses into "past" rather than being named. §11's whole posture
+ * is that a decision about somebody is not a thing to publish back at them, and
+ * a card that reads "they declined you" every time you scroll past is exactly
+ * that. It is also not information a viewer can act on: the connect is over
+ * either way.
+ */
+export function historyWith(
+  status: ConnectStatus | null,
+  viewerInitiated: boolean,
+): ConnectionState {
+  if (status === null) return "none";
+  if (status === "pending") return viewerInitiated ? "waiting_on_them" : "waiting_on_you";
+  if (status === "accepted") return "talking";
+  return "past";
 }

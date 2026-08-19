@@ -106,6 +106,32 @@ function localDate(timezone: string, now: Date): string {
   }
 }
 
+/**
+ * The subset of `ids` the viewer has no connect with, in either direction.
+ *
+ * One query rather than a per-card check: a Drop is three to five cards, and
+ * five round trips to answer one question is five chances for one of them to be
+ * the slow one.
+ */
+async function withoutConnected(userId: string, ids: readonly string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const supabase = await getServerSupabase();
+
+  const { data } = await supabase
+    .from("connects")
+    .select("initiator_id, target_id")
+    .or(`initiator_id.eq.${userId},target_id.eq.${userId}`);
+
+  const connected = new Set(
+    (data ?? []).map((row) =>
+      (row.initiator_id as string) === userId
+        ? (row.target_id as string)
+        : (row.initiator_id as string),
+    ),
+  );
+  return ids.filter((id) => !connected.has(id));
+}
+
 export async function getTonightsDrop(userId: string, now = new Date()): Promise<TonightsDrop> {
   const supabase = await getServerSupabase();
 
@@ -127,7 +153,18 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
     .maybeSingle();
 
   if (existing) {
-    const ids = existing.served_profile_ids as string[];
+    // Anyone connected with since this Drop was built comes out of it.
+    //
+    // isEligible already refuses alreadyConnected candidates — and never ran
+    // again, because a stored Drop is replayed from served_profile_ids rather
+    // than rebuilt. So sending a connect left the card sitting there for the
+    // rest of the day, offering to do the thing you had just done.
+    //
+    // The stored row is not rewritten. It is the record of what was served, and
+    // times_served and the suppression window are both counted off it; editing
+    // it to tidy the screen would quietly rewrite what the system believes it
+    // showed you.
+    const ids = await withoutConnected(userId, existing.served_profile_ids as string[]);
     const shared = {
       radiusUsedMi: existing.radius_used_mi,
       radiusExpanded: existing.radius_used_mi > memberRadiusMi,

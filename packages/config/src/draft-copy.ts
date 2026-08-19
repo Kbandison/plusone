@@ -607,6 +607,18 @@ export const DRAFT_COPY = {
      * heading above it.
      */
     threadNeedsDecision: "Waiting on you",
+    /**
+     * The same fact, said on a Browse card.
+     *
+     * Browse listed everyone in range with no memory, so somebody you were
+     * mid-conversation with looked exactly like a stranger. The two pending
+     * states reuse the thread wording above — it is the same fact about the
+     * same connect, and two spellings of it would be two things to keep true.
+     *
+     * "Connected before" covers a decline without naming one. See historyWith.
+     */
+    browseTalking: "You're talking",
+    browsePast: "Connected before",
     threadSentWaiting: "Waiting on them",
     threadNeedsReply: "Your turn",
     threadTheirTurn: "Their turn",
@@ -655,6 +667,16 @@ export const DRAFT_COPY = {
      * and an empty chat is guaranteed at creation — so the first thing both
      * people saw after matching was a blank rectangle.
      */
+    /** One control for the whole thread — see ShowTimes. */
+    showTimesLabel: "Show times",
+    hideTimesLabel: "Hide times",
+    /**
+     * The chat opened on "Say the first thing" even though something had
+     * already been said: the prompt and the reply are what a connect IS
+     * (Decision #14), and accepting one threw them away at the moment they
+     * stopped being a decision and became a conversation.
+     */
+    chatOriginNote: "This is where it started.",
     chatEmptyHeading: "Say the first thing",
     chatEmptyBody:
       "Nobody has written yet. There is no clever opener needed here — the hard part is already behind both of you.",

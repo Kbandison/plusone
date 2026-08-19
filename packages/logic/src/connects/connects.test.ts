@@ -10,6 +10,7 @@ import {
   canSendConnect,
   costOf,
   dailyAllowance,
+  historyWith,
   isPendingExpired,
   pendingExpiresAt,
   remainingRoomConnectsThisWeek,
@@ -175,5 +176,36 @@ describe("purity", () => {
     expect(DEFAULT_CONNECT_CONFIG.premiumPerDay).toBe(10);
     expect(DEFAULT_CONNECT_CONFIG.dropConnectCost).toBe(0);
     expect(DEFAULT_CONNECT_CONFIG.supportOnlyPerWeek).toBe(3);
+  });
+});
+
+describe("historyWith", () => {
+  it("says nothing about a stranger", () => {
+    expect(historyWith(null, false)).toBe("none");
+  });
+
+  it("tells the two directions of a pending connect apart", () => {
+    expect(historyWith("pending", true)).toBe("waiting_on_them");
+    expect(historyWith("pending", false)).toBe("waiting_on_you");
+  });
+
+  it("knows when there is a conversation", () => {
+    expect(historyWith("accepted", true)).toBe("talking");
+    expect(historyWith("accepted", false)).toBe("talking");
+  });
+
+  /**
+   * A decline is a decision one person made about another. Naming it on a card
+   * publishes it back at them every time they scroll past, and there is nothing
+   * a viewer can do with it either way — the connect is over.
+   */
+  it("never names a decline", () => {
+    expect(historyWith("declined", true)).toBe("past");
+    expect(historyWith("declined", false)).toBe("past");
+  });
+
+  it("treats an expiry the same as any other ending", () => {
+    expect(historyWith("expired", true)).toBe("past");
+    expect(historyWith("expired", false)).toBe("past");
   });
 });
