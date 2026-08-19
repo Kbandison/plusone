@@ -181,10 +181,18 @@ describe("the room reads as a feed", () => {
     expect(room).toMatch(/<ReportControl\s+roomMessageId=/);
   });
 
-  /** Rooms are unattributed, so there is no name or face to sit beside a post. */
-  it("shows no author on a post", () => {
+  /**
+   * Rooms WERE unattributed by construction, and this asserted that. It is now
+   * a choice a member makes per post — so the rule that replaces it is not "no
+   * author" but "no author the member did not agree to": the name comes from
+   * room_feed, which returns an alias and a null id unless they chose
+   * otherwise, and never from a column the client could have read itself.
+   */
+  it("takes every name from the projection, never from the table", () => {
     const feed = room.slice(room.indexOf('<ul className="-mx-6'));
-    expect(feed).not.toMatch(/display_name|MemberPhotoFrame/);
+    expect(feed).toMatch(/post\.author_name/);
+    expect(feed).not.toMatch(/display_name/);
+    expect(room).not.toMatch(/\.from\("room_messages"\)/);
   });
 });
 

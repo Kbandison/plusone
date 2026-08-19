@@ -193,7 +193,11 @@ export function ReportControl({
           />
         </label>
 
-        {memberId ? (
+        {/* Also offered on a room post. It was gated on memberId, which a room
+            report never has by design — so the one surface where a member most
+            wants both at once was the one that offered only the report.
+            reportMember resolves the author server-side for this case. */}
+        {memberId || roomMessageId ? (
           <label className="flex items-center gap-3 text-[11.7px]">
             <input type="checkbox" name="also_block" className="size-[14.6px] accent-accent" />
             {C.reportAlsoBlock}

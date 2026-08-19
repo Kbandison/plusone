@@ -66,9 +66,13 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
+  // The member's choice, per post. Nothing about a member is anonymous — a
+  // post is, and only the one they ticked the box on.
+  const anonymous = formData.get("anonymous") === "on";
+
   const { error } = await supabase
     .from("room_messages")
-    .insert({ room_id: roomId, user_id: auth.user.id, body });
+    .insert({ room_id: roomId, user_id: auth.user.id, body, anonymous });
 
   // memberFacingError, not a blanket string. 20260817000800 raises
   // "slow mode: wait N more seconds" and rpc-error.ts was extended to allow it

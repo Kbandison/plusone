@@ -703,6 +703,20 @@ export const DRAFT_COPY = {
      * least says what it is more OF.
      */
     postMenuLabel: "Post options",
+    /**
+     * Said plainly beside a pseudonym. A made-up name that does not announce
+     * itself is a name a reader will take for a real one — and the person who
+     * chose it is relying on nobody making that mistake.
+     */
+    postAnonymous: "anonymous",
+    /**
+     * The composer's choice, per post rather than per member. The default is
+     * named: somebody who has decided to be anonymous will say so, and a
+     * default that hides everyone makes a room of strangers.
+     */
+    postAnonymousLabel: "Post anonymously",
+    postAnonymousNote:
+      "Your name and photo stay off this post. You keep the same made-up name in this room, and a different one in every other.",
     roomEmptyHeading: "Nothing here yet",
     roomEmptyBody: "No posts in this room so far. Yours can be the first.",
     fuseDaysLeft: (days: number) => `${days} ${days === 1 ? "day" : "days"} left`,

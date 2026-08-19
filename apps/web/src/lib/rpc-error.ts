@@ -91,6 +91,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "a pinned card is an object",
   "a pinned card needs a title and a body",
   "a pinned card url must be https",
+  // block_room_message_author, when the post is not one the caller can see.
+  // Only a forged or stale id produces it, and BlockButton shows its own copy —
+  // saying "no such post" back would confirm to a prober that other ids do
+  // exist, which is the oracle the check was written to close.
+  "no such post",
   "could not allocate a referral code",
   // record_drop refuses a backdated date. Only a forged call can produce it —
   // the app always sends today — so it says nothing a member needs.

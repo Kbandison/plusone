@@ -39,25 +39,29 @@ export async function blockMember(_prev: SafetyState, formData: FormData): Promi
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
 
-  // A room post can be blocked by message id instead of author id.
+  // A room post is blocked by message id, never by author id.
   //
-  // Room posts render with no author, so a member writing in "Newly diagnosed"
-  // reasonably reads the room as unattributed — and it shipped the author's
-  // uuid to the client anyway, where any reader could lift it out of the page
-  // payload and open /app/connect/<uuid> to get a name, a photo and prompts.
-  // A personal diagnosis story became a name and a face.
+  // This used to select room_messages.user_id here, under a comment reading
+  // "resolving it here means the id never leaves the server" — true of the code
+  // and not true of the privilege that allowed it. Any member could run the
+  // same select themselves and read the pairing straight out of the table.
   //
-  // Resolving it here means the id never leaves the server.
+  // 20260819000700 revoked select on that column and moved the resolve into
+  // block_room_message_author, which does it and the write together in a place
+  // no client could have asked the question. An anonymous post can be blocked
+  // without anybody learning whose it was.
   const roomMessageId = String(formData.get("room_message_id") ?? "");
-  let blockedId = String(formData.get("blocked_id") ?? "");
-  if (!blockedId && roomMessageId) {
-    const { data: message } = await supabase
-      .from("room_messages")
-      .select("user_id")
-      .eq("id", roomMessageId)
-      .maybeSingle();
-    blockedId = (message?.user_id as string | undefined) ?? "";
+  const blockedId = String(formData.get("blocked_id") ?? "");
+
+  if (roomMessageId && !blockedId) {
+    const { error } = await supabase.rpc("block_room_message_author", {
+      p_room_message_id: roomMessageId,
+    });
+    if (error) return { error: "That didn't work.", message: null };
+    for (const path of ["/app", "/app/browse", "/app/rooms", "/app/settings"]) revalidatePath(path);
+    return { error: null, message: "Blocked." };
   }
+
   if (!blockedId) return { error: "That didn't work.", message: null };
   const { error } = await supabase
     .from("blocks")
@@ -132,6 +136,15 @@ export async function reportMember(_prev: SafetyState, formData: FormData): Prom
   });
 
   if (error) return { error: "That didn't send. Try again.", message: null };
+
+  // "Block them as well" on a room post, which could not work: the checkbox
+  // only renders when memberId is set, and a room report has no member id by
+  // design. The report went through and the block silently did not.
+  if (formData.get("also_block") === "on" && !reportedUserId && reportedRoomMessageId) {
+    await supabase.rpc("block_room_message_author", {
+      p_room_message_id: reportedRoomMessageId,
+    });
+  }
 
   if (formData.get("also_block") === "on" && reportedUserId) {
     await supabase.from("blocks").insert({ blocker_id: auth.user.id, blocked_id: reportedUserId });

@@ -7,6 +7,8 @@ import { chat as chatLogic } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { OverflowMenu } from "../../overflow-menu";
+import { MemberPhotoFrame } from "../../member-photo";
+import { photosFor } from "@/lib/photo-urls";
 import { JoinRoom, RoomComposer } from "./room-forms";
 import { EmptyState } from "@/app/ui";
 
@@ -49,27 +51,35 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
   // one rather than each row reading the clock as it renders.
   const now = Date.now();
 
-  const [{ data: membership }, { data: messages }] = await Promise.all([
+  const [{ data: membership }, { data: feed }] = await Promise.all([
     supabase
       .from("room_members")
       .select("user_id")
       .eq("room_id", room.id as string)
       .eq("user_id", auth.user.id)
       .maybeSingle(),
-    supabase
-      .from("room_messages")
-      .select("id, user_id, body, created_at, deleted_at")
-      .eq("room_id", room.id as string)
-      .is("deleted_at", null)
-      // Descending, then reversed for display.
-      //
-      // This ordered ASCENDING with the same limit, which is the OLDEST hundred
-      // rows — so every room froze permanently on its first hundred posts. The
-      // composer kept accepting writes and the rows kept landing; members simply
-      // never saw their own message appear. Descending also uses
-      // room_messages_room_ix the way it was built.
-      .order("created_at", { ascending: false })
-      .limit(100),
+    supabase.rpc("room_feed", { p_room_id: room.id as string, p_limit: 100 }),
+  ]);
+
+  // Everything the client is allowed to know about who wrote what. There is no
+  // branch in room_feed where an anonymous post carries an author id, so there
+  // is no bug here that could reveal one — the shape of the data is the wall.
+  const posts = (feed ?? []) as {
+    id: string;
+    body: string;
+    created_at: string;
+    anonymous: boolean;
+    author_id: string | null;
+    author_name: string | null;
+    is_mine: boolean;
+  }[];
+
+  // Photos only for the authors who chose to be named. photosFor reads
+  // visible_profile_photos, so a member whose photos are blurred until
+  // connected stays blurred here too — attribution is a choice about a name,
+  // not a waiver of every other privacy setting.
+  const authorPhotos = await photosFor([
+    ...new Set(posts.map((post) => post.author_id).filter((id): id is string => id !== null)),
   ]);
 
   const pinned = room.pinned_resource_card as {
@@ -145,66 +155,76 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
           a feed read as one continuous surface instead of a stack of objects —
           and it is the whole difference in feel between the two. */}
       <ul className="-mx-6 mt-6 border-t border-line">
-        {(messages ?? []).length === 0 ? (
+        {posts.length === 0 ? (
           <li className="px-6 pt-6">
             <EmptyState heading={C.roomEmptyHeading} body={C.roomEmptyBody} />
           </li>
         ) : null}
 
-        {[...(messages ?? [])].reverse().map((message) => {
-          const postedAt = Date.parse(message.created_at as string);
-          const mine = message.user_id === auth.user.id;
+        {posts.map((post) => {
+          const postedAt = Date.parse(post.created_at);
 
           return (
             <li
-              key={message.id as string}
+              key={post.id}
               className="ease-brand border-b border-line px-6 py-4 transition-colors duration-200 hover:bg-surface"
             >
-              <div className="flex items-start justify-between gap-3">
-                {/* The only metadata a post in here has. Rooms are
-                    unattributed by construction, so there is no name and no
-                    face to sit beside it — which is why the body starts at the
-                    left edge rather than in a column beside an avatar. */}
-                <time
-                  dateTime={new Date(postedAt).toISOString()}
-                  title={chatLogic.messageTimeExact(postedAt, zone)}
-                  className="text-[11px] text-ink-3 tabular-nums"
-                >
-                  {chatLogic.compactAge(postedAt, now, zone)}
-                </time>
+              <div className="flex items-start gap-3">
+                {/* An anonymous author has no photo to show, so the frame's
+                    empty state is the placeholder — the same neutral shape a
+                    member with no photo gets, rather than a second thing to
+                    learn the meaning of. */}
+                <MemberPhotoFrame
+                  photo={post.author_id ? authorPhotos.get(post.author_id) : undefined}
+                  size={34}
+                />
 
-                {!mine ? (
-                  <OverflowMenu label={C.postMenuLabel} compact>
-                    <div className="py-3">
-                      {/* Neither control takes the author's id. Posts render
-                          with no author, so shipping one to the client turned
-                          an unattributed room into a name and a face for
-                          anyone reading the payload. Both resolve it
-                          server-side from the message. */}
-                      <ReportControl
-                        roomMessageId={message.id as string}
-                        describedBy={`post-${message.id as string}`}
-                      />
-                    </div>
-                    <div className="py-3">
-                      <BlockButton
-                        roomMessageId={message.id as string}
-                        describedBy={`post-${message.id as string}`}
-                      />
-                    </div>
-                  </OverflowMenu>
-                ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="flex min-w-0 items-baseline gap-2">
+                      <span className="truncate text-[13px]">
+                        {post.author_name ?? C.threadUnknownPerson}
+                      </span>
+                      {post.anonymous ? (
+                        // Said plainly. A pseudonym that does not announce
+                        // itself is a name a reader will take for a real one.
+                        <span className="shrink-0 text-[10.5px] text-ink-3">{C.postAnonymous}</span>
+                      ) : null}
+                      <time
+                        dateTime={new Date(postedAt).toISOString()}
+                        title={chatLogic.messageTimeExact(postedAt, zone)}
+                        className="shrink-0 text-[11px] text-ink-3 tabular-nums"
+                      >
+                        {chatLogic.compactAge(postedAt, now, zone)}
+                      </time>
+                    </p>
+
+                    {!post.is_mine ? (
+                      <OverflowMenu label={C.postMenuLabel} compact>
+                        <div className="py-3">
+                          {/* Neither control takes an author id, and for an
+                              anonymous post the client does not have one.
+                              Both resolve it server-side from the message. */}
+                          <ReportControl roomMessageId={post.id} describedBy={`post-${post.id}`} />
+                        </div>
+                        <div className="py-3">
+                          <BlockButton roomMessageId={post.id} describedBy={`post-${post.id}`} />
+                        </div>
+                      </OverflowMenu>
+                    ) : null}
+                  </div>
+
+                  {/* The controls above point at this id, which is what tells a
+                      screen reader user which post they are about to report —
+                      every one of them is otherwise just "Report, button". */}
+                  <p
+                    id={`post-${post.id}`}
+                    className="mt-1 text-[13.5px] leading-[1.6] whitespace-pre-wrap"
+                  >
+                    {post.body}
+                  </p>
+                </div>
               </div>
-
-              {/* The controls above point at this id, which is what tells a
-                  screen reader user which post they are about to report —
-                  every one of them is otherwise just "Report, button". */}
-              <p
-                id={`post-${message.id as string}`}
-                className="mt-1 text-[13.5px] leading-[1.6] whitespace-pre-wrap"
-              >
-                {message.body as string}
-              </p>
             </li>
           );
         })}

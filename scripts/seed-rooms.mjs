@@ -140,6 +140,14 @@ try {
     if (eligible.length === 0 || posts.length === 0) continue;
 
     for (const [index, [minutesAgo, body]] of posts.entries()) {
+      // A mix, because both modes need looking at. The rooms where a member is
+      // most likely to want cover get more of it — which is a guess about
+      // people, not a rule, and the real ratio is whatever members choose.
+      const anonymous =
+        (room.slug === "newly-diagnosed" || room.slug === "disclosure-stories")
+          ? index % 3 !== 2
+          : index % 4 === 0;
+
       // Round-robin, so a five-post thread is five people rather than one
       // person talking to themselves.
       const author = eligible[index % eligible.length];
@@ -150,9 +158,9 @@ try {
         [room.id, author.id],
       );
       await client.query(
-        `insert into public.room_messages (room_id, user_id, body, created_at)
-         values ($1, $2, $3, now() - make_interval(mins => $4))`,
-        [room.id, author.id, body, minutesAgo],
+        `insert into public.room_messages (room_id, user_id, body, anonymous, created_at)
+         values ($1, $2, $3, $4, now() - make_interval(mins => $5))`,
+        [room.id, author.id, body, anonymous, minutesAgo],
       );
       posted += 1;
     }

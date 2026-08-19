@@ -48,6 +48,24 @@ export function RoomComposer({ roomId }: { roomId: string }) {
           {C.roomPostLabel}
         </button>
       </div>
+
+      {/* Per post, and off by default.
+          A default that hides everyone makes a room of strangers, and somebody
+          who has decided to be anonymous will say so. The note is there because
+          "anonymous" alone does not answer the two questions a member actually
+          has: anonymous to whom, and is it the same me next time. */}
+      <label className="flex items-start gap-3 text-[11.7px]">
+        <input
+          type="checkbox"
+          name="anonymous"
+          className="mt-0.5 size-[14.6px] shrink-0 accent-accent"
+        />
+        <span className="flex flex-col gap-1">
+          {C.postAnonymousLabel}
+          <span className="text-[10.5px] leading-[1.5] text-ink-3">{C.postAnonymousNote}</span>
+        </span>
+      </label>
+
       {state.error ? (
         <p role="alert" className="text-[11.3px] text-critical">
           {state.error}
