@@ -79,3 +79,34 @@ export function sortThreads(threads: readonly Thread[]): readonly Thread[] {
 export function needsYou(thread: Thread): boolean {
   return thread.state === "awaiting_your_decision" || thread.state === "awaiting_your_reply";
 }
+
+/**
+ * The inbox, in the four kinds of thing it actually contains.
+ *
+ * One flat list was right when the only question was "which of these is mine to
+ * do" — but it made a live conversation and an unanswered ask render as the
+ * same object, told apart by a three-word label most people never read. They
+ * are not the same object. A chat is somewhere you go; a sent connect is
+ * something you are waiting on and cannot act on at all.
+ *
+ * Endings come out too. A closed chat is not a task, and a column of them above
+ * the fold pushes the two live threads off it.
+ *
+ * The states stay a single union — this groups them, it does not re-derive
+ * them, so there is still one definition of what a thread is doing.
+ */
+export function groupThreads<T extends { readonly state: ThreadState }>(
+  threads: readonly T[],
+): { decisions: T[]; chats: T[]; sent: T[]; settled: T[] } {
+  return {
+    decisions: threads.filter((t) => t.state === "awaiting_your_decision"),
+    chats: threads.filter(
+      (t) =>
+        t.state === "awaiting_your_reply" ||
+        t.state === "awaiting_their_reply" ||
+        t.state === "no_messages",
+    ),
+    sent: threads.filter((t) => t.state === "awaiting_their_decision"),
+    settled: threads.filter((t) => t.state === "settled"),
+  };
+}

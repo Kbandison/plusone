@@ -33,6 +33,21 @@ export const CONNECTS = {
   pendingExpiryDays: 7,
   /** §3.5 — optional personal line appended to a closure template. */
   personalLineMaxChars: 140,
+  /**
+   * How long after a decline before the same person may be asked again.
+   *
+   * §7.4 step 4 has every state-transition RPC validate cooldowns; this is the
+   * one for a decline, which had none. connect_permitted checks blocks and
+   * modes, and connects_one_pending_ix only stops two SIMULTANEOUS asks — the
+   * moment a connect went to 'declined' its status left 'pending' and a fresh
+   * one inserted cleanly. So somebody could be asked, decline, and be asked
+   * again the same minute, indefinitely.
+   *
+   * THE NUMBER IS NOT KEVIN'S. Thirty days is a guess that felt long enough to
+   * be a real answer and short enough not to be a permanent ban on a person who
+   * simply was not ready. It wants confirming.
+   */
+  declineCooldownDays: 30,
 } as const;
 
 export const RADIUS = {

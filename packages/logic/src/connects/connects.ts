@@ -162,14 +162,21 @@ export function isPendingExpired(
  *
  * Browse listed everyone in range with no memory at all, so a member you had
  * connected with last week looked exactly like a stranger — and the connect
- * screen behind the card is the only thing that told you otherwise, after you
+ * screen behind the card was the only thing that told you otherwise, after you
  * had already tapped through to it.
  *
- * A decline collapses into "past" rather than being named. §11's whole posture
- * is that a decision about somebody is not a thing to publish back at them, and
- * a card that reads "they declined you" every time you scroll past is exactly
- * that. It is also not information a viewer can act on: the connect is over
- * either way.
+ * A DECLINE SAYS NOTHING AT ALL. Not "declined", and not a softened "connected
+ * before" either: both put a rejection on a card, one of them just wearing a
+ * nicer word. §11's posture is that a decision about somebody is not a thing to
+ * publish back at them, and Decision #26 rules out shame mechanics outright.
+ *
+ * The quiet is backed by a wall rather than by the silence. connect_permitted
+ * refuses a fresh ask for cooldowns.decline_days, so a member who is told
+ * nothing also cannot re-ask — which is the half that makes hiding it honest
+ * instead of merely tidy.
+ *
+ * An expiry is different and is worth saying. Nobody decided anything: the ask
+ * ran out unanswered, and either of them may want to try again.
  */
 export function historyWith(
   status: ConnectStatus | null,
@@ -178,5 +185,6 @@ export function historyWith(
   if (status === null) return "none";
   if (status === "pending") return viewerInitiated ? "waiting_on_them" : "waiting_on_you";
   if (status === "accepted") return "talking";
+  if (status === "declined") return "none";
   return "past";
 }

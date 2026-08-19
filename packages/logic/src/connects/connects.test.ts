@@ -195,16 +195,21 @@ describe("historyWith", () => {
   });
 
   /**
-   * A decline is a decision one person made about another. Naming it on a card
-   * publishes it back at them every time they scroll past, and there is nothing
-   * a viewer can do with it either way — the connect is over.
+   * A decline says nothing at all — not "declined", and not a softened
+   * "connected before" either. Both put a rejection on a card; one of them just
+   * wears a nicer word. Decision #26 rules out shame mechanics, and §11 says a
+   * decision about somebody is not a thing to publish back at them.
    */
-  it("never names a decline", () => {
-    expect(historyWith("declined", true)).toBe("past");
-    expect(historyWith("declined", false)).toBe("past");
+  it("says nothing whatsoever about a decline", () => {
+    expect(historyWith("declined", true)).toBe("none");
+    expect(historyWith("declined", false)).toBe("none");
   });
 
-  it("treats an expiry the same as any other ending", () => {
+  /**
+   * An expiry is not a decision. Nobody chose anything — the ask ran out
+   * unanswered, and either of them may want to try again.
+   */
+  it("still marks an expiry, which nobody decided", () => {
     expect(historyWith("expired", true)).toBe("past");
     expect(historyWith("expired", false)).toBe("past");
   });

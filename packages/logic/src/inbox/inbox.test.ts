@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { isUnread, needsYou, sortThreads, stateOf, toThread } from "./inbox";
-import type { ThreadInput } from "./types";
+import { groupThreads, isUnread, needsYou, sortThreads, stateOf, toThread } from "./inbox";
+import type { ThreadInput, ThreadState } from "./types";
 
 const base: ThreadInput = { id: "t", kind: "chat", startedByMe: false, updatedAt: 1_000 };
 const at = (n: number) => n;
@@ -167,5 +167,56 @@ describe("the order things appear in", () => {
     const copy = [...list];
     sortThreads(list);
     expect(list).toEqual(copy);
+  });
+});
+
+describe("groupThreads", () => {
+  const of = (...states: ThreadState[]) => states.map((state, i) => ({ id: `${i}`, state }));
+
+  it("separates a conversation from an ask nobody has answered", () => {
+    const g = groupThreads(of("awaiting_your_reply", "awaiting_their_decision"));
+    expect(g.chats.map((t) => t.state)).toEqual(["awaiting_your_reply"]);
+    expect(g.sent.map((t) => t.state)).toEqual(["awaiting_their_decision"]);
+  });
+
+  /** A chat with nothing said in it is still a chat you can walk into. */
+  it("counts an empty chat as a conversation", () => {
+    expect(groupThreads(of("no_messages")).chats).toHaveLength(1);
+  });
+
+  it("keeps the decision queue its own thing", () => {
+    const g = groupThreads(of("awaiting_your_decision"));
+    expect(g.decisions).toHaveLength(1);
+    expect(g.chats).toHaveLength(0);
+    expect(g.sent).toHaveLength(0);
+  });
+
+  /** A closed chat is not a task, and a column of them pushes the live ones off. */
+  it("lifts endings out of the list", () => {
+    const g = groupThreads(of("settled", "awaiting_your_reply", "settled"));
+    expect(g.settled).toHaveLength(2);
+    expect(g.chats).toHaveLength(1);
+  });
+
+  /** Every state lands somewhere, or a thread silently disappears from the page. */
+  it("loses nothing", () => {
+    const all: ThreadState[] = [
+      "awaiting_your_decision",
+      "awaiting_their_decision",
+      "awaiting_your_reply",
+      "awaiting_their_reply",
+      "no_messages",
+      "settled",
+    ];
+    const g = groupThreads(of(...all));
+    expect(g.decisions.length + g.chats.length + g.sent.length + g.settled.length).toBe(all.length);
+  });
+
+  it("keeps the order it was given", () => {
+    const g = groupThreads([
+      { id: "b", state: "awaiting_your_reply" as const },
+      { id: "a", state: "awaiting_their_reply" as const },
+    ]);
+    expect(g.chats.map((t) => t.id)).toEqual(["b", "a"]);
   });
 });

@@ -8,6 +8,7 @@ import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { DecisionBubble, type Decision } from "./decision-dialog";
 import { ThreadRow, type ThreadView } from "./thread-row";
+import { ClosedSection } from "./closed-section";
 
 const C = DRAFT_COPY.app;
 const DAY = 86_400_000;
@@ -217,19 +218,21 @@ export default async function InboxPage() {
   // one of them is the same two irreversible buttons. Left in the list they
   // read as messages that happen to have controls, and the list stops being
   // scannable — which is the whole reason the rows got shorter.
-  const conversations = threads.filter((t) => t.state !== "awaiting_your_decision");
-  const decisions: Decision[] = threads
-    .filter((t) => t.state === "awaiting_your_decision")
-    .map((thread) => {
-      const connect = connectById.get(thread.id)!;
-      return {
-        id: thread.id,
-        name: thread.name,
-        question: promptQuestion(connect.prompt_id),
-        reply: connect.prompt_reply,
-        photo: thread.photo,
-      };
-    });
+  // Four kinds of thing, not one list. groupThreads holds the split so the
+  // states stay a single union — this page groups them, it does not re-derive
+  // what any of them means.
+  const { decisions: pending, chats: live, sent, settled } = inboxLogic.groupThreads(threads);
+
+  const decisions: Decision[] = pending.map((thread) => {
+    const connect = connectById.get(thread.id)!;
+    return {
+      id: thread.id,
+      name: thread.name,
+      question: promptQuestion(connect.prompt_id),
+      reply: connect.prompt_reply,
+      photo: thread.photo,
+    };
+  });
 
   return (
     <main id="main">
@@ -274,12 +277,49 @@ export default async function InboxPage() {
 
       {threads.length === 0 ? (
         <p className="mt-6 text-[13px] text-ink-2">{C.inboxAllEmpty}</p>
-      ) : conversations.length > 0 ? (
-        <ul className="rise-in mt-6 flex flex-col gap-2.5">
-          {conversations.map((thread) => (
-            <ThreadRow key={thread.id} thread={thread} />
-          ))}
-        </ul>
+      ) : null}
+
+      {/* Conversations first, and named. A live chat and an ask nobody has
+          answered were the same row with a different three-word label, which is
+          not a distinction anyone reads — the one you can walk into and the one
+          you can only wait on looked identical. */}
+      {live.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-[12.2px] tracking-[0.02em] text-ink-3 uppercase">
+            {C.inboxChatsHeading}
+          </h2>
+          <ul className="rise-in mt-3 flex flex-col gap-2.5">
+            {live.map((thread) => (
+              <ThreadRow key={thread.id} thread={thread} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* Lighter than a conversation, deliberately. There is nothing to do with
+          one of these except wait, so it should not carry the weight of a row
+          that is asking for something. */}
+      {sent.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-[12.2px] tracking-[0.02em] text-ink-3 uppercase">
+            {C.inboxSentHeading}
+          </h2>
+          <ul className="rise-in mt-3 flex flex-col gap-2.5 opacity-80">
+            {sent.map((thread) => (
+              <ThreadRow key={thread.id} thread={thread} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {settled.length > 0 ? (
+        <ClosedSection count={settled.length}>
+          <ul className="flex flex-col gap-2.5">
+            {settled.map((thread) => (
+              <ThreadRow key={thread.id} thread={thread} />
+            ))}
+          </ul>
+        </ClosedSection>
       ) : null}
     </main>
   );

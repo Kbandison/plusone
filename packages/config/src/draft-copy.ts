@@ -608,6 +608,16 @@ export const DRAFT_COPY = {
      */
     threadNeedsDecision: "Waiting on you",
     /**
+     * Three sections, because one flat list made a live conversation and an
+     * unanswered ask render as the same object — told apart by a three-word
+     * state label most people never read.
+     */
+    inboxChatsHeading: "Conversations",
+    inboxSentHeading: "Sent",
+    inboxClosedHeading: "Closed",
+    /** The collapsed count, so it says how much is behind it before you open it. */
+    inboxClosedCount: (n: number) => `${n} ${n === 1 ? "thread" : "threads"}`,
+    /**
      * The same fact, said on a Browse card.
      *
      * Browse listed everyone in range with no memory, so somebody you were
