@@ -700,6 +700,10 @@ export const DRAFT_COPY = {
     closePersonalLineLabel: "Anything else (optional)",
     closeLabel: "Close and send the note",
     closedNoteHeading: "A note was left",
+    /** The header menu holding close, report and block. */
+    chatMenuLabel: "More",
+    /** The date proposal, collapsed until asked for. */
+    proposeToggleLabel: "Propose a date",
     voiceRecordLabel: "Record a voice note",
     voiceStopLabel: "Stop",
     voiceSendLabel: "Send voice note",

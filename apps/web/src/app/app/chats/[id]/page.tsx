@@ -7,6 +7,7 @@ import { fuse } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
+import { ChatMenu } from "./chat-menu";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { EmptyState } from "@/app/ui";
 
@@ -143,17 +144,33 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       {/* Every page needs one. Without it the first heading here was an h2 and
           a member navigating by heading landed mid-hierarchy with no idea whose
           chat they were in. */}
-      <h1 className="sr-only">{otherName ?? C.chatsHeading}</h1>
+      {/* The name, and everything that ends the conversation folded behind one
+          press. Close, report and block were three controls stacked under the
+          composer, which put ending it in the same column as continuing it. */}
+      <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+        <h1 className="truncate text-[15px]">{otherName ?? C.chatsHeading}</h1>
 
-      {/* The fuse, visible (§7.2). A timer you have to go looking for is a
-          deadline that surprises people. */}
-      {countdown.isRunning ? (
-        <p className={`text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}>
-          {countdown.isExpiringSoon ? C.fuseExpiringSoon : C.fuseDaysLeft(countdown.remainingDays)}
-        </p>
-      ) : chat.status === "date_planned" ? (
-        <p className="text-[11.3px] text-positive">{C.datePlannedLabel}</p>
-      ) : null}
+        {/* Report and block hung off the live-chat branch, so they vanished the
+            moment a chat closed — taking them away from the member most likely
+            to want them, who is the one the conversation just went wrong with.
+            Closing is the only part of this that a terminal chat has no use
+            for. */}
+        <ChatMenu>
+          <div className="flex flex-col gap-3">
+            {!isTerminal ? (
+              <CloseChat chatId={id} senderName={(profile?.display_name as string) ?? ""} />
+            ) : null}
+            {other ? (
+              <div
+                className={`flex items-center gap-4 ${!isTerminal ? "border-t border-line pt-3" : ""}`}
+              >
+                <ReportControl memberId={other} />
+                <BlockButton memberId={other} />
+              </div>
+            ) : null}
+          </div>
+        </ChatMenu>
+      </div>
 
       <ul className="mt-6 flex flex-col gap-3">
         {(messages ?? []).length === 0 ? (
@@ -217,10 +234,31 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         </section>
       ) : (
         <>
-          <Composer chatId={id} />
-          <VoiceRecorder chatId={id} />
+          {/* The fuse, still visible (§7.2), but next to the thing it is a
+              deadline for. At the top of the screen it was a number a member
+              scrolled past on the way to the conversation; above the box they
+              are about to type in, it is the reason to type. */}
+          {countdown.isRunning ? (
+            <p
+              className={`mt-6 text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}
+            >
+              {countdown.isExpiringSoon
+                ? C.fuseExpiringSoon
+                : C.fuseDaysLeft(countdown.remainingDays)}
+            </p>
+          ) : chat.status === "date_planned" ? (
+            <p className="mt-6 text-[11.3px] text-positive">{C.datePlannedLabel}</p>
+          ) : null}
 
-          {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
+          <Composer chatId={id} />
+
+          {/* One row: the microphone and the date proposal, side by side under
+              the box. Both were full-width blocks stacked below it, so the two
+              optional things took more of the screen than the message field. */}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <VoiceRecorder chatId={id} />
+            {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
+          </div>
 
           {/* The plan itself, which nothing rendered. A chat could reach
               date_planned with neither member ever shown what was agreed. */}
@@ -245,17 +283,6 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           ) : null}
 
           {chat.status === "date_planned" ? <CancelPlan chatId={id} /> : null}
-
-          <CloseChat chatId={id} senderName={(profile?.display_name as string) ?? ""} />
-
-          {/* Always reachable, never prominent. Someone who needs this should
-              not have to hunt; nobody else should be nudged toward it. */}
-          {other ? (
-            <div className="mt-8 flex items-center gap-4 border-t border-line pt-6">
-              <ReportControl memberId={other} />
-              <BlockButton memberId={other} />
-            </div>
-          ) : null}
         </>
       )}
     </main>

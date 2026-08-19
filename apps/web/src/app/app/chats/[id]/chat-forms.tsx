@@ -7,6 +7,8 @@ import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "
 import { cancelPlan, closeChat, confirmPlan, proposePlan, sendMessage } from "./actions";
 import { CHAT_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { CalendarIcon } from "./chat-icons";
+import { CloseIcon } from "@/app/app/inbox/decision-dialog";
 
 const C = DRAFT_COPY.app;
 
@@ -65,12 +67,44 @@ export function Composer({ chatId }: { chatId: string }) {
  */
 export function ProposePlan({ chatId }: { chatId: string }) {
   const [state, act, pending] = useActionState(proposePlan, CHAT_INITIAL);
+  const [open, setOpen] = useState(false);
+
+  // Collapsed until asked for. Three empty fields sitting under every open chat
+  // read as something the product wants from you before you have said anything
+  // — and §6.2 is explicit that vague agreement is what the fuse exists to stop
+  // counting as progress, which means the form is for a conversation that has
+  // already got somewhere.
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        className={buttonClass("secondary", "inline-flex items-center gap-2")}
+      >
+        <CalendarIcon />
+        {C.proposeToggleLabel}
+      </button>
+    );
+  }
+
   return (
     <form
       action={act}
-      className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6"
+      className="rise-in flex w-full flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6"
     >
-      <h2 className="text-[0.931rem]">{C.proposeHeading}</h2>
+      <div className="flex items-start justify-between gap-4">
+        <h2 className="text-[0.931rem]">{C.proposeHeading}</h2>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label={C.decisionDismiss}
+          className="ease-brand -mt-1 -mr-1 flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+        >
+          <CloseIcon />
+        </button>
+      </div>
+
       <input type="hidden" name="chat_id" value={chatId} />
 
       {[

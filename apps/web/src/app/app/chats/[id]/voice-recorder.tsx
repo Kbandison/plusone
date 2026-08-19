@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 
 import { sendVoiceNote } from "./actions";
 import { buttonClass } from "@/app/ui";
+import { MicIcon } from "./chat-icons";
 
 const C = DRAFT_COPY.app;
 const MAX_SECONDS = 120;
@@ -130,7 +131,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
   }
 
   return (
-    <div className="mt-4 flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {/* A persistent live region naming the current phase.
        *
        * Each phase renders a different button, so pressing Record unmounts the
@@ -148,8 +149,16 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
       </p>
 
       {state === "idle" ? (
-        <button type="button" onClick={start} className={buttonClass("secondary", "self-start")}>
-          {C.voiceRecordLabel}
+        // An icon, with the label as its accessible name rather than beside it.
+        // It sits next to the date control under the composer, and two worded
+        // buttons there compete with Send for the same glance.
+        <button
+          type="button"
+          onClick={start}
+          aria-label={C.voiceRecordLabel}
+          className={buttonClass("secondary", "size-tap justify-center px-0")}
+        >
+          <MicIcon />
         </button>
       ) : null}
 
