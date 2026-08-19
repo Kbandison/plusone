@@ -2,7 +2,7 @@
   "name": "plusone",
   "version": "0.1.0",
   "private": true,
-  "description": "Plus One — a private, verified community for people with HSV and HIV.",
+  "description": "Plus One \u2014 a private, verified community for people with HSV and HIV.",
   "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=20.9.0"
@@ -32,7 +32,8 @@
     "seed:remove": "node scripts/remove-test-members.mjs",
     "check:seed": "node scripts/verify-no-test-members.mjs",
     "check:launch": "node scripts/verify-launch.mjs",
-    "seed:talk": "node scripts/seed-conversations.mjs"
+    "seed:talk": "node scripts/seed-conversations.mjs",
+    "seed:rooms": "node scripts/seed-rooms.mjs"
   },
   "devDependencies": {
     "libpg-query": "17.7.4",
