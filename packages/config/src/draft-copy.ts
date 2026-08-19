@@ -768,6 +768,18 @@ export const DRAFT_COPY = {
     blockLabel: "Block",
     blockConfirm:
       "Block this member? They will not see you and you will not see them. You can undo this in Settings.",
+    /**
+     * A confirmation, not an interrogation.
+     *
+     * The note on this string used to read that blocking asks nothing on
+     * purpose — someone reaching for it is having the worst moment this product
+     * will give them. That argument was against making them JUSTIFY it, and it
+     * still holds: nothing here asks why. But block is one tap from Report in a
+     * menu and cannot be undone from the chat, so a mis-tap silently removed
+     * somebody. Confirming costs one press; the mis-tap cost a connection.
+     */
+    blockConfirmLabel: "Block them",
+    blockKeepLabel: "Never mind",
     blockedHeading: "Blocked",
     blockedEmpty: "You have not blocked anyone.",
     unblockLabel: "Unblock",

@@ -25,7 +25,8 @@ describe("the decision dialog closes the ways people expect", () => {
   /** method="dialog" closes with no JavaScript of ours, so it works regardless. */
   it("has a close control that needs no script", () => {
     expect(dialog).toMatch(/method="dialog"/);
-    expect(dialog).toMatch(/function CloseIcon/);
+    // CloseIcon moved to the shared modal when a second dialog needed it.
+    expect(dialog).toMatch(/import \{ CloseIcon \} from "@\/app\/modal"/);
     expect(dialog).toMatch(/aria-label=\{C\.decisionDismiss\}/);
   });
 

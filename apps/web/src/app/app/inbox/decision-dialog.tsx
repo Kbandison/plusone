@@ -7,6 +7,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import type { MemberPhoto } from "@/lib/photo-urls";
 import { MemberPhotoFrame } from "../member-photo";
 import { AcceptForm, DeclineForm } from "./inbox-forms";
+import { CloseIcon } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
 
@@ -115,20 +116,5 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
         <p className="mt-4 text-[16px] leading-[1.6] text-ink-3">{C.declineNote}</p>
       </dialog>
     </>
-  );
-}
-
-/** Drawn rather than imported: one icon does not justify a dependency. */
-export function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[17.1px]">
-      <path
-        d="M6 6l12 12M18 6L6 18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

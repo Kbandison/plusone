@@ -9,7 +9,7 @@ import type { inbox } from "@plusone/logic";
 
 import type { MemberPhoto } from "@/lib/photo-urls";
 import { MemberPhotoFrame } from "../member-photo";
-import { CloseIcon } from "./decision-dialog";
+import { CloseIcon } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
 

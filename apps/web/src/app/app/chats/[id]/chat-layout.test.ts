@@ -124,10 +124,14 @@ describe("the menu reads as a list", () => {
     expect(className).not.toMatch(/\bmt-\d/);
   });
 
-  /** These open forms in place; a 232px popover clipped the closure note. */
-  it("is wide enough and scrolls when one opens", () => {
-    expect(menu).toMatch(/overflow-y-auto/);
-    expect(menu).toMatch(/max-h-\[70vh\]/);
+  /**
+   * The forms moved out. Close and report each raise a modal and block asks
+   * for a confirmation, so the menu is a list of three words again — it does
+   * not need to be wide, and it has nothing to scroll.
+   */
+  it("stays narrow, holding nothing that opens inside it", () => {
+    expect(menu).toMatch(/w-\[232px\]/);
+    expect(menu).not.toMatch(/overflow-y-auto|max-h-/);
   });
 });
 
@@ -158,5 +162,97 @@ describe("the icons are big enough to see", () => {
     for (const size of icons.match(/size-\[(\d+)px\]/g) ?? []) {
       expect(Number(/(\d+)/.exec(size)![1])).toBeGreaterThanOrEqual(18);
     }
+  });
+});
+
+const modal = read("../../../modal.tsx");
+const safety = read("../../safety/safety-controls.tsx");
+
+/**
+ * The three menu items each opened a disclosure below themselves. That was
+ * tolerable at the bottom of a page with room beneath it, and impossible inside
+ * a 232px popover — the report form alone is five radio options, a textarea and
+ * a checkbox.
+ */
+describe("what the menu items open", () => {
+  it("raises the closure note in a modal", () => {
+    const start = forms.indexOf("export function CloseChat");
+    const end = forms.indexOf("export function", start + 1);
+    expect(forms.slice(start, end)).toMatch(/<Modal/);
+  });
+
+  it("raises the report form in a modal", () => {
+    // ReportControl is last in the file; Block and Unblock come above it.
+    const report = safety.slice(safety.indexOf("export function ReportControl"));
+    expect(report).toMatch(/<Modal/);
+    expect(report).not.toMatch(/aria-expanded/);
+  });
+
+  /**
+   * Block submitted the moment it was pressed. One row from Report in a menu,
+   * with no undo from the chat, a mis-tap silently removed somebody.
+   */
+  it("asks before blocking, without asking why", () => {
+    const block = safety.slice(
+      safety.indexOf("export function BlockButton"),
+      safety.indexOf("export function UnblockButton"),
+    );
+    expect(block).toMatch(/C\.blockConfirm\b/);
+    expect(block).toMatch(/C\.blockConfirmLabel/);
+    expect(block).toMatch(/C\.blockKeepLabel/);
+    // No reason field: confirming is not justifying.
+    expect(block).not.toMatch(/textarea|type="radio"/);
+  });
+
+  /**
+   * showModal() makes the rest of the page inert, so a dialog's outline is its
+   * own — the heading level stopped depending on what sat behind it.
+   */
+  it("drops the heading level the page used to have to supply", () => {
+    expect(safety).not.toMatch(/headingLevel/);
+  });
+});
+
+describe("one dialog, not a family of them", () => {
+  it("gets focus trapping, Escape and the backdrop from the platform", () => {
+    expect(modal).toMatch(/showModal\(\)/);
+    expect(modal).toMatch(/backdrop:bg-black/);
+    expect(modal).toMatch(/method="dialog"/);
+  });
+
+  /** A click on padding inside the panel must not dismiss it. */
+  it("tests the backdrop click against the dialog itself", () => {
+    expect(modal).toMatch(/event\.target === dialog\.current/);
+  });
+});
+
+/**
+ * Twenty posts in a room, twenty buttons reading "Report" and twenty reading
+ * "Block". describedBy points each one at the post it acts on — using the post
+ * itself rather than a label invented for it.
+ */
+describe("repeated triggers stay told apart", () => {
+  it("keeps the description on both triggers", () => {
+    expect(safety.match(/triggerDescribedBy=\{describedBy\}/g)).toHaveLength(2);
+  });
+
+  /**
+   * And never inside the panel: showModal() makes the page inert, inert content
+   * leaves the accessibility tree, so a reference into it resolves to nothing
+   * at exactly the moment it is needed.
+   */
+  it("puts none of it inside the dialog", () => {
+    // UnblockButton is a plain button on the settings list, not a modal, and
+    // keeps its own describedBy — every row there reads "Unblock".
+    const modalUsers = safety.slice(0, safety.indexOf("export function UnblockButton"));
+    expect(modalUsers).not.toMatch(/aria-describedby=\{describedBy\}/);
+    expect(safety.slice(safety.indexOf("export function ReportControl"))).not.toMatch(
+      /aria-describedby=\{describedBy\}/,
+    );
+    expect(modal).toMatch(/aria-describedby=\{triggerDescribedBy\}/);
+  });
+
+  it("announces that the trigger opens a dialog", () => {
+    expect(modal).toMatch(/aria-haspopup="dialog"/);
   });
 });

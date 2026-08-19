@@ -62,10 +62,10 @@ export function ChatMenu({ children }: { children: React.ReactNode }) {
         // horizontal pair, which read as a toolbar rather than a list and put
         // two different-weight actions on the same line.
         //
-        // Wide enough, and scrollable, because these are not links: each opens
-        // a form in place — the closure note carries five radio options and a
-        // text field — and a 232px popover clipped them.
-        <div className="rise-in absolute right-0 z-20 mt-1 max-h-[70vh] w-[min(84vw,320px)] divide-y divide-line overflow-y-auto rounded-xl border border-line-2 bg-surface px-4 shadow-lg">
+        // Narrow, because nothing opens inside it. Close and report each raise
+        // a modal and block asks for a confirmation, so the menu holds three
+        // words and needs the width of three words.
+        <div className="rise-in absolute right-0 z-20 mt-1 w-[232px] divide-y divide-line rounded-xl border border-line-2 bg-surface px-4 shadow-lg">
           {children}
         </div>
       ) : null}

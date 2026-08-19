@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 
 import {
   DRAFT_COPY,
@@ -12,6 +12,7 @@ import {
 import { blockMember, reportMember, unblockMember } from "@/lib/safety";
 import { SAFETY_INITIAL } from "@/lib/safety-state";
 import { buttonClass } from "@/app/ui";
+import { Modal } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
 
@@ -50,21 +51,40 @@ export function BlockButton({
   }
 
   return (
-    <form action={act} className="inline">
-      {memberId ? <input type="hidden" name="blocked_id" value={memberId} /> : null}
-      {roomMessageId ? <input type="hidden" name="room_message_id" value={roomMessageId} /> : null}
-      <button
-        type="submit"
-        disabled={pending}
-        // Every one of these is named "Block". Pointing at the text it acts on
-        // is what tells a screen reader user which post they are blocking —
-        // and it uses the post itself rather than a label invented for it.
-        aria-describedby={describedBy}
-        className="ease-brand text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical disabled:opacity-55"
-      >
-        {C.blockLabel}
-      </button>
-    </form>
+    <Modal
+      heading={C.blockLabel}
+      trigger={C.blockLabel}
+      // On the trigger, not the confirm button: the post it names sits behind
+      // an open modal, and inert content is out of the accessibility tree.
+      triggerDescribedBy={describedBy}
+      triggerClassName="ease-brand text-left text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical"
+    >
+      {/* blockConfirm was written, then knowingly left unwired for a reason
+          recorded in copy-is-wired.test.ts: a member reaching for this is
+          having the worst moment the product will give them, and should not be
+          asked to justify it. Nothing here asks why. What changed is that block
+          now sits one row from Report in a menu and cannot be undone from the
+          chat — so the mis-tap this prevents costs a connection, and the
+          confirmation costs a press. */}
+      <p className="mt-4 text-[12.6px] leading-[1.65] text-ink-2">{C.blockConfirm}</p>
+
+      <form action={act} className="mt-6 flex flex-wrap items-center gap-3">
+        {memberId ? <input type="hidden" name="blocked_id" value={memberId} /> : null}
+        {roomMessageId ? (
+          <input type="hidden" name="room_message_id" value={roomMessageId} />
+        ) : null}
+        <button type="submit" disabled={pending} className={buttonClass("danger")}>
+          {C.blockConfirmLabel}
+        </button>
+      </form>
+
+      {/* Leaving is a press of its own, not only the X in the corner. */}
+      <form method="dialog" className="mt-3">
+        <button type="submit" className={buttonClass("quiet")}>
+          {C.blockKeepLabel}
+        </button>
+      </form>
+    </Modal>
   );
 }
 
@@ -105,26 +125,14 @@ export function ReportControl({
   messageId,
   roomMessageId,
   describedBy,
-  headingLevel = 3,
 }: {
   memberId?: string;
   messageId?: string;
   roomMessageId?: string;
   /** Id of the text this control acts on, so repeated buttons are told apart. */
   describedBy?: string;
-  /**
-   * Where this sits in the page's outline.
-   *
-   * A chat page supplies an h2 above this — the plan panel, the closure note —
-   * so h3 is correct there. A room page's only h2 is the pinned-resource aside,
-   * which renders solely when a room HAS one, so on most rooms this h3 followed
-   * the h1 with nothing between and the outline skipped a level.
-   */
-  headingLevel?: 2 | 3;
 }) {
-  const Heading = headingLevel === 2 ? "h2" : "h3";
   const [state, act, pending] = useActionState(reportMember, SAFETY_INITIAL);
-  const [open, setOpen] = useState(false);
 
   if (state.message) {
     return (
@@ -134,31 +142,20 @@ export function ReportControl({
     );
   }
 
-  // Mounted whether open or not. Replacing it with the form unmounted the
-  // focused button and left the revealed heading unannounced — on a control
-  // someone reaches when something has already gone wrong.
-  const trigger = (
-    <button
-      type="button"
-      onClick={() => setOpen((current) => !current)}
-      aria-describedby={describedBy}
-      aria-expanded={open}
-      className="ease-brand text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
-    >
-      {C.reportLabel}
-    </button>
-  );
-
-  if (!open) return trigger;
-
+  // In a modal rather than inline. It expanded in place under a disclosure,
+  // which was tolerable when it sat at the bottom of a page with room beneath
+  // it — inside a 232px header menu the reason list and the free-text field had
+  // nowhere to go. showModal() also brings the focus trap this form always
+  // wanted: it is eight controls someone reaches when something has already
+  // gone wrong, and tabbing out of it into the conversation helps nobody.
   return (
-    <>
-      {trigger}
-      <form
-        action={act}
-        className="mt-4 flex flex-col gap-4 rounded-lg border border-line-2 bg-surface p-5"
-      >
-        <Heading className="text-[0.851rem]">{C.reportHeading}</Heading>
+    <Modal
+      heading={C.reportHeading}
+      trigger={C.reportLabel}
+      triggerDescribedBy={describedBy}
+      triggerClassName="ease-brand text-left text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+    >
+      <form action={act} className="mt-4 flex flex-col gap-4">
         <p className="text-[11.3px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
 
         {memberId ? <input type="hidden" name="reported_user_id" value={memberId} /> : null}
@@ -213,6 +210,6 @@ export function ReportControl({
           {C.reportSubmitLabel}
         </button>
       </form>
-    </>
+    </Modal>
   );
 }

@@ -8,7 +8,7 @@ import { cancelPlan, closeChat, confirmPlan, proposePlan, sendMessage } from "./
 import { CHAT_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
 import { CalendarIcon } from "./chat-icons";
-import { CloseIcon } from "@/app/app/inbox/decision-dialog";
+import { CloseIcon, Modal } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
 
@@ -232,36 +232,21 @@ export function CancelPlan({ chatId }: { chatId: string }) {
  */
 export function CloseChat({ chatId, senderName }: { chatId: string; senderName: string }) {
   const [state, act, pending] = useActionState(closeChat, CHAT_INITIAL);
-  const [open, setOpen] = useState(false);
   const [template, setTemplate] = useState(0);
   const [line, setLine] = useState("");
 
-  // Mounted whether open or not — see the note on DeclineForm. Replacing the
-  // trigger with the form threw away the focused element and announced nothing.
-  const trigger = (
-    <button
-      type="button"
-      onClick={() => setOpen((current) => !current)}
-      aria-expanded={open}
-      // No margin of its own: the mt-10 here was breathing room for the bottom
-      // of the composer column, and inside the header menu it was 40px of empty
-      // popover above the first item. Spacing is the menu's business now.
-      className="ease-brand text-left text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
-    >
-      {C.closeHeading}
-    </button>
-  );
-
-  if (!open) return trigger;
-
+  // In a modal rather than a disclosure below the trigger. Five closure
+  // templates, a free-text line and a live preview needed the room a page
+  // bottom gave them and a 232px header menu does not — and the modal replaces
+  // the mounted-trigger dance this used to need, because showModal() keeps the
+  // trigger mounted by construction rather than by our remembering to.
   return (
-    <>
-      {trigger}
-      <form
-        action={act}
-        className="mt-6 flex flex-col gap-5 rounded-xl border border-line-2 bg-surface p-6"
-      >
-        <h2 className="text-[0.931rem]">{C.closeHeading}</h2>
+    <Modal
+      heading={C.closeHeading}
+      trigger={C.closeHeading}
+      triggerClassName="ease-brand text-left text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+    >
+      <form action={act} className="mt-4 flex flex-col gap-5">
         <input type="hidden" name="chat_id" value={chatId} />
 
         <fieldset className="flex flex-col gap-2.5">
@@ -310,6 +295,6 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
           {C.closeLabel}
         </button>
       </form>
-    </>
+    </Modal>
   );
 }

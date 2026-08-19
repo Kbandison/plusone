@@ -27,10 +27,7 @@ const ROOTS = [join(import.meta.dirname, ".."), join(import.meta.dirname, "../..
  * Being on this list is a claim that somebody looked. Delete an entry when the
  * thing gets built.
  */
-const KNOWINGLY_UNUSED: Record<string, string> = {
-  blockConfirm:
-    "Blocking asks nothing on purpose — see the note on BlockButton. Someone reaching for it is having the worst moment this product will give them, and a dialogue asking them to justify it is the wrong thing to put in the way. The string stays for the day that changes.",
-};
+const KNOWINGLY_UNUSED: Record<string, string> = {};
 
 function sourceFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

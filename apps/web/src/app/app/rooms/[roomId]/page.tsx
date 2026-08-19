@@ -97,11 +97,11 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
                     author, so shipping one to the client turned an unattributed
                     room into a name and a face for anyone reading the payload.
                     Both resolve it server-side from the message. */}
+                {/* headingLevel is gone: the form opens in a modal now, and
+                    showModal() makes the rest of the page inert, so the
+                    dialog's outline is its own. The level no longer depends on
+                    what the page behind it happens to contain. */}
                 <ReportControl
-                  // h2 here: a room page's only other h2 is the pinned-resource
-                  // aside, which most rooms do not have — so an h3 followed the
-                  // h1 with nothing between it.
-                  headingLevel={2}
                   roomMessageId={message.id as string}
                   describedBy={`post-${message.id as string}`}
                 />
