@@ -132,3 +132,82 @@ describe("a room can pin something", () => {
     expect(room).toMatch(/\{pinned\.urlLabel \?\? pinned\.url\}/);
   });
 });
+
+const menu = read("../overflow-menu.tsx");
+
+/**
+ * A feed, not a stack of objects.
+ *
+ * The posts were bordered rounded cards with gaps between them, which reads as
+ * a list of things rather than as one continuous surface. Every feed converges
+ * on full-bleed rows ruled off from each other for the same reason.
+ */
+describe("the room reads as a feed", () => {
+  it("rules the rows off instead of boxing each one", () => {
+    expect(room).toMatch(/<ul className="-mx-6 mt-6 border-t border-line">/);
+    expect(room).toMatch(/border-b border-line px-6 py-4/);
+    const feed = room.slice(room.indexOf('<ul className="-mx-6'));
+    expect(feed, "a row must not be a card").not.toMatch(/rounded-lg border border-line px/);
+  });
+
+  /** Edge to edge is the whole difference in feel on a phone. */
+  it("bleeds the rules past the page gutter", () => {
+    expect(room).toMatch(/-mx-6 mt-6 border-t/);
+  });
+
+  it("gives each row the age of the post", () => {
+    expect(room).toMatch(/chatLogic\.compactAge\(postedAt, now, zone\)/);
+    expect(room).toMatch(/dateTime=\{new Date\(postedAt\)\.toISOString\(\)\}/);
+    expect(room).toMatch(/title=\{chatLogic\.messageTimeExact\(postedAt, zone\)\}/);
+  });
+
+  /** One reading of the clock for the page, not one per row. */
+  it("reads the clock once", () => {
+    expect(room).toMatch(/const now = Date\.now\(\);/);
+    expect(room.match(/Date\.now\(\)/g)).toHaveLength(1);
+  });
+
+  /**
+   * The composer above the feed. Below a hundred rows of scrolling it made the
+   * room read as something to consume rather than somewhere to speak.
+   */
+  it("puts the composer above the posts", () => {
+    expect(room.indexOf("<RoomComposer")).toBeLessThan(room.indexOf('<ul className="-mx-6'));
+  });
+
+  /** Report and block on every row was two text links per post. */
+  it("folds the per-post controls behind one press", () => {
+    expect(room).toMatch(/<OverflowMenu label=\{C\.postMenuLabel\} compact>/);
+    expect(room).toMatch(/<ReportControl\s+roomMessageId=/);
+  });
+
+  /** Rooms are unattributed, so there is no name or face to sit beside a post. */
+  it("shows no author on a post", () => {
+    const feed = room.slice(room.indexOf('<ul className="-mx-6'));
+    expect(feed).not.toMatch(/display_name|MemberPhotoFrame/);
+  });
+});
+
+/**
+ * Two callers now, which is why it stopped being ChatMenu — the chat header and
+ * every post in a room. Two copies of the outside-press and Escape handling
+ * would be two things to get right.
+ */
+describe("one overflow menu", () => {
+  it("takes its label from the caller", () => {
+    expect(menu).toMatch(/label = C\.chatMenuLabel/);
+    expect(menu).toMatch(/aria-label=\{label\}/);
+    expect(menu).toMatch(/aria-haspopup="menu"/);
+  });
+
+  /** LAYOUT.minTapTarget is a floor; a feed is the surface used most in a hurry. */
+  it("keeps a full tap target even when compact", () => {
+    expect(menu).toMatch(/size-tap/);
+    expect(menu).toMatch(/compact \? "-mr-2\.5 scale-90" : ""/);
+  });
+
+  it("still closes on an outside press and on Escape", () => {
+    expect(menu).toMatch(/pointerdown/);
+    expect(menu).toMatch(/event\.key === "Escape"/);
+  });
+});

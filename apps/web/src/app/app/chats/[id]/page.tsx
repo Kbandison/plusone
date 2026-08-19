@@ -9,7 +9,7 @@ import { chat as chatLogic, fuse } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
-import { ChatMenu } from "./chat-menu";
+import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
 import { VoiceNote } from "./voice-note";
 import { MemberPhotoFrame } from "../../member-photo";
@@ -149,7 +149,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
             to want them, who is the one the conversation just went wrong with.
             Closing is the only part of this that a terminal chat has no use
             for. */}
-        <ChatMenu>
+        <OverflowMenu>
           {/* Each in its own row, so the menu's divide-y rules between them.
               A fragment here would not do — its children become siblings of the
               menu, and the dividers would land in the wrong places. */}
@@ -168,7 +168,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
               <BlockButton memberId={other} />
             </div>
           ) : null}
-        </ChatMenu>
+        </OverflowMenu>
       </div>
 
       {/* What was actually said first.

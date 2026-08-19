@@ -112,3 +112,40 @@ export function dateSeparatorLabel(sentAt: number, now: number, zone = "UTC"): s
     ...(sameYear ? {} : { year: "numeric" as const }),
   }).format(new Date(sentAt));
 }
+
+/**
+ * "45s", "5m", "3h", "2d", "12 Aug" — the age of a post in a feed.
+ *
+ * Short because it repeats. A feed shows this once per row, and "3 hours ago"
+ * on forty rows is forty copies of the word hours; the unit letter carries the
+ * same meaning in a twentieth of the width, which is why every feed converges
+ * on it.
+ *
+ * It stops being relative after a week. "9d" is arithmetic a reader has to do,
+ * and a date is what they were going to work out anyway.
+ *
+ * Pure, and given `now`, for the same reason as everything above it: the same
+ * post renders on the server and again on the client, and a function that reads
+ * the clock makes those two disagree.
+ */
+export function compactAge(sentAt: number, now: number, zone = "UTC"): string {
+  const elapsed = Math.max(0, now - sentAt);
+
+  if (elapsed < MINUTE) return `${Math.floor(elapsed / 1000)}s`;
+  if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)}m`;
+  if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)}h`;
+  if (elapsed < 7 * DAY) return `${Math.floor(elapsed / DAY)}d`;
+
+  const sameYear =
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone, year: "numeric" }).format(
+      new Date(sentAt),
+    ) ===
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone, year: "numeric" }).format(new Date(now));
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    day: "numeric",
+    month: "short",
+    ...(sameYear ? {} : { year: "2-digit" as const }),
+  }).format(new Date(sentAt));
+}

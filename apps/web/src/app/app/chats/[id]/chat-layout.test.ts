@@ -7,7 +7,7 @@ const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.ur
 const page = read("./page.tsx");
 const forms = read("./chat-forms.tsx");
 const recorder = read("./voice-recorder.tsx");
-const menu = read("./chat-menu.tsx");
+const menu = read("../../overflow-menu.tsx");
 const icons = read("./chat-icons.tsx");
 
 /**
@@ -25,7 +25,7 @@ describe("what ends the conversation is folded away", () => {
       page.indexOf('<div className="flex items-center justify-between'),
       page.indexOf("<ul className"),
     );
-    expect(header).toMatch(/<ChatMenu>/);
+    expect(header).toMatch(/<OverflowMenu>/);
     expect(header).toMatch(/CloseChat/);
     expect(header).toMatch(/ReportControl/);
     expect(header).toMatch(/BlockButton/);
@@ -44,7 +44,7 @@ describe("what ends the conversation is folded away", () => {
 
   it("says it is a menu, and what it is", () => {
     expect(menu).toMatch(/aria-expanded=\{open\}/);
-    expect(menu).toMatch(/aria-label=\{C\.chatMenuLabel\}/);
+    expect(menu).toMatch(/aria-label=\{label\}/);
   });
 });
 
@@ -93,8 +93,8 @@ describe("reporting survives the chat", () => {
       page.indexOf('<div className="flex items-center justify-between'),
       page.indexOf("<ul className"),
     );
-    expect(header).toMatch(/<ChatMenu>/);
-    expect(header).not.toMatch(/\{!isTerminal \? \(\s*<ChatMenu>/);
+    expect(header).toMatch(/<OverflowMenu>/);
+    expect(header).not.toMatch(/\{!isTerminal \? \(\s*<OverflowMenu>/);
   });
 
   it("drops only the close control when there is nothing left to close", () => {
@@ -109,7 +109,7 @@ describe("the menu reads as a list", () => {
   });
 
   it("gives each control its own row rather than a shared line", () => {
-    const block = page.slice(page.indexOf("<ChatMenu>"), page.indexOf("</ChatMenu>"));
+    const block = page.slice(page.indexOf("<OverflowMenu>"), page.indexOf("</OverflowMenu>"));
     expect(block.match(/<div className="py-3">/g)).toHaveLength(3);
     expect(block).not.toMatch(/flex items-center gap-4/);
   });

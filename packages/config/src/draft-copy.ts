@@ -697,6 +697,12 @@ export const DRAFT_COPY = {
      * mechanics that make people feel behind.
      */
     roomUnread: "New posts",
+    /**
+     * One of these sits on every post in a room, so a screen reader hears the
+     * label once per row. "More" repeated forty times says nothing; this at
+     * least says what it is more OF.
+     */
+    postMenuLabel: "Post options",
     roomEmptyHeading: "Nothing here yet",
     roomEmptyBody: "No posts in this room so far. Yours can be the first.",
     fuseDaysLeft: (days: number) => `${days} ${days === 1 ? "day" : "days"} left`,

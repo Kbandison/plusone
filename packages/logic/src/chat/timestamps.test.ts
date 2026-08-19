@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  compactAge,
   dateSeparatorLabel,
   messageTimeExact,
   messageTimeLabel,
@@ -156,5 +157,42 @@ describe("dateSeparatorLabel", () => {
       const now = at("2026-08-19T18:00:00Z");
       expect(dateSeparatorLabel(now - days * 86_400_000, now)).not.toBe("");
     }
+  });
+});
+
+describe("compactAge", () => {
+  const now = at("2026-08-19T12:00:00Z");
+  const ago = (ms: number) => compactAge(now - ms, now);
+
+  it("counts seconds, then minutes, then hours, then days", () => {
+    expect(ago(45_000)).toBe("45s");
+    expect(ago(5 * 60_000)).toBe("5m");
+    expect(ago(3 * 3_600_000)).toBe("3h");
+    expect(ago(2 * 86_400_000)).toBe("2d");
+  });
+
+  /** Rounds down, so nothing is ever older than it is. */
+  it("floors rather than rounds", () => {
+    expect(ago(119_000)).toBe("1m");
+    expect(ago(59 * 60_000 + 59_000)).toBe("59m");
+  });
+
+  /** "9d" is arithmetic a reader has to do. */
+  it("becomes a date after a week", () => {
+    expect(compactAge(at("2026-08-05T09:00:00Z"), now)).toBe("5 Aug");
+  });
+
+  it("adds a short year once it is a different one", () => {
+    expect(compactAge(at("2025-12-30T09:00:00Z"), now)).toBe("30 Dec 25");
+  });
+
+  /** A clock skewed a little forward must not render "-3s". */
+  it("never goes negative", () => {
+    expect(compactAge(now + 5_000, now)).toBe("0s");
+  });
+
+  it("is a pure function of its arguments", () => {
+    const sent = now - 3_600_000;
+    expect(compactAge(sent, now)).toBe(compactAge(sent, now));
   });
 });

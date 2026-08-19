@@ -1,4 +1,5 @@
 export {
+  compactAge,
   dateSeparatorLabel,
   messageTimeExact,
   messageTimeLabel,
