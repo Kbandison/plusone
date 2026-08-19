@@ -43,7 +43,7 @@ export function BlockButton({
     // reasonably presses it again — at the moment in this product when someone
     // is least able to absorb an ambiguous result.
     return (
-      <span role="status" className="text-[12.6px] text-ink-3">
+      <span role="status" className="text-[13.4px] text-ink-3">
         {state.message}
       </span>
     );
@@ -60,7 +60,7 @@ export function BlockButton({
         // is what tells a screen reader user which post they are blocking —
         // and it uses the post itself rather than a label invented for it.
         aria-describedby={describedBy}
-        className="ease-brand text-[12.6px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical disabled:opacity-55"
+        className="ease-brand text-[13.4px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical disabled:opacity-55"
       >
         {C.blockLabel}
       </button>
@@ -84,7 +84,7 @@ export function UnblockButton({
         type="submit"
         disabled={pending}
         aria-describedby={describedBy}
-        className="ease-brand text-[12.6px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent disabled:opacity-55"
+        className="ease-brand text-[13.4px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent disabled:opacity-55"
       >
         {C.unblockLabel}
       </button>
@@ -128,7 +128,7 @@ export function ReportControl({
 
   if (state.message) {
     return (
-      <p role="status" className="text-[12.6px] text-positive">
+      <p role="status" className="text-[13.4px] text-positive">
         {state.message}
       </p>
     );
@@ -143,7 +143,7 @@ export function ReportControl({
       onClick={() => setOpen((current) => !current)}
       aria-describedby={describedBy}
       aria-expanded={open}
-      className="ease-brand text-[12.6px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      className="ease-brand text-[13.4px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
     >
       {C.reportLabel}
     </button>
@@ -158,8 +158,8 @@ export function ReportControl({
         action={act}
         className="mt-4 flex flex-col gap-4 rounded-lg border border-line-2 bg-surface p-5"
       >
-        <Heading className="text-[0.946rem]">{C.reportHeading}</Heading>
-        <p className="text-[12.6px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
+        <Heading className="text-[1.009rem]">{C.reportHeading}</Heading>
+        <p className="text-[13.4px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
 
         {memberId ? <input type="hidden" name="reported_user_id" value={memberId} /> : null}
         {messageId ? <input type="hidden" name="reported_message_id" value={messageId} /> : null}
@@ -168,25 +168,25 @@ export function ReportControl({
         ) : null}
 
         <fieldset className="flex flex-col gap-2.5">
-          <legend className="mb-2 text-[12.6px] text-ink-2">{C.reportReasonLabel}</legend>
+          <legend className="mb-2 text-[13.4px] text-ink-2">{C.reportReasonLabel}</legend>
           {(Object.keys(REPORT_REASONS) as ReportReason[]).map((reason) => (
             <label
               key={reason}
-              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[13.9px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
                 name="reason"
                 value={reason}
                 required
-                className="size-[16.2px] accent-accent"
+                className="size-[17.3px] accent-accent"
               />
               {REPORT_REASONS[reason]}
             </label>
           ))}
         </fieldset>
 
-        <label className="flex flex-col gap-2 text-[12.6px] text-ink-2">
+        <label className="flex flex-col gap-2 text-[13.4px] text-ink-2">
           {C.reportDetailLabel}
           <textarea
             name="detail"
@@ -197,14 +197,14 @@ export function ReportControl({
         </label>
 
         {memberId ? (
-          <label className="flex items-center gap-3 text-[13px]">
-            <input type="checkbox" name="also_block" className="size-[16.2px] accent-accent" />
+          <label className="flex items-center gap-3 text-[13.9px]">
+            <input type="checkbox" name="also_block" className="size-[17.3px] accent-accent" />
             {C.reportAlsoBlock}
           </label>
         ) : null}
 
         {state.error ? (
-          <p role="alert" className="text-[12.6px] text-critical">
+          <p role="alert" className="text-[13.4px] text-critical">
             {state.error}
           </p>
         ) : null}

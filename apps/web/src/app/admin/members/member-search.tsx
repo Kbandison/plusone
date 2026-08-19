@@ -25,7 +25,7 @@ export function MemberSearch() {
           minLength={2}
           placeholder="Display name or member id"
           aria-label="Display name or member id"
-          className="min-w-[216px] flex-1 rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] focus:border-accent"
+          className="min-w-[230.4px] flex-1 rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] focus:border-accent"
         />
         <button type="submit" disabled={pending} className={buttonClass("secondary")}>
           Look up
@@ -34,7 +34,7 @@ export function MemberSearch() {
 
       {/* Announced: the results replace themselves in place, and a moderator
           who tabbed away has no other signal that the search finished. */}
-      <p role="status" className="mt-10 text-[14.4px] text-ink-2">
+      <p role="status" className="mt-10 text-[15.4px] text-ink-2">
         {state.searched && state.hits.length === 0 ? "Nobody matches that." : ""}
       </p>
 
@@ -43,13 +43,13 @@ export function MemberSearch() {
           {state.hits.map((hit) => (
             <li key={hit.user_id} className="rounded-xl border border-line-2 bg-surface p-6">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 className="text-[1.034rem]">{hit.display_name ?? "No name"}</h2>
-                <span className="text-[12.2px] tracking-[0.04em] text-ink-3 uppercase">
+                <h2 className="text-[1.103rem]">{hit.display_name ?? "No name"}</h2>
+                <span className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">
                   {hit.verification_status}
                 </span>
               </div>
 
-              <p className="mt-2 text-[12.6px] text-ink-3">
+              <p className="mt-2 text-[13.4px] text-ink-3">
                 Joined {new Date(hit.created_at).toLocaleDateString()}
                 {Number(hit.open_reports) > 0
                   ? ` · ${hit.open_reports} open report${Number(hit.open_reports) === 1 ? "" : "s"}`

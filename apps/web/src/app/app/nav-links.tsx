@@ -30,7 +30,7 @@ export function NavLinks({ items }: { items: readonly { href: string; label: str
             <Link
               href={item.href}
               aria-current={current ? "page" : undefined}
-              className={`ease-brand flex min-h-tap items-center border-b-2 px-2.5 text-[12.2px] transition-colors duration-200 ${
+              className={`ease-brand flex min-h-tap items-center border-b-2 px-2.5 text-[13px] transition-colors duration-200 ${
                 current ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink"
               }`}
             >

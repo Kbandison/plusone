@@ -24,10 +24,10 @@ export default function Home() {
   return (
     <main
       id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[612px] flex-col justify-center px-6 py-24"
+      className="mx-auto flex min-h-[100dvh] max-w-[652.8px] flex-col justify-center px-6 py-24"
     >
       {/* Not a link on the home page — it is already here. */}
-      <Wordmark className="text-[30.6px]" asLink={false} />
+      <Wordmark className="text-[32.6px]" asLink={false} />
 
       {/* §3.4, verbatim. */}
       <h1 className="mt-12 max-w-[15ch] text-h1 text-balance">{COPY.marketing.hero}</h1>
@@ -41,7 +41,7 @@ export default function Home() {
 
         <Link
           href="/sign-in"
-          className="ease-brand text-[14px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+          className="ease-brand text-[14.9px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
         >
           {DRAFT_COPY.home.signIn}
         </Link>
@@ -54,7 +54,7 @@ export default function Home() {
         {process.env.NODE_ENV !== "production" && process.env["OTP_PROVIDER"] === "stub" ? (
           <Link
             href="/dev/sign-in"
-            className="ease-brand rounded-lg border border-dashed border-line-2 px-4 py-2 text-[12.6px] text-ink-3 transition-colors duration-200 hover:text-ink"
+            className="ease-brand rounded-lg border border-dashed border-line-2 px-4 py-2 text-[13.4px] text-ink-3 transition-colors duration-200 hover:text-ink"
           >
             Dev sign-in
           </Link>
@@ -62,7 +62,7 @@ export default function Home() {
 
         <Link
           href="/how-it-works"
-          className="ease-brand text-[14px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+          className="ease-brand text-[14.9px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
         >
           How it works
         </Link>
@@ -70,7 +70,7 @@ export default function Home() {
 
       {/* §3.4's verification pitch — the one claim worth making on the way in,
           because it is the thing the incumbents cannot say. */}
-      <p className="mt-14 max-w-[44ch] border-t border-line pt-6 text-[13px] leading-[1.65] text-ink-3">
+      <p className="mt-14 max-w-[44ch] border-t border-line pt-6 text-[13.9px] leading-[1.65] text-ink-3">
         {COPY.marketing.verificationPitch}
       </p>
 

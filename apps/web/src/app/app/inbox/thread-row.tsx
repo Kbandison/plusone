@@ -56,19 +56,19 @@ export function ThreadRow({ thread }: { thread: ThreadView }) {
 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex items-baseline justify-between gap-3">
-          <span className={`truncate text-[14.4px] ${thread.unread ? "text-ink" : "text-ink"}`}>
+          <span className={`truncate text-[15.4px] ${thread.unread ? "text-ink" : "text-ink"}`}>
             {thread.name}
             {thread.unread ? <span className="sr-only"> · {C.threadUnread}</span> : null}
           </span>
-          <span className="shrink-0 text-[12.2px] text-ink-3 tabular-nums">{thread.at}</span>
+          <span className="shrink-0 text-[13px] text-ink-3 tabular-nums">{thread.at}</span>
         </span>
 
         {/* One line. `truncate` rather than a clamp: two lines of preview is
             most of a row, and the preview is a reminder of which thread this is
             rather than the message itself. */}
-        <span className="truncate text-[13px] text-ink-2">{thread.preview}</span>
+        <span className="truncate text-[13.9px] text-ink-2">{thread.preview}</span>
 
-        <span className="mt-0.5 flex items-center gap-2.5 text-[12.2px]">
+        <span className="mt-0.5 flex items-center gap-2.5 text-[13px]">
           <span className={owed ? "text-accent" : "text-ink-3"}>{STATE_LABEL[thread.state]}</span>
           {thread.daysLeft != null ? (
             <span className={thread.daysLeft <= 1 ? "text-caution" : "text-ink-3"}>

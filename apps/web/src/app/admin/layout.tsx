@@ -31,7 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin) redirect("/");
 
   return (
-    <div className="mx-auto w-full max-w-[810px] px-6 py-12">
+    <div className="mx-auto w-full max-w-[864px] px-6 py-12">
       <nav aria-label="Moderation" className="flex flex-wrap gap-6">
         {[
           { href: "/admin/reports", label: "Reports" },
@@ -43,7 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link
             key={href}
             href={href}
-            className="ease-brand text-[12.2px] tracking-[0.04em] text-ink-3 uppercase transition-colors duration-200 hover:text-ink"
+            className="ease-brand text-[13px] tracking-[0.04em] text-ink-3 uppercase transition-colors duration-200 hover:text-ink"
           >
             {label}
           </Link>

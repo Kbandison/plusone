@@ -13,17 +13,17 @@ export default async function VerificationsPage() {
   return (
     <main id="main">
       <h1 className="mt-4 text-h2">Flagged verifications</h1>
-      <p className="mt-4 max-w-[52ch] text-[14.4px] leading-[1.7] text-ink-2">
+      <p className="mt-4 max-w-[52ch] text-[15.4px] leading-[1.7] text-ink-2">
         Members whose automatic check could not decide, oldest first. Manual review happens only on
         a risk flag.
       </p>
 
       {error ? (
-        <p role="alert" className="mt-8 text-[13.6px] text-critical">
+        <p role="alert" className="mt-8 text-[14.5px] text-critical">
           {error.message}
         </p>
       ) : members.length === 0 ? (
-        <p className="mt-10 rounded-lg border border-line-2 bg-surface p-8 text-[14.4px] text-ink-2">
+        <p className="mt-10 rounded-lg border border-line-2 bg-surface p-8 text-[15.4px] text-ink-2">
           Nothing waiting. Every verification decided itself.
         </p>
       ) : (

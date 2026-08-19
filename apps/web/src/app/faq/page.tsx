@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function FaqPage() {
   return (
-    <main id="main" className="mx-auto w-full max-w-[612px] px-6 py-16 sm:py-24">
+    <main id="main" className="mx-auto w-full max-w-[652.8px] px-6 py-16 sm:py-24">
       <SiteHeader />
 
       <h1 className="text-h1 text-balance">Questions</h1>
@@ -22,7 +22,7 @@ export default function FaqPage() {
           <section key={entry.id} id={entry.id} className="scroll-mt-24">
             <h2 className="text-h3">{entry.question}</h2>
             {entry.answer.map((paragraph) => (
-              <p key={paragraph} className="mt-4 text-[14.9px] leading-[1.72] text-ink-2">
+              <p key={paragraph} className="mt-4 text-[15.9px] leading-[1.72] text-ink-2">
                 {paragraph}
               </p>
             ))}

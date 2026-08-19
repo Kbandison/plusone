@@ -227,15 +227,16 @@ export default async function InboxPage() {
 
       {decisions.length > 0 ? (
         <section className="mt-7">
-          <h2 className="text-[12.2px] tracking-[0.04em] text-ink-3 uppercase">
-            {C.decisionsHeading(decisions.length)}
+          <h2 className="text-[14.8px] tracking-[0.04em] text-ink-3 uppercase">
+            {C.threadNeedsDecision}
+            <span className="ml-1.5 text-ink-2 tabular-nums">{decisions.length}</span>
           </h2>
 
           {/* Horizontal, because this is a queue rather than a list: it grows
               sideways and never pushes the conversations off the screen.
               -mx-6/px-6 lets it bleed to the edges so a half-cut face is what
               tells you there is more, which no scrollbar on a phone will. */}
-          <ul className="-mx-6 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-1">
+          <ul className="rise-in -mx-6 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 py-2">
             {decisions.map((decision) => (
               <li key={decision.id} className="snap-start">
                 {/* The face opens a dialog rather than a page: the queue is for
@@ -249,9 +250,9 @@ export default async function InboxPage() {
       ) : null}
 
       {threads.length === 0 ? (
-        <p className="mt-8 text-[14.4px] text-ink-2">{C.inboxAllEmpty}</p>
+        <p className="mt-8 text-[15.4px] text-ink-2">{C.inboxAllEmpty}</p>
       ) : conversations.length > 0 ? (
-        <ul className="mt-8 flex flex-col gap-2.5">
+        <ul className="rise-in mt-8 flex flex-col gap-2.5">
           {conversations.map((thread) => (
             <ThreadRow key={thread.id} thread={thread} />
           ))}

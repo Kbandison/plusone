@@ -4,9 +4,9 @@ export default function NotFound() {
   return (
     <main
       id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[504px] flex-col justify-center px-6 py-24"
+      className="mx-auto flex min-h-[100dvh] max-w-[537.6px] flex-col justify-center px-6 py-24"
     >
-      <Wordmark className="text-[25.2px]" />
+      <Wordmark className="text-[26.9px]" />
 
       <h1 className="mt-10 text-h1">This page isn&rsquo;t here.</h1>
 

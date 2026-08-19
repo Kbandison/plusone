@@ -20,8 +20,8 @@ export function ModeToggle({ mode }: { mode: "dating" | "support_only" }) {
 
   return (
     <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[1.126rem]">Support-only mode</h2>
-      <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">{COPY.supportOnly.toggle}</p>
+      <h2 className="text-[1.201rem]">Support-only mode</h2>
+      <p className="mt-4 text-[14.9px] leading-[1.7] text-ink-2">{COPY.supportOnly.toggle}</p>
 
       <form action={act} className="mt-6">
         <input type="hidden" name="mode" value={target} />
@@ -31,14 +31,14 @@ export function ModeToggle({ mode }: { mode: "dating" | "support_only" }) {
       </form>
 
       {state.error ? (
-        <p role="alert" className="mt-4 text-[13px] text-critical">
+        <p role="alert" className="mt-4 text-[13.9px] text-critical">
           {state.error}
         </p>
       ) : null}
       {/* role="status" — switching mode is one of the biggest changes a member
           can make here, and it produced no announcement at all. */}
       {state.message ? (
-        <p role="status" className="mt-4 text-[13px] text-positive">
+        <p role="status" className="mt-4 text-[13.9px] text-positive">
           {state.message}
         </p>
       ) : null}

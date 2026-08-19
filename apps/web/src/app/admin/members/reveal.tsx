@@ -19,8 +19,8 @@ export function RevealCondition({ memberId }: { memberId: string }) {
 
   return (
     <details className="mt-5 border-t border-line pt-4">
-      <summary className="cursor-pointer text-[13px] text-ink-2">Reveal condition data</summary>
-      <p className="mt-3 text-[12.2px] text-ink-3">
+      <summary className="cursor-pointer text-[13.9px] text-ink-2">Reveal condition data</summary>
+      <p className="mt-3 text-[13px] text-ink-3">
         Most decisions do not need this. Every reveal is logged against your account with the reason
         you give.
       </p>
@@ -39,12 +39,12 @@ export function RevealCondition({ memberId }: { memberId: string }) {
           Reveal and log
         </button>
         {state.error ? (
-          <p role="alert" className="text-[12.6px] text-critical">
+          <p role="alert" className="text-[13.4px] text-critical">
             {state.error}
           </p>
         ) : null}
         {state.revealed ? (
-          <p className="text-[13.6px]">
+          <p className="text-[14.5px]">
             {state.revealed.community} · {state.revealed.condition}
             {state.revealed.u_equals_u ? " · U=U" : ""}
           </p>

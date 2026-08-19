@@ -96,7 +96,7 @@ export function Card({
  * because every place it appears outside the masthead should return home.
  */
 export function Wordmark({
-  className = "text-[23.4px]",
+  className = "text-[25px]",
   asLink = true,
 }: {
   className?: string;
@@ -141,7 +141,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`rounded bg-accent px-1.5 py-0.5 text-[12.2px] tracking-[0.03em] text-accent-ink uppercase ${className}`}
+      className={`rounded bg-accent px-1.5 py-0.5 text-[13px] tracking-[0.03em] text-accent-ink uppercase ${className}`}
     >
       {children}
     </span>

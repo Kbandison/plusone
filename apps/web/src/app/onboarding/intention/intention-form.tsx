@@ -22,7 +22,7 @@ export function IntentionForm({ intention }: { intention: string | null }) {
         {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (
           <label
             key={value}
-            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[14.4px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[15.4px] transition-colors duration-200 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -30,7 +30,7 @@ export function IntentionForm({ intention }: { intention: string | null }) {
               value={value}
               defaultChecked={intention === value}
               required
-              className="size-[16.2px] accent-accent"
+              className="size-[17.3px] accent-accent"
             />
             {INTENTION_LABELS[value]}
           </label>
@@ -39,10 +39,10 @@ export function IntentionForm({ intention }: { intention: string | null }) {
 
       {/* §3.4, verbatim. The lock is the point: an intention that can be changed
           hourly tells nobody anything. */}
-      <p className="text-[13px] text-ink-3">{COPY.intention.lockNotice}</p>
+      <p className="text-[13.9px] text-ink-3">{COPY.intention.lockNotice}</p>
 
       {state.error ? (
-        <p role="alert" className="text-[13px] text-critical">
+        <p role="alert" className="text-[13.9px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -51,7 +51,7 @@ export function IntentionForm({ intention }: { intention: string | null }) {
         <button
           type="submit"
           disabled={pending}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[182.4px] sm:self-start")}
         >
           {COPY.actions.continueLabel}
         </button>

@@ -15,7 +15,7 @@
     background-color: var(--ground);
     color: var(--ink);
     font-family: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
-    font-size: 15.3px;
+    font-size: 16.3px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
@@ -141,12 +141,105 @@
   outline-offset: 2px;
 }
 
+/*
+ * Motion.
+ *
+ * Small and few. The app is read by people deciding whether to trust it, and a
+ * screen that keeps moving reads as a screen that is selling something — so
+ * nothing here draws attention to itself: things arrive, and controls answer
+ * the finger. Everything is behind prefers-reduced-motion at the bottom of this
+ * file, which switches all of it off rather than merely shortening it.
+ */
+
+/* A dialog cannot transition in without these two.
+ *
+ * `display` and `overlay` are discrete properties: they flip at the start of
+ * the transition and the element is simply THERE, so the opacity and transform
+ * have nothing to animate from. `transition-behavior: allow-discrete` makes
+ * them wait for the rest, and @starting-style supplies the "before it existed"
+ * values a fresh element has no previous state for. Without both, showModal()
+ * is an instant appearance no matter what is declared. */
+dialog {
+  opacity: 0;
+  translate: 0 12px;
+  transition:
+    opacity 220ms var(--ease-brand),
+    translate 260ms var(--ease-brand),
+    display 260ms allow-discrete,
+    overlay 260ms allow-discrete;
+}
+
+dialog[open] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+dialog::backdrop {
+  background-color: rgb(0 0 0 / 0);
+  transition:
+    background-color 220ms var(--ease-brand),
+    display 220ms allow-discrete,
+    overlay 220ms allow-discrete;
+}
+
+dialog[open]::backdrop {
+  background-color: rgb(0 0 0 / 0.45);
+}
+
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: rgb(0 0 0 / 0);
+  }
+}
+
+/* Things that have just arrived from the server.
+ *
+ * One short rise, not a stagger: a list that deals itself in like cards draws
+ * the eye to the animation rather than to what arrived, and it is the same
+ * three faces every night. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.rise-in {
+  animation: rise-in 260ms var(--ease-brand) both;
+}
+
+/* A control that has been pressed should feel pressed. Scale rather than
+   colour, because the tones already carry meaning here. */
+button:not(:disabled):active,
+a[class*="bg-accent"]:active {
+  scale: 0.985;
+}
+
 ::selection {
   background-color: var(--accent);
   color: var(--accent-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* `animation-duration: 0.01ms` with `animation-fill-mode: both` leaves the
+     element holding its FROM state — a zero-length animation that never
+     finishes visibly is still an animation that applied. The rise has to be
+     removed rather than shortened. */
+  .rise-in {
+    animation: none;
+  }
+
   *,
   *::before,
   *::after {

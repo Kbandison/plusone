@@ -15,10 +15,10 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
 
   return (
     <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[1.08rem]">{C.crossCommunityHeading}</h2>
+      <h2 className="text-[1.152rem]">{C.crossCommunityHeading}</h2>
       {/* §3.4, verbatim. Both sides have to say yes — the copy says so because
           the wall works that way. */}
-      <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">{COPY.crossCommunity.optIn}</p>
+      <p className="mt-4 text-[14.9px] leading-[1.7] text-ink-2">{COPY.crossCommunity.optIn}</p>
 
       <form action={act} className="mt-5 flex items-center gap-3">
         <input
@@ -26,9 +26,9 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
           name="cross_community"
           type="checkbox"
           defaultChecked={optIn}
-          className="size-[16.2px] accent-accent"
+          className="size-[17.3px] accent-accent"
         />
-        <label htmlFor="cross_community" className="text-[13.6px]">
+        <label htmlFor="cross_community" className="text-[14.5px]">
           Open to other communities
         </label>
         <button type="submit" disabled={pending} className={buttonClass("secondary", "ml-auto")}>
@@ -40,7 +40,7 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
       </form>
 
       {state.error ? (
-        <p role="alert" className="mt-3 text-[12.6px] text-critical">
+        <p role="alert" className="mt-3 text-[13.4px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -48,7 +48,7 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
       {/* This rendered only errors, so a successful toggle produced nothing at
           all — and the checkbox looks the same either way. */}
       {state.message ? (
-        <p role="status" className="mt-3 text-[12.6px] text-positive">
+        <p role="status" className="mt-3 text-[13.4px] text-positive">
           {state.message}
         </p>
       ) : null}
@@ -70,19 +70,19 @@ export function DeleteAccount() {
   if (state.message) {
     return (
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[1.08rem]">{C.deleteHeading}</h2>
-        <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">{state.message}</p>
+        <h2 className="text-[1.152rem]">{C.deleteHeading}</h2>
+        <p className="mt-4 text-[14.9px] leading-[1.7] text-ink-2">{state.message}</p>
       </section>
     );
   }
 
   return (
     <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[1.08rem]">{C.deleteHeading}</h2>
-      <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">{COPY.deletion.confirmation}</p>
+      <h2 className="text-[1.152rem]">{C.deleteHeading}</h2>
+      <p className="mt-4 text-[14.9px] leading-[1.7] text-ink-2">{COPY.deletion.confirmation}</p>
 
       <form action={act} className="mt-6 flex flex-col gap-4">
-        <label htmlFor="confirm" className="text-[12.6px] text-ink-2">
+        <label htmlFor="confirm" className="text-[13.4px] text-ink-2">
           {C.deleteConfirmLabel}
         </label>
         <input
@@ -90,11 +90,11 @@ export function DeleteAccount() {
           name="confirm"
           type="text"
           autoComplete="off"
-          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-critical sm:w-[198px]"
+          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-critical sm:w-[211.2px]"
         />
 
         {state.error ? (
-          <p role="alert" className="text-[12.6px] text-critical">
+          <p role="alert" className="text-[13.4px] text-critical">
             {state.error}
           </p>
         ) : null}
@@ -102,7 +102,7 @@ export function DeleteAccount() {
         <button
           type="submit"
           disabled={pending}
-          className="ease-brand self-start rounded-lg border border-critical px-5 py-2.5 text-[13.6px] text-critical transition-colors duration-200 hover:bg-critical hover:text-ground disabled:opacity-55"
+          className="ease-brand self-start rounded-lg border border-critical px-5 py-2.5 text-[14.5px] text-critical transition-colors duration-200 hover:bg-critical hover:text-ground disabled:opacity-55"
         >
           {C.deleteButton}
         </button>
@@ -126,13 +126,13 @@ export function SignInEmail({ email, confirmed }: { email: string | null; confir
 
   return (
     <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[1.08rem]">{C.emailHeading}</h2>
-      <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">{C.emailBody}</p>
-      <p className="mt-4 text-[13.6px] text-ink-2">{status}</p>
+      <h2 className="text-[1.152rem]">{C.emailHeading}</h2>
+      <p className="mt-4 text-[14.9px] leading-[1.7] text-ink-2">{C.emailBody}</p>
+      <p className="mt-4 text-[14.5px] text-ink-2">{status}</p>
 
       <form action={act} className="mt-5 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-2">
-          <label htmlFor="sign_in_email" className="text-[13.6px]">
+          <label htmlFor="sign_in_email" className="text-[14.5px]">
             {C.emailLabel}
           </label>
           <input
@@ -144,7 +144,7 @@ export function SignInEmail({ email, confirmed }: { email: string | null; confir
             defaultValue={email ?? ""}
             aria-describedby={state.error ? "sign_in_email-error" : undefined}
             aria-invalid={state.error ? true : undefined}
-            className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[270px]"
+            className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[288px]"
           />
         </div>
         <button type="submit" disabled={pending} className={buttonClass("secondary")}>
@@ -153,13 +153,13 @@ export function SignInEmail({ email, confirmed }: { email: string | null; confir
       </form>
 
       {state.error ? (
-        <p id="sign_in_email-error" role="alert" className="mt-3 text-[12.6px] text-critical">
+        <p id="sign_in_email-error" role="alert" className="mt-3 text-[13.4px] text-critical">
           {state.error}
         </p>
       ) : null}
 
       {state.message ? (
-        <p role="status" className="mt-3 text-[12.6px] text-positive">
+        <p role="status" className="mt-3 text-[13.4px] text-positive">
           {state.message}
         </p>
       ) : null}

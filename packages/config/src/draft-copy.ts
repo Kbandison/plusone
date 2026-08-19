@@ -607,9 +607,6 @@ export const DRAFT_COPY = {
      * heading above it.
      */
     threadNeedsDecision: "Waiting on you",
-    /** The row of faces above the list. Counted, because it is a queue. */
-    decisionsHeading: (count: number) =>
-      count === 1 ? "1 person is waiting" : `${count} people are waiting`,
     threadSentWaiting: "Waiting on them",
     threadNeedsReply: "Your turn",
     threadTheirTurn: "Their turn",
@@ -639,11 +636,11 @@ export const DRAFT_COPY = {
      */
     declineNote: "Declining sends a short, kind note. Nobody is left wondering.",
     /**
-     * Leaving without deciding. Escape closes the dialog too, but only for
-     * somebody who already knows it does — and neither button here is a safe
-     * default to press by accident.
+     * The close control's name, not a visible label — it is an X in the corner.
+     * Escape and a click outside close it too, but neither announces itself,
+     * and neither of the two buttons below is safe to press by accident.
      */
-    decisionDismiss: "Decide later",
+    decisionDismiss: "Close",
     chatsHeading: "Chats",
     /**
      * The two message lists were the only ones in the app with no empty state,

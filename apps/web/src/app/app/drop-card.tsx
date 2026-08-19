@@ -51,16 +51,16 @@ export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | un
 
       <div className="p-6">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h2 className="text-[1.306rem]">{card.displayName}</h2>
-          {meta ? <span className="text-[13px] text-ink-3">{meta}</span> : null}
+          <h2 className="text-[1.393rem]">{card.displayName}</h2>
+          {meta ? <span className="text-[13.9px] text-ink-3">{meta}</span> : null}
         </div>
 
         {intentionLabel(card.intention) ? (
-          <p className="mt-2 text-[13.6px] text-ink-2">{intentionLabel(card.intention)}</p>
+          <p className="mt-2 text-[14.5px] text-ink-2">{intentionLabel(card.intention)}</p>
         ) : null}
 
         {photo?.isBlurred ? (
-          <p className="mt-3 text-[12.2px] text-ink-3">{DRAFT_COPY.app.photoBlurredNote}</p>
+          <p className="mt-3 text-[13px] text-ink-3">{DRAFT_COPY.app.photoBlurredNote}</p>
         ) : null}
 
         {/* Something they said, not another measurement of them. Decision #14
@@ -69,10 +69,10 @@ export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | un
             screen make sense. */}
         {card.prompt ? (
           <figure className="mt-5 border-l-2 border-line-2 pl-4">
-            <figcaption className="text-[12.2px] tracking-[0.02em] text-ink-3 uppercase">
+            <figcaption className="text-[13px] tracking-[0.02em] text-ink-3 uppercase">
               {card.prompt.question}
             </figcaption>
-            <blockquote className="mt-1.5 text-[14.4px] leading-[1.6] text-ink">
+            <blockquote className="mt-1.5 text-[15.4px] leading-[1.6] text-ink">
               {card.prompt.answer}
             </blockquote>
           </figure>
@@ -123,14 +123,14 @@ export function PreviewDropCard({
             payload to blur. */}
         <MemberPhotoFrame photo={photo} size={56} />
         <div>
-          <p className="text-[0.99rem]">{meta || "Someone nearby"}</p>
+          <p className="text-[1.056rem]">{meta || "Someone nearby"}</p>
           {intentionLabel(card.intention) ? (
-            <p className="mt-1 text-[13px] text-ink-2">{intentionLabel(card.intention)}</p>
+            <p className="mt-1 text-[13.9px] text-ink-2">{intentionLabel(card.intention)}</p>
           ) : null}
           {/* Decision #19 lists compat% among the things a preview DOES show —
               it is what makes the redacted card worth looking at. */}
           {card.compatibility != null ? (
-            <p className="mt-1.5 text-[13px] text-accent">
+            <p className="mt-1.5 text-[13.9px] text-accent">
               {DRAFT_COPY.app.compatibilityLabel(card.compatibility)}
             </p>
           ) : null}
@@ -151,7 +151,7 @@ export function PreviewDropCard({
       <Link
         href="/app/profile"
         aria-label={DRAFT_COPY.app.previewCtaAria}
-        className="ease-brand mt-5 inline-block text-[13px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+        className="ease-brand mt-5 inline-block text-[13.9px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
       >
         {COPY.supportOnly.previewCta}
       </Link>
