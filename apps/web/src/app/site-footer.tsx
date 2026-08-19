@@ -26,7 +26,7 @@ export function SiteFooter({ current }: { current?: string }) {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="ease-brand text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+                className="ease-brand text-[13.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
               >
                 {link.label}
               </Link>
@@ -35,7 +35,7 @@ export function SiteFooter({ current }: { current?: string }) {
         </ul>
       </nav>
 
-      <p className="mt-7 text-[11px] text-ink-3">{BRAND.name} is in build.</p>
+      <p className="mt-7 text-[12.2px] text-ink-3">{BRAND.name} is in build.</p>
     </footer>
   );
 }

@@ -62,15 +62,15 @@ export default async function PremiumPage() {
   return (
     <main id="main">
       <h1 className="text-h2">{C.premiumHeading}</h1>
-      <p className="mt-5 text-[13.4px] leading-[1.7] text-ink-2">{C.premiumIntro}</p>
+      <p className="mt-5 text-[14.9px] leading-[1.7] text-ink-2">{C.premiumIntro}</p>
 
       {isPremium ? (
         <section className="mt-8 rounded-xl border border-accent bg-surface p-6">
-          <p className="text-[13px]">
+          <p className="text-[14.4px]">
             {until ? C.premiumUntil(new Date(until).toLocaleDateString()) : C.premiumActive}
           </p>
           {!subscription && grantUntil ? (
-            <p className="mt-2 text-[11.7px] text-ink-3">{C.premiumFromGrant}</p>
+            <p className="mt-2 text-[13px] text-ink-3">{C.premiumFromGrant}</p>
           ) : null}
           {subscription ? <ManageBilling /> : null}
         </section>
@@ -79,12 +79,12 @@ export default async function PremiumPage() {
       )}
 
       <section className="mt-14">
-        <h2 className="text-[0.972rem]">{C.premiumIncludesHeading}</h2>
+        <h2 className="text-[1.08rem]">{C.premiumIncludesHeading}</h2>
         <ul className="mt-5 flex flex-col gap-3">
           {PREMIUM_INCLUDES.map((item) => (
             <li
               key={item}
-              className="border-l border-line-2 pl-5 text-[12.6px] leading-[1.65] text-ink-2"
+              className="border-l border-line-2 pl-5 text-[14px] leading-[1.65] text-ink-2"
             >
               {item}
             </li>
@@ -96,13 +96,13 @@ export default async function PremiumPage() {
           Printed on the page that sells the thing, because a promise made only
           in a spec is a promise nobody can hold you to. */}
       <section className="mt-12">
-        <h2 className="text-[0.972rem]">{C.premiumNeverHeading}</h2>
-        <p className="mt-4 text-[12.6px] leading-[1.7] text-ink-2">{C.premiumNeverNote}</p>
+        <h2 className="text-[1.08rem]">{C.premiumNeverHeading}</h2>
+        <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">{C.premiumNeverNote}</p>
         <ul className="mt-5 flex flex-col gap-3">
           {PREMIUM_NEVER.map((item) => (
             <li
               key={item}
-              className="border-l border-critical/40 pl-5 text-[12.6px] leading-[1.65] text-ink-2"
+              className="border-l border-critical/40 pl-5 text-[14px] leading-[1.65] text-ink-2"
             >
               {item}
             </li>

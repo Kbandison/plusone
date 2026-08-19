@@ -27,8 +27,8 @@ export function StepShell({
   });
 
   return (
-    <main id="main" className="mx-auto w-full max-w-[486px] px-6 py-16 sm:py-24">
-      <p className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
+    <main id="main" className="mx-auto w-full max-w-[540px] px-6 py-16 sm:py-24">
+      <p className="text-[12.2px] tracking-[0.04em] text-ink-3 uppercase">
         Step {current + 1} of {total}
       </p>
 
@@ -45,7 +45,7 @@ export function StepShell({
 
       <h1 className="mt-12 text-h2 text-balance">{heading}</h1>
 
-      {intro ? <p className="mt-6 text-[13.4px] leading-[1.7] text-ink-2">{intro}</p> : null}
+      {intro ? <p className="mt-6 text-[14.9px] leading-[1.7] text-ink-2">{intro}</p> : null}
 
       {children}
 
@@ -60,7 +60,7 @@ export function StepShell({
       <form action={signOut} className="mt-16 border-t border-line pt-6">
         <button
           type="submit"
-          className="ease-brand text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          className="ease-brand text-[12.6px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
         >
           {DRAFT_COPY.app.signOutLabel}
         </button>

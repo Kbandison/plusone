@@ -35,17 +35,17 @@ export function QuizForm({ answered: given = {} }: { answered?: Record<string, s
 
   return (
     <form action={act} className="mt-10 flex flex-col gap-10">
-      <p className="text-[11.3px] text-ink-3" role="status" aria-live="polite">
+      <p className="text-[12.6px] text-ink-3" role="status" aria-live="polite">
         {C.progress(answered, QUIZ_QUESTIONS.length)}
       </p>
 
       {QUIZ_QUESTIONS.map((question) => (
         <fieldset key={question.id} className="flex flex-col gap-3">
-          <legend className="mb-3 text-[13.4px] leading-[1.5]">{question.question}</legend>
+          <legend className="mb-3 text-[14.9px] leading-[1.5]">{question.question}</legend>
           {question.options.map((option) => (
             <label
               key={option.id}
-              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[14px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
@@ -58,7 +58,7 @@ export function QuizForm({ answered: given = {} }: { answered?: Record<string, s
                     [question.id]: option.id,
                   }))
                 }
-                className="size-[13.8px] shrink-0 accent-accent"
+                className="size-[15.3px] shrink-0 accent-accent"
               />
               {option.label}
             </label>
@@ -67,7 +67,7 @@ export function QuizForm({ answered: given = {} }: { answered?: Record<string, s
       ))}
 
       {state.error ? (
-        <p role="alert" className="text-[11.7px] text-critical">
+        <p role="alert" className="text-[13px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -105,13 +105,13 @@ export function QuizForm({ answered: given = {} }: { answered?: Record<string, s
           name="skip"
           value="1"
           disabled={pending}
-          className="ease-brand text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+          className="ease-brand text-[13.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
         >
           {C.skipLabel}
         </button>
       </StepActions>
 
-      {answered === 0 ? <p className="text-[11.3px] text-ink-3">{C.skipNudge}</p> : null}
+      {answered === 0 ? <p className="text-[12.6px] text-ink-3">{C.skipNudge}</p> : null}
     </form>
   );
 }

@@ -68,11 +68,11 @@ export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: str
       {/* This screen can still send an SMS, so the disclosure sits at the
           moment of sending. Shorter than onboarding's: a returning member
           opted in when they joined. */}
-      <p className="text-[11px] leading-[1.6] text-ink-3">{C.smsConsent}</p>
+      <p className="text-[12.2px] leading-[1.6] text-ink-3">{C.smsConsent}</p>
 
       <Submit label={C.sendLabel} pending={sending} />
 
-      <p className="text-[11.7px] text-ink-2">
+      <p className="text-[13px] text-ink-2">
         {C.newHere}{" "}
         <Link
           href="/onboarding/phone"
@@ -108,7 +108,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
        * one thing this screen must not do: reaching it proves nothing about
        * whether an account exists, so repeating the address a stranger typed
        * would turn a neutral screen into a confirmation. */}
-      <p className="mt-4 text-[13px] leading-[1.7] text-ink-2">{C.codeIntro}</p>
+      <p className="mt-4 text-[14.4px] leading-[1.7] text-ink-2">{C.codeIntro}</p>
 
       <form action={verify} className="mt-8 flex flex-col gap-8">
         <Field
@@ -138,7 +138,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
           <button
             type="submit"
             disabled={resending || cooldown > 0}
-            className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+            className="ease-brand text-[13px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
           >
             {cooldown > 0 ? C.resendWait(cooldown) : C.resendLabel}
           </button>
@@ -147,14 +147,14 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
         <button
           type="button"
           onClick={onChange}
-          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          className="ease-brand text-[13px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
         >
           {C.changeLabel}
         </button>
       </div>
 
       {resendState.error ? (
-        <p role="alert" className="mt-3 text-[11.7px] text-critical">
+        <p role="alert" className="mt-3 text-[13px] text-critical">
           {resendState.error}
         </p>
       ) : null}

@@ -55,7 +55,7 @@ export function ReportCard({ report }: { report: ReportForCard }) {
     return (
       <li
         role="status"
-        className="rounded-lg border border-line px-6 py-5 text-[12.2px] text-ink-3"
+        className="rounded-lg border border-line px-6 py-5 text-[13.6px] text-ink-3"
       >
         {state.message}
       </li>
@@ -65,27 +65,27 @@ export function ReportCard({ report }: { report: ReportForCard }) {
   return (
     <li className="rounded-xl border border-line-2 bg-surface p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-[0.931rem]">{REPORT_REASONS[report.reason]}</h2>
-        <span className="text-[11px] text-ink-3">
+        <h2 className="text-[1.034rem]">{REPORT_REASONS[report.reason]}</h2>
+        <span className="text-[12.2px] text-ink-3">
           {new Date(report.created_at).toLocaleDateString()}
         </span>
       </div>
 
       {report.reported_display_name ? (
-        <p className="mt-2 text-[11.3px] text-ink-3">About {report.reported_display_name}</p>
+        <p className="mt-2 text-[12.6px] text-ink-3">About {report.reported_display_name}</p>
       ) : null}
 
       {report.reported_body ? (
-        <blockquote className="mt-5 border-l-2 border-line-2 pl-4 text-[12.6px] leading-[1.65] text-ink-2">
+        <blockquote className="mt-5 border-l-2 border-line-2 pl-4 text-[14px] leading-[1.65] text-ink-2">
           {report.reported_body}
         </blockquote>
       ) : null}
 
-      {report.detail ? <p className="mt-4 text-[12.2px] leading-[1.65]">{report.detail}</p> : null}
+      {report.detail ? <p className="mt-4 text-[13.6px] leading-[1.65]">{report.detail}</p> : null}
 
       <form action={act} className="mt-6 flex flex-col gap-3">
         <input type="hidden" name="queue_id" value={report.queue_id} />
-        <label htmlFor={`note-${report.queue_id}`} className="text-[11.3px] text-ink-2">
+        <label htmlFor={`note-${report.queue_id}`} className="text-[12.6px] text-ink-2">
           Note (recorded in the audit log)
         </label>
         <input
@@ -115,7 +115,7 @@ export function ReportCard({ report }: { report: ReportForCard }) {
           </button>
         </div>
         {state.error ? (
-          <p role="alert" className="text-[11.3px] text-critical">
+          <p role="alert" className="text-[12.6px] text-critical">
             {state.error}
           </p>
         ) : null}

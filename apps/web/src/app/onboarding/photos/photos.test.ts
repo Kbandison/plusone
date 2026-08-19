@@ -243,13 +243,25 @@ describe("the grid", () => {
 
   /** The add control is a tile beside the last photo, not a panel above them. */
   it("puts the add tile in the grid", () => {
-    expect(form).toMatch(/size-\[106.9px\][\s\S]{0,400}border-dashed/);
+    expect(form).toMatch(/border-dashed/);
     expect(page).toMatch(/<PhotoGallery photos=\{photos\}>/);
     expect(page).toMatch(/uploaded < MAX_PHOTOS \? <PhotoUploader/);
   });
 
+  /**
+   * The relationship, not the number. This asserted a literal `size-[132px]`
+   * and then a literal `size-[106.9px]`, so it failed twice for the design
+   * being rescaled — which is not a bug, and a test that breaks on it is
+   * describing the pixels rather than the rule. The rule is that the add tile
+   * is the same size as a photo, whatever that size currently is.
+   */
   it("uses the same tile size for photos and for the add control", () => {
-    expect((form.match(/size-\[106.9px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    const addTile = /className="([^"]*border-dashed[^"]*)"/.exec(form)?.[1] ?? "";
+    const size = /size-\[[0-9.]+px\]/.exec(addTile)?.[0];
+    expect(size, "the add tile has no explicit size").toBeTruthy();
+
+    const uses = form.split(size!).length - 1;
+    expect(uses, `${size} is used ${uses} time(s)`).toBeGreaterThanOrEqual(2);
   });
 });
 

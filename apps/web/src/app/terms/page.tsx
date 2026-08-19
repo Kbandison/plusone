@@ -21,19 +21,19 @@ function formatDate(iso: string): string {
 
 export default function TermsPage() {
   return (
-    <main id="main" className="mx-auto w-full max-w-[550.8px] px-6 py-16 sm:py-24">
+    <main id="main" className="mx-auto w-full max-w-[612px] px-6 py-16 sm:py-24">
       <SiteHeader />
 
       <h1 className="text-h1 text-balance">Terms</h1>
-      <p className="mt-6 text-[13.8px] leading-[1.7] text-ink-2">{TERMS_INTRO}</p>
-      <p className="mt-5 text-[11.3px] text-ink-3">Effective {formatDate(TERMS_EFFECTIVE)}</p>
+      <p className="mt-6 text-[15.3px] leading-[1.7] text-ink-2">{TERMS_INTRO}</p>
+      <p className="mt-5 text-[12.6px] text-ink-3">Effective {formatDate(TERMS_EFFECTIVE)}</p>
 
       <div className="mt-16 flex flex-col gap-14">
         {TERMS.map((section) => (
           <section key={section.id} id={section.id} className="scroll-mt-24">
             <h2 className="text-h3">{section.title}</h2>
             {section.body.map((paragraph) => (
-              <p key={paragraph} className="mt-5 text-[13.4px] leading-[1.72] text-ink-2">
+              <p key={paragraph} className="mt-5 text-[14.9px] leading-[1.72] text-ink-2">
                 {paragraph}
               </p>
             ))}
@@ -41,7 +41,7 @@ export default function TermsPage() {
         ))}
       </div>
 
-      <p className="mt-16 text-[11px] text-ink-3">
+      <p className="mt-16 text-[12.2px] text-ink-3">
         These terms are a draft and are pending legal review.
       </p>
 

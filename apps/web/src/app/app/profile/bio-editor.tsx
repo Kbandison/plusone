@@ -28,10 +28,10 @@ export function BioEditor({ bio }: { bio: string | null }) {
 
   return (
     <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[0.972rem]">{C.bioHeading}</h2>
+      <h2 className="text-[1.08rem]">{C.bioHeading}</h2>
 
       <form action={act} className="mt-5 flex flex-col gap-3">
-        <label htmlFor={fieldId} className="text-[12.2px]">
+        <label htmlFor={fieldId} className="text-[13.6px]">
           {C.bioLabel}
         </label>
         <textarea
@@ -43,7 +43,7 @@ export function BioEditor({ bio }: { bio: string | null }) {
           aria-describedby={hintId}
           className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
         />
-        <p id={hintId} className="text-[11px] text-ink-3">
+        <p id={hintId} className="text-[12.2px] text-ink-3">
           {C.bioHint(MAX_CHARS)}
         </p>
 
@@ -52,12 +52,12 @@ export function BioEditor({ bio }: { bio: string | null }) {
         </button>
 
         {state.error ? (
-          <p role="alert" className="text-[11.3px] text-critical">
+          <p role="alert" className="text-[12.6px] text-critical">
             {state.error}
           </p>
         ) : null}
         {state.message ? (
-          <p role="status" className="text-[11.3px] text-positive">
+          <p role="status" className="text-[12.6px] text-positive">
             {state.message}
           </p>
         ) : null}

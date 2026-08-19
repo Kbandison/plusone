@@ -34,14 +34,14 @@ export default async function ConfigPage() {
   return (
     <main id="main">
       <h1 className="mt-4 text-h2">Config</h1>
-      <p className="mt-4 max-w-[54ch] text-[13px] leading-[1.7] text-ink-2">
+      <p className="mt-4 max-w-[54ch] text-[14.4px] leading-[1.7] text-ink-2">
         Read live by the mechanics. Every change is audited with its previous value, and unknown
         keys are refused — there is no setting here that buys anyone an exemption.
       </p>
 
       {[...groups.entries()].map(([group, items]) => (
         <section key={group} className="mt-10">
-          <h2 className="text-[0.891rem] tracking-[0.04em] text-ink-3 uppercase">{group}</h2>
+          <h2 className="text-[0.99rem] tracking-[0.04em] text-ink-3 uppercase">{group}</h2>
           <ul className="mt-3">
             {items.map((row) => (
               <ConfigRow

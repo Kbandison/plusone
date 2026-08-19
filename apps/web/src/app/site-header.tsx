@@ -15,7 +15,7 @@ import { DRAFT_COPY } from "@plusone/config";
 export function SiteHeader() {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 py-7">
-      <Wordmark className="text-[21.1px]" />
+      <Wordmark className="text-[23.4px]" />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <ButtonLink tone="quiet" href="/sign-in">

@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 
 export default function GuidelinesPage() {
   return (
-    <main id="main" className="mx-auto w-full max-w-[550.8px] px-6 py-16 sm:py-24">
+    <main id="main" className="mx-auto w-full max-w-[612px] px-6 py-16 sm:py-24">
       <SiteHeader />
 
       <h1 className="text-h1 text-balance">Community guidelines</h1>
-      <p className="mt-6 text-[13.8px] leading-[1.7] text-ink-2">{GUIDELINES_INTRO}</p>
+      <p className="mt-6 text-[15.3px] leading-[1.7] text-ink-2">{GUIDELINES_INTRO}</p>
 
       <div className="mt-16 flex flex-col gap-14">
         {COMMUNITY_GUIDELINES.map((section) => (
@@ -24,7 +24,7 @@ export default function GuidelinesPage() {
             <h2 className="text-h3">{section.title}</h2>
 
             {section.body.map((paragraph) => (
-              <p key={paragraph} className="mt-5 text-[13.4px] leading-[1.72] text-ink-2">
+              <p key={paragraph} className="mt-5 text-[14.9px] leading-[1.72] text-ink-2">
                 {paragraph}
               </p>
             ))}
@@ -34,7 +34,7 @@ export default function GuidelinesPage() {
                 {section.list.map((item) => (
                   <li
                     key={item}
-                    className="border-l border-line-2 pl-5 text-[13px] leading-[1.65] text-ink-2"
+                    className="border-l border-line-2 pl-5 text-[14.4px] leading-[1.65] text-ink-2"
                   >
                     {item}
                   </li>

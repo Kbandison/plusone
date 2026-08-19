@@ -34,11 +34,11 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
 
   return (
     <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[0.972rem]">{C.promptsHeading}</h2>
-      <p className="mt-3 text-[12.2px] leading-[1.7] text-ink-2">{C.promptsIntro}</p>
+      <h2 className="text-[1.08rem]">{C.promptsHeading}</h2>
+      <p className="mt-3 text-[13.6px] leading-[1.7] text-ink-2">{C.promptsIntro}</p>
 
       {answers.length === 0 ? (
-        <p className="mt-4 text-[11.7px] text-caution">{C.promptsEmpty}</p>
+        <p className="mt-4 text-[13px] text-caution">{C.promptsEmpty}</p>
       ) : null}
 
       <form action={act} className="mt-6 flex flex-col gap-6">
@@ -46,14 +46,14 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
 
         {rows.map((row, index) => (
           <div key={index} className="flex flex-col gap-2.5">
-            <label className="text-[11.3px] text-ink-2" htmlFor={`prompt-${index}`}>
+            <label className="text-[12.6px] text-ink-2" htmlFor={`prompt-${index}`}>
               {C.promptChoose}
             </label>
             <select
               id={`prompt-${index}`}
               value={row.id}
               onChange={(event) => update(index, { id: event.target.value })}
-              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[12.2px] focus:border-accent"
+              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[13.6px] focus:border-accent"
             >
               {PROFILE_PROMPTS.map((prompt) => (
                 <option key={prompt.id} value={prompt.id}>
@@ -75,7 +75,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
               maxLength={PROMPT_ANSWER_MAX_CHARS}
               rows={3}
               onChange={(event) => update(index, { answer: event.target.value })}
-              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[12.2px] focus:border-accent"
+              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[13.6px] focus:border-accent"
             />
 
             {/* "Add another" had no way back, and savePrompts drops empty
@@ -85,7 +85,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
               <button
                 type="button"
                 onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
-                className="ease-brand self-start text-[11px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+                className="ease-brand self-start text-[12.2px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
               >
                 {C.promptRemoveLabel}
               </button>
@@ -120,7 +120,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
         </div>
 
         {state.error ? (
-          <p role="alert" className="text-[11.3px] text-critical">
+          <p role="alert" className="text-[12.6px] text-critical">
             {state.error}
           </p>
         ) : null}
@@ -129,7 +129,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
             state.error, so saving your prompts produced no feedback of any kind
             — for anyone, not just a screen reader. */}
         {state.message ? (
-          <p role="status" className="text-[11.3px] text-positive">
+          <p role="status" className="text-[12.6px] text-positive">
             {state.message}
           </p>
         ) : null}

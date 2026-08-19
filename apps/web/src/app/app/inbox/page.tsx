@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { DRAFT_COPY, promptQuestion } from "@plusone/config";
 import { inbox as inboxLogic } from "@plusone/logic";
 
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
-import { MemberPhotoFrame } from "../member-photo";
+import { DecisionBubble, type Decision } from "./decision-dialog";
 import { ThreadRow, type ThreadView } from "./thread-row";
-import Link from "next/link";
 
 const C = DRAFT_COPY.app;
 const DAY = 86_400_000;
@@ -17,6 +16,7 @@ export const metadata: Metadata = { title: C.navInbox };
 
 interface ConnectRow {
   id: string;
+  prompt_id: string;
   prompt_reply: string;
   expires_at: string;
   created_at: string;
@@ -55,7 +55,7 @@ export default async function InboxPage() {
   const [{ data: connectData }, { data: chatData }] = await Promise.all([
     supabase
       .from("connects")
-      .select("id, prompt_reply, expires_at, created_at, initiator_id, target_id")
+      .select("id, prompt_id, prompt_reply, expires_at, created_at, initiator_id, target_id")
       .eq("status", "pending"),
     supabase.from("chats").select("id, status, fuse_expires_at, updated_at, connect_id"),
   ]);
@@ -201,14 +201,25 @@ export default async function InboxPage() {
       };
     });
 
-  // Decisions come out of the list and sit above it as faces.
+  // Decisions come out of the list.
   //
   // They are a different KIND of thing: a connect is somebody asking, and every
   // one of them is the same two irreversible buttons. Left in the list they
   // read as messages that happen to have controls, and the list stops being
   // scannable — which is the whole reason the rows got shorter.
-  const decisions = threads.filter((t) => t.state === "awaiting_your_decision");
   const conversations = threads.filter((t) => t.state !== "awaiting_your_decision");
+  const decisions: Decision[] = threads
+    .filter((t) => t.state === "awaiting_your_decision")
+    .map((thread) => {
+      const connect = connectById.get(thread.id)!;
+      return {
+        id: thread.id,
+        name: thread.name,
+        question: promptQuestion(connect.prompt_id),
+        reply: connect.prompt_reply,
+        photo: thread.photo,
+      };
+    });
 
   return (
     <main id="main">
@@ -216,7 +227,7 @@ export default async function InboxPage() {
 
       {decisions.length > 0 ? (
         <section className="mt-7">
-          <h2 className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
+          <h2 className="text-[12.2px] tracking-[0.04em] text-ink-3 uppercase">
             {C.decisionsHeading(decisions.length)}
           </h2>
 
@@ -227,23 +238,10 @@ export default async function InboxPage() {
           <ul className="-mx-6 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-1">
             {decisions.map((decision) => (
               <li key={decision.id} className="snap-start">
-                <Link
-                  href={`/app/inbox/pending/${decision.id}`}
-                  className="ease-brand flex w-[61.6px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
-                >
-                  <span className="relative">
-                    {/* Bigger than a row's bubble on purpose: these are the
-                        thing on this screen that somebody is waiting on. */}
-                    <MemberPhotoFrame photo={decision.photo} size={68} />
-                    <span
-                      aria-hidden="true"
-                      className="absolute inset-0 rounded-full ring-2 ring-accent"
-                    />
-                  </span>
-                  <span className="w-full truncate text-center text-[11px] text-ink-2">
-                    {decision.name}
-                  </span>
-                </Link>
+                {/* The face opens a dialog rather than a page: the queue is for
+                    scanning, and leaving the screen to answer one of these lost
+                    the others. */}
+                <DecisionBubble decision={decision} />
               </li>
             ))}
           </ul>
@@ -251,7 +249,7 @@ export default async function InboxPage() {
       ) : null}
 
       {threads.length === 0 ? (
-        <p className="mt-8 text-[13px] text-ink-2">{C.inboxAllEmpty}</p>
+        <p className="mt-8 text-[14.4px] text-ink-2">{C.inboxAllEmpty}</p>
       ) : conversations.length > 0 ? (
         <ul className="mt-8 flex flex-col gap-2.5">
           {conversations.map((thread) => (

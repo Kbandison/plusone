@@ -46,7 +46,7 @@ async function VoiceNote({ path, seconds }: { path: string; seconds: number | nu
   const supabase = await getServerSupabase();
   const { data } = await supabase.storage.from("voice-notes").createSignedUrl(path, 60 * 10);
 
-  if (!data?.signedUrl) return <span className="text-[11.7px] text-ink-3">Voice note</span>;
+  if (!data?.signedUrl) return <span className="text-[13px] text-ink-3">Voice note</span>;
 
   return (
     <span className="flex items-center gap-3">
@@ -59,7 +59,7 @@ async function VoiceNote({ path, seconds }: { path: string; seconds: number | nu
         aria-label={C.voiceNoteAria(seconds)}
         className="max-w-full"
       />
-      {seconds ? <span className="text-[11px] text-ink-3">{seconds}s</span> : null}
+      {seconds ? <span className="text-[12.2px] text-ink-3">{seconds}s</span> : null}
     </span>
   );
 }
@@ -148,11 +148,11 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       {/* The fuse, visible (§7.2). A timer you have to go looking for is a
           deadline that surprises people. */}
       {countdown.isRunning ? (
-        <p className={`text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}>
+        <p className={`text-[12.6px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}>
           {countdown.isExpiringSoon ? C.fuseExpiringSoon : C.fuseDaysLeft(countdown.remainingDays)}
         </p>
       ) : chat.status === "date_planned" ? (
-        <p className="text-[11.3px] text-positive">{C.datePlannedLabel}</p>
+        <p className="text-[12.6px] text-positive">{C.datePlannedLabel}</p>
       ) : null}
 
       <ul className="mt-6 flex flex-col gap-3">
@@ -170,7 +170,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                bubbles is the largest fill in the app and it makes every real
                control on the screen compete with the conversation. Alignment
                and the edge carry the same distinction more quietly. */
-            className={`max-w-[85%] rounded-xl px-4 py-3 text-[12.6px] leading-[1.6] ${
+            className={`max-w-[85%] rounded-xl px-4 py-3 text-[14px] leading-[1.6] ${
               message.sender_id === me
                 ? "self-end border-r-2 border-accent bg-surface-2 text-ink"
                 : "border-l-2 border-line-2 bg-surface text-ink"
@@ -199,8 +199,8 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         // Every terminal state carries a note. Silence is impossible by
         // construction (§6.2) — so this branch always has something to show.
         <section className="mt-8 rounded-xl border border-line-2 bg-surface p-6">
-          <h2 className="text-[0.931rem]">{C.closedNoteHeading}</h2>
-          <p className="mt-4 text-[12.6px] leading-[1.7] text-ink-2">
+          <h2 className="text-[1.034rem]">{C.closedNoteHeading}</h2>
+          <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">
             {/* Signed, which it was not.
                 renderClosureTemplate strips the "— {name}" line entirely when no
                 name is given, so the delivered note lost the signature the
@@ -226,8 +226,8 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
               date_planned with neither member ever shown what was agreed. */}
           {plan ? (
             <section className="mt-8 rounded-xl border border-line-2 bg-surface p-5">
-              <h2 className="text-[0.851rem]">{C.datePlannedLabel}</h2>
-              <p className="mt-2 text-[12.6px] leading-[1.65] text-ink-2">
+              <h2 className="text-[0.946rem]">{C.datePlannedLabel}</h2>
+              <p className="mt-2 text-[14px] leading-[1.65] text-ink-2">
                 {plan.plan.date} · {plan.plan.time} · {plan.plan.place}
               </p>
             </section>

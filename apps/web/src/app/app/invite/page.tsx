@@ -31,14 +31,14 @@ export default async function InvitePage() {
       <h1 className="text-h2">{DRAFT_COPY.app.inviteHeading}</h1>
 
       {/* §3.4, verbatim. */}
-      <p className="mt-5 text-[13.4px] leading-[1.7] text-ink-2">{COPY.referral.shareLine}</p>
+      <p className="mt-5 text-[14.9px] leading-[1.7] text-ink-2">{COPY.referral.shareLine}</p>
 
       <InviteLink url={`${NEXT_PUBLIC_SITE_URL}/i/${code}`} />
 
       {/* §6.5 — the counter keeps counting past the reward cap. The number is
           the point for most people, and stopping it at ten would say otherwise. */}
       {joined > 0 ? (
-        <p className="mt-10 border-t border-line pt-6 text-[13px]">
+        <p className="mt-10 border-t border-line pt-6 text-[14.4px]">
           {COPY.referral.counter(joined)}
         </p>
       ) : null}

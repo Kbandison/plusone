@@ -638,6 +638,12 @@ export const DRAFT_COPY = {
      * reading as "ignore", which is the thing this product exists not to be.
      */
     declineNote: "Declining sends a short, kind note. Nobody is left wondering.",
+    /**
+     * Leaving without deciding. Escape closes the dialog too, but only for
+     * somebody who already knows it does — and neither button here is a safe
+     * default to press by accident.
+     */
+    decisionDismiss: "Decide later",
     chatsHeading: "Chats",
     /**
      * The two message lists were the only ones in the app with no empty state,

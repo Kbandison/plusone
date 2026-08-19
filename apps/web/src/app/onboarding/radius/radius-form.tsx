@@ -81,7 +81,7 @@ export function RadiusForm({
       className="mt-10 flex flex-col gap-8"
     >
       <div className="flex flex-col gap-4">
-        <label htmlFor={sliderId} className="text-[12.2px]">
+        <label htmlFor={sliderId} className="text-[13.6px]">
           {C.label}
         </label>
 
@@ -112,22 +112,22 @@ export function RadiusForm({
         />
       </div>
 
-      <p className="max-w-[46ch] text-[11px] leading-[1.6] text-ink-3">{C.locationHint}</p>
+      <p className="max-w-[46ch] text-[12.2px] leading-[1.6] text-ink-3">{C.locationHint}</p>
 
       {outcome === "approximate" ? (
-        <p role="status" className="text-[11px] text-ink-3">
+        <p role="status" className="text-[12.2px] text-ink-3">
           {C.locationDenied}
         </p>
       ) : null}
 
       {outcome === "unknown" ? (
-        <p role="status" className="max-w-[46ch] text-[11px] leading-[1.6] text-critical">
+        <p role="status" className="max-w-[46ch] text-[12.2px] leading-[1.6] text-critical">
           {C.locationUnknown}
         </p>
       ) : null}
 
       {state.error ? (
-        <p role="alert" className="text-[11.7px] text-critical">
+        <p role="alert" className="text-[13px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -136,7 +136,7 @@ export function RadiusForm({
         <button
           type="submit"
           disabled={pending}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
         >
           {C.continueLabel}
         </button>

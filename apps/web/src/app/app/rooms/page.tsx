@@ -27,7 +27,7 @@ export default async function RoomsPage() {
       <h1 className="text-h2">{C.roomsHeading}</h1>
 
       {rooms.length === 0 ? (
-        <p className="mt-8 text-[13px] text-ink-2">{C.roomsEmpty}</p>
+        <p className="mt-8 text-[14.4px] text-ink-2">{C.roomsEmpty}</p>
       ) : (
         <ul className="mt-8 flex flex-col gap-3">
           {rooms.map((room) => (
@@ -39,9 +39,9 @@ export default async function RoomsPage() {
                 href={`/app/rooms/${room.id as string}`}
                 className="ease-brand block rounded-xl border border-line-control bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
               >
-                <h2 className="text-[0.931rem]">{room.title as string}</h2>
+                <h2 className="text-[1.034rem]">{room.title as string}</h2>
                 {room.description ? (
-                  <p className="mt-1.5 text-[11.7px] text-ink-2">{room.description as string}</p>
+                  <p className="mt-1.5 text-[13px] text-ink-2">{room.description as string}</p>
                 ) : null}
               </Link>
             </li>

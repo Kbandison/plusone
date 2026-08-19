@@ -87,7 +87,11 @@ export function MemberPhotoFrame({
   }
 
   return (
-    <span className="relative inline-block shrink-0">
+    // inline-FLEX, not inline-block. An inline-block sits on the text baseline
+    // and carries the line box's descender space beneath it, so anything
+    // positioned against this span — a ring, a dot — was measuring a box taller
+    // than the image and the photo sat high inside it.
+    <span className="relative inline-flex shrink-0">
       <Image
         src={photo.url}
         alt={photo.isBlurred ? DRAFT_COPY.app.photoBlurredNote : DRAFT_COPY.app.photoAlt}

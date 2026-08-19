@@ -58,8 +58,8 @@ export default async function SettingsPage() {
           Settings. They sit above signing out because they are things a member
           might want, not things they do on the way out. */}
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.app.premiumSettingsHeading}</h2>
-        <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">
+        <h2 className="text-[1.08rem]">{DRAFT_COPY.app.premiumSettingsHeading}</h2>
+        <p className="mt-3 text-[13.6px] leading-[1.65] text-ink-2">
           {DRAFT_COPY.app.premiumSettingsBody}
         </p>
         <Link href="/app/premium" className={buttonClass("secondary", "mt-5 inline-block")}>
@@ -68,8 +68,8 @@ export default async function SettingsPage() {
       </section>
 
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.app.inviteSettingsHeading}</h2>
-        <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">
+        <h2 className="text-[1.08rem]">{DRAFT_COPY.app.inviteSettingsHeading}</h2>
+        <p className="mt-3 text-[13.6px] leading-[1.65] text-ink-2">
           {DRAFT_COPY.app.inviteSettingsBody}
         </p>
         <Link href="/app/invite" className={buttonClass("secondary", "mt-5 inline-block")}>
@@ -80,8 +80,8 @@ export default async function SettingsPage() {
       {/* Above the block list and well above deletion. Signing out is the
           ordinary thing; deleting is not, and they should not sit together. */}
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.app.signOutHeading}</h2>
-        <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">{DRAFT_COPY.app.signOutBody}</p>
+        <h2 className="text-[1.08rem]">{DRAFT_COPY.app.signOutHeading}</h2>
+        <p className="mt-3 text-[13.6px] leading-[1.65] text-ink-2">{DRAFT_COPY.app.signOutBody}</p>
         <form action={signOut} className="mt-5">
           <button type="submit" className={buttonClass("secondary")}>
             {DRAFT_COPY.app.signOutLabel}
@@ -97,9 +97,9 @@ export default async function SettingsPage() {
       />
 
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.app.blockedHeading}</h2>
+        <h2 className="text-[1.08rem]">{DRAFT_COPY.app.blockedHeading}</h2>
         {blocked.length === 0 ? (
-          <p className="mt-4 text-[12.2px] text-ink-2">{DRAFT_COPY.app.blockedEmpty}</p>
+          <p className="mt-4 text-[13.6px] text-ink-2">{DRAFT_COPY.app.blockedEmpty}</p>
         ) : (
           <ul className="mt-5 flex flex-col gap-3">
             {blocked.map((row) => (
@@ -109,8 +109,8 @@ export default async function SettingsPage() {
                 className="flex items-center justify-between gap-4 border-b border-line pb-3 last:border-0"
               >
                 <span className="flex flex-col gap-0.5">
-                  <span className="text-[12.2px]">{row.display_name}</span>
-                  <span className="text-[11px] text-ink-3">
+                  <span className="text-[13.6px]">{row.display_name}</span>
+                  <span className="text-[12.2px] text-ink-3">
                     Blocked {new Date(row.created_at).toLocaleDateString()}
                   </span>
                 </span>
@@ -126,8 +126,8 @@ export default async function SettingsPage() {
 
       {deletion?.status === "requested" ? (
         <section className="mt-10 rounded-xl border border-critical/40 bg-surface p-6">
-          <h2 className="text-[0.972rem]">{DRAFT_COPY.app.deleteHeading}</h2>
-          <p className="mt-4 text-[12.6px] leading-[1.7] text-ink-2">
+          <h2 className="text-[1.08rem]">{DRAFT_COPY.app.deleteHeading}</h2>
+          <p className="mt-4 text-[14px] leading-[1.7] text-ink-2">
             Everything will be gone by{" "}
             {new Date(deletion.purge_after as string).toLocaleDateString()}.
           </p>
