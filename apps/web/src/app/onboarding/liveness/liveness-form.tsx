@@ -94,17 +94,17 @@ export function LivenessForm() {
   return (
     <div className="mt-10 flex flex-col gap-6">
       {cameraFailed ? (
-        <p role="alert" className="text-[14.5px] text-critical">
+        <p role="alert" className="text-[11.7px] text-critical">
           {C.errors.camera}
         </p>
       ) : state.error ? (
-        <p role="alert" className="text-[14.5px] text-critical">
+        <p role="alert" className="text-[11.7px] text-critical">
           {state.error}
         </p>
       ) : null}
 
       {cancelled ? (
-        <p role="status" className="text-[15px] text-ink-2">
+        <p role="status" className="text-[12.2px] text-ink-2">
           {C.cancelledBody}
         </p>
       ) : null}
@@ -125,14 +125,14 @@ export function LivenessForm() {
         <button
           type="submit"
           disabled={beginning || finishing}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[210px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[170.1px] sm:self-start")}
         >
           {beginning || finishing ? C.checkingLabel : state.error ? C.retryLabel : C.startLabel}
         </button>
       </form>
 
       {state.error && state.attemptsLeft > 0 ? (
-        <p className="text-[14px] text-ink-3">{C.retriesLeft(state.attemptsLeft)}</p>
+        <p className="text-[11.3px] text-ink-3">{C.retriesLeft(state.attemptsLeft)}</p>
       ) : null}
 
       {/* No session_id field: finishLiveness reads the open session off the
@@ -191,7 +191,7 @@ function ReviewScreen({
       className="mt-10 rounded-xl border border-line-2 bg-surface p-6 focus:outline-none"
     >
       <h2 className="text-h3">{heading}</h2>
-      <p className="mt-4 text-[16px] leading-[1.7] text-ink-2">{body}</p>
+      <p className="mt-4 text-[13px] leading-[1.7] text-ink-2">{body}</p>
 
       {review.status === "rejected" && !waiting ? (
         <form action={appeal} className="mt-6">
@@ -202,7 +202,7 @@ function ReviewScreen({
       ) : null}
 
       {(state.error ?? error) ? (
-        <p role="alert" className="mt-4 text-[14.5px] text-critical">
+        <p role="alert" className="mt-4 text-[11.7px] text-critical">
           {state.error ?? error}
         </p>
       ) : null}

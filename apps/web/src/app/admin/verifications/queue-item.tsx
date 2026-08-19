@@ -29,21 +29,21 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
   return (
     <li className="rounded-lg border border-line-2 bg-surface p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-[1.3rem]">{member.display_name ?? "No name yet"}</h2>
-        <span className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">
+        <h2 className="text-[1.053rem]">{member.display_name ?? "No name yet"}</h2>
+        <span className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
           {member.verification_status}
         </span>
       </div>
 
       {member.appeal_opened_at ? (
-        <p className="mt-3 text-[14.5px] text-caution">
+        <p className="mt-3 text-[11.7px] text-caution">
           Appealed {new Date(member.appeal_opened_at).toLocaleDateString()}
         </p>
       ) : null}
 
       <form action={decide} className="mt-6 flex flex-col gap-3">
         <input type="hidden" name="user_id" value={member.user_id} />
-        <label htmlFor={`note-${member.user_id}`} className="text-[14px] text-ink-2">
+        <label htmlFor={`note-${member.user_id}`} className="text-[11.3px] text-ink-2">
           Note (recorded in the audit log)
         </label>
         <input
@@ -73,20 +73,20 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
           </button>
         </div>
         {decision.error ? (
-          <p role="alert" className="text-[14px] text-critical">
+          <p role="alert" className="text-[11.3px] text-critical">
             {decision.error}
           </p>
         ) : null}
         {decision.message ? (
-          <p role="status" className="text-[14px] text-positive">
+          <p role="status" className="text-[11.3px] text-positive">
             {decision.message}
           </p>
         ) : null}
       </form>
 
       <details className="mt-6 border-t border-line pt-5">
-        <summary className="cursor-pointer text-[14.5px] text-ink-2">Reveal condition data</summary>
-        <p className="mt-3 text-[13.5px] text-ink-3">
+        <summary className="cursor-pointer text-[11.7px] text-ink-2">Reveal condition data</summary>
+        <p className="mt-3 text-[11px] text-ink-3">
           Deciding whether a selfie matches a face does not need this. Every reveal is logged
           against your account with the reason you give.
         </p>
@@ -109,12 +109,12 @@ export function QueueItem({ member }: { member: FlaggedMember }) {
             Reveal and log
           </button>
           {reveal.error ? (
-            <p role="alert" className="text-[14px] text-critical">
+            <p role="alert" className="text-[11.3px] text-critical">
               {reveal.error}
             </p>
           ) : null}
           {reveal.revealed ? (
-            <p className="text-[15px]">
+            <p className="text-[12.2px]">
               {reveal.revealed.community} · {reveal.revealed.condition}
               {reveal.revealed.u_equals_u ? " · U=U" : ""}
             </p>

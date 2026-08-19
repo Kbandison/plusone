@@ -15,7 +15,7 @@
     background-color: var(--ground);
     color: var(--ink);
     font-family: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
-    font-size: 17px;
+    font-size: 13.8px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;

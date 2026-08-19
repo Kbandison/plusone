@@ -607,6 +607,9 @@ export const DRAFT_COPY = {
      * heading above it.
      */
     threadNeedsDecision: "Waiting on you",
+    /** The row of faces above the list. Counted, because it is a queue. */
+    decisionsHeading: (count: number) =>
+      count === 1 ? "1 person is waiting" : `${count} people are waiting`,
     threadSentWaiting: "Waiting on them",
     threadNeedsReply: "Your turn",
     threadTheirTurn: "Their turn",
@@ -629,6 +632,12 @@ export const DRAFT_COPY = {
     inboxHeading: "Waiting on you",
     acceptLabel: "Accept",
     declineLabel: "Decline",
+    /**
+     * Decision #14 — no interaction ends in silence, so declining still sends a
+     * note. Saying so BEFORE the button is pressed is what stops Decline
+     * reading as "ignore", which is the thing this product exists not to be.
+     */
+    declineNote: "Declining sends a short, kind note. Nobody is left wondering.",
     chatsHeading: "Chats",
     /**
      * The two message lists were the only ones in the app with no empty state,

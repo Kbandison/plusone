@@ -96,7 +96,7 @@ export function Card({
  * because every place it appears outside the masthead should return home.
  */
 export function Wordmark({
-  className = "text-[26px]",
+  className = "text-[21.1px]",
   asLink = true,
 }: {
   className?: string;

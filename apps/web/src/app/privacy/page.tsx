@@ -28,14 +28,14 @@ function formatDate(iso: string): string {
 
 export default function PrivacyPage() {
   return (
-    <main id="main" className="mx-auto w-full max-w-[680px] px-6 py-16 sm:py-24">
+    <main id="main" className="mx-auto w-full max-w-[550.8px] px-6 py-16 sm:py-24">
       <SiteHeader />
 
       <h1 className="text-h1 text-balance">Privacy</h1>
 
-      <p className="mt-6 text-[17px] leading-[1.7] text-ink-2">{PRIVACY_POLICY_INTRO}</p>
+      <p className="mt-6 text-[13.8px] leading-[1.7] text-ink-2">{PRIVACY_POLICY_INTRO}</p>
 
-      <p className="mt-5 text-[14px] text-ink-3">
+      <p className="mt-5 text-[11.3px] text-ink-3">
         Effective {formatDate(PRIVACY_POLICY_EFFECTIVE)}
       </p>
 
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
             <li key={section.id}>
               <a
                 href={`#${section.id}`}
-                className="ease-brand text-[15.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+                className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
               >
                 {section.title}
               </a>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
             <h2 className="text-h3">{section.title}</h2>
 
             {section.body.map((paragraph) => (
-              <p key={paragraph} className="mt-5 text-[16.5px] leading-[1.72] text-ink-2">
+              <p key={paragraph} className="mt-5 text-[13.4px] leading-[1.72] text-ink-2">
                 {paragraph}
               </p>
             ))}
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
                 {section.list.map((item) => (
                   <li
                     key={item}
-                    className="border-l border-line-2 pl-5 text-[16px] leading-[1.65] text-ink-2"
+                    className="border-l border-line-2 pl-5 text-[13px] leading-[1.65] text-ink-2"
                   >
                     {item}
                   </li>
@@ -90,7 +90,7 @@ export default function PrivacyPage() {
 
       <SiteFooter current="/privacy" />
 
-      <p className="mt-8 text-[13.5px] text-ink-3">
+      <p className="mt-8 text-[11px] text-ink-3">
         This policy is a draft and is pending legal review.
       </p>
     </main>

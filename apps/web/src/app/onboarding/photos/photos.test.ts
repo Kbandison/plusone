@@ -243,13 +243,13 @@ describe("the grid", () => {
 
   /** The add control is a tile beside the last photo, not a panel above them. */
   it("puts the add tile in the grid", () => {
-    expect(form).toMatch(/size-\[132px\][\s\S]{0,400}border-dashed/);
+    expect(form).toMatch(/size-\[106.9px\][\s\S]{0,400}border-dashed/);
     expect(page).toMatch(/<PhotoGallery photos=\{photos\}>/);
     expect(page).toMatch(/uploaded < MAX_PHOTOS \? <PhotoUploader/);
   });
 
   it("uses the same tile size for photos and for the add control", () => {
-    expect((form.match(/size-\[132px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((form.match(/size-\[106.9px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });
 

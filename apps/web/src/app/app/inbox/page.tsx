@@ -6,7 +6,9 @@ import { inbox as inboxLogic } from "@plusone/logic";
 
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
+import { MemberPhotoFrame } from "../member-photo";
 import { ThreadRow, type ThreadView } from "./thread-row";
+import Link from "next/link";
 
 const C = DRAFT_COPY.app;
 const DAY = 86_400_000;
@@ -199,19 +201,64 @@ export default async function InboxPage() {
       };
     });
 
+  // Decisions come out of the list and sit above it as faces.
+  //
+  // They are a different KIND of thing: a connect is somebody asking, and every
+  // one of them is the same two irreversible buttons. Left in the list they
+  // read as messages that happen to have controls, and the list stops being
+  // scannable — which is the whole reason the rows got shorter.
+  const decisions = threads.filter((t) => t.state === "awaiting_your_decision");
+  const conversations = threads.filter((t) => t.state !== "awaiting_your_decision");
+
   return (
     <main id="main">
       <h1 className="text-h2">{C.inboxHeading}</h1>
 
+      {decisions.length > 0 ? (
+        <section className="mt-7">
+          <h2 className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
+            {C.decisionsHeading(decisions.length)}
+          </h2>
+
+          {/* Horizontal, because this is a queue rather than a list: it grows
+              sideways and never pushes the conversations off the screen.
+              -mx-6/px-6 lets it bleed to the edges so a half-cut face is what
+              tells you there is more, which no scrollbar on a phone will. */}
+          <ul className="-mx-6 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-1">
+            {decisions.map((decision) => (
+              <li key={decision.id} className="snap-start">
+                <Link
+                  href={`/app/inbox/pending/${decision.id}`}
+                  className="ease-brand flex w-[61.6px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
+                >
+                  <span className="relative">
+                    {/* Bigger than a row's bubble on purpose: these are the
+                        thing on this screen that somebody is waiting on. */}
+                    <MemberPhotoFrame photo={decision.photo} size={68} />
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 rounded-full ring-2 ring-accent"
+                    />
+                  </span>
+                  <span className="w-full truncate text-center text-[11px] text-ink-2">
+                    {decision.name}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {threads.length === 0 ? (
-        <p className="mt-8 text-[16px] text-ink-2">{C.inboxAllEmpty}</p>
-      ) : (
+        <p className="mt-8 text-[13px] text-ink-2">{C.inboxAllEmpty}</p>
+      ) : conversations.length > 0 ? (
         <ul className="mt-8 flex flex-col gap-2.5">
-          {threads.map((thread) => (
+          {conversations.map((thread) => (
             <ThreadRow key={thread.id} thread={thread} />
           ))}
         </ul>
-      )}
+      ) : null}
     </main>
   );
 }

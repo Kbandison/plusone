@@ -60,23 +60,23 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
     <main id="main">
       <h1 className="text-h2">{room.title as string}</h1>
       {room.description ? (
-        <p className="mt-3 text-[15.5px] leading-[1.7] text-ink-2">{room.description as string}</p>
+        <p className="mt-3 text-[12.6px] leading-[1.7] text-ink-2">{room.description as string}</p>
       ) : null}
 
       {pinned?.title ? (
         <aside className="mt-6 rounded-xl border border-line-2 bg-surface-2 p-5">
-          <h2 className="text-[1.05rem]">{pinned.title}</h2>
-          {pinned.body ? <p className="mt-2 text-[14.5px] text-ink-2">{pinned.body}</p> : null}
+          <h2 className="text-[0.851rem]">{pinned.title}</h2>
+          {pinned.body ? <p className="mt-2 text-[11.7px] text-ink-2">{pinned.body}</p> : null}
         </aside>
       ) : null}
 
-      <p className="mt-5 text-[13.5px] text-ink-3">
+      <p className="mt-5 text-[11px] text-ink-3">
         {C.roomSlowMode(room.slow_mode_seconds as number)}
       </p>
 
       {/* §7.2 — NO dm button. Rooms are a place to be seen, not a directory to
           work through, and the way out of a room is a connect. */}
-      <p className="mt-2 text-[13.5px] text-ink-3">{C.roomNoDmNote}</p>
+      <p className="mt-2 text-[11px] text-ink-3">{C.roomNoDmNote}</p>
 
       <ul className="mt-8 flex flex-col gap-4">
         {(messages ?? []).length === 0 ? (
@@ -88,7 +88,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
             {/* The controls below point at this id, which is what tells a
                 screen reader user which post they are about to report — every
                 one of them is otherwise just "Report, button". */}
-            <p id={`post-${message.id as string}`} className="text-[15.5px] leading-[1.65]">
+            <p id={`post-${message.id as string}`} className="text-[12.6px] leading-[1.65]">
               {message.body as string}
             </p>
             {message.user_id !== auth.user.id ? (

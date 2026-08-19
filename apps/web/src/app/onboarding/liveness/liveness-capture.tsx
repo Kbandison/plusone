@@ -51,7 +51,7 @@ export function LivenessCapture({
     // rather than in the document — on a phone in particular those are not the
     // same place. It scrolls if a small screen cannot hold it.
     <div className="liveness-theme fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ground p-4">
-      <div className="w-full max-w-[480px] overflow-hidden rounded-xl border border-line-2">
+      <div className="w-full max-w-[388.8px] overflow-hidden rounded-xl border border-line-2">
         <FaceLivenessDetectorCore
           sessionId={sessionId}
           region={region}

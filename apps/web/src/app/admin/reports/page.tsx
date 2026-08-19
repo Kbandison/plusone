@@ -13,16 +13,16 @@ export default async function ReportsPage() {
   return (
     <main id="main">
       <h1 className="mt-4 text-h2">Reports</h1>
-      <p className="mt-4 max-w-[52ch] text-[16px] leading-[1.7] text-ink-2">
+      <p className="mt-4 max-w-[52ch] text-[13px] leading-[1.7] text-ink-2">
         Open reports, oldest first. Every decision is written to the audit log with your note.
       </p>
 
       {error ? (
-        <p role="alert" className="mt-8 text-[15px] text-critical">
+        <p role="alert" className="mt-8 text-[12.2px] text-critical">
           {error.message}
         </p>
       ) : reports.length === 0 ? (
-        <p className="mt-10 rounded-lg border border-line-2 bg-surface p-8 text-[16px] text-ink-2">
+        <p className="mt-10 rounded-lg border border-line-2 bg-surface p-8 text-[13px] text-ink-2">
           Nothing waiting.
         </p>
       ) : (

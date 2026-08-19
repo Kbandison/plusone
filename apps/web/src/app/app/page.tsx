@@ -30,7 +30,7 @@ export default async function TonightPage() {
           than the member asked for. Quietly widening is how apps pretend to be
           busier than they are. */}
       {drop.radiusExpanded ? (
-        <p className="mt-4 text-[15px] text-ink-2">
+        <p className="mt-4 text-[12.2px] text-ink-2">
           {COPY.radius.expansionNotice(drop.memberRadiusMi, drop.radiusUsedMi)}
         </p>
       ) : null}
@@ -39,9 +39,9 @@ export default async function TonightPage() {
         <div className="mt-10 rounded-xl border border-line-2 bg-surface p-8">
           {/* A heading, so someone navigating by heading finds out there is
               nothing tonight rather than landing on an unexplained paragraph. */}
-          <h2 className="text-[1.2rem]">{DRAFT_COPY.app.dropEmptyHeading}</h2>
+          <h2 className="text-[0.972rem]">{DRAFT_COPY.app.dropEmptyHeading}</h2>
           {/* §3.4, verbatim — an honest empty state rather than padding. */}
-          <p className="mt-3 text-[16px] leading-[1.7] text-ink-2">{COPY.drop.thin}</p>
+          <p className="mt-3 text-[13px] leading-[1.7] text-ink-2">{COPY.drop.thin}</p>
         </div>
       ) : drop.preview ? (
         <>
@@ -49,7 +49,7 @@ export default async function TonightPage() {
               screen as the preview. Without them a support-only member is shown
               three redacted cards and asked to give up a shield to see them,
               with nothing to weigh that against. */}
-          <p className="mt-6 text-[15px] text-ink-2">
+          <p className="mt-6 text-[12.2px] text-ink-2">
             {DRAFT_COPY.app.previewDensity(drop.poolSize, drop.radiusUsedMi)}
           </p>
 
@@ -60,10 +60,10 @@ export default async function TonightPage() {
           </ul>
 
           <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-            <h2 className="text-[1.1rem]">{DRAFT_COPY.app.previewHowHeading}</h2>
+            <h2 className="text-[0.891rem]">{DRAFT_COPY.app.previewHowHeading}</h2>
             <ul className="mt-4 flex flex-col gap-3">
               {DRAFT_COPY.app.previewHow.map((line) => (
-                <li key={line} className="text-[15px] leading-[1.65] text-ink-2">
+                <li key={line} className="text-[12.2px] leading-[1.65] text-ink-2">
                   {line}
                 </li>
               ))}
@@ -82,7 +82,7 @@ export default async function TonightPage() {
               no stated basis invites a member to read it as a measurement of
               two people; it is intention and twelve questions, and saying so is
               the difference between a hint and a claim. */}
-          <p className="mt-6 text-[13.5px] leading-[1.6] text-ink-3">
+          <p className="mt-6 text-[11px] leading-[1.6] text-ink-3">
             {DRAFT_COPY.app.compatibilityNote}
           </p>
         </>

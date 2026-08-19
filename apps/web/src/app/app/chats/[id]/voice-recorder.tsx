@@ -160,7 +160,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
               elapsed time once a second talks over everything else on the page.
               The state change into recording is what is worth announcing, and
               the button that replaces Record already says it. */}
-          <span className="text-[15px] tabular-nums">{C.voiceRecording(seconds)}</span>
+          <span className="text-[12.2px] tabular-nums">{C.voiceRecording(seconds)}</span>
           <button
             type="button"
             onClick={() => recorder.current?.stop()}
@@ -197,7 +197,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
             // member landed back on review with no audio and a Send button that
             // silently did nothing.
             disabled={state === "sending"}
-            className="ease-brand text-[14.5px] text-ink-3 disabled:opacity-55 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            className="ease-brand text-[11.7px] text-ink-3 disabled:opacity-55 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
           >
             {C.voiceDiscardLabel}
           </button>
@@ -205,7 +205,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
       ) : null}
 
       {error ? (
-        <p role="alert" className="text-[14px] text-critical">
+        <p role="alert" className="text-[11.3px] text-critical">
           {error}
         </p>
       ) : null}

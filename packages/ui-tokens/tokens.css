@@ -148,29 +148,29 @@
    * sizes shipped instead and the scale was documentation. These MUST stay in
    * step with TYPE — tokens.test.ts asserts they do.
    */
-  --text-hero: clamp(2.6rem, 6.4vw, 4.6rem);
+  --text-hero: clamp(2.106rem, 5.184vw, 3.726rem);
   --text-hero--line-height: 1.04;
   --text-hero--letter-spacing: -0.022em;
 
-  --text-h1: clamp(2.3rem, 5.4vw, 3.9rem);
+  --text-h1: clamp(1.863rem, 4.374vw, 3.159rem);
   --text-h1--line-height: 1.05;
   --text-h1--letter-spacing: -0.022em;
 
-  --text-h2: clamp(1.8rem, 3.2vw, 2.5rem);
+  --text-h2: clamp(1.458rem, 2.592vw, 2.025rem);
   --text-h2--line-height: 1.08;
   --text-h2--letter-spacing: -0.02em;
 
-  --text-h3: clamp(1.4rem, 1.9vw, 1.75rem);
+  --text-h3: clamp(1.134rem, 1.539vw, 1.417rem);
   --text-h3--line-height: 1.1;
   --text-h3--letter-spacing: -0.018em;
 
-  --text-body: 17px;
+  --text-body: 13.77px;
   --text-body--line-height: 1.65;
 
-  --text-body-sm: 14.5px;
+  --text-body-sm: 11.745px;
   --text-body-sm--line-height: 1.62;
 
-  --text-label: 11.5px;
+  --text-label: 9.315px;
   --text-label--line-height: 1.4;
   --text-label--letter-spacing: 0.14em;
 

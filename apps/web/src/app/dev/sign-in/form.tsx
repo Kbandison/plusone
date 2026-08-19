@@ -28,22 +28,22 @@ export function DevSignInForm() {
   return (
     <form action={act} className="mt-10 flex flex-col gap-6">
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-[15px]">Sign in as</legend>
+        <legend className="mb-2 text-[12.2px]">Sign in as</legend>
         {PRESETS.map((preset, index) => (
           <label
             key={preset.phone}
-            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[16px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
           >
             <input
               type="radio"
               name="phone"
               value={preset.phone}
               defaultChecked={index === 0}
-              className="size-[18px] accent-accent"
+              className="size-[14.6px] accent-accent"
             />
             <span>
               {preset.label}
-              <span className="ml-2 text-[14px] text-ink-3">{preset.phone}</span>
+              <span className="ml-2 text-[11.3px] text-ink-3">{preset.phone}</span>
             </span>
           </label>
         ))}
@@ -54,7 +54,7 @@ export function DevSignInForm() {
       </button>
 
       {state.error ? (
-        <p role="alert" className="text-[14.5px] text-critical">
+        <p role="alert" className="text-[11.7px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -75,17 +75,17 @@ export function DevSignInForm() {
             reset(formData);
           }}
           disabled={pending || resetting}
-          className="ease-brand text-[14.5px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
         >
           {resetting ? "Resetting…" : "Reset this member's verification"}
         </button>
 
         {resetState.error ? (
-          <p role="alert" className="mt-3 text-[14.5px] text-critical">
+          <p role="alert" className="mt-3 text-[11.7px] text-critical">
             {resetState.error}
           </p>
         ) : wasReset && !resetting ? (
-          <p role="status" className="mt-3 text-[14.5px] text-positive">
+          <p role="status" className="mt-3 text-[11.7px] text-positive">
             Back at the liveness step, with all three attempts again.
           </p>
         ) : null}

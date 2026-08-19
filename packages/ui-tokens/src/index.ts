@@ -90,14 +90,28 @@ export const FONTS = {
  * query. Body floors at 17px — 16 is the LuxWeb minimum and this product is read
  * carefully, often at night.
  */
+/**
+ * The scale, at 81% of what it was.
+ *
+ * Line heights and letter spacings are RATIOS and do not move — scaling them
+ * with the sizes would change the shape of the type rather than its size, and
+ * tight tracking on small text is what makes it hard to read.
+ *
+ * LAYOUT.minTapTarget is untouched at 44px: that is a WCAG floor, not a
+ * proportion, and shrinking a design does not shrink a thumb.
+ */
 export const TYPE = {
-  hero: { size: "clamp(2.6rem, 6.4vw, 4.6rem)", lineHeight: "1.04", letterSpacing: "-0.022em" },
-  h1: { size: "clamp(2.3rem, 5.4vw, 3.9rem)", lineHeight: "1.05", letterSpacing: "-0.022em" },
-  h2: { size: "clamp(1.8rem, 3.2vw, 2.5rem)", lineHeight: "1.08", letterSpacing: "-0.02em" },
-  h3: { size: "clamp(1.4rem, 1.9vw, 1.75rem)", lineHeight: "1.1", letterSpacing: "-0.018em" },
-  body: { size: "17px", lineHeight: "1.65", letterSpacing: "normal" },
-  bodySm: { size: "14.5px", lineHeight: "1.62", letterSpacing: "normal" },
-  label: { size: "11.5px", lineHeight: "1.4", letterSpacing: "0.14em" },
+  hero: {
+    size: "clamp(2.106rem, 5.184vw, 3.726rem)",
+    lineHeight: "1.04",
+    letterSpacing: "-0.022em",
+  },
+  h1: { size: "clamp(1.863rem, 4.374vw, 3.159rem)", lineHeight: "1.05", letterSpacing: "-0.022em" },
+  h2: { size: "clamp(1.458rem, 2.592vw, 2.025rem)", lineHeight: "1.08", letterSpacing: "-0.02em" },
+  h3: { size: "clamp(1.134rem, 1.539vw, 1.417rem)", lineHeight: "1.1", letterSpacing: "-0.018em" },
+  body: { size: "13.77px", lineHeight: "1.65", letterSpacing: "normal" },
+  bodySm: { size: "11.745px", lineHeight: "1.62", letterSpacing: "normal" },
+  label: { size: "9.315px", lineHeight: "1.4", letterSpacing: "0.14em" },
 } as const;
 
 /**
