@@ -50,13 +50,19 @@ export function LikeButton({
     >
       <HeartIcon filled={state.liked} />
 
-      {/* The number is the whole visual label — a feed does not write "likes"
-          forty times — so the accessible name has to carry the word. Not an
-          aria-label: that would REPLACE the count rather than include it, and a
-          reader would hear "Like, pressed" with no idea how many.
+      {/* Always, including nought.
+          Hiding a zero meant most posts showed a heart with nothing beside it,
+          which reads as a count that has not loaded rather than as a count of
+          none — and it made the control jump sideways the moment somebody
+          pressed it.
+
+          The number is the whole visual label, because a feed does not write
+          "likes" forty times, so the accessible name has to carry the word. Not
+          an aria-label: that would REPLACE the count rather than include it,
+          and a reader would hear "Like, pressed" with no idea how many.
           tabular-nums so the row does not shift a pixel when 9 becomes 10. */}
       <span aria-hidden="true" className="tabular-nums">
-        {state.count > 0 ? state.count : ""}
+        {state.count}
       </span>
       <span className="sr-only">
         {state.liked ? C.postUnlikeLabel : C.postLikeLabel} — {C.postLikeCount(state.count)}

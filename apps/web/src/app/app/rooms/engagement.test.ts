@@ -188,3 +188,21 @@ describe("one row, two screens", () => {
     expect(sql).toMatch(/room_thread\(uuid\) is[\s\S]{0,140}same projection room_feed uses/);
   });
 });
+
+/**
+ * Hiding a zero meant most posts showed a heart with nothing beside it, which
+ * reads as a count that has not loaded rather than as a count of none — and it
+ * made the control jump sideways the moment somebody pressed it.
+ */
+describe("the counts are always there", () => {
+  it("shows a like count of nought", () => {
+    expect(like).toMatch(/className="tabular-nums">\s*\{state\.count\}/);
+    expect(like).not.toMatch(/state\.count > 0 \?/);
+  });
+
+  /** A row where one number appears and the other does not reads as a bug. */
+  it("shows a comment count of nought too", () => {
+    expect(row).toMatch(/<span className="tabular-nums">\{post\.comment_count\}<\/span>/);
+    expect(row).not.toMatch(/comment_count > 0 \?/);
+  });
+});

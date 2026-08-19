@@ -116,9 +116,9 @@ export function PostRow({
               className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
             >
               <CommentIcon />
-              <span className="tabular-nums">
-                {post.comment_count > 0 ? post.comment_count : ""}
-              </span>
+              {/* Nought shown, like the like count beside it. A row where one
+                  number appears and the other does not reads as a bug. */}
+              <span className="tabular-nums">{post.comment_count}</span>
             </Link>
           ) : null}
 
