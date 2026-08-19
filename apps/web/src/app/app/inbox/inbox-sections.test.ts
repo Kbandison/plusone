@@ -53,13 +53,13 @@ describe("the inbox says what kind of thing each row is", () => {
    * construction rather than by three literals agreeing with each other.
    */
   it("sizes the heading in one place", () => {
-    expect(section).toMatch(/text-\[25px\] text-ink/);
+    expect(section).toMatch(/text-\[20px\] text-ink/);
     expect(page).not.toMatch(/<h2 className=/);
   });
 
   /** The count must not read as part of the title. */
   it("keeps the count smaller than the heading", () => {
-    expect(section).toMatch(/text-\[15px\] text-ink-3 tabular-nums/);
+    expect(section).toMatch(/text-\[13px\] text-ink-3 tabular-nums/);
   });
 
   /**
