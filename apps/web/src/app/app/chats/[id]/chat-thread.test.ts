@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
 const forms = read("./chat-forms.tsx");
-const times = read("./show-times.tsx");
+const bubble = read("./text-bubble.tsx");
 const browse = read("../../browse/page.tsx");
 const drop = read("../../../../lib/drop.ts");
 
@@ -25,7 +25,7 @@ describe("the chat opens on what was actually said", () => {
   it("renders them above the thread", () => {
     expect(page).toMatch(/promptQuestion\(connect\.prompt_id as string\)/);
     expect(page).toMatch(/connect\.prompt_reply as string/);
-    expect(page.indexOf("prompt_reply as string")).toBeLessThan(page.indexOf("<ShowTimes>"));
+    expect(page.indexOf("prompt_reply as string")).toBeLessThan(page.indexOf("<ul className"));
   });
 
   /** A blockquote and its caption, not two loose paragraphs. */
@@ -38,8 +38,9 @@ describe("the chat opens on what was actually said", () => {
 
 describe("every bubble carries its time", () => {
   it("renders a real time element with a machine-readable value", () => {
-    expect(page).toMatch(/<time\s+dateTime=\{new Date\(sentAt\)\.toISOString\(\)\}/);
-    expect(page).toMatch(/title=\{chatLogic\.messageTimeExact\(sentAt, zone\)\}/);
+    expect(bubble).toMatch(/<time\s+dateTime=\{iso\}/);
+    expect(bubble).toMatch(/title=\{exact\}/);
+    expect(page).toMatch(/iso=\{new Date\(sentAt\)\.toISOString\(\)\}/);
   });
 
   /**
@@ -48,18 +49,43 @@ describe("every bubble carries its time", () => {
    * layout, which is the wrong half to keep.
    */
   it("keeps it in the markup when it is not shown", () => {
-    expect(page).toMatch(/className="sr-only group-data-\[times=on\]:not-sr-only/);
-    expect(page).not.toMatch(/<time[^>]*aria-hidden/);
+    expect(bubble).toMatch(/open \? "mt-1\.5 px-1 text-\[10\.5px\] text-ink-3" : "sr-only"/);
+    expect(bubble).not.toMatch(/aria-hidden/);
+  });
+
+  /** One press, on the bubble itself. */
+  it("toggles a single message rather than the thread", () => {
+    expect(bubble).toMatch(/aria-expanded=\{open\}/);
+    expect(bubble).toMatch(/setOpen\(\(was\) => !was\)/);
   });
 
   /**
-   * One toggle, not a press per bubble. Making each bubble a button put fifty
-   * tab stops in a conversation and took the text out of a plain selection.
+   * The bubble IS the control, which costs a tab stop per message. Paid
+   * honestly: a div with an onClick is the same behaviour behind something a
+   * keyboard cannot reach and a reader will not announce.
    */
-  it("toggles the whole thread at once", () => {
-    expect(times).toMatch(/aria-pressed=\{on\}/);
-    expect(times).toMatch(/data-times=\{on \? "on" : "off"\}/);
-    expect(page).not.toMatch(/<li[^>]*onClick/);
+  it("uses a real button rather than a clickable div", () => {
+    expect(bubble).toMatch(/<button\s+type="button"/);
+    expect(bubble).not.toMatch(/role="button"/);
+  });
+
+  /** A bubble you cannot copy out of is worse than one with no timestamp. */
+  it("leaves the text selectable", () => {
+    expect(bubble).toMatch(/select-text/);
+  });
+
+  /**
+   * An <audio controls> inside a button is invalid and the play control stops
+   * working, so a voice note wears its time openly instead.
+   */
+  it("keeps voice notes out of the button", () => {
+    const voice = page.slice(
+      page.indexOf("message.voice_note_path ? ("),
+      page.indexOf("<TextBubble"),
+    );
+    expect(voice).toMatch(/<VoiceNote/);
+    expect(voice).not.toMatch(/<button/);
+    expect(voice).toMatch(/className="mt-1\.5 block text-\[10\.5px\] text-ink-3"/);
   });
 
   /** The viewer's clock, and one reading of it for the whole page. */

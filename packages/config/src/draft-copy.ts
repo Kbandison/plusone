@@ -667,9 +667,6 @@ export const DRAFT_COPY = {
      * and an empty chat is guaranteed at creation — so the first thing both
      * people saw after matching was a blank rectangle.
      */
-    /** One control for the whole thread — see ShowTimes. */
-    showTimesLabel: "Show times",
-    hideTimesLabel: "Hide times",
     /**
      * The chat opened on "Say the first thing" even though something had
      * already been said: the prompt and the reply are what a connect IS
