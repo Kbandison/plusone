@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -10,44 +10,34 @@ export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
 const C = DRAFT_COPY.app;
 
 /**
- * The room list (§7.2). Scoped by community in RLS, so this query asks for
- * every room and gets back only the ones this member may see.
+ * /app/rooms has nothing of its own to show any more.
+ *
+ * It was a list of five identical cards whose only job was to get you into a
+ * room; the bar in the layout does that from everywhere now, so a page that
+ * repeats it is a stop on the way to somewhere with nothing on it.
+ *
+ * Straight into the first room in scope. RLS decides which rooms come back, so
+ * "first" is first among the ones this member may see — there is no case where
+ * this lands somewhere they are not allowed.
  */
 export default async function RoomsPage() {
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("rooms")
-    .select("id, slug, title, description")
-    .order("slug", { ascending: true });
+    .select("id")
+    .order("slug", { ascending: true })
+    .limit(1);
 
-  const rooms = data ?? [];
+  const first = (data ?? [])[0];
+  if (first) redirect(`/app/rooms/${first.id as string}`);
 
+  // No rooms in scope at all. Not reachable today — two of the five are scoped
+  // 'all' — but a community with no rooms is a configuration, not an
+  // impossibility, and an empty page beats a redirect to nowhere.
   return (
     <main id="main">
       <h1 className="text-h2">{C.roomsHeading}</h1>
-
-      {rooms.length === 0 ? (
-        <p className="mt-8 text-[13px] text-ink-2">{C.roomsEmpty}</p>
-      ) : (
-        <ul className="mt-8 flex flex-col gap-3">
-          {rooms.map((room) => (
-            <li key={room.id as string}>
-              <Link
-                // By id, not slug. Two of the §5.2 slugs name a condition and
-                // §8 keeps those out of paths — history, autocomplete on a
-                // borrowed phone, our access logs, Referer headers.
-                href={`/app/rooms/${room.id as string}`}
-                className="ease-brand block rounded-xl border border-line-control bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
-              >
-                <h2 className="text-[0.931rem]">{room.title as string}</h2>
-                {room.description ? (
-                  <p className="mt-1.5 text-[11.7px] text-ink-2">{room.description as string}</p>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <p className="mt-8 text-[13px] text-ink-2">{C.roomsEmpty}</p>
     </main>
   );
 }

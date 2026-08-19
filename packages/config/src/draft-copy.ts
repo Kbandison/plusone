@@ -689,6 +689,14 @@ export const DRAFT_COPY = {
     chatEmptyHeading: "Say the first thing",
     chatEmptyBody:
       "Nobody has written yet. There is no clever opener needed here — the hard part is already behind both of you.",
+    /**
+     * The dot on a room tab, for a reader that cannot see it.
+     *
+     * Deliberately not a count. A number invites a member to clear it, and a
+     * support room is not an inbox to get to zero — Decision #26 rules out
+     * mechanics that make people feel behind.
+     */
+    roomUnread: "New posts",
     roomEmptyHeading: "Nothing here yet",
     roomEmptyBody: "No posts in this room so far. Yours can be the first.",
     fuseDaysLeft: (days: number) => `${days} ${days === 1 ? "day" : "days"} left`,

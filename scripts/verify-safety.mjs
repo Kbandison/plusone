@@ -113,9 +113,19 @@ try {
       ]);
     }
 
+    // Only this fixture's own three posts.
+    //
+    // This counted every post in general-lounge and asserted the number was 3,
+    // which quietly required the room to be empty — true of a fresh database
+    // and of nothing else. The first time the room had anything in it, whether
+    // seeded or real, the check failed and read as "a member cannot see posts"
+    // rather than as "the fixture assumed an empty room".
+    //
+    // A visibility test should count what it made, not what the world contains.
+    const MINE = [alice, bob, carol].map((who) => `post-${who}`);
     const feedOf = async (who) => {
       const r = await as(who, `select body from public.room_messages where room_id = '${roomId}'`);
-      return r.rows.map((x) => x.body);
+      return r.rows.map((x) => x.body).filter((body) => MINE.includes(body));
     };
 
     check((await feedOf(alice)).length === 3, "a room member reads every post before any block");

@@ -28,6 +28,13 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
   // as easily as "does not exist" — and those look identical on purpose.
   if (!room) notFound();
 
+  // Opening a room is what makes it read. Fire-and-forget on purpose, exactly
+  // as the chat page does it: a failed marker means a dot stays on the tab a
+  // moment longer, which is a far better outcome than a room that will not open
+  // because bookkeeping failed. The RPC takes no timestamp — the database
+  // supplies one, so a client cannot mark a room read into the future.
+  void supabase.rpc("mark_room_read", { p_room_id: room.id as string });
+
   const [{ data: membership }, { data: messages }] = await Promise.all([
     supabase
       .from("room_members")
@@ -54,6 +61,8 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
   const pinned = room.pinned_resource_card as {
     title?: string;
     body?: string;
+    url?: string;
+    urlLabel?: string;
   } | null;
 
   return (
@@ -67,6 +76,31 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
         <aside className="mt-6 rounded-xl border border-line-2 bg-surface-2 p-5">
           <h2 className="text-[0.851rem]">{pinned.title}</h2>
           {pinned.body ? <p className="mt-2 text-[11.7px] text-ink-2">{pinned.body}</p> : null}
+
+          {pinned.url ? (
+            <a
+              href={pinned.url}
+              target="_blank"
+              /**
+               * noreferrer, and it is the whole point.
+               *
+               * Without it the destination receives a Referer header reading
+               * /app/rooms/<id> — so an outside site learns that whoever just
+               * arrived came from a room in this product. §8 keeps condition
+               * words out of our own paths for exactly this class of reason;
+               * handing the visit itself to a third party undoes that on the
+               * one screen where the member is most likely to click out.
+               *
+               * noopener comes with noreferrer in every current browser, and is
+               * named anyway because the two get separated by a well-meaning
+               * edit.
+               */
+              rel="noopener noreferrer"
+              className="ease-brand mt-4 inline-flex min-h-tap items-center text-[11.7px] text-accent underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+            >
+              {pinned.urlLabel ?? pinned.url}
+            </a>
+          ) : null}
         </aside>
       ) : null}
 

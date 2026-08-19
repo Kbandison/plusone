@@ -46,6 +46,16 @@ const PATTERNS = CONTENT_BLIND_BANNED_TERMS.map((term) => {
 const offending = (value: string) =>
   PATTERNS.filter(({ pattern }) => pattern.test(value)).map(({ term }) => term);
 
+/** Every .ts/.tsx under a directory, so a rule follows the code that moves. */
+function sourceFiles(dir: string, acc: string[] = []): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) sourceFiles(path, acc);
+    else if (/\.tsx?$/.test(entry.name) && !/\.test\./.test(entry.name)) acc.push(path);
+  }
+  return acc;
+}
+
 describe("URLs are content-blind", () => {
   const segments = routeSegments(APP);
 
@@ -67,11 +77,25 @@ describe("URLs are content-blind", () => {
     expect(slugs).toContain("hsv-general");
     expect(slugs).toContain("hiv-u-equals-u");
 
-    const list = readFileSync(join(APP, "app/rooms/page.tsx"), "utf8");
-    expect(list, "the rooms list must not link by slug").not.toMatch(
-      /\/app\/rooms\/\$\{room\.slug/,
-    );
-    expect(list).toMatch(/\/app\/rooms\/\$\{room\.id/);
+    // Every file that builds a room href, not one named file. The link used to
+    // live on the list page and moved into the tab bar the moment rooms became
+    // a nav — and a rule pinned to one filename stops being checked the moment
+    // the thing it guards is refactored, which is exactly when it matters.
+    const roomFiles = sourceFiles(join(APP, "app/rooms"));
+    expect(roomFiles.length).toBeGreaterThan(2);
+
+    const linkers = roomFiles.filter((f) => /\/app\/rooms\/\$\{/.test(readFileSync(f, "utf8")));
+    expect(linkers.length, "something must build a room href").toBeGreaterThan(0);
+
+    // What goes in the path, not how it is spelled. `room.id` and `roomId` are
+    // both fine and a test that pattern-matched one of them missed the other.
+    for (const file of linkers) {
+      const source = readFileSync(file, "utf8");
+      for (const [, expression] of source.matchAll(/\/app\/rooms\/\$\{([^}]+)\}/g)) {
+        expect(expression, `${file} must not put a room slug in a path`).not.toMatch(/slug/i);
+        expect(expression, `${file} must identify a room by its id`).toMatch(/\bid\b|Id\b/);
+      }
+    }
   });
 
   it("has no route segment that takes a slug for a room", () => {

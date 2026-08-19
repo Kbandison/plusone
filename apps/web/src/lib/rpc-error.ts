@@ -83,6 +83,14 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "no open report with that id",
   "config values are numbers or objects",
   "unknown config key: ",
+  // The pinned resource card, which only an admin can set. Every one of these
+  // is a malformed write from the admin screen, and that screen has its own
+  // copy for them — a member never reaches this RPC at all.
+  "not permitted",
+  "no such room",
+  "a pinned card is an object",
+  "a pinned card needs a title and a body",
+  "a pinned card url must be https",
   "could not allocate a referral code",
   // record_drop refuses a backdated date. Only a forged call can produce it —
   // the app always sends today — so it says nothing a member needs.
