@@ -81,6 +81,26 @@ try {
     [`%@${DOMAIN}`, me],
   );
 
+  // And any block you left on one of them.
+  //
+  // This called itself rerunnable and was not. Blocking is a thing you do while
+  // testing — it is one of the controls on the screen — and a block outlives
+  // the connect that carried it, because `blocks` hangs off auth.users rather
+  // than off the connect this script deletes. So the next run rebuilt the
+  // conversation, is_blocked_either_way hid the member behind it, and the
+  // screen came back empty with nothing to say why.
+  //
+  // Only blocks involving a seeded account. Nothing here touches a block
+  // between two real members, which is somebody's safety decision.
+  const { rowCount: unblocked } = await client.query(
+    `delete from public.blocks b
+      using auth.users u
+      where (u.id = b.blocker_id or u.id = b.blocked_id)
+        and u.email like $1
+        and (b.blocker_id = $2 or b.blocked_id = $2)`,
+    [`%@${DOMAIN}`, me],
+  );
+
   const promptId = PROFILE_PROMPTS[0].id;
   const [waitingA, talking, sentA, waitingB, sentB] = seeds;
 
@@ -132,7 +152,7 @@ try {
   }
 
   await client.query("commit");
-  console.log(`Cleared ${cleared} previous, then made:`);
+  console.log(`Cleared ${cleared} previous and ${unblocked} block(s), then made:`);
   console.log(`  waiting on you   ${waitingA.display_name}, ${waitingB.display_name}`);
   console.log(`  a conversation   ${talking.display_name} (${THREAD.length} messages, fuse in 4 days)`);
   console.log(`  sent, unanswered ${sentA.display_name}, ${sentB.display_name}`);
