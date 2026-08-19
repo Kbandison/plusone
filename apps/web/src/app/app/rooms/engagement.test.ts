@@ -18,19 +18,21 @@ const like = read("./[roomId]/like-button.tsx");
  * and shame mechanics. A downvote counter under somebody's diagnosis story is
  * the exact mechanic it exists to prevent. Kevin's call, having been asked.
  */
-describe("there is no dislike", () => {
-  /**
-   * Code, not prose. The migration explains at length why there is no dislike,
-   * and a naive scan for the word failed on the explanation — which would have
-   * left the only way to pass being to stop writing down the reason.
-   */
-  const withoutComments = (source: string) =>
-    source
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .filter((line) => !/^\s*(--|\/\/|\*)/.test(line))
-      .join("\n");
+/**
+ * Code, not prose.
+ *
+ * These files explain at length why a thing was removed, and a naive scan for
+ * the word fails on the explanation — which would leave the only way to pass
+ * being to stop writing down the reason.
+ */
+const withoutComments = (source: string) =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((line) => !/^\s*(--|\/\/|\*)/.test(line))
+    .join("\n");
 
+describe("there is no dislike", () => {
   it("has no counterpart anywhere in the schema or the UI", () => {
     for (const [name, source] of [
       ["migration", sql],
@@ -152,23 +154,73 @@ describe("views are the author's alone", () => {
   });
 });
 
-describe("the like reads as instant", () => {
-  /** React reverts an optimistic value if the action throws. */
-  it("is optimistic, and corrects itself", () => {
-    expect(like).toMatch(/useOptimistic/);
-    expect(like).toMatch(/aria-pressed=\{state\.liked\}/);
+describe("the like reads as instant, and stays right", () => {
+  /**
+   * useOptimistic DISCARDS its value when the transition ends and falls back to
+   * the props it was given. Nothing revalidated the feed, so those props still
+   * said what the server had said before the press — like, see 1, press again,
+   * see 0, watch it come back to 1. The optimistic value was correct and the
+   * stale prop won.
+   */
+  it("takes the count from the server rather than guessing", () => {
+    const migration = read(
+      "../../../../../../supabase/migrations/20260819000900_a_like_that_answers_and_a_reply_that_does_not_wait.sql",
+    );
+    expect(migration).toMatch(/returns table \(liked boolean, like_count integer\)/);
+    expect(like).toMatch(/setView\(actual \?\? fromServer\)/);
+    // Code, not the comment explaining why it is gone.
+    expect(withoutComments(like)).not.toMatch(/useOptimistic/);
   });
 
-  /** A returned error would be a second way to say what the revert already says. */
-  it("throws rather than returning an error the button would double up", () => {
+  /** A fresh render from the server has to win over a stale local value. */
+  it("lets new props overtake local state", () => {
+    expect(like).toMatch(/if \(fromServer\.liked !== liked \|\| fromServer\.count !== count\)/);
+  });
+
+  /**
+   * Re-rendering a hundred-post feed to learn one number the RPC already
+   * returned is a lot of work for the control a member presses most.
+   */
+  it("does not revalidate the whole feed for one number", () => {
     const action = read("./[roomId]/actions.ts");
     const fn = action.slice(action.indexOf("export async function toggleLike"));
-    expect(fn.slice(0, fn.indexOf("\n}"))).toMatch(/throw new Error/);
+    expect(fn.slice(0, fn.indexOf("\n}"))).not.toMatch(/revalidatePath/);
+  });
+
+  it("says pressed, and how many, to a reader", () => {
+    expect(like).toMatch(/aria-pressed=\{view\.liked\}/);
+    expect(like).toMatch(/C\.postLikeCount\(view\.count\)/);
   });
 
   /** So the row does not shift a pixel when 9 becomes 10. */
   it("uses tabular figures for the count", () => {
     expect(like).toMatch(/tabular-nums/);
+  });
+});
+
+/**
+ * Kevin, 2026-08-19: "i wouldn't want someone replying to someone else to get
+ * throttled." Slow mode exists so one member cannot fill a room; answering
+ * somebody is the thing the room is for.
+ */
+describe("a reply is not a flood", () => {
+  const migration = read(
+    "../../../../../../supabase/migrations/20260819000900_a_like_that_answers_and_a_reply_that_does_not_wait.sql",
+  );
+
+  it("applies the room's cooldown to top-level posts only", () => {
+    expect(migration).toMatch(/if new\.parent_id is null then\s*\n\s*select r\.slow_mode_seconds/);
+  });
+
+  /** Off by default, and one app_config row away if flooding ever appears. */
+  it("keeps a comment throttle available and switched off", () => {
+    expect(migration).toMatch(/config_int\('rooms\.comment_slow_mode_seconds', 0\)/);
+    expect(migration).toMatch(/'rooms\.comment_slow_mode_seconds', to_jsonb\(0\)/);
+  });
+
+  /** A top-level post must not silently block a reply written a moment later. */
+  it("counts each kind against its own clock", () => {
+    expect(migration).toMatch(/\(m\.parent_id is null\) = \(new\.parent_id is null\)/);
   });
 });
 
@@ -196,8 +248,8 @@ describe("one row, two screens", () => {
  */
 describe("the counts are always there", () => {
   it("shows a like count of nought", () => {
-    expect(like).toMatch(/className="tabular-nums">\s*\{state\.count\}/);
-    expect(like).not.toMatch(/state\.count > 0 \?/);
+    expect(like).toMatch(/className="tabular-nums">\s*\{view\.count\}/);
+    expect(withoutComments(like)).not.toMatch(/count > 0 \?/);
   });
 
   /** A row where one number appears and the other does not reads as a bug. */

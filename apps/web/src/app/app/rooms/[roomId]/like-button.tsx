@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -11,13 +11,18 @@ const C = DRAFT_COPY.app;
 /**
  * The like, and the count beside it.
  *
- * Optimistic, because a like that waits for a round trip before it moves feels
- * broken on a feed — it is the one control a member presses without thinking,
- * and the whole signal it gives back is that it moved.
+ * Optimistic and then reconciled, which is not what this was.
  *
- * useOptimistic rather than a plain useState mirror: React reverts it if the
- * action throws, so a failed like corrects itself rather than leaving a heart
- * that lies until the next navigation.
+ * The first version used useOptimistic — and useOptimistic DISCARDS its value
+ * when the transition ends, falling back to the props it was given. Nothing
+ * revalidated the feed, so those props still said what the server had said
+ * before the press: like, see 1, press again, see 0, watch it come back to 1.
+ * The optimistic value was correct and the stale prop won.
+ *
+ * So the press moves the number immediately, the action returns what is now
+ * actually stored, and that answer replaces the guess. A failed call falls back
+ * to the last thing the server said, which is the same correction the optimistic
+ * version was trying to make and this one actually keeps.
  */
 export function LikeButton({
   messageId,
@@ -29,26 +34,36 @@ export function LikeButton({
   count: number;
 }) {
   const [, startTransition] = useTransition();
-  const [state, setState] = useOptimistic({ liked, count }, (_prev, next: boolean) => ({
-    liked: next,
-    count: count + (next ? 1 : 0) - (liked ? 1 : 0),
-  }));
+
+  // Adjusting state when props change, the documented way: a fresh render from
+  // the server — after navigating away and back — has to win over a stale
+  // local value, and comparing against the last props seen is what tells the
+  // two apart without an effect.
+  const [fromServer, setFromServer] = useState({ liked, count });
+  const [view, setView] = useState({ liked, count });
+  if (fromServer.liked !== liked || fromServer.count !== count) {
+    setFromServer({ liked, count });
+    setView({ liked, count });
+  }
 
   return (
     <button
       type="button"
-      onClick={() =>
+      onClick={() => {
+        const next = { liked: !view.liked, count: view.count + (view.liked ? -1 : 1) };
+        setView(next);
         startTransition(async () => {
-          setState(!state.liked);
-          await toggleLike(messageId);
-        })
-      }
-      aria-pressed={state.liked}
+          const actual = await toggleLike(messageId);
+          // What is stored, or what the server last said. Never the guess.
+          setView(actual ?? fromServer);
+        });
+      }}
+      aria-pressed={view.liked}
       className={`ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] transition-colors duration-200 ${
-        state.liked ? "text-accent" : "text-ink-3 hover:text-ink"
+        view.liked ? "text-accent" : "text-ink-3 hover:text-ink"
       }`}
     >
-      <HeartIcon filled={state.liked} />
+      <HeartIcon filled={view.liked} />
 
       {/* Always, including nought.
           Hiding a zero meant most posts showed a heart with nothing beside it,
@@ -62,10 +77,10 @@ export function LikeButton({
           and a reader would hear "Like, pressed" with no idea how many.
           tabular-nums so the row does not shift a pixel when 9 becomes 10. */}
       <span aria-hidden="true" className="tabular-nums">
-        {state.count}
+        {view.count}
       </span>
       <span className="sr-only">
-        {state.liked ? C.postUnlikeLabel : C.postLikeLabel} — {C.postLikeCount(state.count)}
+        {view.liked ? C.postUnlikeLabel : C.postLikeLabel} — {C.postLikeCount(view.count)}
       </span>
     </button>
   );

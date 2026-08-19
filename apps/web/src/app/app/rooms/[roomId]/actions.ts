@@ -88,17 +88,33 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
 /**
  * Liking, and unliking, which is the same press.
  *
- * No state and no error path back to the UI: LikeButton is optimistic, and
- * React reverts it if this throws. A returned error would be a second way to
- * say the same thing, and the two would disagree.
+ * Returns what is now true rather than nothing.
+ *
+ * The first version returned void and left the button optimistic — and
+ * useOptimistic discards its value the moment the transition ends, falling back
+ * to props that nothing had revalidated. Press like, see 1, press again, see 0,
+ * watch it return to 1. The optimistic number was right and the stale one won.
+ *
+ * revalidatePath would also fix it and is the wrong tool: re-rendering a
+ * hundred-post feed to learn one number the RPC already returned is a lot of
+ * work for the control a member presses most.
  */
-export async function toggleLike(messageId: string): Promise<void> {
+export async function toggleLike(
+  messageId: string,
+): Promise<{ liked: boolean; count: number } | null> {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
 
-  const { error } = await supabase.rpc("toggle_room_like", { p_message_id: messageId });
-  if (error) throw new Error(error.message);
+  const { data, error } = await supabase
+    .rpc("toggle_room_like", { p_message_id: messageId })
+    .maybeSingle<{ liked: boolean; like_count: number }>();
+
+  // Null rather than a throw: the button reverts to what the server last said,
+  // which is the same correction a throw would produce and does not put an
+  // unhandled error in the console of somebody who double-tapped.
+  if (error || !data) return null;
+  return { liked: data.liked, count: data.like_count };
 }
 
 /**
