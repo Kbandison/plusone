@@ -83,6 +83,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   if (!chat) notFound();
 
+  // Opening a thread is what makes it read. Fire-and-forget on purpose: a
+  // failed marker means the inbox shows a dot a moment longer, which is a far
+  // better outcome than a conversation that will not open because bookkeeping
+  // failed. It is also why the RPC takes no timestamp — the database supplies
+  // one, so a client cannot mark a thread read into the future.
+  void supabase.rpc("mark_chat_read", { p_chat_id: id });
+
   const { data: messages } = await supabase
     .from("messages")
     .select("id, sender_id, body, voice_note_path, voice_note_seconds, created_at")

@@ -49,22 +49,35 @@ describe("the bottom nav", () => {
     expect(chatsIndex).toMatch(/redirect\("\/app\/inbox"\)/);
 
     const inbox = readFileSync(join(import.meta.dirname, "inbox/page.tsx"), "utf8");
-    // Both halves, and the requests first.
-    expect(inbox).toMatch(/needsYouHeading/);
-    expect(inbox).toMatch(/conversationsHeading/);
-    expect(inbox.indexOf("needsYouHeading")).toBeLessThan(inbox.indexOf("conversationsHeading"));
+    // Connects and chats become one sorted list, not two sections.
+    expect(inbox).toMatch(/from\("connects"\)/);
+    expect(inbox).toMatch(/from\("chats"\)/);
+    expect(inbox).toMatch(/inboxLogic\s*\.\s*sortThreads/);
   });
 
   /**
-   * The clocks mean opposite things. A connect expires because no interaction
-   * may end in silence (#14); a fuse runs because a chat without a plan closes
-   * kindly (#13). One says "answer this", the other "meet or it ends".
+   * The clocks come from different columns and mean different things — a
+   * connect expires because no interaction may end in silence (#14), a fuse
+   * runs because a chat without a plan closes kindly (#13).
+   *
+   * An earlier version of this test demanded they be WORDED differently too.
+   * That was wrong once the rows became a scannable list: both are "this ends
+   * on a date", both are true said that way, and what actually distinguishes
+   * them is the state beside the countdown — "Waiting on you" against "Your
+   * turn". What must not happen is the two being read from the same place, or a
+   * fuse counting on a chat that has already stopped.
    */
-  it("keeps the two countdowns distinct", () => {
+  it("takes the two countdowns from different columns", () => {
     const inbox = readFileSync(join(import.meta.dirname, "inbox/page.tsx"), "utf8");
-    expect(inbox).toMatch(/C\.connectExpires\(/);
-    expect(inbox).toMatch(/fuse\.countdown\(/);
-    expect(inbox).not.toMatch(/connectExpires[\s\S]{0,80}fuseDaysLeft/);
+    expect(inbox).toMatch(/deadlineAt: Date\.parse\(connect\.expires_at\)/);
+    expect(inbox).toMatch(/chat\.status === "open" && chat\.fuse_expires_at/);
+  });
+
+  /** Decision #13 clears the fuse on a confirmed plan; a settled chat has none. */
+  it("stops counting a fuse once the chat is not open", () => {
+    const inbox = readFileSync(join(import.meta.dirname, "inbox/page.tsx"), "utf8");
+    const deadline = inbox.slice(inbox.indexOf("The fuse only counts"));
+    expect(deadline).toMatch(/chat\.status === "open"[\s\S]{0,120}: null/);
   });
 
   /**

@@ -597,19 +597,36 @@ export const DRAFT_COPY = {
      * Decision #14 calls the whole pipeline the "Inbox model", so the section
      * keeps that name rather than inventing one.
      */
-    needsYouHeading: "Needs you",
-    conversationsHeading: "Conversations",
+    /**
+     * One list, no sections.
+     *
+     * "Sent" was its own heading, which made a thread you started look like a
+     * different kind of object from one somebody sent you. It is the same
+     * thread at a different stage, and what a member wants to know is which of
+     * them is theirs to do — so the state is on the row rather than in the
+     * heading above it.
+     */
+    threadNeedsDecision: "Waiting on you",
+    threadSentWaiting: "Waiting on them",
+    threadNeedsReply: "Your turn",
+    threadTheirTurn: "Their turn",
+    threadNoMessages: "Say something",
+    threadSettled: "Closed",
+    /** The dot, for a screen reader that cannot see it. */
+    threadUnread: "New",
+    /** A voice note has no body; an empty line reads as a message that failed. */
+    threadVoiceNote: "Voice note",
+    /**
+     * Somebody whose name the viewer may not have — blocked since, or no longer
+     * on a dating surface. The row still exists because the thread does.
+     */
+    threadUnknownPerson: "Someone",
+    /** A chat's fuse and a connect's expiry, said the same short way. */
+    threadTimeLeft: (days: number) => (days <= 1 ? "1 day left" : `${days} days left`),
+    threadExpired: "Expired",
     /** Both halves empty. Two separate empty states read as two broken screens. */
     inboxAllEmpty: "Nothing waiting. Your Drop arrives at 8pm.",
-    /**
-     * The two clocks are different and must stay so. A pending connect expires
-     * because no interaction may end in silence (#14); a chat's fuse runs
-     * because a conversation without a plan closes kindly (#13). One counts
-     * down to "answer this", the other to "meet or it ends".
-     */
-    connectExpires: (on: string) => `Waiting for a reply · expires ${on}`,
     inboxHeading: "Waiting on you",
-    inboxSentHeading: "Sent",
     acceptLabel: "Accept",
     declineLabel: "Decline",
     chatsHeading: "Chats",

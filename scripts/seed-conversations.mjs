@@ -28,10 +28,14 @@ if (!url || !member) {
  * the one screen where lorem ipsum tests nothing at all — the whole question is
  * whether a thread of real sentences is legible at a phone's width.
  */
-const PENDING_REPLY =
-  "You said you would learn the dog's name before mine. I have three, so you would be busy.";
-const SENT_REPLY =
-  "The bench that gets the last of the sun — I know exactly the one you mean, and I would fight someone for it.";
+const PENDING_REPLIES = [
+  "You said you would learn the dog's name before mine. I have three, so you would be busy.",
+  "Supermarket ingredients lists out loud — I do this and I have never once been asked to stop. Until now, presumably.",
+];
+const SENT_REPLIES = [
+  "The bench that gets the last of the sun — I know exactly the one you mean, and I would fight someone for it.",
+  "Badly and before nine in the morning is a bold thing to admit. What is the song?",
+];
 const THREAD = [
   ["them", "Right, the roast dinner claim. Are we talking gravy from scratch or is that a stretch?"],
   ["me", "From scratch, and I will not be taking questions about how long it takes."],
@@ -60,8 +64,8 @@ const { rows: seeds } = await client.query(
     order by p.display_name`,
   [`%@${DOMAIN}`],
 );
-if (seeds.length < 3) {
-  console.error("Need at least three seeded members. Run `pnpm seed` first.");
+if (seeds.length < 5) {
+  console.error("Need at least five seeded members. Run `pnpm seed` first.");
   process.exit(1);
 }
 
@@ -78,14 +82,17 @@ try {
   );
 
   const promptId = PROFILE_PROMPTS[0].id;
-  const [waiting, talking, sent] = seeds;
+  const [waitingA, talking, sentA, waitingB, sentB] = seeds;
 
-  // 1. Somebody is waiting on you. Lands under "Needs you".
-  await client.query(
-    `insert into public.connects (initiator_id, target_id, prompt_id, prompt_reply, status, source)
-     values ($1, $2, $3, $4, 'pending', 'drop')`,
-    [waiting.id, me, promptId, PENDING_REPLY],
-  );
+  // 1. Two people waiting on you, so the list has something to order rather
+  //    than one row that is trivially first.
+  for (const [index, who] of [waitingA, waitingB].entries()) {
+    await client.query(
+      `insert into public.connects (initiator_id, target_id, prompt_id, prompt_reply, status, source, created_at)
+       values ($1, $2, $3, $4, 'pending', 'drop', now() - make_interval(hours => $5))`,
+      [who.id, me, promptId, PENDING_REPLIES[index], index * 30],
+    );
+  }
 
   // 2. One you already accepted, with a conversation in it.
   const {
@@ -115,18 +122,20 @@ try {
     );
   }
 
-  // 3. One you sent that nobody has answered. Lands under "Sent".
-  await client.query(
-    `insert into public.connects (initiator_id, target_id, prompt_id, prompt_reply, status, source)
-     values ($1, $2, $3, $4, 'pending', 'browse')`,
-    [me, sent.id, promptId, SENT_REPLY],
-  );
+  // 3. Two you sent that nobody has answered.
+  for (const [index, who] of [sentA, sentB].entries()) {
+    await client.query(
+      `insert into public.connects (initiator_id, target_id, prompt_id, prompt_reply, status, source, created_at)
+       values ($1, $2, $3, $4, 'pending', 'browse', now() - make_interval(hours => $5))`,
+      [me, who.id, promptId, SENT_REPLIES[index], 6 + index * 40],
+    );
+  }
 
   await client.query("commit");
   console.log(`Cleared ${cleared} previous, then made:`);
-  console.log(`  waiting on you   ${waiting.display_name}`);
+  console.log(`  waiting on you   ${waitingA.display_name}, ${waitingB.display_name}`);
   console.log(`  a conversation   ${talking.display_name} (${THREAD.length} messages, fuse in 4 days)`);
-  console.log(`  sent, unanswered ${sent.display_name}`);
+  console.log(`  sent, unanswered ${sentA.display_name}, ${sentB.display_name}`);
 } catch (error) {
   await client.query("rollback");
   console.error("Nothing was written:", error.message);

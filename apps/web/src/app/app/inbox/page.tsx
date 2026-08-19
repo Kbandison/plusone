@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
-import { fuse } from "@plusone/logic";
+import { inbox as inboxLogic } from "@plusone/logic";
 
+import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
-import { AcceptForm, DeclineForm } from "./inbox-forms";
+import { ThreadRow, type ThreadView } from "./thread-row";
 
 const C = DRAFT_COPY.app;
+const DAY = 86_400_000;
 
 export const metadata: Metadata = { title: C.navInbox };
 
 interface ConnectRow {
   id: string;
   prompt_reply: string;
-  created_at: string;
   expires_at: string;
+  created_at: string;
   initiator_id: string;
   target_id: string;
-  status: string;
 }
 
 interface ChatRow {
@@ -31,63 +31,67 @@ interface ChatRow {
 }
 
 /**
- * Everything that is a person, in one place.
+ * Everything that is a person, in one list.
  *
- * These were two sections. Decision #14 describes ONE pipeline — "Inbox model,
- * no swiping. Connect = reply to a specific prompt. Recipient accepts (chat
- * opens) or declines" — and splitting it across two screens meant accepting a
- * connect made the row VANISH: gone from one tab, appearing under another, with
- * nothing on screen joining them. The strongest argument against the split was
- * never that two nav entries is one too many, it was that the transition was
- * invisible.
+ * Two screens became one because Decision #14 describes one pipeline — a
+ * connect and the chat it becomes are the same thread, and splitting them made
+ * accepting look like a row vanishing. Then "Sent" was its own section inside
+ * it, which made a thread you started look like a different kind of object from
+ * one somebody sent you. It is not; it is the same thread at a different stage.
  *
- * The order is what needs the member first. Requests expire and somebody is
- * waiting on an answer (#14 — no interaction ends in silence); conversations
- * are already underway.
- *
- * The two clocks stay distinct on purpose. A connect's expiry means "answer
- * this"; a chat's fuse means "meet or it closes kindly" (#13). Collapsing them
- * into one "time left" is the one way merging these could do harm.
+ * So there are no sections. The state is on the row, the order puts what the
+ * member owes first, and the preview is one line — a full message per row fits
+ * three threads on a phone, and three is not a list.
  */
 export default async function InboxPage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
   const me = auth.user.id;
+  const now = Date.now();
 
   const [{ data: connectData }, { data: chatData }] = await Promise.all([
     supabase
       .from("connects")
-      .select("id, prompt_reply, created_at, expires_at, initiator_id, target_id, status")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("chats")
-      .select("id, status, fuse_expires_at, updated_at, connect_id")
-      .order("updated_at", { ascending: false }),
+      .select("id, prompt_reply, expires_at, created_at, initiator_id, target_id")
+      .eq("status", "pending"),
+    supabase.from("chats").select("id, status, fuse_expires_at, updated_at, connect_id"),
   ]);
 
   const connects = (connectData ?? []) as ConnectRow[];
-  const incoming = connects.filter((r) => r.target_id === me);
-  const outgoing = connects.filter((r) => r.initiator_id === me);
   const chats = (chatData ?? []) as ChatRow[];
-  const now = Date.now();
 
-  // Who each chat is with.
+  // Who each chat is with, and what was last said in it.
   //
-  // Two round trips for the whole list rather than one per row. The name comes
-  // from visible_profiles, so someone who has since blocked you or left dating
-  // simply has no name here rather than leaking one — the row falls back to its
-  // status, which is what it always said.
-  const { data: chatConnects } = chats.length
-    ? await supabase
-        .from("connects")
-        .select("id, initiator_id, target_id")
-        .in(
-          "id",
-          chats.map((chat) => chat.connect_id),
-        )
-    : { data: [] };
+  // Three round trips for the whole list rather than three per row. The name
+  // comes from visible_profiles, so someone who has since blocked you or left
+  // dating has no name here rather than leaking one.
+  const chatIds = chats.map((chat) => chat.id);
+  const [{ data: chatConnects }, { data: recentMessages }, { data: reads }] = await Promise.all([
+    chats.length
+      ? supabase
+          .from("connects")
+          .select("id, initiator_id, target_id")
+          .in(
+            "id",
+            chats.map((chat) => chat.connect_id),
+          )
+      : Promise.resolve({ data: [] as { id: string; initiator_id: string; target_id: string }[] }),
+    chatIds.length
+      ? supabase
+          .from("messages")
+          .select("chat_id, sender_id, body, voice_note_path, created_at")
+          .in("chat_id", chatIds)
+          .order("created_at", { ascending: false })
+          // Bounded. The newest few hundred across every chat is far more than
+          // enough to find the last of each, and an unbounded read grows with
+          // the whole history of every conversation the member has ever had.
+          .limit(300)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    chatIds.length
+      ? supabase.from("chat_reads").select("chat_id, last_read_at").in("chat_id", chatIds)
+      : Promise.resolve({ data: [] as { chat_id: string; last_read_at: string }[] }),
+  ]);
 
   const otherByConnect = new Map(
     (chatConnects ?? []).map((row) => [
@@ -96,133 +100,118 @@ export default async function InboxPage() {
     ]),
   );
 
-  const otherIds = [...new Set([...otherByConnect.values()])];
-  const { data: profiles } = otherIds.length
-    ? await supabase.from("visible_profiles").select("id, display_name").in("id", otherIds)
-    : { data: [] };
+  // First seen wins: the query came back newest-first.
+  const lastMessage = new Map<string, { senderId: string; body: string; at: number }>();
+  for (const row of (recentMessages ?? []) as Record<string, unknown>[]) {
+    const chatId = row["chat_id"] as string;
+    if (lastMessage.has(chatId)) continue;
+    lastMessage.set(chatId, {
+      senderId: row["sender_id"] as string,
+      // A voice note has no body. Saying so beats an empty line that reads as
+      // a message that failed to load.
+      body: ((row["body"] as string | null) ?? "").trim() || C.threadVoiceNote,
+      at: Date.parse(row["created_at"] as string),
+    });
+  }
+
+  const readAt = new Map(
+    (reads ?? []).map((row) => [
+      (row as { chat_id: string }).chat_id,
+      Date.parse((row as { last_read_at: string }).last_read_at),
+    ]),
+  );
+
+  const otherIds = [
+    ...new Set([
+      ...connects.map((c) => (c.initiator_id === me ? c.target_id : c.initiator_id)),
+      ...otherByConnect.values(),
+    ]),
+  ];
+  const [{ data: profiles }, photos] = await Promise.all([
+    otherIds.length
+      ? supabase.from("visible_profiles").select("id, display_name").in("id", otherIds)
+      : Promise.resolve({ data: [] as { id: string; display_name: string }[] }),
+    otherIds.length ? photosFor(otherIds) : Promise.resolve(new Map()),
+  ]);
 
   const nameById = new Map(
     (profiles ?? []).map((row) => [row.id as string, row.display_name as string]),
   );
-  const nameFor = (chat: ChatRow) =>
-    nameById.get(otherByConnect.get(chat.connect_id) ?? "") ?? null;
 
-  const statusLabel = (status: string) =>
-    status === "date_planned"
-      ? C.datePlannedLabel
-      : status === "open"
-        ? "Open"
-        : C.closedNoteHeading;
+  const inputs: inboxLogic.ThreadInput[] = [
+    ...connects.map((connect) => ({
+      id: connect.id,
+      kind: "connect" as const,
+      startedByMe: connect.initiator_id === me,
+      deadlineAt: Date.parse(connect.expires_at),
+      updatedAt: Date.parse(connect.created_at),
+    })),
+    ...chats.map((chat) => {
+      const last = lastMessage.get(chat.id);
+      return {
+        id: chat.id,
+        kind: "chat" as const,
+        startedByMe: false,
+        chatStatus: chat.status as never,
+        lastMessageAt: last?.at ?? null,
+        lastMessageFromMe: last ? last.senderId === me : null,
+        lastReadAt: readAt.get(chat.id) ?? null,
+        // The fuse only counts while the chat is open (#13 clears it on a plan).
+        deadlineAt:
+          chat.status === "open" && chat.fuse_expires_at ? Date.parse(chat.fuse_expires_at) : null,
+        updatedAt: Date.parse(chat.updated_at),
+      };
+    }),
+  ];
 
-  const nothingAtAll = incoming.length === 0 && outgoing.length === 0 && chats.length === 0;
+  const connectById = new Map(connects.map((c) => [c.id, c]));
+  const chatById = new Map(chats.map((c) => [c.id, c]));
+
+  const threads: ThreadView[] = inboxLogic
+    .sortThreads(inputs.map(inboxLogic.toThread))
+    .map((thread) => {
+      const otherId =
+        thread.kind === "connect"
+          ? (() => {
+              const connect = connectById.get(thread.id)!;
+              return connect.initiator_id === me ? connect.target_id : connect.initiator_id;
+            })()
+          : (otherByConnect.get(chatById.get(thread.id)?.connect_id ?? "") ?? "");
+
+      const preview =
+        thread.kind === "connect"
+          ? (connectById.get(thread.id)?.prompt_reply ?? "")
+          : (lastMessage.get(thread.id)?.body ?? C.threadNoMessages);
+
+      return {
+        id: thread.id,
+        state: thread.state,
+        unread: thread.unread,
+        name: nameById.get(otherId) ?? C.threadUnknownPerson,
+        preview,
+        at: new Date(thread.sortAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+        daysLeft: thread.deadlineAt == null ? null : Math.ceil((thread.deadlineAt - now) / DAY),
+        href: thread.kind === "chat" ? `/app/chats/${thread.id}` : null,
+        photo: photos.get(otherId),
+      };
+    });
 
   return (
     <main id="main">
       <h1 className="text-h2">{C.inboxHeading}</h1>
 
-      {/* One empty state, not three. Three separate "nothing here" lines read as
-          three broken sections rather than as a quiet evening. */}
-      {nothingAtAll ? <p className="mt-8 text-[16px] text-ink-2">{C.inboxAllEmpty}</p> : null}
-
-      {incoming.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">
-            {C.needsYouHeading}
-          </h2>
-          <ul className="mt-4 flex flex-col gap-5">
-            {incoming.map((connect) => (
-              <li
-                key={connect.id}
-                className="flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6"
-              >
-                {/* The reply to a prompt is the whole of a connect (Decision
-                    #14). No name, no photo — you decide on what they said.
-                    Which makes it the only thing that tells these apart, so the
-                    controls point at it: every Accept and Decline is otherwise
-                    identically named, and accepting the wrong one cannot be
-                    undone. */}
-                <p id={`reply-${connect.id}`} className="text-[16px] leading-[1.65]">
-                  {connect.prompt_reply}
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <AcceptForm connectId={connect.id} describedBy={`reply-${connect.id}`} />
-                  <DeclineForm connectId={connect.id} describedBy={`reply-${connect.id}`} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {chats.length > 0 ? (
-        <section className="mt-10">
-          <h2 className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">
-            {C.conversationsHeading}
-          </h2>
-          {/* The fuse is visible on every row (§7.2). A timer you have to go
-              looking for is a deadline that surprises people, and the whole
-              point of the fuse is that nobody is left wondering. */}
-          <ul className="mt-4 flex flex-col gap-3">
-            {chats.map((chat) => {
-              const countdown = fuse.countdown(
-                {
-                  status: chat.status as never,
-                  fuseExpiresAt: chat.fuse_expires_at ? Date.parse(chat.fuse_expires_at) : null,
-                  plan: null,
-                  closure: null,
-                },
-                now,
-              );
-
-              return (
-                <li key={chat.id}>
-                  <Link
-                    href={`/app/chats/${chat.id}`}
-                    className="ease-brand flex items-center justify-between rounded-xl border border-line-control bg-surface px-6 py-5 transition-colors duration-200 hover:border-ink-3"
-                  >
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-[16px]">
-                        {nameFor(chat) ?? statusLabel(chat.status)}
-                      </span>
-                      {nameFor(chat) ? (
-                        <span className="text-[13.5px] text-ink-3">{statusLabel(chat.status)}</span>
-                      ) : null}
-                    </span>
-
-                    {countdown.isRunning ? (
-                      <span
-                        className={`text-[14px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}
-                      >
-                        {countdown.isExpiringSoon
-                          ? C.fuseExpiringSoon
-                          : C.fuseDaysLeft(countdown.remainingDays)}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
-      {outgoing.length > 0 ? (
-        <section className="mt-10">
-          <h2 className="text-[13px] tracking-[0.04em] text-ink-3 uppercase">
-            {C.inboxSentHeading}
-          </h2>
-          <ul className="mt-4 flex flex-col gap-3">
-            {outgoing.map((connect) => (
-              <li key={connect.id} className="rounded-lg border border-line px-5 py-4">
-                <p className="text-[15px] text-ink-2">{connect.prompt_reply}</p>
-                <p className="mt-2 text-[13.5px] text-ink-3">
-                  {C.connectExpires(new Date(connect.expires_at).toLocaleDateString())}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {threads.length === 0 ? (
+        <p className="mt-8 text-[16px] text-ink-2">{C.inboxAllEmpty}</p>
+      ) : (
+        <ul className="mt-8 flex flex-col gap-2.5">
+          {threads.map((thread) => (
+            <ThreadRow key={thread.id} thread={thread} />
+          ))}
+        </ul>
+      )}
     </main>
   );
 }
