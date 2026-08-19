@@ -89,7 +89,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[550.8px] flex-col px-6">
-      <header className="flex items-center justify-between py-7">
+      <header className="flex items-center justify-between pt-4 pb-3">
         <Wordmark className="text-[26px]" />
 
         {/* Labelled, because a gear on its own is a shape. The 44px box is the

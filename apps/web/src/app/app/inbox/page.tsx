@@ -223,20 +223,23 @@ export default async function InboxPage() {
 
   return (
     <main id="main">
-      {/* Off the screen, not out of the document.
+      {/* One heading, and it is the queue's.
        *
-       * The nav says which section you are in, so the heading was repeating a
-       * label a member could already see — but a page with no h1 is a page a
-       * screen reader announces as nothing, and heading navigation lands
-       * nowhere. sr-only keeps the structure and takes back the space. */}
-      <h1 className="sr-only">{C.inboxHeading}</h1>
+       * A page needs an h1 — without one a screen reader announces nothing and
+       * heading navigation lands nowhere — and this screen has one subject at
+       * the top of it. Two headings meant one of them was always redundant,
+       * whichever was hidden.
+       *
+       * When nothing is waiting there is no queue to name, so the h1 falls back
+       * to the page's own name, off screen. The structure never disappears. */}
+      {decisions.length === 0 ? <h1 className="sr-only">{C.inboxHeading}</h1> : null}
 
       {decisions.length > 0 ? (
-        <section className="mt-7">
-          <h2 className="text-[12.5px] tracking-[0.04em] text-ink-3 uppercase">
+        <section>
+          <h1 className="text-[12.5px] tracking-[0.04em] text-ink-3 uppercase">
             {C.threadNeedsDecision}
             <span className="ml-1.5 text-ink-2 tabular-nums">{decisions.length}</span>
-          </h2>
+          </h1>
 
           {/* Horizontal, because this is a queue rather than a list: it grows
               sideways and never pushes the conversations off the screen.
@@ -256,9 +259,9 @@ export default async function InboxPage() {
       ) : null}
 
       {threads.length === 0 ? (
-        <p className="mt-8 text-[13px] text-ink-2">{C.inboxAllEmpty}</p>
+        <p className="mt-6 text-[13px] text-ink-2">{C.inboxAllEmpty}</p>
       ) : conversations.length > 0 ? (
-        <ul className="rise-in mt-8 flex flex-col gap-2.5">
+        <ul className="rise-in mt-6 flex flex-col gap-2.5">
           {conversations.map((thread) => (
             <ThreadRow key={thread.id} thread={thread} />
           ))}

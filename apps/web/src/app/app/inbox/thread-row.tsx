@@ -43,7 +43,7 @@ export function ThreadRow({ thread }: { thread: ThreadView }) {
   const body = (
     <>
       <div className="relative shrink-0">
-        <MemberPhotoFrame photo={thread.photo} size={48} />
+        <MemberPhotoFrame photo={thread.photo} size={40} />
         {/* A dot, not a count. What matters is that something arrived, and a
             number invites a member to feel behind. */}
         {thread.unread ? (

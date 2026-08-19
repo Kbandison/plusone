@@ -41,10 +41,10 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
       <button
         type="button"
         onClick={() => dialog.current?.showModal()}
-        className="ease-brand flex w-[84px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
+        className="ease-brand flex w-[66px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
       >
         <span className="relative inline-flex">
-          <MemberPhotoFrame photo={decision.photo} size={76} />
+          <MemberPhotoFrame photo={decision.photo} size={58} />
           <span aria-hidden="true" className="absolute inset-0 rounded-full ring-2 ring-accent" />
         </span>
         <span className="w-full truncate text-center text-[13.1px] text-ink-2">
@@ -74,7 +74,7 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <MemberPhotoFrame photo={decision.photo} size={64} />
+            <MemberPhotoFrame photo={decision.photo} size={52} />
             <h2 className="text-h3">{decision.name}</h2>
           </div>
 
