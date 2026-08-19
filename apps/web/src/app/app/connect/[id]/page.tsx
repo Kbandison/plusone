@@ -42,8 +42,8 @@ export default async function ConnectPage({
         <h1 className="text-h2">{target.display_name as string}</h1>
       </div>
 
-      <h2 className="mt-8 text-[1.103rem]">{DRAFT_COPY.app.connectHeading}</h2>
-      <p className="mt-4 text-[15.4px] leading-[1.7] text-ink-2">{DRAFT_COPY.app.connectIntro}</p>
+      <h2 className="mt-8 text-[1.034rem]">{DRAFT_COPY.app.connectHeading}</h2>
+      <p className="mt-4 text-[14.4px] leading-[1.7] text-ink-2">{DRAFT_COPY.app.connectIntro}</p>
 
       <ConnectForm
         targetId={target.id as string}

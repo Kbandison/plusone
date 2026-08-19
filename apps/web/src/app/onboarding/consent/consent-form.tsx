@@ -32,15 +32,15 @@ export function ConsentForm() {
           type="checkbox"
           required
           aria-describedby={state.error ? errorId : undefined}
-          className="mt-[2.9px] size-[21.1px] shrink-0 accent-accent"
+          className="mt-[2.7px] size-[19.8px] shrink-0 accent-accent"
         />
-        <label htmlFor={checkboxId} className="text-[14.9px] leading-[1.55]">
+        <label htmlFor={checkboxId} className="text-[14px] leading-[1.55]">
           {COPY.consent.checkboxLabel}
         </label>
       </div>
 
       {state.error ? (
-        <p id={errorId} role="alert" className="mt-4 text-[13.9px] text-critical">
+        <p id={errorId} role="alert" className="mt-4 text-[13px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -49,7 +49,7 @@ export function ConsentForm() {
         <button
           type="submit"
           disabled={pending}
-          className={buttonClass("primary", "mt-9 w-full sm:w-auto sm:min-w-[182.4px]")}
+          className={buttonClass("primary", "mt-9 w-full sm:w-auto sm:min-w-[171px]")}
         >
           {COPY.actions.continueLabel}
         </button>

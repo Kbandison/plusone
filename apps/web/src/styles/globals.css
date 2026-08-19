@@ -15,7 +15,7 @@
     background-color: var(--ground);
     color: var(--ink);
     font-family: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
-    font-size: 16.3px;
+    font-size: 15.3px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
@@ -161,41 +161,49 @@
  * is an instant appearance no matter what is declared. */
 dialog {
   opacity: 0;
-  translate: 0 12px;
+  translate: 0 26px;
+  scale: 0.965;
   transition:
-    opacity 220ms var(--ease-brand),
-    translate 260ms var(--ease-brand),
-    display 260ms allow-discrete,
-    overlay 260ms allow-discrete;
+    opacity 260ms var(--ease-brand),
+    translate 340ms var(--ease-brand),
+    scale 340ms var(--ease-brand),
+    display 340ms allow-discrete,
+    overlay 340ms allow-discrete;
 }
 
 dialog[open] {
   opacity: 1;
   translate: 0 0;
+  scale: 1;
 }
 
 @starting-style {
   dialog[open] {
     opacity: 0;
-    translate: 0 12px;
+    translate: 0 26px;
+    scale: 0.965;
   }
 }
 
 dialog::backdrop {
   background-color: rgb(0 0 0 / 0);
+  backdrop-filter: blur(0);
   transition:
-    background-color 220ms var(--ease-brand),
-    display 220ms allow-discrete,
-    overlay 220ms allow-discrete;
+    background-color 300ms var(--ease-brand),
+    backdrop-filter 300ms var(--ease-brand),
+    display 300ms allow-discrete,
+    overlay 300ms allow-discrete;
 }
 
 dialog[open]::backdrop {
-  background-color: rgb(0 0 0 / 0.45);
+  background-color: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(3px);
 }
 
 @starting-style {
   dialog[open]::backdrop {
     background-color: rgb(0 0 0 / 0);
+    backdrop-filter: blur(0);
   }
 }
 
@@ -207,23 +215,25 @@ dialog[open]::backdrop {
 @keyframes rise-in {
   from {
     opacity: 0;
-    translate: 0 6px;
+    translate: 0 16px;
+    scale: 0.99;
   }
   to {
     opacity: 1;
     translate: 0 0;
+    scale: 1;
   }
 }
 
 .rise-in {
-  animation: rise-in 260ms var(--ease-brand) both;
+  animation: rise-in 420ms var(--ease-brand) both;
 }
 
 /* A control that has been pressed should feel pressed. Scale rather than
    colour, because the tones already carry meaning here. */
 button:not(:disabled):active,
 a[class*="bg-accent"]:active {
-  scale: 0.985;
+  scale: 0.96;
 }
 
 ::selection {

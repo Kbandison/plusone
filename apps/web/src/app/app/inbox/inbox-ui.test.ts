@@ -87,3 +87,25 @@ describe("the chrome kept its size", () => {
     expect(links).toMatch(/text-\[13px\]/);
   });
 });
+
+/**
+ * The page's h1 and the queue's h2 both read "Waiting on you" — one naming the
+ * screen and one naming a section of it. The h1 was written when this screen
+ * held pending connects and nothing else; once chats folded in it stopped
+ * describing the page.
+ */
+describe("the headings say different things", () => {
+  it("names the page and the section differently", () => {
+    const config = readFileSync(
+      fileURLToPath(
+        new URL("../../../../../../packages/config/src/draft-copy.ts", import.meta.url),
+      ),
+      "utf8",
+    );
+    const inboxHeading = /inboxHeading: "([^"]+)"/.exec(config)?.[1];
+    const decisionHeading = /threadNeedsDecision: "([^"]+)"/.exec(config)?.[1];
+    expect(inboxHeading).toBeTruthy();
+    expect(decisionHeading).toBeTruthy();
+    expect(inboxHeading).not.toBe(decisionHeading);
+  });
+});

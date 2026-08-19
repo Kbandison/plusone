@@ -227,7 +227,7 @@ export default async function InboxPage() {
 
       {decisions.length > 0 ? (
         <section className="mt-7">
-          <h2 className="text-[14.8px] tracking-[0.04em] text-ink-3 uppercase">
+          <h2 className="text-[13.9px] tracking-[0.04em] text-ink-3 uppercase">
             {C.threadNeedsDecision}
             <span className="ml-1.5 text-ink-2 tabular-nums">{decisions.length}</span>
           </h2>
@@ -250,7 +250,7 @@ export default async function InboxPage() {
       ) : null}
 
       {threads.length === 0 ? (
-        <p className="mt-8 text-[15.4px] text-ink-2">{C.inboxAllEmpty}</p>
+        <p className="mt-8 text-[14.4px] text-ink-2">{C.inboxAllEmpty}</p>
       ) : conversations.length > 0 ? (
         <ul className="rise-in mt-8 flex flex-col gap-2.5">
           {conversations.map((thread) => (

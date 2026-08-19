@@ -11,7 +11,7 @@ export function InviteLink({ url }: { url: string }) {
 
   return (
     <div className="mt-8 flex flex-col gap-4">
-      <p className="rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[14.5px] break-all text-ink-2">
+      <p className="rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13.6px] break-all text-ink-2">
         {url}
       </p>
       <button
@@ -40,7 +40,7 @@ export function InviteLink({ url }: { url: string }) {
         {copied ? DRAFT_COPY.app.inviteCopied : ""}
       </p>
       {failed ? (
-        <p role="alert" className="text-[13.4px] text-critical">
+        <p role="alert" className="text-[12.6px] text-critical">
           {DRAFT_COPY.app.inviteCopyFailed}
         </p>
       ) : null}

@@ -31,7 +31,7 @@ export function AcceptForm({
         {C.acceptLabel}
       </button>
       {state.error ? (
-        <span role="alert" className="ml-3 text-[13.4px] text-critical">
+        <span role="alert" className="ml-3 text-[12.6px] text-critical">
           {state.error}
         </span>
       ) : null}
@@ -82,25 +82,25 @@ export function DeclineForm({
         <input type="hidden" name="connect_id" value={connectId} />
 
         <fieldset className="flex flex-col gap-2.5">
-          <legend className="mb-2 text-[13.4px] text-ink-2">{C.closeTemplateLabel}</legend>
+          <legend className="mb-2 text-[12.6px] text-ink-2">{C.closeTemplateLabel}</legend>
           {CLOSURE_TEMPLATES.map((template, index) => (
             <label
               key={template}
-              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[13.9px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[13px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
                 name="template"
                 value={index}
                 defaultChecked={index === 0}
-                className="mt-1 size-[15.4px] shrink-0 accent-accent"
+                className="mt-1 size-[14.4px] shrink-0 accent-accent"
               />
               {template}
             </label>
           ))}
         </fieldset>
 
-        <label className="flex flex-col gap-2 text-[13.4px] text-ink-2">
+        <label className="flex flex-col gap-2 text-[12.6px] text-ink-2">
           {C.closePersonalLineLabel}
           <input
             name="personal_line"
@@ -111,7 +111,7 @@ export function DeclineForm({
         </label>
 
         {state.error ? (
-          <p role="alert" className="text-[13.4px] text-critical">
+          <p role="alert" className="text-[12.6px] text-critical">
             {state.error}
           </p>
         ) : null}

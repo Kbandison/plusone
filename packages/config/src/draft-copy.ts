@@ -626,7 +626,15 @@ export const DRAFT_COPY = {
     threadExpired: "Expired",
     /** Both halves empty. Two separate empty states read as two broken screens. */
     inboxAllEmpty: "Nothing waiting. Your Drop arrives at 8pm.",
-    inboxHeading: "Waiting on you",
+    /**
+     * The page, not the section inside it.
+     *
+     * This said "Waiting on you" from when the screen held pending connects and
+     * nothing else. Once chats folded in and the queue got its own heading, the
+     * same three words appeared twice on one screen — the h1 naming the page
+     * and the h2 naming a section of it.
+     */
+    inboxHeading: "Inbox",
     acceptLabel: "Accept",
     declineLabel: "Decline",
     /**

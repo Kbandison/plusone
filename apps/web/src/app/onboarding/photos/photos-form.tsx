@@ -120,9 +120,9 @@ export function PhotoUploader({ count }: { count: number }) {
         // focus-within, because the real input is sr-only. A keyboard user
         // tabbed to it and NOTHING on screen changed — the only visible thing
         // is this label, and the focus ring was on the clipped input.
-        className="ease-brand flex size-[126.7px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-control bg-surface text-center text-[13px] text-ink-2 transition-colors duration-200 hover:border-accent hover:text-ink focus-within:border-accent focus-within:text-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]"
+        className="ease-brand flex size-[118.8px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-control bg-surface text-center text-[12.2px] text-ink-2 transition-colors duration-200 hover:border-accent hover:text-ink focus-within:border-accent focus-within:text-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]"
       >
-        <span aria-hidden="true" className="text-[21.1px] leading-none">
+        <span aria-hidden="true" className="text-[19.8px] leading-none">
           +
         </span>
         {C.addLabel}
@@ -145,7 +145,7 @@ export function PhotoUploader({ count }: { count: number }) {
 
       {/* Picking a file starts an upload with no button press, so the only
           thing that says anything is happening is this line. */}
-      <p role="status" className="max-w-[126.7px] text-center text-[13px] text-ink-3">
+      <p role="status" className="max-w-[118.8px] text-center text-[12.2px] text-ink-3">
         {preparing
           ? C.errors.preparing
           : progress
@@ -154,7 +154,7 @@ export function PhotoUploader({ count }: { count: number }) {
       </p>
 
       {error ? (
-        <p role="alert" className="max-w-[16rem] text-center text-[13px] text-critical">
+        <p role="alert" className="max-w-[16rem] text-center text-[12.2px] text-critical">
           {error}
         </p>
       ) : null}
@@ -176,36 +176,36 @@ export function PrivacyChoice({
   return (
     <form action={action} className="mt-12 flex flex-col gap-8">
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3 text-[14.5px]">{C.privacyLabel}</legend>
+        <legend className="mb-3 text-[13.6px]">{C.privacyLabel}</legend>
 
-        <label className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[15.4px] transition-colors duration-200 has-checked:border-accent">
+        <label className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[14.4px] transition-colors duration-200 has-checked:border-accent">
           <input
             type="radio"
             name="photo_privacy"
             value="clear"
             defaultChecked={privacy !== "blurred_until_connected"}
-            className="size-[17.3px] accent-accent"
+            className="size-[16.2px] accent-accent"
           />
           {C.clearLabel}
         </label>
 
-        <label className="ease-brand flex cursor-pointer items-start gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[15.4px] transition-colors duration-200 has-checked:border-accent">
+        <label className="ease-brand flex cursor-pointer items-start gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[14.4px] transition-colors duration-200 has-checked:border-accent">
           <input
             type="radio"
             name="photo_privacy"
             value="blurred_until_connected"
             defaultChecked={privacy === "blurred_until_connected"}
-            className="mt-1 size-[17.3px] shrink-0 accent-accent"
+            className="mt-1 size-[16.2px] shrink-0 accent-accent"
           />
           <span>
             {C.blurredLabel}
-            <span className="mt-1.5 block text-[13px] text-ink-3">{C.blurredHint}</span>
+            <span className="mt-1.5 block text-[12.2px] text-ink-3">{C.blurredHint}</span>
           </span>
         </label>
       </fieldset>
 
       {state.error ? (
-        <p role="alert" className="text-[13.9px] text-critical">
+        <p role="alert" className="text-[13px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -218,14 +218,14 @@ export function PrivacyChoice({
           // and a disabled button is skipped in the tab order — so a member who
           // could not continue was never told why by anything they would reach.
           aria-describedby={!canContinue ? blockedId : undefined}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[182.4px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
         >
           {COPY.actions.continueLabel}
         </button>
       </StepActions>
 
       {!canContinue ? (
-        <p id={blockedId} className="text-[13.4px] text-ink-3">
+        <p id={blockedId} className="text-[12.6px] text-ink-3">
           {C.errors.required}
         </p>
       ) : null}
@@ -321,8 +321,10 @@ export function PhotoGallery({
 
   return (
     <section className="mt-10">
-      <h2 className="text-center text-[14.5px]">{C.yoursHeading}</h2>
-      <p className="mx-auto mt-2 max-w-[34ch] text-center text-[13px] text-ink-3">{C.orderHint}</p>
+      <h2 className="text-center text-[13.6px]">{C.yoursHeading}</h2>
+      <p className="mx-auto mt-2 max-w-[34ch] text-center text-[12.2px] text-ink-3">
+        {C.orderHint}
+      </p>
 
       <ul className="mt-6 flex flex-wrap justify-center gap-4">
         {order.map((photo, index) => (
@@ -393,7 +395,7 @@ export function PhotoGallery({
               width={132}
               height={132}
               draggable={false}
-              className="size-[126.7px] rounded-xl border border-line-2 object-cover select-none"
+              className="size-[118.8px] rounded-xl border border-line-2 object-cover select-none"
             />
 
             {index === 0 ? (
@@ -422,14 +424,14 @@ export function PhotoGallery({
       {/* Said before the picker opens, not after seven files are chosen and
           refused. The add tile disappearing at six says the same thing a moment
           too late. */}
-      <p className="mt-4 text-center text-[13px] text-ink-3">
+      <p className="mt-4 text-center text-[12.2px] text-ink-3">
         {C.roomLeft(MAX_PHOTOS - order.length)}
       </p>
 
       {/* A failed reorder is silent otherwise: the grid keeps showing the
           arrangement the member dragged while the database holds the old one. */}
       {(removeState.error ?? orderError) ? (
-        <p role="alert" className="mt-4 text-center text-[13.9px] text-critical">
+        <p role="alert" className="mt-4 text-center text-[13px] text-critical">
           {removeState.error ?? orderError}
         </p>
       ) : null}
@@ -440,7 +442,7 @@ export function PhotoGallery({
 /** Drawn rather than imported: one icon does not justify a dependency. */
 function TrashIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[16.3px]">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[15.3px]">
       <path
         d="M4 7h16M10 4h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1ZM6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"
         fill="none"

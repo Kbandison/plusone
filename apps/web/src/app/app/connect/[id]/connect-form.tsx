@@ -25,7 +25,7 @@ export function ConnectForm({
   const [selected, setSelected] = useState(prompts[0]?.id ?? "");
 
   if (prompts.length === 0) {
-    return <p className="mt-8 text-[15.4px] text-ink-2">{C.connectNoPrompts}</p>;
+    return <p className="mt-8 text-[14.4px] text-ink-2">{C.connectNoPrompts}</p>;
   }
 
   return (
@@ -35,7 +35,7 @@ export function ConnectForm({
       {roomId ? <input type="hidden" name="room_id" value={roomId} /> : null}
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-[13.4px] text-ink-2">{C.promptChoose}</legend>
+        <legend className="mb-2 text-[12.6px] text-ink-2">{C.promptChoose}</legend>
         {prompts.map((prompt) => (
           <label
             key={prompt.id}
@@ -48,16 +48,16 @@ export function ConnectForm({
                 value={prompt.id}
                 checked={selected === prompt.id}
                 onChange={() => setSelected(prompt.id)}
-                className="size-[17.3px] accent-accent"
+                className="size-[16.2px] accent-accent"
               />
-              <span className="text-[13px] text-ink-3">{promptQuestion(prompt.id)}</span>
+              <span className="text-[12.2px] text-ink-3">{promptQuestion(prompt.id)}</span>
             </span>
-            <span className="pl-[26.9px] text-[14.9px] leading-[1.6]">{prompt.answer}</span>
+            <span className="pl-[25.2px] text-[14px] leading-[1.6]">{prompt.answer}</span>
           </label>
         ))}
       </fieldset>
 
-      <label className="flex flex-col gap-2 text-[13.4px] text-ink-2">
+      <label className="flex flex-col gap-2 text-[12.6px] text-ink-2">
         {C.connectReplyLabel}
         <textarea
           name="reply"
@@ -69,7 +69,7 @@ export function ConnectForm({
       </label>
 
       {state.error ? (
-        <p role="alert" className="text-[13.9px] text-critical">
+        <p role="alert" className="text-[13px] text-critical">
           {state.error}
         </p>
       ) : null}

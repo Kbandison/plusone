@@ -13,7 +13,7 @@ const C = DRAFT_COPY.app;
 function Error({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="text-[13.4px] text-critical">
+    <p role="alert" className="text-[12.6px] text-critical">
       {message}
     </p>
   );
@@ -70,7 +70,7 @@ export function ProposePlan({ chatId }: { chatId: string }) {
       action={act}
       className="mt-8 flex flex-col gap-4 rounded-xl border border-line-2 bg-surface p-6"
     >
-      <h2 className="text-[1.103rem]">{C.proposeHeading}</h2>
+      <h2 className="text-[1.034rem]">{C.proposeHeading}</h2>
       <input type="hidden" name="chat_id" value={chatId} />
 
       {[
@@ -78,7 +78,7 @@ export function ProposePlan({ chatId }: { chatId: string }) {
         { name: "time", label: C.planTimeLabel, type: "text" },
         { name: "place", label: C.planPlaceLabel, type: "text" },
       ].map((field) => (
-        <label key={field.name} className="flex flex-col gap-2 text-[13.4px] text-ink-2">
+        <label key={field.name} className="flex flex-col gap-2 text-[12.6px] text-ink-2">
           {field.label}
           <input
             name={field.name}
@@ -113,7 +113,7 @@ export function ConfirmPlan({ chatId, canConfirm }: { chatId: string; canConfirm
       ) : (
         // The fuse keeps running while a proposal sits unconfirmed. A plan one
         // person likes is not a plan.
-        <p className="text-[14.5px] text-ink-2">{C.awaitingConfirmation}</p>
+        <p className="text-[13.6px] text-ink-2">{C.awaitingConfirmation}</p>
       )}
 
       <Error message={confirmState.error} />
@@ -157,14 +157,14 @@ export function CancelPlan({ chatId }: { chatId: string }) {
         onClick={() => setConfirmingCancel((open) => !open)}
         aria-expanded={confirmingCancel}
         aria-controls={confirmId}
-        className="ease-brand self-start text-[13.9px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+        className="ease-brand self-start text-[13px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
       >
         {C.cancelPlanLabel}
       </button>
 
       {confirmingCancel ? (
         <div id={confirmId} className="flex flex-col gap-3">
-          <p role="status" className="text-[13.9px] text-ink-2">
+          <p role="status" className="text-[13px] text-ink-2">
             {C.cancelPlanConfirm}
           </p>
           <div className="flex flex-wrap items-center gap-4">
@@ -177,7 +177,7 @@ export function CancelPlan({ chatId }: { chatId: string }) {
             <button
               type="button"
               onClick={() => setConfirmingCancel(false)}
-              className="ease-brand text-[13.9px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+              className="ease-brand text-[13px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
             >
               {C.cancelPlanKeepLabel}
             </button>
@@ -209,7 +209,7 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
       type="button"
       onClick={() => setOpen((current) => !current)}
       aria-expanded={open}
-      className="ease-brand mt-10 self-start text-[13.9px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      className="ease-brand mt-10 self-start text-[13px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
     >
       {C.closeHeading}
     </button>
@@ -224,15 +224,15 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
         action={act}
         className="mt-6 flex flex-col gap-5 rounded-xl border border-line-2 bg-surface p-6"
       >
-        <h2 className="text-[1.103rem]">{C.closeHeading}</h2>
+        <h2 className="text-[1.034rem]">{C.closeHeading}</h2>
         <input type="hidden" name="chat_id" value={chatId} />
 
         <fieldset className="flex flex-col gap-2.5">
-          <legend className="mb-2 text-[13.4px] text-ink-2">{C.closeTemplateLabel}</legend>
+          <legend className="mb-2 text-[12.6px] text-ink-2">{C.closeTemplateLabel}</legend>
           {CLOSURE_TEMPLATES.map((text, index) => (
             <label
               key={text}
-              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[13.9px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[13px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
@@ -240,14 +240,14 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
                 value={index}
                 checked={template === index}
                 onChange={() => setTemplate(index)}
-                className="mt-1 size-[15.4px] shrink-0 accent-accent"
+                className="mt-1 size-[14.4px] shrink-0 accent-accent"
               />
               {text}
             </label>
           ))}
         </fieldset>
 
-        <label className="flex flex-col gap-2 text-[13.4px] text-ink-2">
+        <label className="flex flex-col gap-2 text-[12.6px] text-ink-2">
           {C.closePersonalLineLabel}
           <input
             name="personal_line"
@@ -255,14 +255,14 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
             maxLength={CONNECTS.personalLineMaxChars}
             value={line}
             onChange={(event) => setLine(event.target.value)}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[14.5px] focus:border-accent"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[13.6px] focus:border-accent"
           />
         </label>
 
         {/* Exactly what they will receive, before it is sent. Template one
           carries the sender's name, so the preview substitutes it rather than
           showing a member a raw {name} placeholder. */}
-        <p className="rounded-lg bg-surface-2 px-4 py-3.5 text-[13.9px] leading-[1.6] text-ink-2">
+        <p className="rounded-lg bg-surface-2 px-4 py-3.5 text-[13px] leading-[1.6] text-ink-2">
           {renderClosureTemplate(template, senderName)}
           {line ? ` ${line}` : ""}
         </p>
