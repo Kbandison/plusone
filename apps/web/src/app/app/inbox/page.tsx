@@ -284,19 +284,17 @@ export default async function InboxPage() {
           not a distinction anyone reads — the one you can walk into and the one
           you can only wait on looked identical.
 
-          This one does not fold. It is the reason the page exists. */}
+          It folds like the others, for one shape rather than three, but starts
+          open: it is the reason the page exists, and a member should not have
+          to press anything to see the conversations they are in. */}
       {live.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="flex items-center gap-2 text-[15px] text-ink-2">
-            {C.inboxChatsHeading}
-            <span className="text-[13px] text-ink-3 tabular-nums">{live.length}</span>
-          </h2>
-          <ul className="rise-in mt-3 flex flex-col gap-2.5">
+        <CollapsibleSection heading={C.inboxChatsHeading} count={live.length} defaultOpen>
+          <ul className="flex flex-col gap-2.5">
             {live.map((thread) => (
               <ThreadRow key={thread.id} thread={thread} />
             ))}
           </ul>
-        </section>
+        </CollapsibleSection>
       ) : null}
 
       {/* Folded, because there is nothing to do with one of these but wait —

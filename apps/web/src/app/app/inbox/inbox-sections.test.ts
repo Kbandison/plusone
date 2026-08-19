@@ -36,9 +36,9 @@ describe("the inbox says what kind of thing each row is", () => {
     expect(page).not.toMatch(/inboxSentHeading/);
   });
 
-  /** Nothing to do with one of these but wait, so it folds away. */
-  it("folds sent connects, and the endings, behind a count", () => {
-    expect(page.match(/<CollapsibleSection heading=/g)).toHaveLength(2);
+  /** One shape for all three, rather than a section that is special. */
+  it("folds every section behind a count", () => {
+    expect(page.match(/<CollapsibleSection heading=/g)).toHaveLength(3);
     expect(section).toMatch(/tabular-nums/);
   });
 
@@ -48,16 +48,29 @@ describe("the inbox says what kind of thing each row is", () => {
     );
   });
 
-  /** Every section heading at one size, and bigger than the rows under it. */
-  it("sizes all three headings the same", () => {
-    expect(page).toMatch(/<h2 className="flex items-center gap-2 text-\[15px\] text-ink-2">/);
-    expect(section).toMatch(/text-\[15px\] text-ink-2/);
+  /**
+   * One definition of the heading, so all three are the same size by
+   * construction rather than by three literals agreeing with each other.
+   */
+  it("sizes the heading in one place", () => {
+    expect(section).toMatch(/text-\[25px\] text-ink/);
+    expect(page).not.toMatch(/<h2 className=/);
   });
 
-  /** The one section that is the reason the page exists does not fold. */
-  it("leaves conversations open", () => {
-    const chats = page.slice(page.indexOf("C.inboxChatsHeading"));
-    expect(chats.slice(0, chats.indexOf("</section>"))).not.toMatch(/CollapsibleSection/);
+  /** The count must not read as part of the title. */
+  it("keeps the count smaller than the heading", () => {
+    expect(section).toMatch(/text-\[15px\] text-ink-3 tabular-nums/);
+  });
+
+  /**
+   * Conversations folds like the others — one shape, not a special case — but
+   * arrives open. Nobody should press anything to see the conversations they
+   * are in.
+   */
+  it("opens conversations on arrival and nothing else", () => {
+    expect(page).toMatch(/heading=\{C\.inboxChatsHeading\} count=\{live\.length\} defaultOpen/);
+    expect(page.match(/defaultOpen/g)).toHaveLength(1);
+    expect(section).toMatch(/defaultOpen = false/);
   });
 });
 

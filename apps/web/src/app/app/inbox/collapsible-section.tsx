@@ -41,16 +41,21 @@ export function CollapsibleSection({
           type="button"
           onClick={() => setOpen((was) => !was)}
           aria-expanded={open}
-          className="ease-brand flex w-full items-center gap-2 text-left text-[15px] text-ink-2 transition-colors duration-200 hover:text-ink"
+          /* text-[25px] on an h2, so it is the serif at a heading's size —
+             globals.css gives h1..h4 Instrument Serif, which is what makes
+             these read as sections rather than as three more controls. */
+          className="ease-brand flex w-full items-center gap-2.5 text-left text-[25px] text-ink transition-colors duration-200 hover:opacity-80"
         >
           <span
             aria-hidden="true"
-            className={`ease-brand inline-block text-ink-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+            className={`ease-brand inline-block text-[19px] text-ink-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
           >
             ›
           </span>
           {heading}
-          <span className="text-[13px] text-ink-3 tabular-nums">{count}</span>
+          {/* Smaller than the heading it belongs to. At the same size it reads
+              as part of the title rather than as a count of what is inside. */}
+          <span className="text-[15px] text-ink-3 tabular-nums">{count}</span>
         </button>
       </h2>
 
