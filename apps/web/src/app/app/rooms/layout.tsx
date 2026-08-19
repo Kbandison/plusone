@@ -40,7 +40,9 @@ export default async function RoomsLayout({ children }: { children: React.ReactN
   return (
     <>
       {rooms.length > 0 ? <RoomTabs rooms={rooms} /> : null}
-      {children}
+      {/* The same gap again. The bar is a second piece of chrome above the
+          page, so without this a room's title sat on the tab that named it. */}
+      <div className="pt-6">{children}</div>
     </>
   );
 }

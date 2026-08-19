@@ -103,8 +103,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </Link>
       </header>
 
-      {/* Clears the nav, which is two rows on a narrow screen. */}
-      <div className="flex-1 pb-36 sm:pb-28">{children}</div>
+      {/* pt-6 above, so a page's heading is not sitting on the wordmark.
+          Here rather than on each page: no page carries a top margin of its own
+          today, and the moment one of them does they will disagree.
+
+          pb clears the nav, which is two rows on a narrow screen. */}
+      <div className="flex-1 pt-6 pb-36 sm:pb-28">{children}</div>
 
       {/* Bottom nav: thumb-reachable, and the only chrome on the page.
        *
