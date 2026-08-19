@@ -2028,9 +2028,18 @@ specifically to be reminded of these, so they lead.
 Everything in `DRAFT_COPY` is mine too — headings, labels, button text. Lower
 stakes, same status. The 2026-08-15 hardening pass added a few more: `bioHint`,
 `inviteCopyFailed`, `voiceNoteAria`, `promptRemoveLabel`, `saveLabel`, and the
-bio editor's screen. `blockConfirm` is still deliberately unwired — blocking
-asks nothing on purpose — and a test now records that as a decision rather than
-letting it look like an oversight.
+bio editor's screen.
+
+`blockConfirm` is wired as of 2026-08-19 — block sits one row from Report in the
+chat menu with no undo from the chat, so a mis-tap silently removed somebody.
+Nothing in it asks why, which was the original argument. `KNOWINGLY_UNUSED` in
+`copy-is-wired.test.ts` is empty for the first time. The two new strings beside
+it, `blockConfirmLabel` and `blockKeepLabel`, are mine.
+
+Also mine, added 2026-08-19: `chatMenuLabel`, `proposeToggleLabel`,
+`chatOriginNote`, `browseTalking`, `browsePast`, `inboxChatsHeading`,
+`inboxSentHeading`, `inboxClosedHeading`, `inboxClosedCount`, and the
+`"Today"`/`"Yesterday"` day dividers inside `packages/logic/src/chat`.
 
 ### Held placeholders
 
@@ -2047,6 +2056,8 @@ from the environment.)
 | 4   | **Stripe keys** — secret, webhook secret, and the three price IDs.                                                                                                                                                                                                                                 | Milestone 6   |
 | 5   | **Resend API key.**                                                                                                                                                                                                                                                                                | Milestone 7   |
 | 6   | **Liveness provider choice**, and its credential. Deferred 2026-08-14; running on `stub`. Recommendation is AWS Rekognition Face Liveness — see the spec correction above.                                                                                                                         | before launch |
+| 7   | **Decline cooldown length.** 30 days, and the number is Claude's guess, not Kevin's. Long enough to be a real answer, short enough not to be a permanent ban on someone who simply was not ready. `CONNECTS.declineCooldownDays` and `app_config` key `cooldowns.decline_days` — tunable from the config editor without a migration. | fast-follow   |
+| 8   | **Block retention.** Decided 2026-08-19: hide the thread from both Inboxes, never delete the rows, reporter reaches their copy from Settings. Unbuilt. Two open questions — whether the *blocked* member keeps their copy, and how long a hidden thread is retained before a real purge (a §9 question, tied to #2). | fast-follow   |
 
 ### Next
 
