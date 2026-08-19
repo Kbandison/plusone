@@ -19,7 +19,7 @@ export function JoinRoom({ roomId }: { roomId: string }) {
         {C.roomJoinLabel}
       </button>
       {state.error ? (
-        <p role="alert" className="mt-3 text-[12.6px] text-critical">
+        <p role="alert" className="mt-3 text-[11.3px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -49,7 +49,7 @@ export function RoomComposer({ roomId }: { roomId: string }) {
         </button>
       </div>
       {state.error ? (
-        <p role="alert" className="text-[12.6px] text-critical">
+        <p role="alert" className="text-[11.3px] text-critical">
           {state.error}
         </p>
       ) : null}

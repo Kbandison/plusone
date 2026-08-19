@@ -56,7 +56,7 @@ export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: stri
        * that registration unnecessary: consent law wants the disclosure at the
        * moment of consent, not filed in a document. Putting it in the terms
        * instead is the version nobody reads. */}
-      <p className="text-[12.2px] leading-[1.6] text-ink-3">
+      <p className="text-[11px] leading-[1.6] text-ink-3">
         {C.smsConsent}{" "}
         <Link
           href="/privacy"
@@ -99,7 +99,7 @@ function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: 
   return (
     <div className="mt-10">
       <h2 className="text-h3">{C.codeHeading}</h2>
-      <p className="mt-4 text-[14.4px] leading-[1.7] text-ink-2">{C.codeIntro}</p>
+      <p className="mt-4 text-[13px] leading-[1.7] text-ink-2">{C.codeIntro}</p>
 
       <form action={verify} className="mt-8 flex flex-col gap-8">
         <Field
@@ -135,7 +135,7 @@ function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: 
           <button
             type="submit"
             disabled={resending || cooldown > 0}
-            className="ease-brand text-[13px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+            className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
           >
             {cooldown > 0 ? C.resendWait(cooldown) : C.resendLabel}
           </button>
@@ -144,14 +144,14 @@ function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: 
         <button
           type="button"
           onClick={onChangeNumber}
-          className="ease-brand text-[13px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
         >
           {C.changeNumberLabel}
         </button>
       </div>
 
       {resendState.error ? (
-        <p role="alert" className="mt-3 text-[13px] text-critical">
+        <p role="alert" className="mt-3 text-[11.7px] text-critical">
           {resendState.error}
         </p>
       ) : null}

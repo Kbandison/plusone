@@ -49,19 +49,19 @@ function Choice({
 }) {
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-3 text-[13.6px]">{legend}</legend>
+      <legend className="mb-3 text-[12.2px]">{legend}</legend>
       <div className="flex flex-wrap gap-2.5">
         {Object.entries(options).map(([value, label]) => (
           <label
             key={value}
-            className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[14px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
           >
             <input
               type="radio"
               name={name}
               value={value}
               defaultChecked={selected === value}
-              className="size-[15.3px] accent-accent"
+              className="size-[13.8px] accent-accent"
             />
             {label}
           </label>
@@ -69,13 +69,13 @@ function Choice({
         {/* Not-stated has to be reachable AFTER something was chosen, or the
             first tap on any of these is permanent for the life of the page. */}
         {optional ? (
-          <label className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[14px] text-ink-3 transition-colors duration-200 has-checked:border-accent has-checked:text-ink">
+          <label className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] text-ink-3 transition-colors duration-200 has-checked:border-accent has-checked:text-ink">
             <input
               type="radio"
               name={name}
               value=""
               defaultChecked={selected === null}
-              className="size-[15.3px] accent-accent"
+              className="size-[13.8px] accent-accent"
             />
             {C.skipLabel}
           </label>
@@ -121,20 +121,20 @@ export function PreferencesForm({
       />
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-[13.6px]">{C.seekingLabel}</legend>
-        <p className="mb-2 text-[12.2px] text-ink-3">{C.seekingHint}</p>
+        <legend className="mb-1 text-[12.2px]">{C.seekingLabel}</legend>
+        <p className="mb-2 text-[11px] text-ink-3">{C.seekingHint}</p>
         <div className="flex flex-wrap gap-2.5">
           {Object.entries(GENDER_LABELS).map(([value, label]) => (
             <label
               key={value}
-              className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[14px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="checkbox"
                 name="seeking"
                 value={value}
                 defaultChecked={defaults.seeking.includes(value)}
-                className="size-[15.3px] accent-accent"
+                className="size-[13.8px] accent-accent"
               />
               {label}
             </label>
@@ -150,7 +150,7 @@ export function PreferencesForm({
       <div className="flex flex-col gap-8 border-t border-line pt-10">
         <div>
           <h2 className="text-h3">{C.aboutHeading}</h2>
-          <p className="mt-3 text-[13px] text-ink-3">{C.aboutHint}</p>
+          <p className="mt-3 text-[11.7px] text-ink-3">{C.aboutHint}</p>
         </div>
 
         <Choice
@@ -175,7 +175,7 @@ export function PreferencesForm({
       </div>
 
       {state.error ? (
-        <p role="alert" className="text-[13px] text-critical">
+        <p role="alert" className="text-[11.7px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -183,7 +183,7 @@ export function PreferencesForm({
       {/* The editor does not navigate anywhere, so without this a member presses
           Save and the page sits there looking exactly as it did. */}
       {!state.error && state.saved && savedMessage ? (
-        <p role="status" className="text-[13px] text-ink-3">
+        <p role="status" className="text-[11.7px] text-ink-3">
           {savedMessage}
         </p>
       ) : null}
@@ -192,7 +192,7 @@ export function PreferencesForm({
         <button
           type="submit"
           disabled={pending}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
         >
           {submitLabel}
         </button>
@@ -231,8 +231,8 @@ function AgeRange({ from, to }: { from: number | null; to: number | null }) {
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-1 text-[13.6px]">{C.ageLabel}</legend>
-      <p className="text-[12.2px] text-ink-3">{C.ageHint}</p>
+      <legend className="mb-1 text-[12.2px]">{C.ageLabel}</legend>
+      <p className="text-[11px] text-ink-3">{C.ageHint}</p>
 
       <output className="mt-2 font-display text-h3 leading-none tabular-nums">
         {C.ageSpan(min, max)}

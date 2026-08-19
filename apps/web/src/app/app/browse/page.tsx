@@ -89,12 +89,12 @@ export default async function BrowsePage({
       <h1 className="text-h2">{C.navBrowse}</h1>
 
       {/* §3.4, verbatim — real counts only, never inflated. */}
-      <p className="mt-4 text-[13.6px] text-ink-2">
+      <p className="mt-4 text-[12.2px] text-ink-2">
         {COPY.browse.activityStat(activeThisWeek, distanceMi)}
       </p>
 
       <form className="mt-8 flex flex-wrap items-end gap-4" method="get">
-        <label className="flex flex-col gap-2 text-[12.2px] text-ink-2">
+        <label className="flex flex-col gap-2 text-[11px] text-ink-2">
           {C.filterDistance}
           <select
             name="distance"
@@ -109,7 +109,7 @@ export default async function BrowsePage({
           </select>
         </label>
 
-        <label className="flex flex-col gap-2 text-[12.2px] text-ink-2">
+        <label className="flex flex-col gap-2 text-[11px] text-ink-2">
           {C.filterIntention}
           <select
             name="intention"
@@ -125,13 +125,13 @@ export default async function BrowsePage({
           </select>
         </label>
 
-        <label className="flex items-center gap-2.5 text-[13px]">
+        <label className="flex items-center gap-2.5 text-[11.7px]">
           <input
             type="checkbox"
             name="active"
             value="1"
             defaultChecked={activeOnly}
-            className="size-[16.2px] accent-accent"
+            className="size-[14.6px] accent-accent"
           />
           {C.filterActive}
         </label>
@@ -142,21 +142,23 @@ export default async function BrowsePage({
       </form>
 
       {rows.length === 0 ? (
-        <p className="mt-10 text-[14.4px] text-ink-2">{C.browseEmpty}</p>
+        <p className="mt-10 text-[13px] text-ink-2">{C.browseEmpty}</p>
       ) : (
         <ul className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {rows.map((row) => (
             <li key={row.id as string} className="rounded-xl border border-line-2 bg-surface p-5">
               <Link href={`/app/connect/${row.id as string}?source=browse`} className="block">
                 <MemberPhotoFrame photo={photos.get(row.id as string)} size={56} />
-                <h2 className="mt-3 text-[1.08rem]">{(row.display_name as string) ?? "Someone"}</h2>
-                <p className="mt-1.5 text-[12.6px] text-ink-3">
+                <h2 className="mt-3 text-[0.972rem]">
+                  {(row.display_name as string) ?? "Someone"}
+                </h2>
+                <p className="mt-1.5 text-[11.3px] text-ink-3">
                   {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
                 {row.intention ? (
-                  <p className="mt-3 text-[13px] text-ink-2">
+                  <p className="mt-3 text-[11.7px] text-ink-2">
                     {INTENTION_LABELS[row.intention as Intention]}
                   </p>
                 ) : null}

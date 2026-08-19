@@ -29,7 +29,7 @@ export function Field({
   const errorId = `${id}-error`;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-[13.6px]">
+      <label htmlFor={id} className="text-[12.2px]">
         {label}
       </label>
       <input
@@ -44,16 +44,16 @@ export function Field({
         /* line-control, not line-2: WCAG 1.4.11 wants 3:1 for the boundary of a
            control, and line-2 is about 1.15:1 against its own fill — fine on a
            decorative card edge, invisible as the edge of a field. */
-        className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[270px]"
+        className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[243px]"
         {...props}
       />
       {hint ? (
-        <p id={hintId} className="text-[12.2px] text-ink-3">
+        <p id={hintId} className="text-[11px] text-ink-3">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-[13px] text-critical">
+        <p id={errorId} role="alert" className="text-[11.7px] text-critical">
           {error}
         </p>
       ) : null}
@@ -66,7 +66,7 @@ export function Submit({ label, pending }: { label: string; pending: boolean }) 
     <button
       type="submit"
       disabled={pending}
-      className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
+      className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
     >
       {label}
     </button>

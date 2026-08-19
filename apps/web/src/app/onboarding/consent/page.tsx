@@ -38,8 +38,8 @@ export default async function ConsentPage() {
   });
 
   return (
-    <main id="main" className="mx-auto w-full max-w-[540px] px-6 py-16 sm:py-24">
-      <p className="text-[12.2px] tracking-[0.04em] text-ink-3 uppercase">
+    <main id="main" className="mx-auto w-full max-w-[486px] px-6 py-16 sm:py-24">
+      <p className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
         Step {current + 1} of {total}
       </p>
 
@@ -58,7 +58,7 @@ export default async function ConsentPage() {
 
       {/* §9.1, verbatim. This paragraph is the consent — it is not a summary of
           one, and it is not shortened behind a "read more". */}
-      <p className="mt-7 text-[14.9px] leading-[1.7] text-ink-2">{COPY.consent.healthData}</p>
+      <p className="mt-7 text-[13.4px] leading-[1.7] text-ink-2">{COPY.consent.healthData}</p>
 
       {/* A new tab, because this is the one screen where following a link
           would cost the member their place. §9.1 wants the policy readable at
@@ -69,7 +69,7 @@ export default async function ConsentPage() {
           href={`/privacy#${HEALTH_DATA_ANCHOR}`}
           target="_blank"
           rel="noreferrer"
-          className="ease-brand text-[14px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+          className="ease-brand text-[12.6px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
         >
           {COPY.consent.policyLinkLabel}
         </Link>

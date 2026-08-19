@@ -97,11 +97,11 @@ export default async function MetricsPage() {
           ghosted === 0 ? "border-line-2 bg-surface" : "border-critical bg-surface"
         }`}
       >
-        <p className="text-[12.2px] tracking-[0.04em] text-ink-3 uppercase">
+        <p className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
           Chats that ended in silence
         </p>
         <p className="mt-2 font-display text-h1 leading-none">{ghosted}</p>
-        <p className="mt-3 text-[13px] leading-[1.6] text-ink-2">
+        <p className="mt-3 text-[11.7px] leading-[1.6] text-ink-2">
           {ghosted === 0
             ? "Zero by construction — every closed chat carries a note. If this ever moves, something has broken."
             : "This should be zero. Every closed chat is supposed to carry a note."}
@@ -110,12 +110,12 @@ export default async function MetricsPage() {
 
       {GROUPS.map((group) => (
         <section key={group.title} className="mt-10">
-          <h2 className="text-[0.99rem] tracking-[0.04em] text-ink-3 uppercase">{group.title}</h2>
+          <h2 className="text-[0.891rem] tracking-[0.04em] text-ink-3 uppercase">{group.title}</h2>
           <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {group.keys.map((key) => (
               <div key={key} className="rounded-lg border border-line-control bg-surface px-5 py-4">
-                <dt className="text-[12.2px] text-ink-3">{LABELS[key]}</dt>
-                <dd className="mt-1.5 font-display text-[1.53rem] leading-none tabular-nums">
+                <dt className="text-[11px] text-ink-3">{LABELS[key]}</dt>
+                <dd className="mt-1.5 font-display text-[1.377rem] leading-none tabular-nums">
                   {Number(metrics[key] ?? 0)}
                 </dd>
               </div>

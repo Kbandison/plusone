@@ -102,16 +102,16 @@ export const FONTS = {
  */
 export const TYPE = {
   hero: {
-    size: "clamp(2.34rem, 5.76vw, 4.14rem)",
+    size: "clamp(2.106rem, 5.184vw, 3.726rem)",
     lineHeight: "1.04",
     letterSpacing: "-0.022em",
   },
-  h1: { size: "clamp(2.07rem, 4.86vw, 3.51rem)", lineHeight: "1.05", letterSpacing: "-0.022em" },
-  h2: { size: "clamp(1.62rem, 2.88vw, 2.25rem)", lineHeight: "1.08", letterSpacing: "-0.02em" },
-  h3: { size: "clamp(1.26rem, 1.71vw, 1.574rem)", lineHeight: "1.1", letterSpacing: "-0.018em" },
-  body: { size: "15.3px", lineHeight: "1.65", letterSpacing: "normal" },
-  bodySm: { size: "13.05px", lineHeight: "1.62", letterSpacing: "normal" },
-  label: { size: "10.35px", lineHeight: "1.4", letterSpacing: "0.14em" },
+  h1: { size: "clamp(1.863rem, 4.374vw, 3.159rem)", lineHeight: "1.05", letterSpacing: "-0.022em" },
+  h2: { size: "clamp(1.458rem, 2.592vw, 2.025rem)", lineHeight: "1.08", letterSpacing: "-0.02em" },
+  h3: { size: "clamp(1.134rem, 1.539vw, 1.417rem)", lineHeight: "1.1", letterSpacing: "-0.018em" },
+  body: { size: "13.77px", lineHeight: "1.65", letterSpacing: "normal" },
+  bodySm: { size: "11.745px", lineHeight: "1.62", letterSpacing: "normal" },
+  label: { size: "9.315px", lineHeight: "1.4", letterSpacing: "0.14em" },
 } as const;
 
 /**

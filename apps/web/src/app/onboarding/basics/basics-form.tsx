@@ -29,7 +29,7 @@ export function BasicsForm({
   return (
     <form action={action} className="mt-10 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <label htmlFor={nameId} className="text-[13.6px]">
+        <label htmlFor={nameId} className="text-[12.2px]">
           {C.displayNameLabel}
         </label>
         <input
@@ -53,13 +53,13 @@ export function BasicsForm({
           aria-describedby={state.error ? `${nameHintId} ${errorId}` : nameHintId}
           className="ease-brand rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent"
         />
-        <p id={nameHintId} className="text-[12.2px] text-ink-3">
+        <p id={nameHintId} className="text-[11px] text-ink-3">
           {C.displayNameHint}
         </p>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor={dobId} className="text-[13.6px]">
+        <label htmlFor={dobId} className="text-[12.2px]">
           {C.birthdateLabel}
         </label>
         <input
@@ -69,15 +69,15 @@ export function BasicsForm({
           defaultValue={birthdate}
           required
           aria-describedby={state.error ? `${dobHintId} ${errorId}` : dobHintId}
-          className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[234px]"
+          className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[210.6px]"
         />
-        <p id={dobHintId} className="text-[12.2px] text-ink-3">
+        <p id={dobHintId} className="text-[11px] text-ink-3">
           {C.birthdateHint}
         </p>
       </div>
 
       {state.error ? (
-        <p id={errorId} role="alert" className="text-[13px] text-critical">
+        <p id={errorId} role="alert" className="text-[11.7px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -86,7 +86,7 @@ export function BasicsForm({
         <button
           type="submit"
           disabled={pending}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
         >
           {COPY.actions.continueLabel}
         </button>

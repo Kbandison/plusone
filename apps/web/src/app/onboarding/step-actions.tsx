@@ -92,4 +92,4 @@ export function StepActions({
 }
 
 /** The Back control's classes, so a step rendering its own still matches. */
-export const backButtonClass = buttonClass("secondary", "w-full sm:w-auto sm:min-w-[117px]");
+export const backButtonClass = buttonClass("secondary", "w-full sm:w-auto sm:min-w-[105.3px]");

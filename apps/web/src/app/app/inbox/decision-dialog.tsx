@@ -41,13 +41,13 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
       <button
         type="button"
         onClick={() => dialog.current?.showModal()}
-        className="ease-brand flex w-[93.3px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
+        className="ease-brand flex w-[84px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
       >
         <span className="relative inline-flex">
           <MemberPhotoFrame photo={decision.photo} size={76} />
           <span aria-hidden="true" className="absolute inset-0 rounded-full ring-2 ring-accent" />
         </span>
-        <span className="w-full truncate text-center text-[14.6px] text-ink-2">
+        <span className="w-full truncate text-center text-[13.1px] text-ink-2">
           {decision.name}
         </span>
       </button>
@@ -70,7 +70,7 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
         // Positioned by us rather than by the default centring, so it sits as a
         // sheet on a phone and a panel on anything wider. backdrop:bg is the
         // ::backdrop pseudo-element, which only exists for a modal dialog.
-        className="ease-brand m-0 mt-auto w-full max-w-[577.8px] rounded-t-2xl border border-line-2 bg-surface p-6 text-ink backdrop:bg-black/45 sm:m-auto sm:rounded-2xl"
+        className="ease-brand m-0 mt-auto w-full max-w-[520px] rounded-t-2xl border border-line-2 bg-surface p-6 text-ink backdrop:bg-black/45 sm:m-auto sm:rounded-2xl"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -95,11 +95,11 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
             — "three, so you would be busy" decides nothing. */}
         <figure className="mt-6 rounded-xl border border-line-2 bg-ground p-5">
           {decision.question ? (
-            <figcaption className="text-[14.4px] tracking-[0.02em] text-ink-3 uppercase">
+            <figcaption className="text-[13px] tracking-[0.02em] text-ink-3 uppercase">
               {decision.question}
             </figcaption>
           ) : null}
-          <blockquote id={`reply-${decision.id}`} className="mt-2 text-[18.9px] leading-[1.6]">
+          <blockquote id={`reply-${decision.id}`} className="mt-2 text-[17px] leading-[1.6]">
             {decision.reply}
           </blockquote>
         </figure>
@@ -121,7 +121,7 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
 /** Drawn rather than imported: one icon does not justify a dependency. */
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[19px]">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[17.1px]">
       <path
         d="M6 6l12 12M18 6L6 18"
         fill="none"

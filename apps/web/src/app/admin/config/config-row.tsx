@@ -11,7 +11,7 @@ export function ConfigRow({ configKey, value }: { configKey: string; value: stri
 
   return (
     <li className="flex flex-wrap items-center gap-4 border-b border-line py-4 last:border-0">
-      <code className="min-w-[216px] flex-1 text-[12.6px] text-ink-2">{configKey}</code>
+      <code className="min-w-[194.4px] flex-1 text-[11.3px] text-ink-2">{configKey}</code>
 
       <form action={act} className="flex items-center gap-3">
         <input type="hidden" name="key" value={configKey} />
@@ -24,7 +24,7 @@ export function ConfigRow({ configKey, value }: { configKey: string; value: stri
           type="number"
           step="any"
           defaultValue={value}
-          className="w-[99px] rounded-lg border border-line-2 bg-ground px-3 py-2 text-[16px] tabular-nums focus:border-accent"
+          className="w-[89.1px] rounded-lg border border-line-2 bg-ground px-3 py-2 text-[16px] tabular-nums focus:border-accent"
         />
         <button type="submit" disabled={pending} className={buttonClass("secondary")}>
           Save
@@ -32,12 +32,12 @@ export function ConfigRow({ configKey, value }: { configKey: string; value: stri
       </form>
 
       {state.error ? (
-        <span role="alert" className="text-[12.2px] text-critical">
+        <span role="alert" className="text-[11px] text-critical">
           {state.error}
         </span>
       ) : null}
       {state.message ? (
-        <span role="status" className="text-[12.2px] text-positive">
+        <span role="status" className="text-[11px] text-positive">
           Saved
         </span>
       ) : null}

@@ -40,13 +40,13 @@ export default function DevSignInPage() {
   }
 
   return (
-    <main id="main" className="mx-auto w-full max-w-[504px] px-6 py-16">
+    <main id="main" className="mx-auto w-full max-w-[453.6px] px-6 py-16">
       <h1 className="text-h2">Development sign-in</h1>
-      <p className="mt-5 text-[14.4px] leading-[1.7] text-ink-2">
+      <p className="mt-5 text-[13px] leading-[1.7] text-ink-2">
         No SMS is sent. This mints a real session for a phone-confirmed member, so every wall,
         policy and onboarding step behaves exactly as it will in production.
       </p>
-      <p className="mt-3 text-[13px] text-ink-3">
+      <p className="mt-3 text-[11.7px] text-ink-3">
         Only exists while <code>OTP_PROVIDER=stub</code> and never in production.
       </p>
 

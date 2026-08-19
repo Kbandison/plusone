@@ -46,11 +46,11 @@ export function CommunityForm({
   return (
     <form action={action} className="mt-10 flex flex-col gap-10">
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3 text-[13.6px]">{C.communityLabel}</legend>
+        <legend className="mb-3 text-[12.2px]">{C.communityLabel}</legend>
         {(Object.keys(COMMUNITY_LABELS) as Community[]).map((value) => (
           <label
             key={value}
-            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[14.4px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -59,7 +59,7 @@ export function CommunityForm({
               required
               checked={community === value}
               onChange={() => setCommunity(value)}
-              className="size-[16.2px] accent-accent"
+              className="size-[14.6px] accent-accent"
             />
             {COMMUNITY_LABELS[value]}
           </label>
@@ -72,11 +72,11 @@ export function CommunityForm({
           reach Continue and be told the form was incomplete. */}
       {community ? (
         <fieldset role="group" aria-live="polite" className="flex flex-col gap-3">
-          <legend className="mb-3 text-[13.6px]">{C.conditionLabel}</legend>
+          <legend className="mb-3 text-[12.2px]">{C.conditionLabel}</legend>
           {conditions.map((value) => (
             <label
               key={value}
-              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[14.4px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
             >
               <input
                 type="radio"
@@ -86,7 +86,7 @@ export function CommunityForm({
                 // answer goes on the element rather than into state.
                 defaultChecked={condition === value}
                 required
-                className="size-[16.2px] accent-accent"
+                className="size-[14.6px] accent-accent"
               />
               {CONDITION_LABELS[value]}
             </label>
@@ -102,13 +102,13 @@ export function CommunityForm({
             defaultChecked={uEqualsU}
             type="checkbox"
             aria-describedby={uEqualsUHintId}
-            className="mt-[2.7px] size-[19.8px] shrink-0 accent-accent"
+            className="mt-[2.4px] size-[17.8px] shrink-0 accent-accent"
           />
           <div>
-            <label htmlFor={uEqualsUId} className="text-[14px]">
+            <label htmlFor={uEqualsUId} className="text-[12.6px]">
               {C.uEqualsULabel}
             </label>
-            <p id={uEqualsUHintId} className="mt-1.5 text-[12.2px] text-ink-3">
+            <p id={uEqualsUHintId} className="mt-1.5 text-[11px] text-ink-3">
               {C.uEqualsUHint}
             </p>
           </div>
@@ -116,7 +116,7 @@ export function CommunityForm({
       ) : null}
 
       {state.error ? (
-        <p role="alert" className="text-[13px] text-critical">
+        <p role="alert" className="text-[11.7px] text-critical">
           {state.error}
         </p>
       ) : null}
@@ -125,7 +125,7 @@ export function CommunityForm({
         <button
           type="submit"
           disabled={pending || !community}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[171px] sm:self-start")}
+          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
         >
           {COPY.actions.continueLabel}
         </button>

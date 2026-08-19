@@ -88,7 +88,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const nav = NAV.filter((item) => !(item.datingOnly && supportOnly));
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-[612px] flex-col px-6">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-[550.8px] flex-col px-6">
       <header className="flex items-center justify-between py-7">
         <Wordmark className="text-[26px]" />
 
@@ -124,7 +124,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         aria-label="Sections"
         className="fixed inset-x-0 bottom-0 border-t border-line bg-ground/95 backdrop-blur"
       >
-        <ul className="mx-auto flex max-w-[612px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
+        <ul className="mx-auto flex max-w-[550.8px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
           {/* A client component, only so it can read the pathname. Nine links
               rendered identically with no aria-current anywhere, so nothing
               said which section you were in. */}

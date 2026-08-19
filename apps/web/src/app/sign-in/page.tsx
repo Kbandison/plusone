@@ -29,15 +29,15 @@ export default async function SignInPage({
   if (data.user) redirect("/onboarding");
 
   return (
-    <main id="main" className="mx-auto w-full max-w-[576px] px-6 py-16 sm:py-24">
+    <main id="main" className="mx-auto w-full max-w-[518.4px] px-6 py-16 sm:py-24">
       <h1 className="text-h2">{DRAFT_COPY.signIn.heading}</h1>
-      <p className="mt-4 text-[14.4px] leading-[1.7] text-ink-2">{DRAFT_COPY.signIn.intro}</p>
+      <p className="mt-4 text-[13px] leading-[1.7] text-ink-2">{DRAFT_COPY.signIn.intro}</p>
 
       {/* /auth/callback sends people here when a link is expired or reused.
           Without this they land on a plain sign-in screen with no idea why the
           link they just clicked did nothing. */}
       {link === "expired" ? (
-        <p role="status" className="mt-6 text-[13.6px] leading-[1.65] text-ink-2">
+        <p role="status" className="mt-6 text-[12.2px] leading-[1.65] text-ink-2">
           {DRAFT_COPY.signIn.linkExpired}
         </p>
       ) : null}
