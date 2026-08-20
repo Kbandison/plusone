@@ -249,6 +249,28 @@ describe("less repainting behind an open dialog", () => {
     expect(modal).toMatch(/onClose=\{\(\) => setOpen\(false\)\}/);
   });
 
+  /**
+   * Closing is not the same as emptying.
+   *
+   * Unmounting the contents is what discards the component's state, and that
+   * happens a render after the dialog's close event — so the first reopen
+   * after a post still showed the photograph that had just been sent, and only
+   * the one after that was clean. The form clears itself, which does not race
+   * with anything.
+   */
+  it("empties the composer when the post lands, not only closes it", () => {
+    const effect = compose.slice(compose.indexOf("const sent = useRef(false)"));
+    const body = effect.slice(0, effect.indexOf("}, [pending"));
+    expect(body).toMatch(/form\.current\?\.reset\(\)/);
+    expect(body).toMatch(/clearImage\(\)/);
+    expect(body).toMatch(/onPosted\(\)/);
+  });
+
+  /** reset() takes the textarea, the file input and the checkbox together. */
+  it("resets through the form rather than field by field", () => {
+    expect(compose).toMatch(/<form\s+ref=\{form\}/);
+  });
+
   /** backdrop-filter re-samples everything behind it, then blurs it away. */
   it("takes the grain off while a dialog is open", () => {
     expect(css).toMatch(/html:has\(dialog\[open\]\) body::before \{\s*display: none;/);

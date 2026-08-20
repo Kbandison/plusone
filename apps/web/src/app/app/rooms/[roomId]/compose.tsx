@@ -54,10 +54,26 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
   // waits for a send to have been in flight, the same shape the chat composer's
   // draft-clearing needed for the same reason.
   const sent = useRef(false);
+  const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (pending) sent.current = true;
     else if (sent.current && state.error === null) {
       sent.current = false;
+
+      // Emptied, and then closed.
+      //
+      // Closing alone was not enough: unmounting the contents is what discards
+      // this component's state, and that happens a render after the dialog's
+      // close event — so the first reopen after a post still showed the
+      // photograph that had just been sent, and only the one after that was
+      // clean. Clearing here does not race with anything, and a composer that
+      // has just posted should be empty whether or not it is on screen.
+      //
+      // reset() takes the textarea, the file input and the anonymity checkbox
+      // together, which is three fewer things to remember than clearing them
+      // one at a time.
+      form.current?.reset();
+      clearImage();
       onPosted();
     }
   }, [pending, state.error, onPosted]);
@@ -72,21 +88,25 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
     [preview],
   );
 
-  const choose = (file: File | null) => {
+  function choose(file: File | null) {
     setPreview((old) => {
       if (old) URL.revokeObjectURL(old);
       return file ? URL.createObjectURL(file) : null;
     });
     setName(file?.name ?? null);
-  };
+  }
 
-  const clearImage = () => {
+  // Function declarations, not consts: the effect above runs before either
+  // would have been initialised otherwise, and a composer that clears itself
+  // after posting is exactly when that matters.
+  function clearImage() {
     choose(null);
     if (picker.current) picker.current.value = "";
-  };
+  }
 
   return (
     <form
+      ref={form}
       action={async (formData) => {
         // Shrunk in the browser, before it crosses anybody's mobile data.
         //
