@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -50,13 +50,17 @@ export function Modal({
   children: React.ReactNode | ((close: () => void) => React.ReactNode);
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [open, setOpen] = useState(false);
   const close = () => dialog.current?.close();
 
   return (
     <>
       <button
         type="button"
-        onClick={() => dialog.current?.showModal()}
+        onClick={() => {
+          dialog.current?.showModal();
+          setOpen(true);
+        }}
         aria-describedby={triggerDescribedBy}
         aria-haspopup="dialog"
         className={triggerClassName}
@@ -79,6 +83,11 @@ export function Modal({
         onClick={(event) => {
           if (event.target === dialog.current) close();
         }}
+        /**
+         * Fires for every way out — Escape, the backdrop, the X's
+         * method="dialog" — so there is one place that knows it is shut.
+         */
+        onClose={() => setOpen(false)}
         // Positioned by us rather than by the default centring, so it sits as a
         // sheet on a phone and a panel on anything wider. backdrop:bg is the
         // ::backdrop pseudo-element, which only exists for a modal dialog.
@@ -100,7 +109,13 @@ export function Modal({
           </form>
         </div>
 
-        {typeof children === "function" ? children(close) : children}
+        {/* Mounted only while open, so every opening is a fresh one.
+            The dialog element itself stays — showModal() needs something to
+            call — but its contents do not. Left mounted, a form kept whatever
+            was in it: the room composer reopened showing the photograph that
+            had just been posted, because neither the preview state nor the file
+            input's value had any reason to have changed. */}
+        {open ? (typeof children === "function" ? children(close) : children) : null}
       </dialog>
     </>
   );

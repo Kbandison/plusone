@@ -251,25 +251,34 @@ dialog[open] {
   }
 }
 
+/* The backdrop fades. The blur does not.
+ *
+ * backdrop-filter was in the transition list, and animating one means the
+ * browser re-samples everything behind the backdrop and re-blurs it on every
+ * frame of the fade — for 300ms, over a full viewport, on a phone. That is
+ * expensive enough to drop frames, and dropped frames under a fade read as a
+ * flicker.
+ *
+ * The blur is a constant now: present the whole time the backdrop exists, so
+ * there is nothing to interpolate. The fade that was carrying the feel of it is
+ * the background colour, which is cheap to animate and is doing all the work
+ * anybody actually sees. */
 dialog::backdrop {
   background-color: rgb(0 0 0 / 0);
-  backdrop-filter: blur(0);
+  backdrop-filter: blur(3px);
   transition:
     background-color 300ms var(--ease-brand),
-    backdrop-filter 300ms var(--ease-brand),
     display 300ms allow-discrete,
     overlay 300ms allow-discrete;
 }
 
 dialog[open]::backdrop {
   background-color: rgb(0 0 0 / 0.5);
-  backdrop-filter: blur(3px);
 }
 
 @starting-style {
   dialog[open]::backdrop {
     background-color: rgb(0 0 0 / 0);
-    backdrop-filter: blur(0);
   }
 }
 
@@ -316,9 +325,15 @@ a[class*="bg-accent"]:active {
     animation: none;
   }
 
+  /* ::backdrop is none of these on its own.
+   *
+   * The list said "everything", and a dialog's backdrop is not matched by `*`,
+   * `::before` or `::after` — so its fade kept running for a member who had
+   * asked for no motion, on the one element that covers the whole screen. */
   *,
   *::before,
-  *::after {
+  *::after,
+  *::backdrop {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

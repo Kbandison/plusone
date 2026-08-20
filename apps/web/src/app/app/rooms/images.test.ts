@@ -220,6 +220,34 @@ describe("the photograph is shrunk before it is sent", () => {
  */
 describe("less repainting behind an open dialog", () => {
   const css = read("../../../styles/globals.css");
+  const modal = read("../../modal.tsx");
+
+  /**
+   * Animating a backdrop-filter means the browser re-samples everything behind
+   * the backdrop and re-blurs it on every frame of the fade — 300ms, full
+   * viewport, on a phone. Dropped frames under a fade read as a flicker.
+   */
+  it("fades the backdrop without animating the blur", () => {
+    const rule = css.slice(css.indexOf("dialog::backdrop {"));
+    const body = rule.slice(0, rule.indexOf("}"));
+    expect(body).toMatch(/backdrop-filter: blur\(3px\)/);
+    expect(body).not.toMatch(/transition:[\s\S]*?backdrop-filter/);
+  });
+
+  /** The list said "everything", and ::backdrop is not `*`, ::before or ::after. */
+  it("stops the backdrop for a member who asked for no motion", () => {
+    expect(css).toMatch(/\*::backdrop \{/);
+  });
+
+  /**
+   * Left mounted, a form kept whatever was in it — the composer reopened
+   * showing the photograph that had just been posted, because neither the
+   * preview state nor the file input's value had any reason to have changed.
+   */
+  it("mounts a dialog's contents only while it is open", () => {
+    expect(modal).toMatch(/\{open \? \(typeof children === "function"/);
+    expect(modal).toMatch(/onClose=\{\(\) => setOpen\(false\)\}/);
+  });
 
   /** backdrop-filter re-samples everything behind it, then blurs it away. */
   it("takes the grain off while a dialog is open", () => {
