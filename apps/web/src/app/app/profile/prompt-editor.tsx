@@ -53,7 +53,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
               id={`prompt-${index}`}
               value={row.id}
               onChange={(event) => update(index, { id: event.target.value })}
-              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[12.2px] focus:border-accent"
+              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
             >
               {PROFILE_PROMPTS.map((prompt) => (
                 <option key={prompt.id} value={prompt.id}>
@@ -75,7 +75,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
               maxLength={PROMPT_ANSWER_MAX_CHARS}
               rows={3}
               onChange={(event) => update(index, { answer: event.target.value })}
-              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[12.2px] focus:border-accent"
+              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
             />
 
             {/* "Add another" had no way back, and savePrompts drops empty

@@ -15,9 +15,22 @@ function tsx(dir: string, acc: string[] = []): string[] {
 }
 
 const files = tsx(APP);
+/**
+ * Source with its comments removed — and only its comments.
+ *
+ * The naive version treated any `/*` as a comment opener, including the one
+ * inside `accept="image/*"`. It then ate everything to the next real `*​/`,
+ * which glued one element to another and reported a font size belonging to
+ * neither. A gate that accuses a file that is fine is a gate somebody switches
+ * off.
+ *
+ * Requiring a boundary before the opener is not a parser, but it is the
+ * difference between a comment and a MIME type, and it errs toward stripping
+ * LESS — which can only ever surface more candidates, never hide one.
+ */
 const read = (f: string) =>
   readFileSync(f, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[\s{(,;])\/\*[\s\S]*?\*\//g, "$1")
     .replace(/\/\/.*$/gm, "");
 
 describe("one definition per primitive", () => {
@@ -51,7 +64,20 @@ describe("controls meet the accessibility floors", () => {
   it("no focusable field is under 16px", () => {
     const offenders: string[] = [];
     for (const f of files) {
-      for (const match of read(f).matchAll(/<(input|textarea|select)\b[\s\S]{0,700}?\/?>/g)) {
+      // `=>` is not the end of a tag.
+      //
+      // This scans to the first `>` after the tag name, and an inline handler —
+      // onChange={(event) => …} — puts one inside the attributes. The match then
+      // ran past the real tag end and swallowed the next element, so a
+      // sibling's font size was read as this control's: a file that was fine,
+      // reported as an offender, which is the failure mode that gets a gate
+      // switched off rather than fixed.
+      //
+      // Blanking the arrows first rather than making the pattern clever about
+      // them. Alternating `=>` against `[^>]` does not work — the class eats the
+      // `=` before the alternative is ever tried.
+      const source = read(f).replaceAll("=>", "==");
+      for (const match of source.matchAll(/<(input|textarea|select)\b[\s\S]{0,700}?\/?>/g)) {
         const size = /text-\[(\d+(?:\.\d+)?)px\]/.exec(match[0]);
         if (size && Number(size[1]) < 16) offenders.push(f.replace(APP, "app"));
       }

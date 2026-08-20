@@ -6,7 +6,10 @@ import { DRAFT_COPY } from "@plusone/config";
 import { tone } from "@plusone/logic";
 
 import { memberFacingError } from "@/lib/rpc-error";
+import { randomUUID } from "node:crypto";
+
 import { getServerSupabase } from "@/lib/supabase";
+import { isAcceptableUpload, processRoomImage } from "@/lib/photos";
 import { describeViolations } from "@/lib/tone-messages";
 import type { RoomState } from "./state";
 import { redirect } from "next/navigation";
@@ -45,6 +48,48 @@ export async function joinRoom(_prev: RoomState, formData: FormData): Promise<Ro
  */
 const C = DRAFT_COPY.app;
 
+/**
+ * Stores an image for a post, if one was attached.
+ *
+ * The id is minted here rather than taken from the row, because the row does
+ * not exist yet — the path has to be known before the insert that references
+ * it. It names the ROOM and the message and nothing else: a path carrying a
+ * user id would hand the author of an anonymous post to anyone who saw the
+ * URL, which is precisely what room_feed's projection exists to prevent.
+ *
+ * Returns null when there is no file, and throws the member-facing reason when
+ * there is one that will not do.
+ */
+async function storeRoomImage(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
+  roomId: string,
+  file: File | null,
+): Promise<{ path: string } | { error: string } | null> {
+  if (!file || file.size === 0) return null;
+
+  if (!isAcceptableUpload(file.type, file.size)) return { error: C.imageRejected };
+
+  let processed: Buffer;
+  try {
+    // Re-encoded before it is stored, which is what drops the GPS coordinates,
+    // the device serial and the timestamp the camera wrote in. See
+    // processRoomImage.
+    processed = await processRoomImage(Buffer.from(await file.arrayBuffer()));
+  } catch {
+    // sharp refusing to decode it is also the check that it is an image at all
+    // rather than something wearing an image's content type.
+    return { error: C.imageRejected };
+  }
+
+  const path = `${roomId}/${randomUUID()}.webp`;
+  const { error } = await supabase.storage
+    .from("room-images")
+    .upload(path, processed, { contentType: "image/webp" });
+
+  if (error) return { error: C.imageRejected };
+  return { path };
+}
+
 export async function postToRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
@@ -52,16 +97,25 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   // no `required` attribute, so an accidental Post — or one after the browser
   // cleared the field — produced no message, no error and no clue. The chat
   // composer already answers this; rooms did not.
-  if (!body) return { error: C.emptyPost };
+  const file = formData.get("image");
+  // A post with a picture and no words is a post. Everything else still needs
+  // saying: an empty box and no file is a Post button that did nothing.
+  if (!body && !(file instanceof File && file.size > 0)) return { error: C.emptyPost };
 
   // A room post does not leave the app, so the condition rule that protects a
   // closure note does not apply — see ToneOptions.allowConditionWords. Naming
   // your own diagnosis in the room named for it is the point of the room.
-  const result = tone.checkTone(body, {
-    maxChars: 2000,
-    allowConditionWords: true,
-  });
-  if (!result.ok) return { error: describeViolations(result.violations) };
+  // Only when there is something to check. An image-only post has no words,
+  // and running the rules over an empty string is a rule about a string nobody
+  // wrote — harmless today, because checkTone happens to return ok for "", and
+  // one added minimum-length rule away from refusing every picture.
+  if (body) {
+    const result = tone.checkTone(body, {
+      maxChars: 2000,
+      allowConditionWords: true,
+    });
+    if (!result.ok) return { error: describeViolations(result.violations) };
+  }
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();

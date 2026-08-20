@@ -17,6 +17,12 @@ interface PurgeTarget {
   readonly stripe_customer_id: string | null;
   readonly stripe_sub_id: string | null;
   readonly voice_note_paths: string[] | null;
+  /**
+   * Keyed on the room, not the member, so an anonymous post cannot be traced to
+   * its author — which also means there is no user-id folder to list. The row
+   * holding the path is the only index, and the cascade removes it.
+   */
+  readonly room_image_paths: string[] | null;
 }
 
 /**
@@ -136,6 +142,12 @@ export async function POST(request: Request) {
     if (voiceNotes.length > 0) {
       const { error: voiceError } = await supabase.storage.from("voice-notes").remove(voiceNotes);
       if (voiceError) orphaned.push(`voice-notes/${userId}`);
+    }
+
+    const roomImages = target?.room_image_paths ?? [];
+    if (roomImages.length > 0) {
+      const { error: imageError } = await supabase.storage.from("room-images").remove(roomImages);
+      if (imageError) orphaned.push(`room-images/${userId}`);
     }
   }
 

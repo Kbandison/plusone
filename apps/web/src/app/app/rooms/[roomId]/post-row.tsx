@@ -8,6 +8,7 @@ import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { MemberPhotoFrame } from "../../member-photo";
 import { OverflowMenu } from "../../overflow-menu";
 import { CommentIcon, EyeIcon, LikeButton } from "./like-button";
+import { PostImage } from "./post-image";
 import { ReplyButton } from "./reply-button";
 
 const C = DRAFT_COPY.app;
@@ -21,6 +22,7 @@ const C = DRAFT_COPY.app;
 export interface Post {
   readonly id: string;
   readonly body: string;
+  readonly image_path: string | null;
   readonly created_at: string;
   readonly anonymous: boolean;
   /** Null for an anonymous post. There is no branch where it is not. */
@@ -170,6 +172,8 @@ export function PostRow({
             post.body
           )}
         </p>
+
+        {post.image_path ? <PostImage path={post.image_path} /> : null}
 
         <div className="mt-1 flex items-center gap-5">
           <LikeButton messageId={post.id} liked={post.i_liked} count={post.like_count} />

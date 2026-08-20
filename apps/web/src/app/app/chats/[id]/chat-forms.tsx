@@ -326,7 +326,7 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
             maxLength={CONNECTS.personalLineMaxChars}
             value={line}
             onChange={(event) => setLine(event.target.value)}
-            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[12.2px] focus:border-accent"
+            className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
           />
         </label>
 

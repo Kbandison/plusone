@@ -126,3 +126,33 @@ export async function processPhoto(input: Buffer): Promise<ProcessedPhoto> {
     height: full.info.height,
   };
 }
+
+/**
+ * One image for a room post: bounded, re-encoded, and stripped of everything
+ * the camera wrote into it.
+ *
+ * The stripping is the point, not a side effect. A photograph carries GPS
+ * coordinates, a device serial and the moment it was taken — and in a room
+ * named for a diagnosis, an anonymous post with the poster's home coordinates
+ * inside it is worse than no anonymity, because it looks like anonymity.
+ *
+ * sharp keeps metadata only when asked to, so the re-encode below drops all of
+ * it. rotate() runs first for the same reason it does in processPhoto: EXIF
+ * orientation has to be applied before the EXIF is discarded, or portrait
+ * photographs come out sideways.
+ *
+ * Throws on anything sharp cannot decode, which is also the check that the file
+ * really is an image rather than something wearing an image's content type.
+ */
+export async function processRoomImage(input: Buffer): Promise<Buffer> {
+  return sharp(input, { failOn: "error" })
+    .rotate()
+    .resize({
+      width: MAX_EDGE_PX,
+      height: MAX_EDGE_PX,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 82 })
+    .toBuffer();
+}

@@ -709,6 +709,12 @@ export const DRAFT_COPY = {
     postLikeCount: (n: number) => `${n} ${n === 1 ? "like" : "likes"}`,
     postCommentCount: (n: number) => (n === 1 ? "1 comment" : `${n} comments`),
     postCommentNone: "No comments yet",
+    postImageLabel: "Add a photo",
+    postImageRemove: "Remove photo",
+    /** One message for every reason a file will not do — see storeRoomImage. */
+    imageRejected: "That image would not upload. Try a different one.",
+    /** Decorative to a reader by default: only the poster knows what is in it. */
+    postImageAlt: "Photo in this post",
     /**
      * Collapsed by default. A comment with nine replies under it pushes the
      * next comment off the screen, and the member scrolling past has not

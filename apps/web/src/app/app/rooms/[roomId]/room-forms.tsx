@@ -7,10 +7,16 @@ import { DRAFT_COPY } from "@plusone/config";
 import { joinRoom, postComment, postToRoom } from "./actions";
 import { ROOM_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { ACCEPTED_TYPES } from "@/lib/photo-limits";
 import { useReply } from "./reply-context";
 import { CloseIcon } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
+
+/** Named rather than inline, so both composers report an attachment the same way. */
+const onPick =
+  (set: (name: string | null) => void) => (event: React.ChangeEvent<HTMLInputElement>) =>
+    set(event.target.files?.[0]?.name ?? null);
 
 export function JoinRoom({ roomId }: { roomId: string }) {
   const [state, act, pending] = useActionState(joinRoom, ROOM_INITIAL);
@@ -31,8 +37,26 @@ export function JoinRoom({ roomId }: { roomId: string }) {
 
 export function RoomComposer({ roomId }: { roomId: string }) {
   const [state, act, pending] = useActionState(postToRoom, ROOM_INITIAL);
+
+  // The chosen file's name, so a member can see something is attached and take
+  // it off again. Once the browser's own control is styled away it shows
+  // nothing, and an attachment you cannot see is one you cannot remove.
+  const [attached, setAttached] = useState<string | null>(null);
+  const picker = useRef<HTMLInputElement>(null);
+
+  const clearImage = () => {
+    setAttached(null);
+    if (picker.current) picker.current.value = "";
+  };
+
   return (
-    <form action={act} className="mt-8 flex flex-col gap-3">
+    <form
+      action={(formData) => {
+        act(formData);
+        clearImage();
+      }}
+      className="mt-8 flex flex-col gap-3"
+    >
       <input type="hidden" name="room_id" value={roomId} />
       <div className="flex gap-3">
         <input
@@ -49,6 +73,40 @@ export function RoomComposer({ roomId }: { roomId: string }) {
         <button type="submit" disabled={pending} className={buttonClass("primary")}>
           {C.roomPostLabel}
         </button>
+      </div>
+
+      {/* A label wrapping a hidden input rather than a bare file control: the
+          browser's own renders differently everywhere and cannot be made to
+          match anything. The input keeps its name, so the form still carries
+          the file. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="ease-brand inline-flex min-h-tap cursor-pointer items-center gap-2 text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink">
+          <input
+            ref={picker}
+            type="file"
+            name="image"
+            // The types the server will actually take, not image/*: a member
+            // picking a HEIC on a phone would otherwise get as far as the
+            // upload before being told no.
+            accept={ACCEPTED_TYPES.join(",")}
+            onChange={onPick(setAttached)}
+            className="sr-only text-[16px]"
+          />
+          {C.postImageLabel}
+        </label>
+
+        {attached ? (
+          <span className="flex items-center gap-2 text-[11px] text-ink-3">
+            <span className="max-w-[16ch] truncate">{attached}</span>
+            <button
+              type="button"
+              onClick={clearImage}
+              className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            >
+              {C.postImageRemove}
+            </button>
+          </span>
+        ) : null}
       </div>
 
       {/* Per post, and off by default.
