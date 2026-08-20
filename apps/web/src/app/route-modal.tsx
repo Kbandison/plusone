@@ -50,18 +50,21 @@ export function RouteModal({ children }: { children: React.ReactNode }) {
         // padding inside the dialog would otherwise close it.
         if (event.target === dialog.current) dialog.current?.close();
       }}
-      /* A sheet, flush to the bottom of the screen on a phone.
-         Held off the nav it read as a panel floating in the middle of nothing,
-         which is what a gap under a bottom sheet always looks like. So it goes
-         all the way down and covers the nav — which is fine, and is what every
-         bottom sheet does: showModal() has already made everything behind it
-         inert, so the nav under there was not usable anyway.
+      /* Pinned to the bottom, rather than asked to end up there.
+         `mt-auto mb-0` relies on auto-margin resolution inside a UA dialog box
+         that already sets `inset: 0`, `margin: auto` and its own max-height —
+         and when those over-constrain each other the browser resolves it, not
+         us. So this states the position instead: bottom edge at the bottom
+         edge, top free.
 
-         pb-10 rather than pb-6: the last line of a sheet that reaches the
-         bottom edge needs room for a thumb and for a phone's home indicator.
+         It covers the nav, which is fine and is what every bottom sheet does:
+         showModal() has already made everything behind it inert, so the nav
+         under there was not usable while this was open anyway.
 
-         On anything wider it centres, where a sheet is not the idiom. */
-      className="ease-brand m-0 mt-auto mb-0 max-h-[88vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-10 text-ink backdrop:bg-black/45 sm:m-auto sm:max-h-[84vh] sm:rounded-2xl sm:pb-8"
+         pb-10 because the last line of something that reaches the bottom edge
+         needs room for a thumb and for a phone's home indicator. On anything
+         wider it goes back to centred, where a sheet is not the idiom. */
+      className="ease-brand fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[88vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-10 text-ink backdrop:bg-black/45 sm:inset-0 sm:m-auto sm:max-h-[84vh] sm:rounded-2xl sm:pb-8"
     >
       <div className="mb-1 flex justify-end">
         {/* method="dialog" closes without any JavaScript of ours, and onClose

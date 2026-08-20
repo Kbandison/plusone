@@ -721,9 +721,15 @@ describe("nothing scrolls behind the modal", () => {
    * which is what a gap under a bottom sheet always looks like. Covering the
    * nav is fine: showModal() has already made everything behind it inert.
    */
+  /**
+   * Stated, not inferred. `mt-auto mb-0` asks the browser to resolve auto
+   * margins inside a UA dialog box that already sets inset, margin and its own
+   * max-height — and when those over-constrain, the browser decides where the
+   * box lands, not us.
+   */
   it("reaches the bottom of the screen", () => {
-    expect(routeModal).toMatch(/mt-auto mb-0/);
-    expect(routeModal).not.toMatch(/mb-(?:16|20|28|36)\b/);
+    expect(routeModal).toMatch(/fixed inset-x-0 top-auto bottom-0/);
+    expect(withoutComments(routeModal)).not.toMatch(/\bmt-auto\b/);
   });
 
   /** The last line needs room for a thumb and a phone's home indicator. */
