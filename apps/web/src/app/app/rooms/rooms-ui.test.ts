@@ -34,9 +34,32 @@ describe("the rooms are a bar", () => {
   });
 
   /** Five rooms fit a laptop and not a phone; a bar that wraps is not a bar. */
-  it("scrolls sideways rather than wrapping", () => {
-    expect(tabs).toMatch(/overflow-x-auto/);
+  /**
+   * The overflow, the hidden bar and the edge shadows all come from one
+   * utility — see .scroll-shadows-x in globals.css. A scrollbar under a
+   * five-item nav is either invisible or in the way on a phone, and neither
+   * says there is more to the right.
+   */
+  it("scrolls sideways rather than wrapping, with no bar", () => {
+    expect(tabs).toMatch(/scroll-shadows-x/);
     expect(tabs).toMatch(/whitespace-nowrap/);
+
+    const css = read("../../../styles/globals.css");
+    expect(css).toMatch(/\.scroll-shadows-x \{[\s\S]*?scrollbar-width: none;/);
+    expect(css).toMatch(/\.scroll-shadows-x::-webkit-scrollbar \{\s*display: none;/);
+  });
+
+  /**
+   * Two covers attached `local` and two shadows attached `scroll`. At rest a
+   * cover sits over its shadow and hides it; scrolling moves the cover off and
+   * reveals it. Nothing computes that — it falls out of the two attachment
+   * modes disagreeing, which is why there is no listener and no observer.
+   */
+  it("shows an edge shadow only where there is more", () => {
+    const css = read("../../../styles/globals.css");
+    const rule = css.slice(css.indexOf(".scroll-shadows-x {"));
+    expect(rule.slice(0, rule.indexOf("}"))).toMatch(/no-repeat\s+local/);
+    expect(rule.slice(0, rule.indexOf("}"))).toMatch(/no-repeat\s+scroll/);
   });
 
   it("names itself in the navigation landmark", () => {
@@ -186,7 +209,7 @@ describe("the room reads as a feed", () => {
    * room read as something to consume rather than somewhere to speak.
    */
   it("puts the composer above the posts", () => {
-    expect(room.indexOf("<RoomComposer")).toBeLessThan(room.indexOf('<ul className="-mx-6'));
+    expect(room.indexOf("<RoomCompose")).toBeLessThan(room.indexOf('<ul className="-mx-6'));
   });
 
   /** Report and block on every row was two text links per post. */

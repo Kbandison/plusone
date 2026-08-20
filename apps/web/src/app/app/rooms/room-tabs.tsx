@@ -36,7 +36,12 @@ export function RoomTabs({ rooms }: { rooms: readonly RoomTab[] }) {
 
   return (
     <nav aria-label={C.roomsHeading} className="-mx-6 border-b border-line px-6">
-      <ul className="flex snap-x gap-1 overflow-x-auto">
+      {/* scroll-shadows-x carries the overflow, hides the bar, and puts a
+          shadow at whichever edge still has tabs behind it — see globals.css.
+          A scrollbar under a five-item nav is a scrollbar on a phone that is
+          either invisible or in the way, and neither of those says there is
+          more to the right. */}
+      <ul className="scroll-shadows-x flex snap-x gap-1">
         {rooms.map((room) => {
           const href = `/app/rooms/${room.id}`;
           const current = pathname === href;

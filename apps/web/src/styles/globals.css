@@ -1,6 +1,45 @@
 @import "tailwindcss";
 @import "@plusone/ui-tokens/tokens.css";
 
+@layer utilities {
+  /**
+   * A horizontal scroller with no bar, and a shadow at whichever edge has more
+   * behind it.
+   *
+   * Four backgrounds, and the trick is which ones scroll. The two covers are
+   * attached `local`, so they travel with the content and slide out of the way
+   * as it moves; the two shadows are attached `scroll`, so they stay pinned to
+   * the element. At rest the left cover sits exactly over the left shadow and
+   * hides it — scroll right and the cover moves off, revealing it. The shadow
+   * appears only when there is something behind it, and nothing computes that:
+   * it falls out of the two attachment modes disagreeing.
+   *
+   * A JavaScript version would need a scroll listener, a resize observer and a
+   * re-measure on every content change. This needs none of them.
+   *
+   * The covers must be the same colour as whatever is behind the scroller, or
+   * they read as bands rather than as nothing.
+   */
+  .scroll-shadows-x {
+    overflow-x: auto;
+    scrollbar-width: none;
+    background:
+      linear-gradient(to right, var(--ground) 40%, transparent) left center / 34px 100% no-repeat
+        local,
+      linear-gradient(to left, var(--ground) 40%, transparent) right center / 34px 100% no-repeat
+        local,
+      radial-gradient(farthest-side at 0 50%, rgb(0 0 0 / 0.16), transparent) left center / 16px
+        100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 0.16), transparent) right center / 16px
+        100% no-repeat scroll;
+  }
+
+  /* Firefox takes scrollbar-width; the rest need the pseudo-element. */
+  .scroll-shadows-x::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   /* Nothing scrolls behind an open dialog.
    *

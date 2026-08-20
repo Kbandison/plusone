@@ -11,7 +11,9 @@ const purgeSql = read(
 const actions = read("./[roomId]/actions.ts");
 const photos = read("../../../lib/photos.ts");
 const image = read("./[roomId]/post-image.tsx");
-const forms = read("./[roomId]/room-forms.tsx");
+// The room composer moved into a dialog of its own; room-forms keeps the
+// comment one.
+const compose = read("./[roomId]/compose.tsx");
 const cron = read("../../api/cron/purge/route.ts");
 
 /**
@@ -140,10 +142,24 @@ describe("a picture is enough on its own", () => {
     expect(actions).toMatch(/if \(body\) \{\s*\n\s*const result = tone\.checkTone/);
   });
 
-  it("shows what is attached, and lets it be taken off", () => {
-    expect(forms).toMatch(/C\.postImageLabel/);
-    expect(forms).toMatch(/C\.postImageRemove/);
-    expect(forms).toMatch(/picker\.current\.value = ""/);
+  /**
+   * Seen before it is sent, which is the reason this is a dialog at all: a
+   * member attaching a photograph to a post about their diagnosis should see
+   * exactly what they are about to share.
+   */
+  it("previews it, and lets it be taken off", () => {
+    expect(compose).toMatch(/C\.postImageLabel/);
+    expect(compose).toMatch(/C\.postImageRemove/);
+    expect(compose).toMatch(/URL\.createObjectURL\(file\)/);
+    expect(compose).toMatch(/picker\.current\.value = ""/);
+  });
+
+  /**
+   * The browser holds the file alive until told otherwise, so a member trying
+   * three photographs would leave three in memory.
+   */
+  it("revokes the object URL rather than leaking it", () => {
+    expect(compose.match(/URL\.revokeObjectURL/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });
 

@@ -9,7 +9,8 @@ import { getServerSupabase } from "@/lib/supabase";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { photosFor } from "@/lib/photo-urls";
 import { PostRow, type Post } from "./post-row";
-import { JoinRoom, RoomComposer } from "./room-forms";
+import { JoinRoom } from "./room-forms";
+import { RoomCompose } from "./compose";
 import { EmptyState } from "@/app/ui";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
@@ -24,7 +25,7 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
 
   const { data: room } = await supabase
     .from("rooms")
-    .select("id, title, description, slow_mode_seconds, pinned_resource_card")
+    .select("id, title, description, pinned_resource_card")
     .eq("id", roomId)
     .maybeSingle();
 
@@ -148,26 +149,26 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
         </aside>
       ) : null}
 
-      {/* Both notes on one line, above the composer rather than above the
-          feed. They are the rules of the room, which a member needs when they
-          are about to write and not while they are reading.
+      {/* §7.2 — NO dm button. Rooms are a place to be seen, not a directory to
+          work through, and the way out of a room is a connect.
 
-          §7.2 — NO dm button. Rooms are a place to be seen, not a directory to
-          work through, and the way out of a room is a connect. */}
-      <p className="mt-5 text-[11px] text-ink-3">
-        {C.roomSlowMode(room.slow_mode_seconds as number)} · {C.roomNoDmNote}
-      </p>
+          The slow-mode line is gone. It announced a cooldown on every visit to
+          every member, almost none of whom were about to hit it — and the
+          trigger already says how long is left at the moment somebody does,
+          which is when it is information rather than a warning. */}
+      <p className="mt-5 text-[11px] text-ink-3">{C.roomNoDmNote}</p>
 
-      {/* The composer above the feed, where a feed puts it. Below the posts it
-          was past a hundred rows of scrolling, so the room read as something to
-          consume rather than somewhere to speak. */}
-      <div className="mt-4">
-        {membership ? (
-          <RoomComposer roomId={room.id as string} />
-        ) : (
+      {/* A box the width of the column, and no button beside it. Everything a
+          post can carry — words, a photograph, the choice to be anonymous —
+          does not fit on one line, so this opens a dialog rather than trying
+          to be the whole composer. */}
+      {membership ? (
+        <RoomCompose roomId={room.id as string} />
+      ) : (
+        <div className="mt-4">
           <JoinRoom roomId={room.id as string} />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Full-bleed rows ruled off from each other, rather than a column of
           bordered cards with gaps between them.

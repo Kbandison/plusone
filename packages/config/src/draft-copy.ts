@@ -710,6 +710,9 @@ export const DRAFT_COPY = {
     postCommentCount: (n: number) => (n === 1 ? "1 comment" : `${n} comments`),
     postCommentNone: "No comments yet",
     postImageLabel: "Add a photo",
+    /** The box on the room page, which is a way in rather than a field. */
+    roomComposeOpen: "Share something with the room",
+    roomComposeHeading: "New post",
     postImageRemove: "Remove photo",
     /**
      * Three reasons, three messages.
@@ -823,7 +826,6 @@ export const DRAFT_COPY = {
     roomJoinLabel: "Join",
     roomPostPlaceholder: "Say something to the room",
     roomPostLabel: "Post",
-    roomSlowMode: (seconds: number) => `Slow mode: one message every ${seconds} seconds.`,
     /**
      * Invite and Premium moved off the bottom bar and into here.
      *
