@@ -715,14 +715,25 @@ describe("nothing scrolls behind the modal", () => {
   });
 
   /**
-   * A dialog is in the top layer, so it renders above a fixed nav however high
-   * that nav's z-index is. The only way not to cover it is not to be over it.
+   * Flush to the bottom on a phone.
+   *
+   * Held off the nav it read as a panel floating in the middle of nothing,
+   * which is what a gap under a bottom sheet always looks like. Covering the
+   * nav is fine: showModal() has already made everything behind it inert.
    */
-  it("keeps the panel clear of the bottom nav", () => {
-    expect(routeModal).toMatch(/mb-20/);
-    // And no more than that: 144px of clearance over a 57px nav left a band of
-    // backdrop under the panel wide enough to read as a mistake.
-    expect(routeModal).not.toMatch(/mb-36|mb-28/);
+  it("reaches the bottom of the screen", () => {
+    expect(routeModal).toMatch(/mt-auto mb-0/);
+    expect(routeModal).not.toMatch(/mb-(?:16|20|28|36)\b/);
+  });
+
+  /** The last line needs room for a thumb and a phone's home indicator. */
+  it("leaves room under the last line", () => {
+    expect(routeModal).toMatch(/pb-10/);
+  });
+
+  /** A sheet is not the idiom on a wide screen. */
+  it("centres on anything wider", () => {
+    expect(routeModal).toMatch(/sm:m-auto/);
   });
 });
 

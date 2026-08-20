@@ -50,14 +50,18 @@ export function RouteModal({ children }: { children: React.ReactNode }) {
         // padding inside the dialog would otherwise close it.
         if (event.target === dialog.current) dialog.current?.close();
       }}
-      /* mb clears the bottom nav and nothing more.
-         A dialog is in the top layer, so it renders above a fixed nav however
-         high that nav's z-index is; the only way not to cover it is not to be
-         over it. The nav is one row — a 44px link, 12px of padding, a border —
-         so this is that plus a little air, rather than the 144px it was, which
-         left a band of backdrop under the panel wide enough to look like a
-         mistake. */
-      className="ease-brand m-0 mt-auto mb-20 max-h-[82vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-6 text-ink backdrop:bg-black/45 sm:m-auto sm:mb-20 sm:max-h-[84vh] sm:rounded-2xl"
+      /* A sheet, flush to the bottom of the screen on a phone.
+         Held off the nav it read as a panel floating in the middle of nothing,
+         which is what a gap under a bottom sheet always looks like. So it goes
+         all the way down and covers the nav — which is fine, and is what every
+         bottom sheet does: showModal() has already made everything behind it
+         inert, so the nav under there was not usable anyway.
+
+         pb-10 rather than pb-6: the last line of a sheet that reaches the
+         bottom edge needs room for a thumb and for a phone's home indicator.
+
+         On anything wider it centres, where a sheet is not the idiom. */
+      className="ease-brand m-0 mt-auto mb-0 max-h-[88vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-10 text-ink backdrop:bg-black/45 sm:m-auto sm:max-h-[84vh] sm:rounded-2xl sm:pb-8"
     >
       <div className="mb-1 flex justify-end">
         {/* method="dialog" closes without any JavaScript of ours, and onClose
