@@ -192,7 +192,7 @@ export function PostRow({
               already addressed to whoever wrote it. */}
           {replyable ? (
             isComment && post.author_name ? (
-              <ReplyButton name={post.author_name} />
+              <ReplyButton name={post.author_name} parentId={replyToId} />
             ) : (
               <ReplyButton />
             )

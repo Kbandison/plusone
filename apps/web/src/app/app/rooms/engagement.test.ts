@@ -654,6 +654,24 @@ describe("replies nest one layer and no further", () => {
     expect(forms).toMatch(/value=\{replyParentId \?\? parentId\}/);
   });
 
+  /**
+   * The middle of the chain, which is the piece that broke.
+   *
+   * Every link either side was asserted — the thread passes replyToId, the
+   * composer reads replyParentId — and the one in between was not, so PostRow
+   * accepted the prop and dropped it. Every new reply went to the post, the
+   * types were happy because an unused prop is not an error, and the two tests
+   * that existed both passed.
+   */
+  it("passes the parent from the row to the button", () => {
+    expect(row).toMatch(/<ReplyButton name=\{post\.author_name\} parentId=\{replyToId\} \/>/);
+  });
+
+  it("carries it into the context", () => {
+    expect(replyBtn).toMatch(/setReplyTo\(name, parentId \?\? null\)/);
+    expect(replyCtx).toMatch(/setReplyParentId\(parentId\)/);
+  });
+
   /** Nine replies under one comment push the next comment off the screen. */
   it("collapses them until asked for", () => {
     expect(replies).toMatch(/const \[open, setOpen\] = useState\(false\)/);
