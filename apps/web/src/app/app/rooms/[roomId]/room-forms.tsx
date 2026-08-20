@@ -8,6 +8,7 @@ import { joinRoom, postComment, postToRoom } from "./actions";
 import { ROOM_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
 import { useReply } from "./reply-context";
+import { CloseIcon } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
 
@@ -86,7 +87,7 @@ export function RoomComposer({ roomId }: { roomId: string }) {
  */
 export function CommentComposer({ roomId, parentId }: { roomId: string; parentId: string }) {
   const [state, act, pending] = useActionState(postComment, ROOM_INITIAL);
-  const { replyTo, open, openComposer, closeComposer, setReplyTo, register } = useReply();
+  const { replyTo, open, closeComposer, setReplyTo, register } = useReply();
   const [body, setBody] = useState("");
 
   // The name goes into the box, the way Facebook does it, so what is sent is
@@ -99,20 +100,12 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
     if (replyTo) setBody((current) => (current.startsWith(replyTo) ? current : `${replyTo} `));
   }
 
-  // Closed until asked for. An empty field under every thread is the product
-  // asking a question nobody was asked, on a screen somebody opened to read —
-  // and it was the last thing between a member and the bottom of the page.
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={openComposer}
-        className="ease-brand mt-6 flex min-h-tap items-center text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
-      >
-        {C.postCommentOpenLabel}
-      </button>
-    );
-  }
+  // Nothing at all until a Reply is pressed.
+  //
+  // There was a trigger here — "Add a comment" — and it was one more thing at
+  // the bottom of a page that already ends in Reply on the post and Reply on
+  // every comment. Three ways into one box is two too many.
+  if (!open) return null;
 
   return (
     <form
@@ -151,6 +144,13 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
         <input
           ref={register}
           name="body"
+          /* Escape closes it, which is what a member reaches for and what every
+             other dismissable thing in this app already answers to. Sending was
+             the only way out before, so changing your mind meant posting
+             something or leaving the page. */
+          onKeyDown={(event) => {
+            if (event.key === "Escape") closeComposer();
+          }}
           type="text"
           value={body}
           onChange={(event) => setBody(event.target.value)}
@@ -161,6 +161,17 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
         />
         <button type="submit" disabled={pending} className={buttonClass("primary")}>
           {C.postReplyLabel}
+        </button>
+
+        {/* And a control, because Escape is invisible and a touch keyboard has
+            no key for it — which is most of the people using this. */}
+        <button
+          type="button"
+          onClick={closeComposer}
+          aria-label={C.decisionDismiss}
+          className="ease-brand flex size-tap shrink-0 items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+        >
+          <CloseIcon />
         </button>
       </div>
 

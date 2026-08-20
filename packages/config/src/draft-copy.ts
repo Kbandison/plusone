@@ -717,12 +717,6 @@ export const DRAFT_COPY = {
     postReplyToLabel: "Reply",
     postReplyingTo: (name: string) => `Replying to ${name}`,
     postReplyCancel: "Cancel reply",
-    /**
-     * The box is closed until this is pressed. An empty field under every
-     * thread is the product asking a question nobody was asked, on a screen
-     * somebody opened to read.
-     */
-    postCommentOpenLabel: "Add a comment",
     postThreadHeading: "Post",
     postBackToRoom: "Back to the room",
     /**

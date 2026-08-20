@@ -440,9 +440,24 @@ describe("a post and its replies do not look alike", () => {
  * was asked, on a screen somebody opened to read.
  */
 describe("the box waits to be asked for", () => {
-  it("shows a trigger until it is", () => {
-    expect(forms).toMatch(/if \(!open\) \{/);
-    expect(forms).toMatch(/C\.postCommentOpenLabel/);
+  /**
+   * And shows nothing while it waits. There was an "Add a comment" trigger
+   * here, at the bottom of a page that already ends in Reply on the post and
+   * Reply on every comment — three ways into one box.
+   */
+  it("renders nothing until a Reply is pressed", () => {
+    expect(forms).toMatch(/if \(!open\) return null;/);
+    expect(forms).not.toMatch(/postCommentOpenLabel/);
+  });
+
+  /**
+   * Sending was the only way out, so changing your mind meant posting
+   * something or leaving the page.
+   */
+  it("closes on Escape and on a control", () => {
+    expect(forms).toMatch(/if \(event\.key === "Escape"\) closeComposer\(\)/);
+    expect(forms).toMatch(/onClick=\{closeComposer\}/);
+    expect(forms).toMatch(/aria-label=\{C\.decisionDismiss\}/);
   });
 
   it("opens when a reply is aimed at somebody", () => {
