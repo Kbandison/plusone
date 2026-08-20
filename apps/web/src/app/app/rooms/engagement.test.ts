@@ -810,8 +810,14 @@ describe("the post itself is the target", () => {
 
 describe("the photograph opens full screen", () => {
   /** Every one of Modal's decisions is the opposite of what a lightbox wants. */
+  /**
+   * And carries no display utility, or a closed one stays in the layout as a
+   * full-viewport click-catcher — see the dialog gate in design-system.test.ts.
+   * The column lives on a wrapper inside.
+   */
   it("uses its own dialog, edge to edge", () => {
-    expect(lightbox).toMatch(/fixed inset-0 m-0 flex h-full max-h-none w-full max-w-none/);
+    expect(lightbox).toMatch(/fixed inset-0 m-0 h-full max-h-none w-full max-w-none/);
+    expect(lightbox).toMatch(/<div className="flex h-full flex-col">/);
     expect(lightbox).toMatch(/showModal\(\)/);
   });
 
