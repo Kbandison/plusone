@@ -123,7 +123,14 @@ export function Modal({
         // Positioned by us rather than by the default centring, so it sits as a
         // sheet on a phone and a panel on anything wider. backdrop:bg is the
         // ::backdrop pseudo-element, which only exists for a modal dialog.
-        className={`ease-brand m-0 mt-auto max-h-[86vh] w-full max-w-[520px] overflow-y-auto rounded-t-2xl border border-line-2 bg-surface p-6 text-ink backdrop:bg-black/45 sm:m-auto sm:rounded-2xl ${panelClassName}`}
+        /* Pinned, not asked for.
+         *
+         * `m-0 mt-auto` relies on auto-margin resolution inside a UA dialog box
+         * that already sets `inset: 0`, `margin: auto` and its own max-height —
+         * and when those over-constrain each other the browser decides where
+         * the box lands. RouteModal learned that the expensive way; this had
+         * the same shape and had not been caught yet. */
+        className={`ease-brand fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[86vh] w-full max-w-[520px] overflow-y-auto rounded-t-2xl border border-line-2 bg-surface p-6 text-ink backdrop:bg-black/45 sm:inset-0 sm:m-auto sm:rounded-2xl ${panelClassName}`}
       >
         <div className="flex items-start justify-between gap-4">
           {heading ? <h2 className="text-h3">{heading}</h2> : <span />}

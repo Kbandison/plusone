@@ -150,3 +150,52 @@ describe("the admin follows them", () => {
     expect(adminSql).toMatch(/perform public\.audit\('news\.article_deleted'/);
   });
 });
+
+const share = read("./[roomId]/share-menu.tsx");
+const modal = read("../../modal.tsx");
+
+/**
+ * As a dropdown it was wrong three ways at once, and all three were the same
+ * fact: it hung from a control near the left edge with the panel anchored
+ * right, and it lived inside the counts row's z-20 stacking context — where
+ * nothing it set for itself could lift it over a nav at z-40, because a child
+ * cannot outrank its parent's layer.
+ */
+describe("the share control is a sheet, not a dropdown", () => {
+  it("uses a dialog, which is in the top layer", () => {
+    expect(share).toMatch(/<Modal/);
+    expect(share).not.toMatch(/OverflowMenu/);
+  });
+
+  /** Above the nav on a phone; centred where there is no nav to clear. */
+  it("sits clear of the bottom nav", () => {
+    expect(share).toMatch(/panelClassName="bottom-20 sm:bottom-auto"/);
+  });
+
+  /**
+   * `m-0 mt-auto` asks the browser to resolve auto margins inside a UA dialog
+   * box that already sets inset, margin and its own max-height. RouteModal
+   * learned that the expensive way; Modal had the same shape and had not been
+   * caught.
+   */
+  it("pins the panel rather than asking for it", () => {
+    expect(modal).toMatch(/fixed inset-x-0 top-auto bottom-0 mx-auto/);
+    const code = modal
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+      .join("\n");
+    expect(code).not.toMatch(/m-0 mt-auto/);
+  });
+
+  /** navigator.share exists on phones and nowhere else. */
+  it("keeps a clipboard fallback for everywhere it does not", () => {
+    expect(share).toMatch(/typeof navigator\.share === "function"/);
+    expect(share).toMatch(/navigator\.clipboard\.writeText\(url\)/);
+  });
+
+  /** Reading it during render would make the server and client markup disagree. */
+  it("checks for it after mount", () => {
+    expect(share).toMatch(/useEffect\(\(\) => \{\s*\n\s*setCanShare/);
+  });
+});
