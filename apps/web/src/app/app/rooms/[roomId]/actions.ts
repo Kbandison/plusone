@@ -9,7 +9,7 @@ import { memberFacingError } from "@/lib/rpc-error";
 import { randomUUID } from "node:crypto";
 
 import { getServerSupabase } from "@/lib/supabase";
-import { isAcceptableUpload, processRoomImage } from "@/lib/photos";
+import { MAX_UPLOAD_BYTES, isAcceptableUpload, processRoomImage } from "@/lib/photos";
 import { describeViolations } from "@/lib/tone-messages";
 import type { RoomState } from "./state";
 import { redirect } from "next/navigation";
@@ -67,7 +67,11 @@ async function storeRoomImage(
 ): Promise<{ path: string } | { error: string } | null> {
   if (!file || file.size === 0) return null;
 
-  if (!isAcceptableUpload(file.type, file.size)) return { error: C.imageRejected };
+  // Told apart, because "that did not work" is the same sentence for a file
+  // that is too big, a file that is not an image, and our own storage failing —
+  // and only one of those is something a member can act on.
+  if (file.size > MAX_UPLOAD_BYTES) return { error: C.imageTooBig };
+  if (!isAcceptableUpload(file.type, file.size)) return { error: C.imageWrongType };
 
   let processed: Buffer;
   try {
@@ -75,10 +79,13 @@ async function storeRoomImage(
     // the device serial and the timestamp the camera wrote in. See
     // processRoomImage.
     processed = await processRoomImage(Buffer.from(await file.arrayBuffer()));
-  } catch {
+  } catch (cause) {
     // sharp refusing to decode it is also the check that it is an image at all
-    // rather than something wearing an image's content type.
-    return { error: C.imageRejected };
+    // rather than something wearing an image's content type. A phone sending
+    // HEIC lands here: the type is on the accepted list and the build has no
+    // libheif, which is a real gap and worth seeing in the logs.
+    console.error("room image decode failed", { type: file.type, size: file.size, cause });
+    return { error: C.imageUnreadable };
   }
 
   const path = `${roomId}/${randomUUID()}.webp`;
@@ -86,7 +93,13 @@ async function storeRoomImage(
     .from("room-images")
     .upload(path, processed, { contentType: "image/webp" });
 
-  if (error) return { error: C.imageRejected };
+  if (error) {
+    // Ours, not theirs. Logged with the reason, because a storage refusal is
+    // the one failure here a member cannot do anything about and the one we
+    // could not see from the outside.
+    console.error("room image upload failed", { path, message: error.message });
+    return { error: C.imageUploadFailed };
+  }
   return { path };
 }
 

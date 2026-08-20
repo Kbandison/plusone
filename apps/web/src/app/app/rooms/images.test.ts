@@ -36,8 +36,22 @@ describe("what the camera wrote is not what gets stored", () => {
   });
 
   /** sharp refusing to decode is also the check that it is an image at all. */
-  it("treats a decode failure as a rejection", () => {
-    expect(actions).toMatch(/catch \{[\s\S]{0,240}return \{ error: C\.imageRejected \}/);
+  /**
+   * One string for every reason told a member nothing and told us less: the
+   * first time an upload failed there was no way to know which branch refused
+   * it, and it had to be guessed at from the outside.
+   */
+  it("says which of the three went wrong", () => {
+    expect(actions).toMatch(/C\.imageTooBig/);
+    expect(actions).toMatch(/C\.imageWrongType/);
+    expect(actions).toMatch(/C\.imageUnreadable/);
+    expect(actions).toMatch(/C\.imageUploadFailed/);
+  });
+
+  /** The one failure a member cannot act on is the one we could not see. */
+  it("logs the two we cannot diagnose from a screenshot", () => {
+    expect(actions).toMatch(/console\.error\("room image decode failed"/);
+    expect(actions).toMatch(/console\.error\("room image upload failed"/);
   });
 
   it("checks the type and size before any of that", () => {

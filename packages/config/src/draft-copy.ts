@@ -711,8 +711,17 @@ export const DRAFT_COPY = {
     postCommentNone: "No comments yet",
     postImageLabel: "Add a photo",
     postImageRemove: "Remove photo",
-    /** One message for every reason a file will not do — see storeRoomImage. */
-    imageRejected: "That image would not upload. Try a different one.",
+    /**
+     * Three reasons, three messages.
+     *
+     * One string for all of them told a member nothing and told us less: the
+     * first time an upload failed there was no way to know which branch had
+     * refused it, and the answer had to be guessed at from the outside.
+     */
+    imageTooBig: "That file is too large. Photos need to be under 8 MB.",
+    imageWrongType: "That file is not an image we can use. JPEG, PNG or WebP.",
+    imageUnreadable: "That image could not be read. Try a different one.",
+    imageUploadFailed: "The photo did not upload. Try again in a moment.",
     /** Decorative to a reader by default: only the poster knows what is in it. */
     postImageAlt: "Photo in this post",
     /**
