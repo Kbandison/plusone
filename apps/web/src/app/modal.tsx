@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -50,15 +50,45 @@ export function Modal({
   children: React.ReactNode | ((close: () => void) => React.ReactNode);
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+
+  /**
+   * One source of truth, and it is React's.
+   *
+   * showModal() in the handler and setOpen() beside it was two: the DOM knew
+   * whether the dialog was showing, the component knew separately, and the two
+   * only agreed as long as nothing else re-rendered between them. An effect
+   * driving the DOM from state cannot drift — whatever React last decided is
+   * what the dialog does.
+   */
   const [open, setOpen] = useState(false);
-  const close = () => dialog.current?.close();
+
+  /**
+   * Bumped on every opening, and used as a key on the contents.
+   *
+   * Unmounting them on close cleared the state and did it DURING the fade, so a
+   * dialog closed to an empty panel and then faded out — a flicker at the end
+   * of every dismissal. Keying on the opening keeps them present the whole way
+   * out and still gives the next opening a fresh component, which is what
+   * "reopened showing the last photograph" needed.
+   */
+  const [opening, setOpening] = useState(0);
+  const close = () => setOpen(false);
+
+  useEffect(() => {
+    const el = dialog.current;
+    if (!el) return;
+    // Guarded both ways: showModal() on an open dialog throws, and close() on a
+    // closed one fires a second close event.
+    if (open && !el.open) el.showModal();
+    if (!open && el.open) el.close();
+  }, [open]);
 
   return (
     <>
       <button
         type="button"
         onClick={() => {
-          dialog.current?.showModal();
+          setOpening((n) => n + 1);
           setOpen(true);
         }}
         aria-describedby={triggerDescribedBy}
@@ -87,6 +117,8 @@ export function Modal({
          * Fires for every way out — Escape, the backdrop, the X's
          * method="dialog" — so there is one place that knows it is shut.
          */
+        // The browser closing it — Escape, or the X's method="dialog" — told
+        // back to the state that drives it.
         onClose={() => setOpen(false)}
         // Positioned by us rather than by the default centring, so it sits as a
         // sheet on a phone and a panel on anything wider. backdrop:bg is the
@@ -109,13 +141,16 @@ export function Modal({
           </form>
         </div>
 
-        {/* Mounted only while open, so every opening is a fresh one.
-            The dialog element itself stays — showModal() needs something to
-            call — but its contents do not. Left mounted, a form kept whatever
-            was in it: the room composer reopened showing the photograph that
-            had just been posted, because neither the preview state nor the file
-            input's value had any reason to have changed. */}
-        {open ? (typeof children === "function" ? children(close) : children) : null}
+        {/* Keyed on the opening, not mounted on it.
+            Left mounted forever, a form kept whatever was in it — the composer
+            reopened showing the photograph just posted. Unmounted on close, it
+            emptied the panel mid-fade. The key does both: a fresh component
+            every time it opens, and one that survives the way out. */}
+        {opening > 0 ? (
+          <Fragment key={opening}>
+            {typeof children === "function" ? children(close) : children}
+          </Fragment>
+        ) : null}
       </dialog>
     </>
   );

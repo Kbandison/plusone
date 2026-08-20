@@ -244,9 +244,29 @@ describe("less repainting behind an open dialog", () => {
    * showing the photograph that had just been posted, because neither the
    * preview state nor the file input's value had any reason to have changed.
    */
-  it("mounts a dialog's contents only while it is open", () => {
-    expect(modal).toMatch(/\{open \? \(typeof children === "function"/);
+  /**
+   * showModal() in the handler and setOpen() beside it was two sources of
+   * truth: the DOM knew whether the dialog was showing and the component knew
+   * separately, and they only agreed as long as nothing re-rendered between
+   * them.
+   */
+  it("drives the dialog from state, not from the handler", () => {
+    expect(modal).toMatch(/if \(open && !el\.open\) el\.showModal\(\)/);
+    expect(modal).toMatch(/if \(!open && el\.open\) el\.close\(\)/);
     expect(modal).toMatch(/onClose=\{\(\) => setOpen\(false\)\}/);
+    const handler = modal.slice(modal.indexOf("<button"), modal.indexOf("<dialog"));
+    expect(handler).not.toMatch(/showModal/);
+  });
+
+  /**
+   * Left mounted forever, a form kept whatever was in it. Unmounted on close,
+   * it emptied the panel mid-fade — a flicker at the end of every dismissal.
+   * A key on the opening does both: fresh every time it opens, and present the
+   * whole way out.
+   */
+  it("keys the contents on the opening rather than mounting them on it", () => {
+    expect(modal).toMatch(/<Fragment key=\{opening\}>/);
+    expect(modal).toMatch(/setOpening\(\(n\) => n \+ 1\)/);
   });
 
   /**
