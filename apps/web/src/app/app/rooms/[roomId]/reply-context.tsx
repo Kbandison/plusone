@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 /**
  * Who the composer is currently answering.
@@ -18,65 +18,61 @@ interface ReplyState {
   readonly replyTo: string | null;
   /** Whether the box is showing at all. Closed until somebody asks for it. */
   readonly open: boolean;
+  /**
+   * Bumped every time focus should move to the box.
+   *
+   * The first version kept a ref to the input here and focused it in a
+   * queueMicrotask — which ran BEFORE React had rendered the field, so the ref
+   * was still null and the focus went nowhere. Focusing is the composer's job,
+   * because the composer is the thing that mounts; this only says when.
+   */
+  readonly focusRequest: number;
   readonly setReplyTo: (name: string | null) => void;
   readonly openComposer: () => void;
   readonly closeComposer: () => void;
-  readonly register: (input: HTMLInputElement | null) => void;
 }
 
 const Ctx = createContext<ReplyState>({
   replyTo: null,
   open: false,
+  focusRequest: 0,
   setReplyTo: () => {},
   openComposer: () => {},
   closeComposer: () => {},
-  register: () => {},
 });
 
 export function ReplyProvider({ children }: { children: React.ReactNode }) {
   const [replyTo, setReplyToState] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const input = useRef<HTMLInputElement | null>(null);
 
-  const focusInput = useCallback(() => {
-    const field = input.current;
-    if (!field) return;
-    // A microtask, so the field exists: pressing Reply is what renders it, and
-    // focusing before that paint focuses nothing.
-    queueMicrotask(() => {
-      field.focus();
-      const end = field.value.length;
-      field.setSelectionRange(end, end);
-    });
-  }, []);
+  // A counter, not a boolean.
+  //
+  // Focus has to move again when Reply is pressed on a second comment while
+  // the box is already open — and nothing else about the state has changed at
+  // that point, so there is nothing for an effect to depend on. This is the
+  // thing that changed.
+  const [focusRequest, setFocusRequest] = useState(0);
 
   const openComposer = useCallback(() => {
     setOpen(true);
-    focusInput();
-  }, [focusInput]);
+    setFocusRequest((n) => n + 1);
+  }, []);
 
   const closeComposer = useCallback(() => {
     setOpen(false);
     setReplyToState(null);
   }, []);
 
-  const setReplyTo = useCallback(
-    (name: string | null) => {
-      setReplyToState(name);
-      if (name) setOpen(true);
-      // Focused, and the caret after the name rather than before it. Without the
-      // move a member types in front of the person they are answering.
-      focusInput();
-    },
-    [focusInput],
-  );
-
-  const register = useCallback((field: HTMLInputElement | null) => {
-    input.current = field;
+  const setReplyTo = useCallback((name: string | null) => {
+    setReplyToState(name);
+    if (name) {
+      setOpen(true);
+      setFocusRequest((n) => n + 1);
+    }
   }, []);
 
   return (
-    <Ctx.Provider value={{ replyTo, open, setReplyTo, openComposer, closeComposer, register }}>
+    <Ctx.Provider value={{ replyTo, open, focusRequest, setReplyTo, openComposer, closeComposer }}>
       {children}
     </Ctx.Provider>
   );

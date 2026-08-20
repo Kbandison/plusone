@@ -9,7 +9,10 @@ const sql = read(
 );
 const row = read("./[roomId]/post-row.tsx");
 const feed = read("./[roomId]/page.tsx");
-const thread = read("./[roomId]/[post]/page.tsx");
+const thread = read("./[roomId]/thread.tsx");
+const threadPage = read("./[roomId]/[post]/page.tsx");
+const threadModal = read("./[roomId]/@modal/(.)[post]/page.tsx");
+const routeModal = read("../../route-modal.tsx");
 const forms = read("./[roomId]/room-forms.tsx");
 const like = read("./[roomId]/like-button.tsx");
 
@@ -294,8 +297,8 @@ describe("replying to a commenter", () => {
 
   /** Without the move a member types in front of the person they are answering. */
   it("focuses the field and puts the caret after the name", () => {
-    expect(replyCtx).toMatch(/field\.focus\(\)/);
-    expect(replyCtx).toMatch(/setSelectionRange\(end, end\)/);
+    expect(forms).toMatch(/input\.focus\(\)/);
+    expect(forms).toMatch(/setSelectionRange\(end, end\)/);
   });
 
   /** The name alone in a field could be something the member typed. */
@@ -421,8 +424,8 @@ describe("a post and its replies do not look alike", () => {
 
   /** border-y plus the list's border-t drew two rules with ground between. */
   it("draws one rule under the post, not two", () => {
-    expect(thread).toMatch(/-mx-6 mt-2 border-t border-line px-6 pt-5 pb-4/);
-    expect(thread).not.toMatch(/border-y border-line/);
+    expect(thread).toMatch(/-mx-6 border-t border-line px-6 pt-5 pb-4/);
+    expect(withoutComments(thread)).not.toMatch(/border-y border-line/);
   });
 
   /**
@@ -461,12 +464,28 @@ describe("the box waits to be asked for", () => {
   });
 
   it("opens when a reply is aimed at somebody", () => {
-    expect(replyCtx).toMatch(/if \(name\) setOpen\(true\)/);
+    expect(replyCtx).toMatch(/if \(name\) \{[\s\S]{0,60}setOpen\(true\)/);
   });
 
-  /** Pressing Reply is what renders the field; focusing before that paint focuses nothing. */
+  /**
+   * The first version kept a ref in the context and focused it in a
+   * queueMicrotask — which ran BEFORE React had rendered the field, so the ref
+   * was null and the focus went nowhere. Focusing belongs to the composer,
+   * because the composer is the thing that mounts.
+   */
   it("focuses after the field exists", () => {
-    expect(replyCtx).toMatch(/queueMicrotask\(\(\) => \{/);
+    expect(forms).toMatch(/useEffect\(\(\) => \{[\s\S]{0,200}input\.focus\(\)/);
+    expect(forms).toMatch(/\}, \[open, focusRequest\]\)/);
+    expect(withoutComments(replyCtx)).not.toMatch(/queueMicrotask/);
+  });
+
+  /**
+   * A counter, not a boolean: focus has to move again when Reply is pressed on
+   * a second comment while the box is already open, and nothing else about the
+   * state has changed at that point.
+   */
+  it("can move focus twice without anything else changing", () => {
+    expect(replyCtx).toMatch(/setFocusRequest\(\(n\) => n \+ 1\)/);
   });
 
   it("closes again once something is sent", () => {
@@ -482,7 +501,7 @@ describe("the box waits to be asked for", () => {
 describe("a mention reads as a name", () => {
   it("matches against the names on the page", () => {
     expect(thread).toMatch(/mentionable=\{names\}/);
-    expect(thread).toMatch(/rows\.map\(\(r\) => r\.author_name\)/);
+    expect(thread).toMatch(/thread\.map\(\(r\) => r\.author_name\)/);
   });
 
   /** Weight alone is easy to miss at 12px. */
@@ -541,5 +560,61 @@ describe("the view count is an eye", () => {
     expect(row).toMatch(
       /<span className="sr-only">\{C\.postViewCount\(post\.view_count\)\}<\/span>/,
     );
+  });
+});
+
+/**
+ * A thread over the room rather than instead of it.
+ *
+ * The interception is what makes the URL real: a shared link, a refresh or an
+ * arrival from outside falls through to the page, because `(.)` only applies to
+ * a soft navigation from inside the room.
+ */
+describe("the thread opens over the feed", () => {
+  it("renders the same component on both surfaces", () => {
+    expect(threadPage).toMatch(/<Thread roomId=\{roomId\} postId=\{post\} \/>/);
+    expect(threadModal).toMatch(/<Thread roomId=\{roomId\} postId=\{post\} \/>/);
+  });
+
+  /** @modal is a slot, not a segment, so [post] is one level across. */
+  it("intercepts the sibling segment", () => {
+    expect(threadModal).toMatch(/`\(\.\)` intercepts the sibling `\[post\]` segment/);
+  });
+
+  /**
+   * A slot with no default renders a 404 when it cannot match the URL — so
+   * without this every hard load of a room would fail rather than show no
+   * modal.
+   */
+  it("has a default that renders nothing", () => {
+    const fallback = read("./[roomId]/@modal/default.tsx");
+    expect(fallback).toMatch(/return null/);
+  });
+
+  it("passes the slot through the room's layout", () => {
+    const layout = read("./[roomId]/layout.tsx");
+    expect(layout).toMatch(/modal: React\.ReactNode/);
+    expect(layout).toMatch(/\{modal\}/);
+  });
+
+  /**
+   * The attribute alone gives a dialog with no focus trap, no Escape, no
+   * inertness behind it and no ::backdrop — which is to say none of the
+   * reasons to use a dialog.
+   */
+  it("opens with showModal rather than the open attribute", () => {
+    expect(routeModal).toMatch(/showModal\(\)/);
+    expect(withoutComments(routeModal)).not.toMatch(/<dialog[^>]*\sopen\b/);
+  });
+
+  /** The keyboard, the backdrop and the button all leave the same way. */
+  it("navigates back from one place only", () => {
+    expect(routeModal).toMatch(/onClose=\{\(\) => router\.back\(\)\}/);
+    expect(routeModal.match(/router\.back\(\)/g)).toHaveLength(1);
+  });
+
+  /** A click on padding inside the panel must not dismiss it. */
+  it("tests the backdrop click against the dialog itself", () => {
+    expect(routeModal).toMatch(/event\.target === dialog\.current/);
   });
 });

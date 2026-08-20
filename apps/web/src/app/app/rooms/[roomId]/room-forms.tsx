@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -87,7 +87,21 @@ export function RoomComposer({ roomId }: { roomId: string }) {
  */
 export function CommentComposer({ roomId, parentId }: { roomId: string; parentId: string }) {
   const [state, act, pending] = useActionState(postComment, ROOM_INITIAL);
-  const { replyTo, open, closeComposer, setReplyTo, register } = useReply();
+  const { replyTo, open, focusRequest, closeComposer, setReplyTo } = useReply();
+  const field = useRef<HTMLInputElement>(null);
+
+  // After the render that mounted it, which is the whole point: focusing in the
+  // handler that opens the box focuses a field that does not exist yet.
+  useEffect(() => {
+    if (!open || focusRequest === 0) return;
+    const input = field.current;
+    if (!input) return;
+    input.focus();
+    // Caret at the end, or a member types in front of the person they are
+    // answering.
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  }, [open, focusRequest]);
   const [body, setBody] = useState("");
 
   // The name goes into the box, the way Facebook does it, so what is sent is
@@ -142,7 +156,7 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
 
       <div className="flex gap-3">
         <input
-          ref={register}
+          ref={field}
           name="body"
           /* Escape closes it, which is what a member reaches for and what every
              other dismissable thing in this app already answers to. Sending was
