@@ -794,7 +794,7 @@ describe("the post itself is the target", () => {
 
   /** Without this the whole strip would open the thread and nothing would work. */
   it("lifts the controls above it", () => {
-    expect(row).toMatch(/relative z-20 mt-1 flex items-center gap-5/);
+    expect(row).toMatch(/relative z-20 mt-1 flex flex-wrap items-center gap-x-5/);
     expect(row).toMatch(/<span className="relative z-20">\s*<OverflowMenu/);
   });
 

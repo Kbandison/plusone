@@ -101,8 +101,10 @@ describe("the bottom nav", () => {
 
   it("wraps rather than overflowing, because the overflow is clipped", () => {
     // The clipping is real and is not going away — it is what stops horizontal
-    // page scroll everywhere else.
-    expect(GLOBALS).toMatch(/overflow-x:\s*hidden/);
+    // page scroll everywhere else. `clip` rather than `hidden` since
+    // 20260820: hidden makes a scroll container, and setting it on body alone
+    // propagated to the viewport and left body itself not clipping at all.
+    expect(GLOBALS).toMatch(/overflow-x:\s*clip/);
     const list = /<ul className="([^"]+)"/.exec(LAYOUT)?.[1] ?? "";
     expect(list, "the nav list must wrap").toMatch(/flex-wrap/);
   });

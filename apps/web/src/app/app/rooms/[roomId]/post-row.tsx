@@ -143,7 +143,10 @@ export function PostRow({
    */
   function Counts() {
     return (
-      <div className="relative z-20 mt-1 flex items-center gap-5">
+      // flex-wrap, because this is five controls now — like, comments, share,
+      // reply and the view count — and a row that cannot wrap is a row that
+      // makes the page wider than the phone.
+      <div className="relative z-20 mt-1 flex flex-wrap items-center gap-x-5 gap-y-1">
         <LikeButton messageId={post.id} liked={post.i_liked} count={post.like_count} />
 
         {commentHref ? (
@@ -321,14 +324,14 @@ export function PostRow({
               href={post.article_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+              className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] break-words underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
             >
               {post.article_title}
             </a>
           ) : null}
           <p
             id={`post-${post.id}`}
-            className={`mt-1 whitespace-pre-wrap ${
+            className={`mt-1 break-words whitespace-pre-wrap ${
               post.article_url
                 ? "line-clamp-3 text-[12.4px] leading-[1.55] text-ink-2"
                 : isComment

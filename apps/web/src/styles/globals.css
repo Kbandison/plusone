@@ -74,6 +74,18 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+
+    /* Here as well as on body, and it is not belt and braces.
+     *
+     * An overflow set on BODY alone propagates to the viewport, and the
+     * propagation leaves body's own overflow computing to `visible` — so body
+     * stops clipping anything, and a child wider than the screen makes the page
+     * pannable on a phone even though the rule looks like it should have
+     * stopped it. Setting it on html is what actually clips.
+     *
+     * clip rather than hidden: hidden makes a scroll container, which turns
+     * position: sticky into something that scrolls with its own box. */
+    overflow-x: clip;
   }
 
   body {
@@ -84,7 +96,7 @@
     font-size: 13.8px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1,

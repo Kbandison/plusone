@@ -50,3 +50,34 @@ describe("there is air under the chrome", () => {
     }
   });
 });
+
+/**
+ * An overflow set on BODY alone propagates to the viewport, and the propagation
+ * leaves body's own overflow computing to `visible` — so body stops clipping
+ * anything, and a child wider than the screen makes the page pannable on a
+ * phone even though the rule looks like it should have stopped it.
+ */
+describe("nothing is wider than the phone", () => {
+  const css = readFileSync(join(APP, "../../styles/globals.css"), "utf8");
+  const row = readFileSync(join(APP, "rooms/[roomId]/post-row.tsx"), "utf8");
+
+  it("clips on html as well as on body", () => {
+    expect(css).toMatch(/html \{[\s\S]*?overflow-x: clip;/);
+    expect(css).toMatch(/body \{[\s\S]*?overflow-x: clip;/);
+  });
+
+  /** hidden makes a scroll container; clip does not. */
+  it("uses clip rather than hidden", () => {
+    expect(css).not.toMatch(/overflow-x: hidden/);
+  });
+
+  /** A pasted link in a post, or a URL inside a feed's summary. */
+  it("breaks a word too long for the column", () => {
+    expect(row).toMatch(/break-words whitespace-pre-wrap/);
+  });
+
+  /** Like, comments, share, reply and the view count. */
+  it("wraps the controls under a post rather than widening the row", () => {
+    expect(row).toMatch(/flex flex-wrap items-center gap-x-5 gap-y-1/);
+  });
+});
