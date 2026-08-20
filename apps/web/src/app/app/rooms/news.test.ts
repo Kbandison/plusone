@@ -167,9 +167,36 @@ describe("the share control is a sheet, not a dropdown", () => {
     expect(share).not.toMatch(/OverflowMenu/);
   });
 
-  /** Above the nav on a phone; centred where there is no nav to clear. */
-  it("sits clear of the bottom nav", () => {
-    expect(share).toMatch(/panelClassName="bottom-20 sm:bottom-auto"/);
+  /**
+   * Flush to the bottom on a phone, like every other sheet here. Held off the
+   * nav it read as a panel floating in the middle of nothing — and covering the
+   * nav costs nothing, because showModal() has already made everything behind
+   * it inert.
+   */
+  it("reaches the bottom of the screen", () => {
+    expect(share).toMatch(/panelClassName="pb-10 sm:bottom-auto sm:pb-6"/);
+    expect(share).not.toMatch(/bottom-20/);
+  });
+
+  /** Somebody chose to bring it, and that is most of what a share means. */
+  it("says who shared it", () => {
+    expect(row).toMatch(/C\.postSharedBy\(post\.shared_by_name\)/);
+    const migration = read(
+      "../../../../../../supabase/migrations/20260820000700_who_shared_it.sql",
+    );
+    expect(migration).toMatch(/add column if not exists shared_by uuid/);
+    expect(migration).toMatch(/sp\.display_name/);
+  });
+
+  /**
+   * An article has no author to block, so without this a member could block
+   * somebody and keep seeing everything that person chose to bring in.
+   */
+  it("hides a share from somebody the viewer blocked", () => {
+    const migration = read(
+      "../../../../../../supabase/migrations/20260820000700_who_shared_it.sql",
+    );
+    expect(migration.match(/i_am_blocked_with\(m\.shared_by\)/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
   /**

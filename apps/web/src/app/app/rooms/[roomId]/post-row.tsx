@@ -39,6 +39,8 @@ export interface Post {
   readonly article_url: string | null;
   readonly article_title: string | null;
   readonly article_icon: string | null;
+  /** Who brought it into this room. Null on everything posted here first. */
+  readonly shared_by_name: string | null;
 }
 
 /**
@@ -202,145 +204,156 @@ export function PostRow({
   }
 
   return (
-    <div className="relative flex items-start gap-3">
-      {/* The row, as one target.
+    <div className="relative">
+      {/* Somebody chose to bring this here, and that is most of what a share
+          means. Above the post rather than inside it, because it is a fact
+          about how the post arrived and not part of what it says — which is
+          also why it is a column and not a line prepended to the body, where
+          the next share would carry it along again. */}
+      {post.shared_by_name ? (
+        <p className="mb-2 text-[11px] text-ink-3">{C.postSharedBy(post.shared_by_name)}</p>
+      ) : null}
+
+      <div className="flex items-start gap-3">
+        {/* The row, as one target.
           Stretched over everything rather than wrapped around it, because an
           anchor cannot contain the button and the menu this row also has. The
           controls sit above it; the words and the face are underneath, which is
           what makes the post itself clickable. */}
-      {href ? (
-        <Link href={href} className="absolute inset-0 z-10">
-          <span className="sr-only">
-            {C.postOpenThread(post.author_name ?? C.threadUnknownPerson)}
-          </span>
-        </Link>
-      ) : null}
+        {href ? (
+          <Link href={href} className="absolute inset-0 z-10">
+            <span className="sr-only">
+              {C.postOpenThread(post.author_name ?? C.threadUnknownPerson)}
+            </span>
+          </Link>
+        ) : null}
 
-      {/* An anonymous author has no photo, so the frame's empty state is the
+        {/* An anonymous author has no photo, so the frame's empty state is the
           placeholder — the same neutral shape a member with no photo gets,
           rather than a second thing to learn the meaning of. */}
-      {post.article_url ? (
-        // The publisher's mark where a member's photograph would be.
-        // referrerPolicy, because fetching it otherwise tells their server that
-        // somebody in a health community is reading them — the same visit the
-        // link itself takes care not to hand over.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={post.article_icon ?? ""}
-          alt=""
-          referrerPolicy="no-referrer"
-          loading="lazy"
-          width={isComment ? 24 : 46}
-          height={isComment ? 24 : 46}
-          className="shrink-0 rounded-full border border-line-2 bg-surface-2 object-contain"
-          style={{ width: isComment ? 24 : 46, height: isComment ? 24 : 46 }}
-        />
-      ) : (
-        <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
-      )}
+        {post.article_url ? (
+          // The publisher's mark where a member's photograph would be.
+          // referrerPolicy, because fetching it otherwise tells their server that
+          // somebody in a health community is reading them — the same visit the
+          // link itself takes care not to hand over.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.article_icon ?? ""}
+            alt=""
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            width={isComment ? 24 : 46}
+            height={isComment ? 24 : 46}
+            className="shrink-0 rounded-full border border-line-2 bg-surface-2 object-contain"
+            style={{ width: isComment ? 24 : 46, height: isComment ? 24 : 46 }}
+          />
+        ) : (
+          <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
+        )}
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="flex min-w-0 items-baseline gap-2">
-            {/* Bold, because it is the one thing on the row that says whose
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="flex min-w-0 items-baseline gap-2">
+              {/* Bold, because it is the one thing on the row that says whose
                 words these are — and in a room where a name may be a pseudonym
                 that is the fact a reader is looking for first. */}
-            {/* A publisher's name is not a member's name. It labels the
+              {/* A publisher's name is not a member's name. It labels the
                 article below it rather than announcing who is speaking, so it
                 sits at the size a label sits at. */}
-            <span
-              className={`truncate font-medium ${
-                post.article_url
-                  ? "text-[11.5px] text-ink-2"
-                  : isComment
-                    ? "text-[12px]"
-                    : "text-[15.5px]"
-              }`}
-            >
-              {post.author_name ?? C.threadUnknownPerson}
-            </span>
-            {post.anonymous ? (
-              // Said plainly. A pseudonym that does not announce itself is a
-              // name a reader will take for a real one.
-              <span className="shrink-0 text-[10.5px] text-ink-3">{C.postAnonymous}</span>
-            ) : null}
-            <time
-              dateTime={new Date(postedAt).toISOString()}
-              title={chatLogic.messageTimeExact(postedAt, zone)}
-              className="shrink-0 text-[11px] text-ink-3 tabular-nums"
-            >
-              {chatLogic.compactAge(postedAt, now, zone)}
-            </time>
-          </p>
+              <span
+                className={`truncate font-medium ${
+                  post.article_url
+                    ? "text-[11.5px] text-ink-2"
+                    : isComment
+                      ? "text-[12px]"
+                      : "text-[15.5px]"
+                }`}
+              >
+                {post.author_name ?? C.threadUnknownPerson}
+              </span>
+              {post.anonymous ? (
+                // Said plainly. A pseudonym that does not announce itself is a
+                // name a reader will take for a real one.
+                <span className="shrink-0 text-[10.5px] text-ink-3">{C.postAnonymous}</span>
+              ) : null}
+              <time
+                dateTime={new Date(postedAt).toISOString()}
+                title={chatLogic.messageTimeExact(postedAt, zone)}
+                className="shrink-0 text-[11px] text-ink-3 tabular-nums"
+              >
+                {chatLogic.compactAge(postedAt, now, zone)}
+              </time>
+            </p>
 
-          {/* Lifted above the link covering the row — only this, not the whole
+            {/* Lifted above the link covering the row — only this, not the whole
               header, so the name and the time still open the thread. */}
-          {/* An article has nobody to report and nobody to block — the block
+            {/* An article has nobody to report and nobody to block — the block
               control resolves an author from the message and there is none, so
               the menu was a control that could only fail. */}
-          {!post.is_mine && !post.article_url ? (
-            <span className="relative z-20">
-              <OverflowMenu label={C.postMenuLabel} compact>
-                <div className="py-3">
-                  {/* Neither control takes an author id, and for an anonymous
+            {!post.is_mine && !post.article_url ? (
+              <span className="relative z-20">
+                <OverflowMenu label={C.postMenuLabel} compact>
+                  <div className="py-3">
+                    {/* Neither control takes an author id, and for an anonymous
                     post the client does not have one. Both resolve it
                     server-side from the message. */}
-                  <ReportControl roomMessageId={post.id} describedBy={`post-${post.id}`} />
-                </div>
-                <div className="py-3">
-                  <BlockButton roomMessageId={post.id} describedBy={`post-${post.id}`} />
-                </div>
-              </OverflowMenu>
-            </span>
-          ) : null}
-        </div>
+                    <ReportControl roomMessageId={post.id} describedBy={`post-${post.id}`} />
+                  </div>
+                  <div className="py-3">
+                    <BlockButton roomMessageId={post.id} describedBy={`post-${post.id}`} />
+                  </div>
+                </OverflowMenu>
+              </span>
+            ) : null}
+          </div>
 
-        {/* The controls above point at this id, which is what tells a screen
+          {/* The controls above point at this id, which is what tells a screen
             reader user which post they are about to report — every one of them
             is otherwise just "Report, button". */}
 
-        {/* The headline is the way out to the original.
+          {/* The headline is the way out to the original.
             z-20 so it clears the link covering the row: the title opens the
             article, everything around it opens the thread. target and rel for
             the reason every outbound link here has them — the destination does
             not need to be told the reader came from a health community. */}
-        {post.article_url ? (
-          <a
-            href={post.article_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+          {post.article_url ? (
+            <a
+              href={post.article_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+            >
+              {post.article_title}
+            </a>
+          ) : null}
+          <p
+            id={`post-${post.id}`}
+            className={`mt-1 whitespace-pre-wrap ${
+              post.article_url
+                ? "line-clamp-3 text-[12.4px] leading-[1.55] text-ink-2"
+                : isComment
+                  ? "text-[12.4px] leading-[1.5]"
+                  : "text-[17px] leading-[1.55]"
+            }`}
           >
-            {post.article_title}
-          </a>
-        ) : null}
-        <p
-          id={`post-${post.id}`}
-          className={`mt-1 whitespace-pre-wrap ${
-            post.article_url
-              ? "line-clamp-3 text-[12.4px] leading-[1.55] text-ink-2"
-              : isComment
-                ? "text-[12.4px] leading-[1.5]"
-                : "text-[17px] leading-[1.55]"
-          }`}
-        >
-          {/* The person being answered, told apart from the answer.
+            {/* The person being answered, told apart from the answer.
               It is one string in the database, so without this the name is the
               first two words of a sentence and reads as part of it. Weight and
               colour together, because weight alone is easy to miss at 12px. */}
-          {mention ? (
-            <>
-              <span className="font-medium text-accent">{mention}</span>
-              {post.body.slice(mention.length)}
-            </>
-          ) : (
-            post.body
-          )}
-        </p>
+            {mention ? (
+              <>
+                <span className="font-medium text-accent">{mention}</span>
+                {post.body.slice(mention.length)}
+              </>
+            ) : (
+              post.body
+            )}
+          </p>
 
-        {post.image_path ? <PostImage path={post.image_path} footer={<Counts />} /> : null}
+          {post.image_path ? <PostImage path={post.image_path} footer={<Counts />} /> : null}
 
-        <Counts />
+          <Counts />
+        </div>
       </div>
     </div>
   );

@@ -97,7 +97,14 @@ export function parseFeed(xml: string, limit = 25): FeedItem[] {
 
   for (const block of blocks) {
     const title = text(tag(block, "title"));
-    const url = text(tag(block, "link")) || atomLink(block) || "";
+    // <link>, then an Atom href, then <guid>.
+    //
+    // hiv.gov ships no <link> at all and puts the URL in
+    // <guid isPermaLink="false">, which is the wrong flag for a value that is
+    // plainly a URL — its whole feed was dropped for it. The flag is not worth
+    // arguing with: the https:// test below is what decides whether a guid is
+    // an address or an opaque id, and an opaque id fails it.
+    const url = text(tag(block, "link")) || atomLink(block) || text(tag(block, "guid")) || "";
     if (!title || !url.startsWith("https://")) continue;
 
     const summary = text(

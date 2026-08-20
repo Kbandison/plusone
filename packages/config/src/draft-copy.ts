@@ -740,6 +740,8 @@ export const DRAFT_COPY = {
     postShareCopied: "Link copied",
     postShareExternal: "Share…",
     postShareToRoom: "Post to another room",
+    /** Above a shared post, because somebody chose to bring it. */
+    postSharedBy: (name: string) => `${name} shared this`,
     /**
      * Collapsed by default. A comment with nine replies under it pushes the
      * next comment off the screen, and the member scrolling past has not

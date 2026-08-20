@@ -121,3 +121,29 @@ describe("markup a feed sends as text", () => {
     expect(parseFeed(xml)[0]?.title).toBe("Café & more");
   });
 });
+
+/**
+ * hiv.gov ships no <link> at all and puts the URL in
+ * <guid isPermaLink="false">, which is the wrong flag for a value that is
+ * plainly a URL. Its whole feed was dropped for it.
+ */
+describe("a feed with no link element", () => {
+  it("falls back to a guid that is a URL", () => {
+    const xml = `<rss><item><title>Lab tests</title>
+      <guid isPermaLink="false">https://www.hiv.gov/a/b</guid></item></rss>`;
+    expect(parseFeed(xml)[0]?.url).toBe("https://www.hiv.gov/a/b");
+  });
+
+  /** The https test is what tells an address from an opaque id, not the flag. */
+  it("still drops a guid that is not one", () => {
+    const xml = `<rss><item><title>t</title><guid>urn:uuid:1234</guid></item></rss>`;
+    expect(parseFeed(xml)).toEqual([]);
+  });
+
+  /** A real link wins over a guid, which is often a tracking variant of it. */
+  it("prefers the link when there is one", () => {
+    const xml = `<rss><item><title>t</title><link>https://a.example/real</link>
+      <guid>https://a.example/guid</guid></item></rss>`;
+    expect(parseFeed(xml)[0]?.url).toBe("https://a.example/real");
+  });
+});

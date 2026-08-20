@@ -75,9 +75,12 @@ export function ShareMenu({
        * it stops being a stacking argument. It is also what a share control
        * looks like on a phone, which is where this is pressed.
        */
-      /* Clear of the nav on a phone; centred on anything wider, where there
-         is no nav at the bottom to clear. */
-      panelClassName="bottom-20 sm:bottom-auto"
+      /* Flush to the bottom on a phone, like every other sheet here. Held off
+         the nav it read as a panel floating in the middle of nothing — and
+         covering the nav costs nothing, because showModal() has already made
+         everything behind it inert. Centred on anything wider, where a sheet is
+         not the idiom. */
+      panelClassName="pb-10 sm:bottom-auto sm:pb-6"
     >
       {(close) => (
         <div className="mt-4 flex flex-col">

@@ -11,11 +11,16 @@
  * up until a member opens an empty page.
  *
  * NOT ON THE LIST, and worth knowing why:
- *   · aidsmap and hiv.gov — every feed path tried returned 404. They may have
- *     moved; the old ones are not usable.
- *   · POZ and Terrence Higgins Trust — both answer an automated fetch with 403.
- *     Fetching them anyway would mean pretending to be a browser, which is a
- *     thing to decide on purpose rather than slip into.
+ *   · aidsmap — no feed. Every path returns 404 or 500 and the site advertises
+ *     none in its own markup. There is nothing to subscribe to.
+ *   · POZ and Terrence Higgins Trust — 403 to an automated fetch, and still 403
+ *     with an honest bot user-agent naming this app. That is CDN bot protection
+ *     rather than a user-agent filter, so the only way through is to impersonate
+ *     a browser well enough to defeat it. That is not a technical obstacle to
+ *     work around, it is the publisher saying no.
+ *
+ * hiv.gov was on that list and is not any more: the one feed it advertises does
+ * work, and is now below.
  *
  * THE SOURCES ARE CLAUDE'S SUGGESTION. Kevin has not reviewed this list, and
  * what a health community points its members at is his call, not mine. The
@@ -108,6 +113,19 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
     feedUrl: "https://www.who.int/rss-feeds/news-english.xml",
     scope: "all",
     requires: SEXUAL_HEALTH_TERMS,
+  },
+  {
+    key: "hiv-gov",
+    name: "HIV.gov",
+    // The only feed hiv.gov advertises anywhere on the site, and it works.
+    //
+    // It is a TOPIC feed rather than a news feed — care and lab tests, written
+    // once and kept current — so it fills Latest with guidance as well as
+    // headlines. That is a fair thing for a member to find there and worth
+    // knowing it is what this is.
+    feedUrl: "https://www.hiv.gov/provider-visits-and-lab-tests.xml",
+    icon: "https://www.hiv.gov/favicon.ico",
+    scope: "hiv",
   },
   {
     key: "thebody",
