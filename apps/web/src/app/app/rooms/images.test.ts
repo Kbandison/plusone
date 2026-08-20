@@ -278,12 +278,32 @@ describe("less repainting behind an open dialog", () => {
    * the one after that was clean. The form clears itself, which does not race
    * with anything.
    */
-  it("empties the composer when the post lands, not only closes it", () => {
-    const effect = compose.slice(compose.indexOf("const sent = useRef(false)"));
-    const body = effect.slice(0, effect.indexOf("}, [pending"));
+  /**
+   * Watching `pending` go true then false with no error looked like success and
+   * was not: ROOM_INITIAL is also {error: null}, so "no error" is true before
+   * anything is sent, and seeing the transition at all depends on React
+   * rendering both halves of it. Batched, the composer never noticed — so the
+   * dialog stayed open with the photograph in it and the next render put it
+   * back on screen.
+   */
+  it("watches a value that changes, not a sequence it infers", () => {
+    const effect = compose.slice(compose.indexOf("if (!state.posted) return;"));
+    const body = effect.slice(0, effect.indexOf("}, [state.posted"));
     expect(body).toMatch(/form\.current\?\.reset\(\)/);
     expect(body).toMatch(/clearImage\(\)/);
     expect(body).toMatch(/onPosted\(\)/);
+    expect(compose).not.toMatch(/sent\.current/);
+  });
+
+  /** And the action supplies it. */
+  it("stamps the post so the composer can see it happened", () => {
+    const fn = actions.slice(
+      actions.indexOf("export async function postToRoom"),
+      actions.indexOf("export async function toggleLike"),
+    );
+    expect(fn).toMatch(/return \{ error: null, posted: Date\.now\(\) \}/);
+    const state = read("./[roomId]/state.ts");
+    expect(state).toMatch(/readonly posted\?: number/);
   });
 
   /** reset() takes the textarea, the file input and the checkbox together. */

@@ -53,30 +53,28 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
   // {error: null} — so "no error" alone is true before anything is sent. This
   // waits for a send to have been in flight, the same shape the chat composer's
   // draft-clearing needed for the same reason.
-  const sent = useRef(false);
   const form = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    if (pending) sent.current = true;
-    else if (sent.current && state.error === null) {
-      sent.current = false;
 
-      // Emptied, and then closed.
-      //
-      // Closing alone was not enough: unmounting the contents is what discards
-      // this component's state, and that happens a render after the dialog's
-      // close event — so the first reopen after a post still showed the
-      // photograph that had just been sent, and only the one after that was
-      // clean. Clearing here does not race with anything, and a composer that
-      // has just posted should be empty whether or not it is on screen.
-      //
-      // reset() takes the textarea, the file input and the anonymity checkbox
-      // together, which is three fewer things to remember than clearing them
-      // one at a time.
-      form.current?.reset();
-      clearImage();
-      onPosted();
-    }
-  }, [pending, state.error, onPosted]);
+  /**
+   * Closed and emptied when the post actually lands.
+   *
+   * This watched `pending` go true and then false with no error — which looked
+   * like success and was not. ROOM_INITIAL is also {error: null}, so "no error"
+   * is true before anything is sent; and seeing the transition at all depends
+   * on React rendering both halves of it, which it does not have to. Batched,
+   * the composer never noticed, never cleared itself and never closed — so the
+   * dialog stayed open with the photograph in it, and the next render put it
+   * back on screen.
+   *
+   * state.posted changes on every success, so the effect runs because a value
+   * changed rather than because a sequence was inferred.
+   */
+  useEffect(() => {
+    if (!state.posted) return;
+    form.current?.reset();
+    clearImage();
+    onPosted();
+  }, [state.posted, onPosted]);
 
   // Object URLs are a leak if nothing revokes them: the browser holds the file
   // alive until told otherwise, and a member trying three photographs would

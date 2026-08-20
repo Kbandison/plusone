@@ -156,7 +156,9 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   if (error) return { error: memberFacingError(error, "That didn't post.") };
 
   revalidatePath(`/app/rooms/${roomId}`);
-  return { error: null };
+  // A value that changes on every success, so the composer can tell this apart
+  // from the state it started in. See RoomState.posted.
+  return { error: null, posted: Date.now() };
 }
 
 /**
