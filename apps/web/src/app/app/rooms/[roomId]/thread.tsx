@@ -93,10 +93,12 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
         {comments.map((comment) => (
           <li
             key={comment.id}
-            /* Narrower and tighter. The indent grew and the vertical padding
-               shrank; nothing inside changed size, so a reply is a smaller slot
-               holding the same things rather than smaller things. */
-            className="ml-16 border-b border-line border-l-2 border-l-line-2 py-2 pr-6 pl-4"
+            /* No rules. The indent does the work on its own — a comment sits
+               in from the page edge and a reply sits in from the comment, and
+               that is enough to say which is which. The hairlines that were
+               here drew a box around every row and made a conversation read as
+               a table of them. */
+            className="ml-16 py-2 pr-6 pl-4"
           >
             {/* No commentHref — a comment is not a page. Replyable instead:
                 answering it nests one layer down, and answering one of THOSE
@@ -115,7 +117,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
 
             <Replies count={comment.comment_count}>
               {repliesTo(comment.id).map((reply) => (
-                <li key={reply.id} className="mt-2 border-l-2 border-l-line pl-4">
+                <li key={reply.id} className="mt-2 pl-4">
                   <PostRow
                     post={reply}
                     photo={photos.get(reply.author_id ?? "")}

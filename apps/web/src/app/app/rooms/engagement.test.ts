@@ -417,9 +417,19 @@ describe("a post and its replies do not look alike", () => {
   });
 
   /** An indent alone is a margin, and a margin is invisible on its own. */
-  /** The exact indent is asserted below, where it was last changed. */
-  it("rules the reply column down its left", () => {
-    expect(thread).toMatch(/border-l-2 border-l-line-2/);
+  /**
+   * The indent alone, with no rules at all.
+   *
+   * The hairlines drew a box around every row and made a conversation read as
+   * a table of them. A comment sits in from the page edge and a reply sits in
+   * from the comment; that is enough to say which is which.
+   */
+  it("sets the reply column in without ruling it", () => {
+    const list = thread.slice(thread.indexOf('<ul className="-mx-6'));
+    expect(list).toMatch(/className="ml-16 py-2 pr-6 pl-4"/);
+    // The lookahead matters: "border-line" contains "border-l", and the naive
+    // version of this failed on the colour token rather than on a rule.
+    expect(list).not.toMatch(/\bborder-[bl](?![a-z])/);
   });
 
   /** border-y plus the list's border-t drew two rules with ground between. */
@@ -539,7 +549,7 @@ describe("answering from inside a thread", () => {
 
 describe("the reply column is a smaller slot, not smaller things", () => {
   it("indents further and tightens the rows", () => {
-    expect(thread).toMatch(/ml-16 border-b border-line border-l-2 border-l-line-2 py-2/);
+    expect(thread).toMatch(/className="ml-16 py-2 pr-6 pl-4"/);
   });
 
   /** Nothing inside changed size — that was asked for explicitly. */
