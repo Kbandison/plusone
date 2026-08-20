@@ -8,7 +8,6 @@ const sql = read(
   "../../../../../../supabase/migrations/20260819000800_replies_likes_and_who_saw_it.sql",
 );
 const row = read("./[roomId]/post-row.tsx");
-const feed = read("./[roomId]/page.tsx");
 const thread = read("./[roomId]/thread.tsx");
 const threadPage = read("./[roomId]/[post]/page.tsx");
 const threadModal = read("./[roomId]/@modal/(.)[post]/page.tsx");
@@ -76,7 +75,7 @@ describe("comments are posts", () => {
     expect(sql).toMatch(/new\.room_id := v_parent_room;/);
   });
 
-  it("keeps comments out of the feed and under their post", () => {
+  it("keeps comments out of the roomPage and under their post", () => {
     expect(sql).toMatch(/and m\.parent_id is null/);
     expect(sql).toMatch(/where \(m\.id = p_message_id or m\.parent_id = p_message_id\)/);
   });
@@ -150,7 +149,7 @@ describe("views are the author's alone", () => {
   });
 
   it("records what was actually shown, once per page", () => {
-    expect(feed).toMatch(/record_room_views"[\s\S]{0,80}posts\.map\(\(post\) => post\.id\)/);
+    expect(roomPage).toMatch(/record_room_views"[\s\S]{0,80}posts\.map\(\(post\) => post\.id\)/);
     expect(row).toMatch(/post\.view_count !== null/);
   });
 
@@ -163,7 +162,7 @@ describe("views are the author's alone", () => {
 describe("the like reads as instant, and stays right", () => {
   /**
    * useOptimistic DISCARDS its value when the transition ends and falls back to
-   * the props it was given. Nothing revalidated the feed, so those props still
+   * the props it was given. Nothing revalidated the roomPage, so those props still
    * said what the server had said before the press — like, see 1, press again,
    * see 0, watch it come back to 1. The optimistic value was correct and the
    * stale prop won.
@@ -184,10 +183,10 @@ describe("the like reads as instant, and stays right", () => {
   });
 
   /**
-   * Re-rendering a hundred-post feed to learn one number the RPC already
+   * Re-rendering a hundred-post roomPage to learn one number the RPC already
    * returned is a lot of work for the control a member presses most.
    */
-  it("does not revalidate the whole feed for one number", () => {
+  it("does not revalidate the whole roomPage for one number", () => {
     const action = read("./[roomId]/actions.ts");
     const fn = action.slice(action.indexOf("export async function toggleLike"));
     expect(fn.slice(0, fn.indexOf("\n}"))).not.toMatch(/revalidatePath/);
@@ -236,12 +235,12 @@ describe("a reply is not a flood", () => {
  */
 describe("one row, two screens", () => {
   it("renders both through the same component", () => {
-    expect(feed).toMatch(/<PostRow/);
+    expect(roomPage).toMatch(/<PostRow/);
     expect(thread).toMatch(/<PostRow/);
   });
 
   it("takes both from the same projection", () => {
-    expect(feed).toMatch(/rpc\("room_feed"/);
+    expect(roomPage).toMatch(/rpc\("room_feed"/);
     expect(thread).toMatch(/rpc\("room_thread"/);
     expect(sql).toMatch(/room_thread\(uuid\) is[\s\S]{0,140}same projection room_feed uses/);
   });
@@ -580,7 +579,7 @@ describe("the view count is an eye", () => {
  * arrival from outside falls through to the page, because `(.)` only applies to
  * a soft navigation from inside the room.
  */
-describe("the thread opens over the feed", () => {
+describe("the thread opens over the roomPage", () => {
   it("renders the same component on both surfaces", () => {
     expect(threadPage).toMatch(/<Thread roomId=\{roomId\} postId=\{post\} \/>/);
     expect(threadModal).toMatch(/<Thread roomId=\{roomId\} postId=\{post\} \/>/);
@@ -683,9 +682,10 @@ describe("replies nest one layer and no further", () => {
   });
 
   /** Nine replies under one comment push the next comment off the screen. */
+  /** Collapsed unless asked for, or unless this is the comment being answered. */
   it("collapses them until asked for", () => {
     expect(replies).toMatch(/const \[open, setOpen\] = useState\(false\)/);
-    expect(replies).toMatch(/aria-expanded=\{open\}/);
+    expect(replies).toMatch(/aria-expanded=\{showing\}/);
     expect(replies).toMatch(/C\.postShowReplies\(count\)/);
   });
 
@@ -695,10 +695,10 @@ describe("replies nest one layer and no further", () => {
 
   /**
    * Two questions, two answers: "3 replies" under a comment counts direct
-   * children, and a feed row claiming how many comments a post has counts
+   * children, and a roomPage row claiming how many comments a post has counts
    * every descendant.
    */
-  it("counts direct children in a thread and every descendant in the feed", () => {
+  it("counts direct children in a thread and every descendant in the roomPage", () => {
     expect(migration).toMatch(
       /select count\(\*\) from visible c where c\.parent_id = m\.id\)::integer/,
     );
@@ -746,7 +746,7 @@ describe("nothing scrolls behind the modal", () => {
 /**
  * Two lists asking two different questions.
  *
- * The comment list is a feed — a member comes back to see what is new. A reply
+ * The comment list is a roomPage — a member comes back to see what is new. A reply
  * thread is a conversation between two or three people about one thing, read
  * forwards, because the second reply is usually an answer to the first and
  * reversing them makes an argument run backwards.
@@ -777,5 +777,82 @@ describe("a reply thread reads forwards", () => {
   it("still puts the post first", () => {
     const order = migration.slice(migration.indexOf("order by"));
     expect(order.indexOf("(m.id = p_message_id) desc")).toBeLessThan(order.indexOf("created_at"));
+  });
+});
+
+const lightbox = read("./[roomId]/image-lightbox.tsx");
+
+/**
+ * A row holds a like button and a menu, and an anchor cannot contain a button.
+ * So the link is stretched over the row and the controls are lifted above it.
+ */
+describe("the post itself is the target", () => {
+  it("stretches a link over the row rather than wrapping it", () => {
+    expect(row).toMatch(/<Link href=\{href\} className="absolute inset-0 z-10">/);
+    expect(roomPage).toMatch(/href=\{`\/app\/rooms\/\$\{room\.id as string\}\/\$\{post\.id\}`\}/);
+  });
+
+  /** Without this the whole strip would open the thread and nothing would work. */
+  it("lifts the controls above it", () => {
+    expect(row).toMatch(/relative z-20 mt-1 flex items-center gap-5/);
+    expect(row).toMatch(/<span className="relative z-20">\s*<OverflowMenu/);
+  });
+
+  /** Only the menu, so the name and the time still open the thread. */
+  it("leaves the rest of the header under the link", () => {
+    expect(row).toMatch(/<div className="flex items-baseline justify-between gap-3">/);
+  });
+
+  it("names the target for a reader", () => {
+    expect(row).toMatch(/C\.postOpenThread\(post\.author_name \?\? C\.threadUnknownPerson\)/);
+  });
+});
+
+describe("the photograph opens full screen", () => {
+  /** Every one of Modal's decisions is the opposite of what a lightbox wants. */
+  it("uses its own dialog, edge to edge", () => {
+    expect(lightbox).toMatch(/fixed inset-0 m-0 flex h-full max-h-none w-full max-w-none/);
+    expect(lightbox).toMatch(/showModal\(\)/);
+  });
+
+  /** A member should still be able to like the thing they are looking at. */
+  it("carries the counts under it", () => {
+    expect(row).toMatch(/<PostImage path=\{post\.image_path\} footer=\{<Counts \/>\} \/>/);
+    expect(lightbox).toMatch(/\{footer\}/);
+  });
+
+  /** The picture opens full screen; the rest of the post opens the thread. */
+  it("sits above the link covering the row", () => {
+    expect(lightbox).toMatch(/relative z-20 mt-2 block w-full cursor-zoom-in/);
+  });
+
+  /** Anywhere but the picture closes it. */
+  it("closes on a press outside the image", () => {
+    expect(lightbox).toMatch(/if \(event\.target !== dialog\.current\) return;/);
+    expect(lightbox).toMatch(/onClick=\{\(event\) => event\.stopPropagation\(\)\}/);
+  });
+
+  /** Or the image refuses to shrink and pushes the counts off the bottom. */
+  it("lets the image shrink inside the column", () => {
+    expect(lightbox).toMatch(/min-h-0 flex-1/);
+  });
+});
+
+/**
+ * Pressing Reply on a comment whose replies are folded away puts the answer
+ * somewhere the member cannot see: they write it, it lands, and nothing on
+ * screen changes.
+ */
+describe("answering a comment opens its replies", () => {
+  it("opens while that comment is the one being answered", () => {
+    expect(replies).toMatch(/const showing = open \|\| replyParentId === commentId/);
+    expect(thread).toMatch(/<Replies commentId=\{comment\.id\} count=/);
+  });
+
+  /** Including what the toggle says and which way its chevron points. */
+  it("uses that everywhere the toggle reflects its own state", () => {
+    expect(replies).toMatch(/aria-expanded=\{showing\}/);
+    expect(replies).toMatch(/\{showing \? C\.postHideReplies : C\.postShowReplies\(count\)\}/);
+    expect(replies).toMatch(/\{showing \? <ul/);
   });
 });

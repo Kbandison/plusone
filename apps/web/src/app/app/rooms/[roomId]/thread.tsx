@@ -115,7 +115,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
               replyToId={comment.id}
             />
 
-            <Replies count={comment.comment_count}>
+            <Replies commentId={comment.id} count={comment.comment_count}>
               {repliesTo(comment.id).map((reply) => (
                 <li key={reply.id} className="mt-2 pl-4">
                   <PostRow

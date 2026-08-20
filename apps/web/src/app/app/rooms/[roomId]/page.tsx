@@ -185,13 +185,17 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
         {posts.map((post) => (
           <li
             key={post.id}
-            className="ease-brand border-b border-line px-6 py-4 transition-colors duration-200 hover:bg-surface"
+            className="ease-brand relative border-b border-line px-6 py-4 transition-colors duration-200 hover:bg-surface"
           >
+            {/* The whole row opens the thread, and the comment count still
+                does too — one is where a member reaches for it and the other
+                is what they aim at when they mean the comments. */}
             <PostRow
               post={post}
               photo={post.author_id ? authorPhotos.get(post.author_id) : undefined}
               zone={zone}
               now={now}
+              href={`/app/rooms/${room.id as string}/${post.id}`}
               commentHref={`/app/rooms/${room.id as string}/${post.id}`}
             />
           </li>

@@ -54,6 +54,7 @@ export function PostRow({
   mentionable,
   replyable = false,
   replyToId,
+  href,
 }: {
   post: Post;
   photo: MemberPhoto | undefined;
@@ -97,6 +98,15 @@ export function PostRow({
    * would be refused.
    */
   replyToId?: string;
+  /**
+   * Makes the whole row open the thread.
+   *
+   * A link stretched over the row rather than a wrapper around it: the row
+   * holds a like button and a menu, and an anchor cannot contain a button. The
+   * controls are lifted above the link instead, so the interactive parts stay
+   * interactive and everything between them is one target.
+   */
+  href?: string;
 }) {
   const postedAt = Date.parse(post.created_at);
   const isComment = variant === "comment";
@@ -107,8 +117,85 @@ export function PostRow({
     .filter((name) => post.body.startsWith(`${name} `))
     .sort((a, b) => b.length - a.length)[0];
 
+  /**
+   * The like, the comment link, Reply, and the view count.
+   *
+   * Declared here so it closes over this row rather than taking eight props,
+   * and rendered twice: under the post, and again under the photograph when it
+   * is full screen — where a member should still be able to like the thing
+   * they are looking at.
+   *
+   * z-20 lifts it above the link covering the row. Without that the whole strip
+   * would open the thread and none of the controls would do anything.
+   */
+  function Counts() {
+    return (
+      <div className="relative z-20 mt-1 flex items-center gap-5">
+        <LikeButton messageId={post.id} liked={post.i_liked} count={post.like_count} />
+
+        {commentHref ? (
+          <Link
+            href={commentHref}
+            aria-label={C.postCommentCount(post.comment_count)}
+            className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
+          >
+            <CommentIcon />
+            {/* Nought shown, like the like count beside it. A row where one
+                  number appears and the other does not reads as a bug. */}
+            <span className="tabular-nums">{post.comment_count}</span>
+          </Link>
+        ) : null}
+
+        {/* On a comment it addresses that person; on the post at the top of
+              a thread it just opens the box, because a comment on a post is
+              already addressed to whoever wrote it. */}
+        {replyable ? (
+          isComment && post.author_name ? (
+            <ReplyButton name={post.author_name} parentId={replyToId} />
+          ) : (
+            <ReplyButton />
+          )
+        ) : null}
+
+        {/* Author only, and phrased for them. "2 views" under somebody's
+              diagnosis story reads worse than no number at all; the question
+              they actually have is whether anyone saw it.
+
+              Never on a comment. Only a post is recorded as seen — a comment
+              was on the screen because the post was — so a comment's count can
+              only ever read "Seen by 0 people", which is a number that cannot
+              move pretending to be one that has not. */}
+        {post.view_count !== null && !isComment ? (
+          // An eye and a number, sitting with the other two counts rather
+          // than a sentence sitting beside them. The words stay for a reader,
+          // where "12" next to an eye is not self-explanatory.
+          <span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
+            <EyeIcon />
+            <span aria-hidden="true" className="tabular-nums">
+              {post.view_count}
+            </span>
+            <span className="sr-only">{C.postViewCount(post.view_count)}</span>
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-start gap-3">
+    <div className="relative flex items-start gap-3">
+      {/* The row, as one target.
+          Stretched over everything rather than wrapped around it, because an
+          anchor cannot contain the button and the menu this row also has. The
+          controls sit above it; the words and the face are underneath, which is
+          what makes the post itself clickable. */}
+      {href ? (
+        <Link href={href} className="absolute inset-0 z-10">
+          <span className="sr-only">
+            {C.postOpenThread(post.author_name ?? C.threadUnknownPerson)}
+          </span>
+        </Link>
+      ) : null}
+
       {/* An anonymous author has no photo, so the frame's empty state is the
           placeholder — the same neutral shape a member with no photo gets,
           rather than a second thing to learn the meaning of. */}
@@ -137,18 +224,22 @@ export function PostRow({
             </time>
           </p>
 
+          {/* Lifted above the link covering the row — only this, not the whole
+              header, so the name and the time still open the thread. */}
           {!post.is_mine ? (
-            <OverflowMenu label={C.postMenuLabel} compact>
-              <div className="py-3">
-                {/* Neither control takes an author id, and for an anonymous
+            <span className="relative z-20">
+              <OverflowMenu label={C.postMenuLabel} compact>
+                <div className="py-3">
+                  {/* Neither control takes an author id, and for an anonymous
                     post the client does not have one. Both resolve it
                     server-side from the message. */}
-                <ReportControl roomMessageId={post.id} describedBy={`post-${post.id}`} />
-              </div>
-              <div className="py-3">
-                <BlockButton roomMessageId={post.id} describedBy={`post-${post.id}`} />
-              </div>
-            </OverflowMenu>
+                  <ReportControl roomMessageId={post.id} describedBy={`post-${post.id}`} />
+                </div>
+                <div className="py-3">
+                  <BlockButton roomMessageId={post.id} describedBy={`post-${post.id}`} />
+                </div>
+              </OverflowMenu>
+            </span>
           ) : null}
         </div>
 
@@ -173,56 +264,9 @@ export function PostRow({
           )}
         </p>
 
-        {post.image_path ? <PostImage path={post.image_path} /> : null}
+        {post.image_path ? <PostImage path={post.image_path} footer={<Counts />} /> : null}
 
-        <div className="mt-1 flex items-center gap-5">
-          <LikeButton messageId={post.id} liked={post.i_liked} count={post.like_count} />
-
-          {commentHref ? (
-            <Link
-              href={commentHref}
-              aria-label={C.postCommentCount(post.comment_count)}
-              className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
-            >
-              <CommentIcon />
-              {/* Nought shown, like the like count beside it. A row where one
-                  number appears and the other does not reads as a bug. */}
-              <span className="tabular-nums">{post.comment_count}</span>
-            </Link>
-          ) : null}
-
-          {/* On a comment it addresses that person; on the post at the top of
-              a thread it just opens the box, because a comment on a post is
-              already addressed to whoever wrote it. */}
-          {replyable ? (
-            isComment && post.author_name ? (
-              <ReplyButton name={post.author_name} parentId={replyToId} />
-            ) : (
-              <ReplyButton />
-            )
-          ) : null}
-
-          {/* Author only, and phrased for them. "2 views" under somebody's
-              diagnosis story reads worse than no number at all; the question
-              they actually have is whether anyone saw it.
-
-              Never on a comment. Only a post is recorded as seen — a comment
-              was on the screen because the post was — so a comment's count can
-              only ever read "Seen by 0 people", which is a number that cannot
-              move pretending to be one that has not. */}
-          {post.view_count !== null && !isComment ? (
-            // An eye and a number, sitting with the other two counts rather
-            // than a sentence sitting beside them. The words stay for a reader,
-            // where "12" next to an eye is not self-explanatory.
-            <span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
-              <EyeIcon />
-              <span aria-hidden="true" className="tabular-nums">
-                {post.view_count}
-              </span>
-              <span className="sr-only">{C.postViewCount(post.view_count)}</span>
-            </span>
-          ) : null}
-        </div>
+        <Counts />
       </div>
     </div>
   );

@@ -727,6 +727,9 @@ export const DRAFT_COPY = {
     imageUploadFailed: "The photo did not upload. Try again in a moment.",
     /** Decorative to a reader by default: only the poster knows what is in it. */
     postImageAlt: "Photo in this post",
+    /** The whole row is one target; this is what a reader hears it as. */
+    postOpenThread: (name: string) => `Open ${name}'s post`,
+    postImageOpen: "View photo full screen",
     /**
      * Collapsed by default. A comment with nine replies under it pushes the
      * next comment off the screen, and the member scrolling past has not

@@ -121,8 +121,19 @@ describe("reading one back", () => {
    * of that room — so the first viewer would populate an entry anybody could
    * then read from the CDN.
    */
-  it("never goes through the image optimiser", () => {
-    expect(image).toMatch(/unoptimized/);
+  /**
+   * Stronger than it was. This asserted `unoptimized` on a next/image; the
+   * lightbox renders a plain <img>, so there is no optimiser in the path to
+   * opt out of.
+   */
+  it("never goes near the image optimiser", () => {
+    const lb = read("./[roomId]/image-lightbox.tsx");
+    for (const [name, source] of [
+      ["post-image", image],
+      ["lightbox", lb],
+    ] as const) {
+      expect(source, `${name} must not use next/image`).not.toMatch(/from "next\/image"/);
+    }
   });
 
   /** Inventing a description would be a guess presented as a fact. */
@@ -328,5 +339,23 @@ describe("less repainting behind an open dialog", () => {
       .filter((line) => !/^\s*(\/\/|\*)/.test(line))
       .join("\n");
     expect(code).not.toMatch(/autoFocus/);
+  });
+});
+
+/**
+ * max-h with no height meant the figure was nothing until the blob decoded and
+ * then jumped to whatever the photograph was — the dialog resized under it, and
+ * that jump is the flicker on attaching.
+ */
+describe("attaching a photograph does not resize the dialog", () => {
+  it("gives the preview a height before the image has one", () => {
+    expect(compose).toMatch(/h-\[320px\] w-full rounded-xl border border-line-2 bg-surface-2/);
+    expect(compose).not.toMatch(/max-h-\[320px\]/);
+  });
+
+  /** The path never reaches the browser, only a link that expires. */
+  it("mints the signed URL on the server and hands over the link", () => {
+    expect(image).toMatch(/createSignedUrl\(path, 60 \* 10\)/);
+    expect(image).toMatch(/<ImageLightbox src=\{data\.signedUrl\}/);
   });
 });

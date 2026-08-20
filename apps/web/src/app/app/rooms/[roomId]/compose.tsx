@@ -161,11 +161,18 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
           {/* Not next/image: this is a blob: URL for a file that has not left
               the device, so there is nothing to optimise and no width to know
               in advance. */}
+          {/* A box of a fixed height, holding an image of unknown one.
+              max-h with no height meant the figure was nothing until the blob
+              decoded and then jumped to whatever the photograph was — the
+              dialog resized under it, and that jump is the flicker on
+              attaching. The box is 320px before the image exists and 320px
+              after, whatever arrives. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={preview}
             alt={name ?? C.postImageAlt}
-            className="max-h-[320px] w-full rounded-xl border border-line-2 object-contain"
+            decoding="async"
+            className="h-[320px] w-full rounded-xl border border-line-2 bg-surface-2 object-contain"
           />
           <figcaption className="mt-2 flex items-center gap-3 text-[11px] text-ink-3">
             <span className="max-w-[20ch] truncate">{name}</span>

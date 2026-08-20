@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
+import { useReply } from "./reply-context";
+
 const C = DRAFT_COPY.app;
 
 /**
@@ -18,8 +20,25 @@ const C = DRAFT_COPY.app;
  * one boolean and nothing else, so nesting costs a state hook per comment and
  * not a second way of building a post.
  */
-export function Replies({ count, children }: { count: number; children: React.ReactNode }) {
+export function Replies({
+  commentId,
+  count,
+  children,
+}: {
+  commentId: string;
+  count: number;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
+
+  // Open while this is the comment being answered.
+  //
+  // Pressing Reply on a comment whose replies are folded away puts the answer
+  // somewhere the member cannot see — they write it, it lands, and nothing on
+  // screen changes. Aiming at a comment is as clear a statement of interest in
+  // its replies as pressing the toggle would be.
+  const { replyParentId } = useReply();
+  const showing = open || replyParentId === commentId;
 
   if (count === 0) return null;
 
@@ -28,19 +47,19 @@ export function Replies({ count, children }: { count: number; children: React.Re
       <button
         type="button"
         onClick={() => setOpen((was) => !was)}
-        aria-expanded={open}
+        aria-expanded={showing}
         className="ease-brand flex min-h-tap items-center gap-2 text-[11.5px] text-ink-2 transition-colors duration-200 hover:text-ink"
       >
         <span
           aria-hidden="true"
-          className={`ease-brand inline-block text-ink-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+          className={`ease-brand inline-block text-ink-3 transition-transform duration-200 ${showing ? "rotate-90" : ""}`}
         >
           ›
         </span>
-        {open ? C.postHideReplies : C.postShowReplies(count)}
+        {showing ? C.postHideReplies : C.postShowReplies(count)}
       </button>
 
-      {open ? <ul className="rise-in">{children}</ul> : null}
+      {showing ? <ul className="rise-in">{children}</ul> : null}
     </div>
   );
 }
