@@ -325,3 +325,48 @@ describe("the comment icon is a speech bubble", () => {
     );
   });
 });
+
+/**
+ * Oldest-first held for a handful of replies and stopped holding at twenty: the
+ * newest is the one a member came back for, and putting it last means scrolling
+ * past everything they have already read.
+ */
+describe("a thread reads from the top", () => {
+  const migration = read(
+    "../../../../../../supabase/migrations/20260819001000_newest_reply_first.sql",
+  );
+
+  it("puts the post first and the newest reply next", () => {
+    expect(migration).toMatch(/order by \(m\.id = p_message_id\) desc, m\.created_at desc/);
+  });
+
+  /** The name is the one thing on a row that says whose words these are. */
+  it("bolds the name", () => {
+    expect(row).toMatch(/truncate font-medium/);
+  });
+
+  /**
+   * A comment reads as an answer because it is smaller and set in from the
+   * edge, not because it is labelled as one.
+   */
+  it("sizes a comment below a post", () => {
+    expect(row).toMatch(/size=\{isComment \? 26 : 40\}/);
+    expect(row).toMatch(
+      /isComment \? "text-\[12\.6px\] leading-\[1\.55\]" : "text-\[15px\] leading-\[1\.6\]"/,
+    );
+    expect(thread2).toMatch(/variant="comment"/);
+  });
+
+  it("sets the comments in from the page edge", () => {
+    expect(thread2).toMatch(/border-b border-line py-3 pr-6 pl-12/);
+  });
+
+  /**
+   * Above the comments it was the first thing on the way in and the last thing
+   * reachable on the way back — and pressing Reply sent focus upward past
+   * everything just read.
+   */
+  it("puts the box at the bottom", () => {
+    expect(thread2.indexOf("<CommentComposer")).toBeGreaterThan(thread2.indexOf("</ul>"));
+  });
+});

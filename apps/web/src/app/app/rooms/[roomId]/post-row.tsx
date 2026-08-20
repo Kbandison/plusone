@@ -48,6 +48,7 @@ export function PostRow({
   zone,
   now,
   commentHref,
+  variant = "post",
   replyable = false,
 }: {
   post: Post;
@@ -56,6 +57,15 @@ export function PostRow({
   now: number;
   /** Absent for a comment, and for the post you are already looking at. */
   commentHref?: string;
+  /**
+   * How much of the page this row is entitled to.
+   *
+   * "post" is the thing a screen is about — the row in a feed, or the post at
+   * the top of a thread. "comment" is an answer to one, and reads as an answer
+   * because it is smaller and set in from the edge rather than because it is
+   * labelled as one.
+   */
+  variant?: "post" | "comment";
   /**
    * Shows a Reply control that addresses this row's author.
    *
@@ -67,18 +77,22 @@ export function PostRow({
   replyable?: boolean;
 }) {
   const postedAt = Date.parse(post.created_at);
+  const isComment = variant === "comment";
 
   return (
     <div className="flex items-start gap-3">
       {/* An anonymous author has no photo, so the frame's empty state is the
           placeholder — the same neutral shape a member with no photo gets,
           rather than a second thing to learn the meaning of. */}
-      <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={34} />
+      <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 26 : 40} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
           <p className="flex min-w-0 items-baseline gap-2">
-            <span className="truncate text-[13px]">
+            {/* Bold, because it is the one thing on the row that says whose
+                words these are — and in a room where a name may be a pseudonym
+                that is the fact a reader is looking for first. */}
+            <span className={`truncate font-medium ${isComment ? "text-[12.5px]" : "text-[14px]"}`}>
               {post.author_name ?? C.threadUnknownPerson}
             </span>
             {post.anonymous ? (
@@ -113,7 +127,10 @@ export function PostRow({
         {/* The controls above point at this id, which is what tells a screen
             reader user which post they are about to report — every one of them
             is otherwise just "Report, button". */}
-        <p id={`post-${post.id}`} className="mt-1 text-[13.5px] leading-[1.6] whitespace-pre-wrap">
+        <p
+          id={`post-${post.id}`}
+          className={`mt-1 whitespace-pre-wrap ${isComment ? "text-[12.6px] leading-[1.55]" : "text-[15px] leading-[1.6]"}`}
+        >
           {post.body}
         </p>
 

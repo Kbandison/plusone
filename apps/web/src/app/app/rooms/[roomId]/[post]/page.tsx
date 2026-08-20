@@ -85,15 +85,16 @@ export default async function PostPage({
           <PostRow post={root} photo={photos.get(root.author_id ?? "")} zone={zone} now={now} />
         </div>
 
-        <CommentComposer roomId={roomId} parentId={root.id} />
-
-        <ul className="-mx-6 mt-6 border-t border-line">
+        <ul className="-mx-6 mt-4 border-t border-line">
           {comments.length === 0 ? (
             <li className="px-6 py-6 text-[12.6px] text-ink-2">{C.postCommentNone}</li>
           ) : null}
 
+          {/* Set in from the left, so the column of answers reads as answers
+              without any of them having to say so. The post above starts at the
+              page edge; these do not. */}
           {comments.map((comment) => (
-            <li key={comment.id} className="border-b border-line px-6 py-4">
+            <li key={comment.id} className="border-b border-line py-3 pr-6 pl-12">
               {/* No commentHref — a reply cannot be replied to, and the
                   database refuses one rather than trusting this not to offer
                   it. Replyable instead: answering somebody puts their name in
@@ -104,11 +105,18 @@ export default async function PostPage({
                 photo={photos.get(comment.author_id ?? "")}
                 zone={zone}
                 now={now}
+                variant="comment"
                 replyable
               />
             </li>
           ))}
         </ul>
+
+        {/* At the bottom, which is where a member ends up.
+            Above the comments it was the first thing on the way in and the
+            last thing they could reach on the way back — and pressing Reply on
+            a comment sent focus upward past everything they had just read. */}
+        <CommentComposer roomId={roomId} parentId={root.id} />
       </ReplyProvider>
     </main>
   );
