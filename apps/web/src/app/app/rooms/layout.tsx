@@ -1,5 +1,3 @@
-import { DRAFT_COPY } from "@plusone/config";
-
 import { RoomTabs } from "./room-tabs";
 import { getServerSupabase } from "@/lib/supabase";
 
@@ -39,18 +37,14 @@ export default async function RoomsLayout({ children }: { children: React.ReactN
     ]),
   );
 
-  const rooms = [
-    ...(data ?? []).map((room) => ({
-      id: room.id as string,
-      title: room.title as string,
-      unread: unread.get(room.id as string) ?? false,
-    })),
-    // Last, because it is the one tab that is not people. Never unread: an
-    // article nobody has read is not somebody waiting for an answer, and a dot
-    // that only ever means "more was published" would train members to ignore
-    // the ones that mean something.
-    { id: "news", title: DRAFT_COPY.app.newsHeading, unread: false },
-  ];
+  // Latest news is a room now — two of them, one per community, and the scope
+  // wall means a member sees exactly one. So the bar needs no special case: it
+  // arrives with the others and sorts by position like the others.
+  const rooms = (data ?? []).map((room) => ({
+    id: room.id as string,
+    title: room.title as string,
+    unread: unread.get(room.id as string) ?? false,
+  }));
 
   return (
     <>

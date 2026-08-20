@@ -31,6 +31,17 @@ export async function POST(request: Request) {
 
   const supabase = serviceClient();
   const allowed = new Set(newsAllowedHosts());
+
+  // The rooms articles are posted into, read once. If they are missing there is
+  // nothing to do and saying so beats writing nothing and reporting success.
+  const { data: roomRows } = await supabase
+    .from("rooms")
+    .select("id, slug, community_scope")
+    .like("slug", "latest-news-%");
+  const rooms = (roomRows ?? []) as { id: string; slug: string; community_scope: string }[];
+  if (rooms.length === 0) {
+    return NextResponse.json({ error: "no latest-news rooms" }, { status: 500 });
+  }
   const failures: string[] = [];
   let added = 0;
   let seen = 0;
@@ -73,21 +84,40 @@ export async function POST(request: Request) {
 
     if (items.length === 0) continue;
 
-    const { error, count } = await supabase.from("news_items").upsert(
-      items.map((item) => ({
-        source_key: source.key,
-        source_name: source.name,
-        community_scope: source.scope,
-        title: item.title,
-        url: item.url,
-        summary: item.summary || null,
-        published_at: item.publishedAt ? new Date(item.publishedAt).toISOString() : null,
-      })),
-      { onConflict: "url", ignoreDuplicates: true, count: "exact" },
+    // Which Latest news rooms this belongs in.
+    //
+    // An article scoped to a community goes to that community's room; one
+    // scoped 'all' goes to both, because a member only ever sees their own and
+    // an article posted once would reach half the site. The two communities
+    // then discuss it separately, which in a health community is the point
+    // rather than the cost.
+    const targets = rooms.filter(
+      (room) => source.scope === "all" || room.community_scope === source.scope,
     );
 
-    if (error) failures.push(`${source.key}: ${error.message}`);
-    else added += count ?? 0;
+    for (const room of targets) {
+      const { error, count } = await supabase.from("room_messages").upsert(
+        items.map((item) => ({
+          room_id: room.id,
+          // No author. An article is not something anybody here wrote, and a
+          // system member sitting in profiles would be visible to every query
+          // that assumes a profile row is a person.
+          user_id: null,
+          // The summary is the post's body, so an article reads like a post
+          // rather than like a link with a heading.
+          body: item.summary || item.title,
+          article_url: item.url,
+          article_title: item.title,
+          article_source: source.name,
+          article_icon: source.icon ?? null,
+          created_at: item.publishedAt ? new Date(item.publishedAt).toISOString() : undefined,
+        })),
+        { onConflict: "room_id,article_url", ignoreDuplicates: true, count: "exact" },
+      );
+
+      if (error) failures.push(`${source.key}/${room.slug}: ${error.message}`);
+      else added += count ?? 0;
+    }
   }
 
   return NextResponse.json({ sources: NEWS_SOURCES.length, seen, added, failures });

@@ -103,6 +103,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // The news screen, which only an admin reaches. Both describe a malformed
   // write from that screen, and it shows its own copy for them — a member
   // never calls these RPCs at all.
+  "an article needs a headline",
+  "no such article",
+  // Their predecessors, from before articles became posts. The functions are
+  // dropped; the migration that raised them is history and the scanner reads
+  // history.
   "a news item needs a title",
   "no such news item",
   "could not allocate a referral code",

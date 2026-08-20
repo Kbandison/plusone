@@ -8,15 +8,15 @@ import { NEWS_INITIAL } from "./state";
 
 export interface NewsRow {
   readonly id: string;
-  readonly title: string;
-  readonly url: string;
+  readonly article_title: string;
+  readonly article_url: string;
+  readonly article_source: string;
   readonly summary: string | null;
-  readonly source_name: string;
+  readonly room_title: string;
   readonly community_scope: string;
-  readonly published_at: string | null;
+  readonly created_at: string;
+  readonly comment_count: number;
 }
-
-const SCOPES = ["all", "hsv", "hiv"] as const;
 
 /**
  * One item: what it says, where it came from, and the two things an admin can
@@ -34,26 +34,29 @@ export function NewsItemRow({ item }: { item: NewsRow }) {
   return (
     <li className="border-b border-line py-4 last:border-0">
       <p className="flex flex-wrap items-center gap-2 text-[11px] text-ink-3">
-        <span>{item.source_name}</span>
+        <span>{item.article_source}</span>
         <span className="rounded-full border border-line-2 px-2 py-0.5">
           {item.community_scope}
         </span>
-        {item.published_at ? (
-          <time dateTime={item.published_at}>
-            {new Date(item.published_at).toLocaleDateString()}
-          </time>
+        <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleDateString()}</time>
+        {item.comment_count > 0 ? (
+          // Worth seeing before deleting: removing an article takes its
+          // conversation with it.
+          <span>
+            {item.comment_count} comment{item.comment_count === 1 ? "" : "s"}
+          </span>
         ) : null}
       </p>
 
       <a
-        href={item.url}
+        href={item.article_url}
         target="_blank"
         // Same reason as everywhere else an outside link exists here: the
         // destination does not need to be told where the reader came from.
         rel="noopener noreferrer"
         className="ease-brand mt-1 block text-[14px] leading-[1.4] underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
       >
-        {item.title}
+        {item.article_title}
       </a>
 
       {item.summary ? (
@@ -98,10 +101,10 @@ export function NewsItemRow({ item }: { item: NewsRow }) {
           <input type="hidden" name="id" value={item.id} />
 
           <label className="flex flex-col gap-1.5 text-[11px] text-ink-2">
-            Title
+            Headline
             <input
               name="title"
-              defaultValue={item.title}
+              defaultValue={item.article_title}
               maxLength={300}
               className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
             />
@@ -116,24 +119,6 @@ export function NewsItemRow({ item }: { item: NewsRow }) {
               maxLength={1000}
               className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
             />
-          </label>
-
-          <label className="flex flex-col gap-1.5 text-[11px] text-ink-2">
-            {/* Editable because the ingest guesses this from the source, and a
-                source that mostly serves one community will sometimes publish
-                for everybody. */}
-            Community
-            <select
-              name="scope"
-              defaultValue={item.community_scope}
-              className="rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-accent"
-            >
-              {SCOPES.map((scope) => (
-                <option key={scope} value={scope}>
-                  {scope}
-                </option>
-              ))}
-            </select>
           </label>
 
           <button type="submit" disabled={saving} className={buttonClass("primary", "self-start")}>

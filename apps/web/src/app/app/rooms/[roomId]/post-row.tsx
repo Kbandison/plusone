@@ -34,6 +34,10 @@ export interface Post {
   readonly comment_count: number;
   /** The author's own count, and null to everybody else. */
   readonly view_count: number | null;
+  /** Present exactly on the posts that are news; null on everything else. */
+  readonly article_url: string | null;
+  readonly article_title: string | null;
+  readonly article_icon: string | null;
 }
 
 /**
@@ -199,7 +203,25 @@ export function PostRow({
       {/* An anonymous author has no photo, so the frame's empty state is the
           placeholder — the same neutral shape a member with no photo gets,
           rather than a second thing to learn the meaning of. */}
-      <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
+      {post.article_url ? (
+        // The publisher's mark where a member's photograph would be.
+        // referrerPolicy, because fetching it otherwise tells their server that
+        // somebody in a health community is reading them — the same visit the
+        // link itself takes care not to hand over.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.article_icon ?? ""}
+          alt=""
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          width={isComment ? 24 : 46}
+          height={isComment ? 24 : 46}
+          className="shrink-0 rounded-full border border-line-2 bg-surface-2 object-contain"
+          style={{ width: isComment ? 24 : 46, height: isComment ? 24 : 46 }}
+        />
+      ) : (
+        <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
+      )}
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
@@ -263,6 +285,22 @@ export function PostRow({
             post.body
           )}
         </p>
+
+        {/* The headline is the way out to the original.
+            z-20 so it clears the link covering the row: the title opens the
+            article, everything around it opens the thread. target and rel for
+            the reason every outbound link here has them — the destination does
+            not need to be told the reader came from a health community. */}
+        {post.article_url ? (
+          <a
+            href={post.article_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ease-brand relative z-20 mt-1 block text-[16px] leading-[1.35] font-medium underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+          >
+            {post.article_title}
+          </a>
+        ) : null}
 
         {post.image_path ? <PostImage path={post.image_path} footer={<Counts />} /> : null}
 

@@ -21,21 +21,20 @@ export const metadata: Metadata = { title: "News" };
 export default async function AdminNewsPage() {
   const supabase = await getServerSupabase();
 
-  const { data } = await supabase
-    .from("news_items")
-    .select("id, title, url, summary, source_name, community_scope, published_at")
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(200);
-
+  // A definer function rather than a select: room_messages does not grant
+  // user_id to a client, and an admin listing articles should not depend on
+  // being a member of the rooms they were posted to.
+  const { data } = await supabase.rpc("admin_articles", { p_limit: 200 });
   const items = (data ?? []) as NewsRow[];
 
   return (
     <main id="main">
       <h1 className="mt-4 text-h2">News</h1>
       <p className="mt-4 max-w-[54ch] text-[13px] leading-[1.7] text-ink-2">
-        Gathered every six hours from the allowlist and published on arrival. Deleting an item
-        removes it; the ingest can bring a corrected version back later, which is why this is a
-        delete rather than a hidden flag.
+        Gathered every six hours from the allowlist and posted into Latest news on arrival — one
+        room per community, so an article scoped to everybody is posted to both. Deleting one
+        removes it and its replies; the ingest can bring a corrected version back later, which is
+        why this is a delete rather than a hidden flag.
       </p>
 
       <section className="mt-8">

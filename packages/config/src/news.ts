@@ -51,6 +51,15 @@ export interface NewsSource {
    * a member sees "Myles Helfand" in Latest.
    */
   readonly excludePaths?: readonly string[];
+  /**
+   * The publisher's mark, shown where a member's photograph would be.
+   *
+   * Hotlinked rather than copied, and rendered with referrerPolicy="no-referrer"
+   * — otherwise fetching it tells the publisher's server that somebody in a
+   * health community is looking at their article, which is the visit we take
+   * care not to hand over on the link itself.
+   */
+  readonly icon?: string;
 }
 
 /**
@@ -77,6 +86,7 @@ const SEXUAL_HEALTH_TERMS = [
 export const NEWS_SOURCES: readonly NewsSource[] = [
   {
     key: "cdc-newsroom",
+    icon: "https://www.cdc.gov/favicon.ico",
     name: "CDC Newsroom",
     feedUrl: "https://tools.cdc.gov/api/v2/resources/media/132608.rss",
     scope: "all",
@@ -85,6 +95,7 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
   },
   {
     key: "asha",
+    icon: "https://www.ashasexualhealth.org/wp-content/uploads/2020/02/site_icon.jpg",
     name: "American Sexual Health Association",
     feedUrl: "https://www.ashasexualhealth.org/feed/",
     scope: "all",
@@ -92,6 +103,7 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
   },
   {
     key: "who",
+    icon: "https://www.who.int/favicon.ico",
     name: "World Health Organization",
     feedUrl: "https://www.who.int/rss-feeds/news-english.xml",
     scope: "all",
@@ -99,6 +111,7 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
   },
   {
     key: "thebody",
+    icon: "https://www.thebody.com/favicon-512.png",
     name: "TheBody",
     feedUrl: "https://www.thebody.com/feed",
     // An HIV publication, so the whole feed is on topic — but it is scoped to
