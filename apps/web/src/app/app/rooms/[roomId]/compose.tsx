@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 
 import { Modal } from "@/app/modal";
 import { buttonClass } from "@/app/ui";
+import { downscalePhoto } from "@/lib/downscale";
 import { ACCEPTED_TYPES } from "@/lib/photo-limits";
 import { postToRoom } from "./actions";
 import { ROOM_INITIAL } from "./state";
@@ -39,6 +40,10 @@ export function RoomCompose({ roomId }: { roomId: string }) {
 function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => void }) {
   const [state, act, pending] = useActionState(postToRoom, ROOM_INITIAL);
   const [preview, setPreview] = useState<string | null>(null);
+  // Shrinking happens before the action is dispatched, so `pending` is still
+  // false during it. Without this the button stays live through the slowest
+  // part of posting a photograph, which is the part that looks broken.
+  const [preparing, setPreparing] = useState(false);
   const [name, setName] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
@@ -81,14 +86,48 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
   };
 
   return (
-    <form action={act} className="mt-5 flex flex-col gap-4">
+    <form
+      action={async (formData) => {
+        // Shrunk in the browser, before it crosses anybody's mobile data.
+        //
+        // The server resizes to 1600px anyway, so sending a 12MB camera
+        // original was carrying it across a phone connection to have it thrown
+        // away at the other end — which is most of the wait between pressing
+        // Post and the post appearing. onboarding/photos-form has done this
+        // since it was built; this form was uploading the original.
+        //
+        // An optimisation, not a trust boundary: the server still checks the
+        // type and size, still strips the metadata, still re-encodes. A browser
+        // that cannot do this sends the original and nothing downstream
+        // changes.
+        const file = formData.get("image");
+        if (file instanceof File && file.size > 0) {
+          setPreparing(true);
+          try {
+            formData.set("image", (await downscalePhoto(file)).file);
+          } finally {
+            setPreparing(false);
+          }
+        }
+        act(formData);
+      }}
+      className="mt-5 flex flex-col gap-4"
+    >
       <input type="hidden" name="room_id" value={roomId} />
 
       <textarea
         name="body"
         rows={5}
         maxLength={2000}
-        autoFocus
+        /* No autoFocus.
+         *
+         * On a phone it raised the keyboard the instant the dialog opened,
+         * which resizes the visual viewport — and 100dvh on the layout behind,
+         * plus the fixed grain overlay, re-lay out and repaint every time. Then
+         * reaching for the photo picker dismissed it and returning raised it
+         * again, so attaching an image meant three of those in a row.
+         *
+         * The field is the first thing in the dialog and a tap away. */
         placeholder={C.roomPostPlaceholder}
         // A placeholder is not a label: it is gone the moment a character is
         // typed, so a member who tabs back lands on an unnamed field.
@@ -161,7 +200,11 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
         </p>
       ) : null}
 
-      <button type="submit" disabled={pending} className={buttonClass("primary", "self-start")}>
+      <button
+        type="submit"
+        disabled={pending || preparing}
+        className={buttonClass("primary", "self-start")}
+      >
         {C.roomPostLabel}
       </button>
     </form>

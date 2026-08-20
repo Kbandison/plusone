@@ -184,3 +184,59 @@ describe("a deleted member takes their pictures", () => {
     expect(cron).toMatch(/orphaned\.push\(`room-images\/\$\{userId\}`\)/);
   });
 });
+
+/**
+ * The server resizes to 1600px anyway, so sending a 12MB camera original was
+ * carrying it across a phone connection to have it thrown away at the other
+ * end — which is most of the wait between pressing Post and the post
+ * appearing. onboarding/photos-form has done this since it was built.
+ */
+describe("the photograph is shrunk before it is sent", () => {
+  it("downscales in the browser first", () => {
+    expect(compose).toMatch(/formData\.set\("image", \(await downscalePhoto\(file\)\)\.file\)/);
+  });
+
+  /** An optimisation, not a trust boundary: the server still does all of it. */
+  it("changes nothing the server checks", () => {
+    expect(actions).toMatch(/isAcceptableUpload\(file\.type, file\.size\)/);
+    expect(actions).toMatch(/processRoomImage/);
+  });
+
+  /**
+   * `pending` is false while the shrink runs, because the action has not been
+   * dispatched yet — so without this the button stays live through the slowest
+   * part of posting a photograph, which is the part that looks broken.
+   */
+  it("disables the button through the shrink as well", () => {
+    expect(compose).toMatch(/disabled=\{pending \|\| preparing\}/);
+  });
+});
+
+/**
+ * Two things that repaint the whole viewport, stacked.
+ *
+ * Not reproduced here — this records what was changed and why, so the next
+ * person does not undo it looking for the same flicker.
+ */
+describe("less repainting behind an open dialog", () => {
+  const css = read("../../../styles/globals.css");
+
+  /** backdrop-filter re-samples everything behind it, then blurs it away. */
+  it("takes the grain off while a dialog is open", () => {
+    expect(css).toMatch(/html:has\(dialog\[open\]\) body::before \{\s*display: none;/);
+  });
+
+  /**
+   * autoFocus raised the keyboard the instant the dialog opened, which resizes
+   * the visual viewport — and 100dvh plus a fixed overlay re-lay out every
+   * time. Reaching for the picker dismissed it and returning raised it again.
+   */
+  it("does not raise the keyboard on open", () => {
+    const code = compose
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+      .join("\n");
+    expect(code).not.toMatch(/autoFocus/);
+  });
+});

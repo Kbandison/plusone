@@ -56,6 +56,18 @@
     overflow: hidden;
   }
 
+  /* And the grain comes off while one is open.
+   *
+   * body::before is a fixed, full-viewport layer, and the dialog's ::backdrop
+   * carries backdrop-filter: blur(3px) — which has to re-sample everything
+   * behind it on every paint, grain included. The blur then throws the grain
+   * away, so it is paid for and not seen; and on a phone, where the keyboard
+   * resizes the visual viewport, that repaint happens repeatedly.
+   */
+  html:has(dialog[open]) body::before {
+    display: none;
+  }
+
   * {
     box-sizing: border-box;
   }
