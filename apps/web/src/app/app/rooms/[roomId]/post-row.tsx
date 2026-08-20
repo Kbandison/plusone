@@ -7,7 +7,7 @@ import type { MemberPhoto } from "@/lib/photo-urls";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { MemberPhotoFrame } from "../../member-photo";
 import { OverflowMenu } from "../../overflow-menu";
-import { CommentIcon, LikeButton } from "./like-button";
+import { CommentIcon, EyeIcon, LikeButton } from "./like-button";
 import { ReplyButton } from "./reply-button";
 
 const C = DRAFT_COPY.app;
@@ -49,6 +49,7 @@ export function PostRow({
   now,
   commentHref,
   variant = "post",
+  mentionable,
   replyable = false,
 }: {
   post: Post;
@@ -67,6 +68,16 @@ export function PostRow({
    */
   variant?: "post" | "comment";
   /**
+   * Every name in this thread, so a reply that opens with one can show it as a
+   * name rather than as the first two words of a sentence.
+   *
+   * Matched rather than stored. The name a member replies to goes into the box
+   * as plain text — no reply_to column, no mention table — so the only way to
+   * find it again is to recognise it, and the thread already knows every name
+   * it contains.
+   */
+  mentionable?: readonly string[];
+  /**
    * Shows a Reply control that addresses this row's author.
    *
    * On a comment, because a comment cannot have a comment — the database
@@ -78,6 +89,12 @@ export function PostRow({
 }) {
   const postedAt = Date.parse(post.created_at);
   const isComment = variant === "comment";
+
+  // The longest match wins, so "Sepia Rose" is not read as "Sepia" with a
+  // stray word after it.
+  const mention = (mentionable ?? [])
+    .filter((name) => post.body.startsWith(`${name} `))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <div className="flex items-start gap-3">
@@ -131,7 +148,18 @@ export function PostRow({
           id={`post-${post.id}`}
           className={`mt-1 whitespace-pre-wrap ${isComment ? "text-[12.4px] leading-[1.5]" : "text-[17px] leading-[1.55]"}`}
         >
-          {post.body}
+          {/* The person being answered, told apart from the answer.
+              It is one string in the database, so without this the name is the
+              first two words of a sentence and reads as part of it. Weight and
+              colour together, because weight alone is easy to miss at 12px. */}
+          {mention ? (
+            <>
+              <span className="font-medium text-accent">{mention}</span>
+              {post.body.slice(mention.length)}
+            </>
+          ) : (
+            post.body
+          )}
         </p>
 
         <div className="mt-1 flex items-center gap-5">
@@ -150,7 +178,16 @@ export function PostRow({
             </Link>
           ) : null}
 
-          {replyable && post.author_name ? <ReplyButton name={post.author_name} /> : null}
+          {/* On a comment it addresses that person; on the post at the top of
+              a thread it just opens the box, because a comment on a post is
+              already addressed to whoever wrote it. */}
+          {replyable ? (
+            isComment && post.author_name ? (
+              <ReplyButton name={post.author_name} />
+            ) : (
+              <ReplyButton />
+            )
+          ) : null}
 
           {/* Author only, and phrased for them. "2 views" under somebody's
               diagnosis story reads worse than no number at all; the question
@@ -161,7 +198,16 @@ export function PostRow({
               only ever read "Seen by 0 people", which is a number that cannot
               move pretending to be one that has not. */}
           {post.view_count !== null && !isComment ? (
-            <span className="text-[11px] text-ink-3">{C.postViewCount(post.view_count)}</span>
+            // An eye and a number, sitting with the other two counts rather
+            // than a sentence sitting beside them. The words stay for a reader,
+            // where "12" next to an eye is not self-explanatory.
+            <span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
+              <EyeIcon />
+              <span aria-hidden="true" className="tabular-nums">
+                {post.view_count}
+              </span>
+              <span className="sr-only">{C.postViewCount(post.view_count)}</span>
+            </span>
           ) : null}
         </div>
       </div>

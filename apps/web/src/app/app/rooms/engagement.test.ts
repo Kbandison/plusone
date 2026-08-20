@@ -89,9 +89,12 @@ describe("comments are posts", () => {
 
   /** A reply cannot be replied to, so nothing offers it. */
   it("gives a comment no comment link", () => {
-    expect(thread).toMatch(/<PostRow\s+post=\{comment\}[\s\S]{0,200}\/>/);
-    const commentRender = thread.slice(thread.indexOf("post={comment}"));
-    expect(commentRender.slice(0, 200)).not.toMatch(/commentHref/);
+    const commentRender = thread.slice(
+      thread.indexOf("post={comment}"),
+      thread.indexOf("post={comment}") + 300,
+    );
+    expect(commentRender).toMatch(/variant="comment"/);
+    expect(commentRender).not.toMatch(/commentHref/);
   });
 });
 
@@ -259,7 +262,6 @@ describe("the counts are always there", () => {
   });
 });
 
-const thread2 = read("./[roomId]/[post]/page.tsx");
 const replyCtx = read("./[roomId]/reply-context.tsx");
 const replyBtn = read("./[roomId]/reply-button.tsx");
 
@@ -270,10 +272,18 @@ const replyBtn = read("./[roomId]/reply-button.tsx");
  * Facebook thread is once you stop drawing the indent.
  */
 describe("replying to a commenter", () => {
-  it("offers Reply on comments and not on the post", () => {
-    expect(thread2).toMatch(/post=\{comment\}[\s\S]{0,200}replyable/);
-    const rootRender = thread2.slice(thread2.indexOf("post={root}"));
-    expect(rootRender.slice(0, 160)).not.toMatch(/replyable/);
+  /**
+   * On both, since a member reading a thread is exactly where they decide to
+   * answer the post. This used to assert the opposite; see the block below for
+   * what tells the two presses apart.
+   */
+  it("offers Reply on the post and on every comment", () => {
+    expect(
+      thread.slice(thread.indexOf("post={comment}"), thread.indexOf("post={comment}") + 300),
+    ).toMatch(/replyable/);
+    expect(
+      thread.slice(thread.indexOf("post={root}"), thread.indexOf("post={root}") + 300),
+    ).toMatch(/replyable/);
   });
 
   it("puts the name in the box the way Facebook does", () => {
@@ -351,7 +361,7 @@ describe("a thread reads from the top", () => {
    */
   /** The sizes themselves are asserted below, where they were last changed. */
   it("renders a comment as a comment", () => {
-    expect(thread2).toMatch(/variant="comment"/);
+    expect(thread).toMatch(/variant="comment"/);
   });
 
   /**
@@ -360,7 +370,7 @@ describe("a thread reads from the top", () => {
    * everything just read.
    */
   it("puts the box at the bottom", () => {
-    expect(thread2.indexOf("<CommentComposer")).toBeGreaterThan(thread2.indexOf("</ul>"));
+    expect(thread.indexOf("<CommentComposer")).toBeGreaterThan(thread.indexOf("</ul>"));
   });
 });
 
@@ -379,7 +389,7 @@ describe("the fire-and-forget calls are actually sent", () => {
   it("uses after() rather than discarding the builder", () => {
     for (const [name, source] of [
       ["room page", roomPage],
-      ["thread page", thread2],
+      ["thread page", thread],
       ["chat page", chatPage],
     ] as const) {
       expect(withoutComments(source), `${name} must not drop a builder`).not.toMatch(
@@ -404,14 +414,15 @@ describe("a post and its replies do not look alike", () => {
   });
 
   /** An indent alone is a margin, and a margin is invisible on its own. */
+  /** The exact indent is asserted below, where it was last changed. */
   it("rules the reply column down its left", () => {
-    expect(thread2).toMatch(/ml-12 border-b border-line border-l-2 border-l-line-2/);
+    expect(thread).toMatch(/border-l-2 border-l-line-2/);
   });
 
   /** border-y plus the list's border-t drew two rules with ground between. */
   it("draws one rule under the post, not two", () => {
-    expect(thread2).toMatch(/-mx-6 mt-2 border-t border-line px-6 pt-5 pb-4/);
-    expect(thread2).not.toMatch(/border-y border-line/);
+    expect(thread).toMatch(/-mx-6 mt-2 border-t border-line px-6 pt-5 pb-4/);
+    expect(thread).not.toMatch(/border-y border-line/);
   });
 
   /**
@@ -445,5 +456,75 @@ describe("the box waits to be asked for", () => {
 
   it("closes again once something is sent", () => {
     expect(forms).toMatch(/closeComposer\(\);/);
+  });
+});
+
+/**
+ * The name a member replies to is plain text in the body — no reply_to column,
+ * no mention table — so the only way to find it again is to recognise it, and
+ * the thread already knows every name it contains.
+ */
+describe("a mention reads as a name", () => {
+  it("matches against the names on the page", () => {
+    expect(thread).toMatch(/mentionable=\{names\}/);
+    expect(thread).toMatch(/rows\.map\(\(r\) => r\.author_name\)/);
+  });
+
+  /** Weight alone is easy to miss at 12px. */
+  it("sets it apart by weight and colour", () => {
+    expect(row).toMatch(/<span className="font-medium text-accent">\{mention\}<\/span>/);
+  });
+
+  /** "Sepia Rose" must not read as "Sepia" with a stray word after it. */
+  it("prefers the longest name that matches", () => {
+    expect(row).toMatch(/\.sort\(\(a, b\) => b\.length - a\.length\)\[0\]/);
+  });
+
+  /** A name only counts at the start, where the reply put it. */
+  it("only recognises it at the front", () => {
+    expect(row).toMatch(/post\.body\.startsWith\(`\$\{name\} `\)/);
+  });
+});
+
+describe("answering from inside a thread", () => {
+  /** The only other way in was the button under every comment. */
+  it("puts Reply on the post as well", () => {
+    expect(thread).toMatch(/post=\{root\}[\s\S]{0,200}replyable/);
+  });
+
+  /**
+   * A comment on a post is already addressed to whoever wrote it, so
+   * prefilling their name would put it at the front of every top-level answer
+   * for nothing.
+   */
+  it("opens the box without a name when it is the post", () => {
+    expect(row).toMatch(/isComment && post\.author_name \?[\s\S]{0,60}<ReplyButton name=/);
+    expect(replyBtn).toMatch(/name \? setReplyTo\(name\) : openComposer\(\)/);
+  });
+});
+
+describe("the reply column is a smaller slot, not smaller things", () => {
+  it("indents further and tightens the rows", () => {
+    expect(thread).toMatch(/ml-16 border-b border-line border-l-2 border-l-line-2 py-2/);
+  });
+
+  /** Nothing inside changed size — that was asked for explicitly. */
+  it("leaves what is inside alone", () => {
+    expect(row).toMatch(/size=\{isComment \? 24 : 46\}/);
+    expect(row).toMatch(/isComment \? "text-\[12\.4px\] leading-\[1\.5\]"/);
+  });
+});
+
+describe("the view count is an eye", () => {
+  it("shows the icon and the number", () => {
+    expect(row).toMatch(/<EyeIcon \/>/);
+    expect(row).toMatch(/\{post\.view_count\}/);
+  });
+
+  /** "12" next to an eye is not self-explanatory to a reader. */
+  it("keeps the sentence for a screen reader", () => {
+    expect(row).toMatch(
+      /<span className="sr-only">\{C\.postViewCount\(post\.view_count\)\}<\/span>/,
+    );
   });
 });

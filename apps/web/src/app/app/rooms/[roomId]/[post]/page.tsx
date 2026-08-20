@@ -58,6 +58,11 @@ export default async function PostPage({
   const zone = (profile?.timezone as string | null) ?? "UTC";
   const now = Date.now();
 
+  // Every name on this page. A reply's mention is plain text in the body, so
+  // recognising it is the only way to find it — and the thread already knows
+  // every name it contains.
+  const names = [...new Set(rows.map((r) => r.author_name).filter((n): n is string => Boolean(n)))];
+
   const photos = await photosFor([
     ...new Set(rows.map((row) => row.author_id).filter((id): id is string => id !== null)),
   ]);
@@ -88,7 +93,16 @@ export default async function PostPage({
             the gap between them drew as two rules with a stripe of ground
             between. */}
         <div className="-mx-6 mt-2 border-t border-line px-6 pt-5 pb-4">
-          <PostRow post={root} photo={photos.get(root.author_id ?? "")} zone={zone} now={now} />
+          {/* Replyable here too: a member reading a thread is exactly where
+              they decide to answer the post, and the only other way in was the
+              button below every comment. */}
+          <PostRow
+            post={root}
+            photo={photos.get(root.author_id ?? "")}
+            zone={zone}
+            now={now}
+            replyable
+          />
         </div>
 
         {/* One rule under the post, then the replies. The vertical hairline
@@ -106,7 +120,10 @@ export default async function PostPage({
           {comments.map((comment) => (
             <li
               key={comment.id}
-              className="ml-12 border-b border-line border-l-2 border-l-line-2 py-3 pr-6 pl-4"
+              /* Narrower and tighter. The indent grew and the vertical padding
+                 shrank; nothing inside changed size, so a reply is a smaller
+                 slot holding the same things rather than smaller things. */
+              className="ml-16 border-b border-line border-l-2 border-l-line-2 py-2 pr-6 pl-4"
             >
               {/* No commentHref — a reply cannot be replied to, and the
                   database refuses one rather than trusting this not to offer
@@ -119,6 +136,7 @@ export default async function PostPage({
                 zone={zone}
                 now={now}
                 variant="comment"
+                mentionable={names}
                 replyable
               />
             </li>
