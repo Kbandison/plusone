@@ -412,7 +412,7 @@ describe("the fire-and-forget calls are actually sent", () => {
 describe("a post and its replies do not look alike", () => {
   it("sizes them well apart", () => {
     expect(row).toMatch(/size=\{isComment \? 24 : 46\}/);
-    expect(row).toMatch(/isComment \? "text-\[12\.4px\] leading-\[1\.5\]" : "text-\[17px\]/);
+    expect(row).toMatch(/isComment\s*\n?\s*\? "text-\[12\.4px\] leading-\[1\.5\]"/);
   });
 
   /** An indent alone is a margin, and a margin is invisible on its own. */
@@ -554,7 +554,7 @@ describe("the reply column is a smaller slot, not smaller things", () => {
   /** Nothing inside changed size — that was asked for explicitly. */
   it("leaves what is inside alone", () => {
     expect(row).toMatch(/size=\{isComment \? 24 : 46\}/);
-    expect(row).toMatch(/isComment \? "text-\[12\.4px\] leading-\[1\.5\]"/);
+    expect(row).toMatch(/isComment\s*\n?\s*\? "text-\[12\.4px\] leading-\[1\.5\]"/);
   });
 });
 

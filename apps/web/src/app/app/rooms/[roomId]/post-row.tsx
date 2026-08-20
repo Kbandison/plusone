@@ -10,6 +10,7 @@ import { OverflowMenu } from "../../overflow-menu";
 import { CommentIcon, EyeIcon, LikeButton } from "./like-button";
 import { PostImage } from "./post-image";
 import { ReplyButton } from "./reply-button";
+import { ShareMenu, type ShareRoom } from "./share-menu";
 
 const C = DRAFT_COPY.app;
 
@@ -59,6 +60,8 @@ export function PostRow({
   replyable = false,
   replyToId,
   href,
+  shareUrl,
+  shareRooms,
 }: {
   post: Post;
   photo: MemberPhoto | undefined;
@@ -111,6 +114,10 @@ export function PostRow({
    * interactive and everything between them is one target.
    */
   href?: string;
+  /** Where this post lives, for a link somebody can send. */
+  shareUrl?: string;
+  /** The rooms this member could share it into. Empty means no such option. */
+  shareRooms?: readonly ShareRoom[];
 }) {
   const postedAt = Date.parse(post.created_at);
   const isComment = variant === "comment";
@@ -148,6 +155,15 @@ export function PostRow({
                   number appears and the other does not reads as a bug. */}
             <span className="tabular-nums">{post.comment_count}</span>
           </Link>
+        ) : null}
+
+        {shareUrl ? (
+          <ShareMenu
+            url={shareUrl}
+            title={post.article_title ?? post.body}
+            messageId={post.id}
+            rooms={shareRooms ?? []}
+          />
         ) : null}
 
         {/* On a comment it addresses that person; on the post at the top of
@@ -229,7 +245,18 @@ export function PostRow({
             {/* Bold, because it is the one thing on the row that says whose
                 words these are — and in a room where a name may be a pseudonym
                 that is the fact a reader is looking for first. */}
-            <span className={`truncate font-medium ${isComment ? "text-[12px]" : "text-[15.5px]"}`}>
+            {/* A publisher's name is not a member's name. It labels the
+                article below it rather than announcing who is speaking, so it
+                sits at the size a label sits at. */}
+            <span
+              className={`truncate font-medium ${
+                post.article_url
+                  ? "text-[11.5px] text-ink-2"
+                  : isComment
+                    ? "text-[12px]"
+                    : "text-[15.5px]"
+              }`}
+            >
               {post.author_name ?? C.threadUnknownPerson}
             </span>
             {post.anonymous ? (
@@ -248,7 +275,10 @@ export function PostRow({
 
           {/* Lifted above the link covering the row — only this, not the whole
               header, so the name and the time still open the thread. */}
-          {!post.is_mine ? (
+          {/* An article has nobody to report and nobody to block — the block
+              control resolves an author from the message and there is none, so
+              the menu was a control that could only fail. */}
+          {!post.is_mine && !post.article_url ? (
             <span className="relative z-20">
               <OverflowMenu label={C.postMenuLabel} compact>
                 <div className="py-3">
@@ -268,9 +298,31 @@ export function PostRow({
         {/* The controls above point at this id, which is what tells a screen
             reader user which post they are about to report — every one of them
             is otherwise just "Report, button". */}
+
+        {/* The headline is the way out to the original.
+            z-20 so it clears the link covering the row: the title opens the
+            article, everything around it opens the thread. target and rel for
+            the reason every outbound link here has them — the destination does
+            not need to be told the reader came from a health community. */}
+        {post.article_url ? (
+          <a
+            href={post.article_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+          >
+            {post.article_title}
+          </a>
+        ) : null}
         <p
           id={`post-${post.id}`}
-          className={`mt-1 whitespace-pre-wrap ${isComment ? "text-[12.4px] leading-[1.5]" : "text-[17px] leading-[1.55]"}`}
+          className={`mt-1 whitespace-pre-wrap ${
+            post.article_url
+              ? "line-clamp-3 text-[12.4px] leading-[1.55] text-ink-2"
+              : isComment
+                ? "text-[12.4px] leading-[1.5]"
+                : "text-[17px] leading-[1.55]"
+          }`}
         >
           {/* The person being answered, told apart from the answer.
               It is one string in the database, so without this the name is the
@@ -285,22 +337,6 @@ export function PostRow({
             post.body
           )}
         </p>
-
-        {/* The headline is the way out to the original.
-            z-20 so it clears the link covering the row: the title opens the
-            article, everything around it opens the thread. target and rel for
-            the reason every outbound link here has them — the destination does
-            not need to be told the reader came from a health community. */}
-        {post.article_url ? (
-          <a
-            href={post.article_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ease-brand relative z-20 mt-1 block text-[16px] leading-[1.35] font-medium underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
-          >
-            {post.article_title}
-          </a>
-        ) : null}
 
         {post.image_path ? <PostImage path={post.image_path} footer={<Counts />} /> : null}
 

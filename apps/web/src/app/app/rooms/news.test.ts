@@ -121,7 +121,7 @@ describe("what an article looks like", () => {
   /** The title opens the article; everything around it opens the thread. */
   it("makes the headline the way out, above the row's own link", () => {
     expect(row).toMatch(/href=\{post\.article_url\}[\s\S]{0,200}rel="noopener noreferrer"/);
-    expect(row).toMatch(/relative z-20 mt-1 block text-\[16px\]/);
+    expect(row).toMatch(/relative z-20 mt-0\.5 block text-\[15px\]/);
   });
 
   /** So an article reads like a post rather than a link with a heading over it. */

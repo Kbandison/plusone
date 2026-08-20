@@ -730,6 +730,16 @@ export const DRAFT_COPY = {
     /** The whole row is one target; this is what a reader hears it as. */
     postOpenThread: (name: string) => `Open ${name}'s post`,
     postImageOpen: "View photo full screen",
+    /** Latest news has no composer — nobody posts an article — so the box searches. */
+    roomSearchPlaceholder: "Search this room",
+    roomSearchClear: "Clear search",
+    roomSearchEmpty: (term: string) => `Nothing here matches "${term}".`,
+    /** Sharing: out of the app, or into another room. */
+    postShareLabel: "Share",
+    postShareCopy: "Copy link",
+    postShareCopied: "Link copied",
+    postShareExternal: "Share…",
+    postShareToRoom: "Post to another room",
     /**
      * Collapsed by default. A comment with nine replies under it pushes the
      * next comment off the screen, and the member scrolling past has not

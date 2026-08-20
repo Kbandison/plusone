@@ -87,3 +87,37 @@ describe("parseFeed", () => {
     expect(parseFeed("<html><body>not a feed</body></html>")).toEqual([]);
   });
 });
+
+/**
+ * Stripping tags and then decoding entities is the obvious order and the wrong
+ * one: WHO escapes its summaries, so the feed carries `&lt;p&gt;` — the strip
+ * finds nothing, the decode makes a literal `<p>`, and a member reads markup.
+ */
+describe("markup a feed sends as text", () => {
+  it("removes escaped tags as well as real ones", () => {
+    const xml = `<rss><item><title>t</title><link>https://a.example/x</link>
+      <description>&lt;p&gt;Real prose here.&lt;/p&gt;</description></item></rss>`;
+    expect(parseFeed(xml)[0]?.summary).toBe("Real prose here.");
+  });
+
+  /**
+   * Removing only the tags would leave the code between them sitting in a
+   * summary as prose — which is what "the summaries contain js tags" was.
+   */
+  it("removes script and style with their contents", () => {
+    const xml = `<rss><item><title>t</title><link>https://a.example/x</link>
+      <description><![CDATA[<script>var x = 1; window.y();</script><p>Kept.</p><style>.a{color:red}</style>]]></description></item></rss>`;
+    expect(parseFeed(xml)[0]?.summary).toBe("Kept.");
+  });
+
+  it("handles them escaped too", () => {
+    const xml = `<rss><item><title>t</title><link>https://a.example/x</link>
+      <description>&lt;script&gt;alert(1)&lt;/script&gt;Kept.</description></item></rss>`;
+    expect(parseFeed(xml)[0]?.summary).toBe("Kept.");
+  });
+
+  it("decodes numeric entities", () => {
+    const xml = `<rss><item><title>Caf&#233; &amp; more</title><link>https://a.example/x</link></item></rss>`;
+    expect(parseFeed(xml)[0]?.title).toBe("Café & more");
+  });
+});

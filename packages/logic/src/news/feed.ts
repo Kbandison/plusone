@@ -18,24 +18,43 @@ export interface FeedItem {
   readonly publishedAt: number | null;
 }
 
-/** CDATA and entities, which every feed uses and none of them the same way. */
-function text(raw: string | undefined): string {
-  if (!raw) return "";
+/**
+ * CDATA, markup and entities — in the order that actually works.
+ *
+ * Stripping tags and then decoding entities is the obvious order and the wrong
+ * one. WHO escapes its summaries, so the feed carries `&lt;p&gt;`: the tag
+ * strip finds nothing to remove, the decode turns it into a literal `<p>`, and
+ * a member reads markup. The pass runs twice for that reason — once over the
+ * markup a feed sends as markup, and once over the markup it sends as text.
+ *
+ * Script and style go with their CONTENTS. Removing only their tags would leave
+ * the code between them sitting in a summary as prose, which is what "the
+ * summaries contain js tags" turned out to be.
+ */
+function stripMarkup(input: string): string {
+  return input.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, " ").replace(/<[^>]+>/g, " ");
+}
+
+function decodeEntities(input: string): string {
   return (
-    raw
-      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-      // Tags inside a description: a summary is prose, not markup.
-      .replace(/<[^>]+>/g, " ")
+    input
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"')
       .replace(/&#0?39;|&apos;/g, "'")
       .replace(/&nbsp;/g, " ")
+      .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
       // Last, or it would turn the entities above back into ampersands first.
       .replace(/&amp;/g, "&")
-      .replace(/\s+/g, " ")
-      .trim()
   );
+}
+
+function text(raw: string | undefined): string {
+  if (!raw) return "";
+  const unwrapped = raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+  return stripMarkup(decodeEntities(stripMarkup(unwrapped)))
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function tag(block: string, name: string): string | undefined {

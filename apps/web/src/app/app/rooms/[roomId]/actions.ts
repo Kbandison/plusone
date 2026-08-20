@@ -229,3 +229,36 @@ export async function postComment(_prev: RoomState, formData: FormData): Promise
   revalidatePath(`/app/rooms/${roomId}`);
   return { error: null };
 }
+
+/**
+ * Sharing a post into another room.
+ *
+ * It becomes a post there rather than a pointer to one — a link a member has to
+ * follow to find out what it is is not sharing, it is homework. An article
+ * carries its article across, so it renders in the new room exactly as it does
+ * in Latest news; anything else carries its words.
+ *
+ * The attribution line is the sharer's, not the original author's. Saying who
+ * wrote it would republish a name into a room they did not choose to post in,
+ * and for an anonymous post it would republish an alias that means nothing
+ * outside its own room.
+ */
+export async function shareToRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
+  const messageId = String(formData.get("message_id") ?? "");
+  const targetRoomId = String(formData.get("target_room_id") ?? "");
+  if (!messageId || !targetRoomId) return { error: "That didn't work." };
+
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+
+  const { error } = await supabase.rpc("share_post_to_room", {
+    p_message_id: messageId,
+    p_room_id: targetRoomId,
+  });
+
+  if (error) return { error: memberFacingError(error, "That didn't share.") };
+
+  revalidatePath(`/app/rooms/${targetRoomId}`);
+  return { error: null, posted: Date.now() };
+}

@@ -105,6 +105,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // never calls these RPCs at all.
   "an article needs a headline",
   "no such article",
+  // share_post_to_room. Both describe a share the UI does not offer — it lists
+  // only rooms the member is in, and refuses an article already there — so
+  // only a forged call reaches either.
+  "already shared there",
+  "not in that room",
   // Their predecessors, from before articles became posts. The functions are
   // dropped; the migration that raised them is history and the scanner reads
   // history.

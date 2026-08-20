@@ -25,6 +25,7 @@ export function OverflowMenu({
   label = C.chatMenuLabel,
   align = "right",
   compact = false,
+  trigger,
   children,
 }: {
   /** What the trigger is called, where "More" is not specific enough. */
@@ -33,6 +34,8 @@ export function OverflowMenu({
   align?: "left" | "right";
   /** A smaller trigger, for a control that sits inside a feed row. */
   compact?: boolean;
+  /** What the trigger shows. The three dots unless a caller says otherwise. */
+  trigger?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -72,7 +75,7 @@ export function OverflowMenu({
            likely to be used one-handed in a hurry. */
         className={`ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink ${compact ? "-mr-2.5 scale-90" : ""}`}
       >
-        <MoreIcon />
+        {trigger ?? <MoreIcon />}
       </button>
 
       {open ? (

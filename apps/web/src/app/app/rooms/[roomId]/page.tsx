@@ -6,19 +6,28 @@ import { DRAFT_COPY } from "@plusone/config";
 import { chat as chatLogic } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { parseClientEnv } from "@plusone/config";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { photosFor } from "@/lib/photo-urls";
 import { PostRow, type Post } from "./post-row";
 import { JoinRoom } from "./room-forms";
 import { RoomCompose } from "./compose";
+import { RoomSearch } from "./room-search";
 import { EmptyState } from "@/app/ui";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
 
 const C = DRAFT_COPY.app;
 
-export default async function RoomPage({ params }: { params: Promise<{ roomId: string }> }) {
+export default async function RoomPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ q?: string }>;
+}) {
   const { roomId } = await params;
+  const { q } = await searchParams;
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
@@ -73,13 +82,33 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       .eq("room_id", room.id as string)
       .eq("user_id", auth.user.id)
       .maybeSingle(),
-    supabase.rpc("room_feed", { p_room_id: room.id as string, p_limit: 100 }),
+    supabase.rpc("room_feed", {
+      p_room_id: room.id as string,
+      p_limit: 100,
+      p_search: q ?? null,
+    }),
   ]);
 
   // Everything the client is allowed to know about who wrote what. There is no
   // branch in room_feed where an anonymous post carries an author id, so there
   // is no bug here that could reveal one — the shape of the data is the wall.
   const posts = (feed ?? []) as Post[];
+
+  // A room of articles rather than of people. Read off the posts rather than
+  // off the slug: the rule is "nobody here wrote these", and the slug is a
+  // name somebody chose.
+  const isNews = posts.length > 0 && posts.every((post) => post.article_url !== null);
+
+  // Where this member could share something to. One call for the page rather
+  // than one per row.
+  const { data: shareRoomRows } = await supabase.rpc("rooms_i_can_share_into", {
+    p_except: room.id as string,
+  });
+  const shareRooms = (shareRoomRows ?? []) as { id: string; title: string }[];
+
+  // Absolute, because a shared link leaves this app: a relative one pasted into
+  // a message goes nowhere.
+  const { NEXT_PUBLIC_APP_URL: appUrl } = parseClientEnv(process.env);
 
   // Seen, recorded once for the page. Fire-and-forget like mark_room_read: a
   // failed write means a count is one short, which is a far better outcome than
@@ -149,25 +178,27 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
         </aside>
       ) : null}
 
-      {/* §7.2 — NO dm button. Rooms are a place to be seen, not a directory to
-          work through, and the way out of a room is a connect.
+      {/* An article room has nobody in it to reach and nothing for a member
+          to post, so it gets neither line and neither control — it gets the
+          thing somebody in a room of headlines actually wants.
 
-          The slow-mode line is gone. It announced a cooldown on every visit to
-          every member, almost none of whom were about to hit it — and the
-          trigger already says how long is left at the moment somebody does,
-          which is when it is information rather than a warning. */}
-      <p className="mt-5 text-[11px] text-ink-3">{C.roomNoDmNote}</p>
-
-      {/* A box the width of the column, and no button beside it. Everything a
-          post can carry — words, a photograph, the choice to be anonymous —
-          does not fit on one line, so this opens a dialog rather than trying
-          to be the whole composer. */}
-      {membership ? (
-        <RoomCompose roomId={room.id as string} />
+          §7.2 — NO dm button. Rooms are a place to be seen, not a directory to
+          work through, and the way out of a room is a connect. */}
+      {isNews ? (
+        <RoomSearch roomId={room.id as string} />
       ) : (
-        <div className="mt-4">
-          <JoinRoom roomId={room.id as string} />
-        </div>
+        <>
+          <p className="mt-5 text-[11px] text-ink-3">{C.roomNoDmNote}</p>
+
+          {/* A box the width of the column, and no button beside it. */}
+          {membership ? (
+            <RoomCompose roomId={room.id as string} />
+          ) : (
+            <div className="mt-4">
+              <JoinRoom roomId={room.id as string} />
+            </div>
+          )}
+        </>
       )}
 
       {/* Full-bleed rows ruled off from each other, rather than a column of
@@ -178,7 +209,15 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
       <ul className="-mx-6 mt-6 border-t border-line">
         {posts.length === 0 ? (
           <li className="px-6 pt-6">
-            <EmptyState heading={C.roomEmptyHeading} body={C.roomEmptyBody} />
+            {/* A room with nothing in it and a search that found nothing are
+                different facts, and telling somebody the room is empty when
+                they have just typed something is answering a question they did
+                not ask. */}
+            {q ? (
+              <p className="text-[12.6px] text-ink-2">{C.roomSearchEmpty(q)}</p>
+            ) : (
+              <EmptyState heading={C.roomEmptyHeading} body={C.roomEmptyBody} />
+            )}
           </li>
         ) : null}
 
@@ -197,6 +236,8 @@ export default async function RoomPage({ params }: { params: Promise<{ roomId: s
               now={now}
               href={`/app/rooms/${room.id as string}/${post.id}`}
               commentHref={`/app/rooms/${room.id as string}/${post.id}`}
+              shareUrl={`${appUrl}/app/rooms/${room.id as string}/${post.id}`}
+              shareRooms={shareRooms}
             />
           </li>
         ))}
