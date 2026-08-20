@@ -725,3 +725,40 @@ describe("nothing scrolls behind the modal", () => {
     expect(routeModal).not.toMatch(/mb-36|mb-28/);
   });
 });
+
+/**
+ * Two lists asking two different questions.
+ *
+ * The comment list is a feed — a member comes back to see what is new. A reply
+ * thread is a conversation between two or three people about one thing, read
+ * forwards, because the second reply is usually an answer to the first and
+ * reversing them makes an argument run backwards.
+ */
+describe("a reply thread reads forwards", () => {
+  const migration = read(
+    "../../../../../../supabase/migrations/20260819001200_a_reply_thread_reads_forwards.sql",
+  );
+
+  it("keeps comments newest first", () => {
+    expect(migration).toMatch(/case when m\.parent_id = p_message_id then m\.created_at end desc/);
+  });
+
+  it("puts replies oldest first", () => {
+    const order = migration.slice(migration.indexOf("order by"));
+    expect(order).toMatch(/m\.created_at asc;/);
+  });
+
+  /**
+   * The rows come back flat and the page groups them, so the two directions
+   * only have to be right against their own subset — this key is what keeps
+   * them from applying to each other.
+   */
+  it("separates the levels so neither sort reaches the other", () => {
+    expect(migration).toMatch(/case when m\.parent_id = p_message_id then 0 else 1 end/);
+  });
+
+  it("still puts the post first", () => {
+    const order = migration.slice(migration.indexOf("order by"));
+    expect(order.indexOf("(m.id = p_message_id) desc")).toBeLessThan(order.indexOf("created_at"));
+  });
+});
