@@ -93,22 +93,22 @@ async function storeRoomImage(
 export async function postToRoom(_prev: RoomState, formData: FormData): Promise<RoomState> {
   const roomId = String(formData.get("room_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  // Says so, rather than returning success and doing nothing. The composer has
-  // no `required` attribute, so an accidental Post — or one after the browser
-  // cleared the field — produced no message, no error and no clue. The chat
-  // composer already answers this; rooms did not.
   const file = formData.get("image");
-  // A post with a picture and no words is a post. Everything else still needs
-  // saying: an empty box and no file is a Post button that did nothing.
+  // A post with a picture and no words is a post.
+  //
+  // Everything else still needs saying: the composer has no `required`
+  // attribute, so an empty box with no file was a Post button that produced no
+  // message, no error and no clue.
   if (!body && !(file instanceof File && file.size > 0)) return { error: C.emptyPost };
 
   // A room post does not leave the app, so the condition rule that protects a
   // closure note does not apply — see ToneOptions.allowConditionWords. Naming
   // your own diagnosis in the room named for it is the point of the room.
-  // Only when there is something to check. An image-only post has no words,
-  // and running the rules over an empty string is a rule about a string nobody
-  // wrote — harmless today, because checkTone happens to return ok for "", and
-  // one added minimum-length rule away from refusing every picture.
+  //
+  // Only when there is something to check: an image-only post has no words, and
+  // running the rules over an empty string is a rule about a string nobody
+  // wrote — harmless today, because checkTone returns ok for "", and one added
+  // minimum-length rule away from refusing every picture.
   if (body) {
     const result = tone.checkTone(body, {
       maxChars: 2000,
@@ -124,9 +124,16 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   // post is, and only the one they ticked the box on.
   const anonymous = formData.get("anonymous") === "on";
 
-  const { error } = await supabase
-    .from("room_messages")
-    .insert({ room_id: roomId, user_id: auth.user.id, body, anonymous });
+  const stored = await storeRoomImage(supabase, roomId, file instanceof File ? file : null);
+  if (stored && "error" in stored) return { error: stored.error };
+
+  const { error } = await supabase.from("room_messages").insert({
+    room_id: roomId,
+    user_id: auth.user.id,
+    body,
+    anonymous,
+    image_path: stored?.path ?? null,
+  });
 
   // memberFacingError, not a blanket string. 20260817000800 raises
   // "slow mode: wait N more seconds" and rpc-error.ts was extended to allow it

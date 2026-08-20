@@ -43,6 +43,28 @@ describe("what the camera wrote is not what gets stored", () => {
   it("checks the type and size before any of that", () => {
     expect(actions).toMatch(/isAcceptableUpload\(file\.type, file\.size\)/);
   });
+
+  /**
+   * The middle of the chain again.
+   *
+   * storeRoomImage existed, the column existed, the projections carried it and
+   * the picker sent the file — and postToRoom never called the helper, so every
+   * post saved its text and dropped the picture. Both ends asserted, the join
+   * between them not, exactly as with the reply parent.
+   */
+  it("actually calls it, and stores what it returns", () => {
+    const fn = actions.slice(actions.indexOf("export async function postToRoom"));
+    const insert = fn.slice(0, fn.indexOf("\n}"));
+    expect(insert).toMatch(/await storeRoomImage\(supabase, roomId,/);
+    expect(insert).toMatch(/image_path: stored\?\.path \?\? null/);
+    expect(insert).toMatch(/if \(stored && "error" in stored\) return \{ error: stored\.error \}/);
+  });
+
+  /** Next caps a Server Action body, and a photograph clears that cap easily. */
+  it("is allowed through the framework's own limit", () => {
+    const config = read("../../../../next.config.ts");
+    expect(config).toMatch(/bodySizeLimit: 8 \* 1024 \* 1024/);
+  });
 });
 
 /**
