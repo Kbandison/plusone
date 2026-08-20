@@ -255,3 +255,60 @@ describe("one overflow menu", () => {
     expect(menu).toMatch(/event\.key === "Escape"/);
   });
 });
+
+/**
+ * They came back ordered by slug, which is alphabetical by an identifier no
+ * member ever sees — and that put the room a frightened person most needs
+ * fourth.
+ */
+describe("the rooms are in an order somebody chose", () => {
+  const migration = read(
+    "../../../../../../supabase/migrations/20260820000100_the_rooms_in_an_order_somebody_chose.sql",
+  );
+
+  it("orders the bar by position", () => {
+    expect(layout).toMatch(/\.order\("position", \{ ascending: true \}\)/);
+    expect(index).toMatch(/\.order\("position", \{ ascending: true \}\)/);
+  });
+
+  /** Newly diagnosed first; the one that is not about any of this, last. */
+  it("puts arriving before everyday before topical before off-topic", () => {
+    expect(migration).toMatch(/set position = 10 where slug = 'newly-diagnosed'/);
+    expect(migration).toMatch(
+      /set position = 20 where slug in \('hsv-general', 'hiv-u-equals-u'\)/,
+    );
+    expect(migration).toMatch(/set position = 30 where slug = 'disclosure-stories'/);
+    expect(migration).toMatch(/set position = 40 where slug = 'general-lounge'/);
+  });
+
+  /** No member sees both, so they are never in the same bar. */
+  it("gives the two condition rooms the same slot", () => {
+    expect(migration).toMatch(/no member can see both/);
+  });
+
+  /** A column rather than a CASE, so §7.3's room screen can reorder them. */
+  it("keeps it editable without a migration", () => {
+    expect(migration).toMatch(/add column if not exists position smallint/);
+    expect(migration).toMatch(
+      /grant select \([\s\S]*?position[\s\S]*?\)\s*\n\s*on public\.rooms to authenticated/,
+    );
+  });
+});
+
+/**
+ * A fixed element with z-index: auto loses to any positioned element that has
+ * one — and the feed rows became `relative z-10` when the whole post was made
+ * clickable, so they painted over the nav.
+ */
+describe("the nav stays above the feed", () => {
+  it("gives it a stacking order of its own", () => {
+    const appLayout = read("../layout.tsx");
+    expect(appLayout).toMatch(/fixed inset-x-0 bottom-0 z-40 border-t/);
+  });
+
+  /** And below a dialog by construction: the top layer is beyond any z-index. */
+  it("does not try to outrank a dialog", () => {
+    const appLayout = read("../layout.tsx");
+    expect(appLayout).not.toMatch(/z-\[?[5-9]\d/);
+  });
+});

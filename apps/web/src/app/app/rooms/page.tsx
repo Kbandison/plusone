@@ -25,6 +25,9 @@ export default async function RoomsPage() {
   const { data } = await supabase
     .from("rooms")
     .select("id")
+    // The order somebody chose — see rooms.position. Slug is
+    // alphabetical by an identifier no member ever sees.
+    .order("position", { ascending: true })
     .order("slug", { ascending: true })
     .limit(1);
 

@@ -129,7 +129,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
        * exactly the one-handed-in-a-hurry case this nav exists for. */}
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 border-t border-line bg-ground/95 backdrop-blur"
+        /* z-40, because the posts learned to stack.
+           A fixed element with z-index: auto loses to any positioned element
+           that has one — and the feed rows became `relative z-10` when the
+           whole post was made clickable, so they painted straight over the nav.
+           Below a dialog by construction: showModal() puts those in the top
+           layer, which no z-index can reach. */
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ground/95 backdrop-blur"
       >
         <ul className="mx-auto flex max-w-[550.8px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
           {/* A client component, only so it can read the pathname. Nine links

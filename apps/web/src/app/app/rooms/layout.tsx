@@ -20,7 +20,13 @@ export default async function RoomsLayout({ children }: { children: React.ReactN
   // community scope never appears, and a post from somebody you blocked does
   // not count as activity.
   const [{ data }, { data: activity }] = await Promise.all([
-    supabase.from("rooms").select("id, title").order("slug", { ascending: true }),
+    supabase
+      .from("rooms")
+      .select("id, title")
+      // The order somebody chose — see rooms.position. Slug order is
+      // alphabetical by an identifier no member ever sees.
+      .order("position", { ascending: true })
+      .order("slug", { ascending: true }),
     supabase.rpc("room_activity"),
   ]);
 
