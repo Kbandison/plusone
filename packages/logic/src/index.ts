@@ -18,6 +18,7 @@ export * as drop from "./drop/index";
 export * as fuse from "./fuse/index";
 export * as inbox from "./inbox/index";
 export * as chat from "./chat/index";
+export * as news from "./news/index";
 export * as modes from "./modes/index";
 export * as notify from "./notify/index";
 export * as onboarding from "./onboarding/index";

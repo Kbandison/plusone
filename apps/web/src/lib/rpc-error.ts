@@ -100,6 +100,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // a forged insert reaches this — and "a reply cannot be replied to" describes
   // the schema rather than anything the member did.
   "a reply cannot be replied to",
+  // The news screen, which only an admin reaches. Both describe a malformed
+  // write from that screen, and it shows its own copy for them — a member
+  // never calls these RPCs at all.
+  "a news item needs a title",
+  "no such news item",
   "could not allocate a referral code",
   // record_drop refuses a backdated date. Only a forged call can produce it —
   // the app always sends today — so it says nothing a member needs.

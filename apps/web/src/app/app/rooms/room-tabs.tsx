@@ -8,6 +8,7 @@ import { DRAFT_COPY } from "@plusone/config";
 const C = DRAFT_COPY.app;
 
 export interface RoomTab {
+  /** A room id, or the literal "news" — see the layout. */
   readonly id: string;
   readonly title: string;
   readonly unread: boolean;
@@ -43,7 +44,11 @@ export function RoomTabs({ rooms }: { rooms: readonly RoomTab[] }) {
           more to the right. */}
       <ul className="scroll-shadows-x flex snap-x gap-1">
         {rooms.map((room) => {
-          const href = `/app/rooms/${room.id}`;
+          // "news" is not a room and has no id to address; it is the one tab
+          // in this bar whose path is a name. Rooms are addressed by id because
+          // §8 keeps condition words out of paths, and two of the slugs name a
+          // condition — "news" names nothing.
+          const href = room.id === "news" ? "/app/rooms/news" : `/app/rooms/${room.id}`;
           const current = pathname === href;
 
           return (

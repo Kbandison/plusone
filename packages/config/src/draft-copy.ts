@@ -697,6 +697,15 @@ export const DRAFT_COPY = {
      * mechanics that make people feel behind.
      */
     roomUnread: "New posts",
+    /** The tab, and the page it opens. */
+    newsHeading: "Latest",
+    newsEmpty: "Nothing new. Articles appear here as they are published.",
+    /**
+     * Said once at the top, because everything below it was written by somebody
+     * else and a member should know that before they read it as ours.
+     */
+    newsNote: "Published elsewhere, gathered here. Opening one leaves Plus One.",
+    newsSourceLabel: (source: string) => `From ${source}`,
     /**
      * One of these sits on every post in a room, so a screen reader hears the
      * label once per row. "More" repeated forty times says nothing; this at

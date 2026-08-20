@@ -97,3 +97,11 @@ export type { HowItWorksStep } from "./marketing";
 
 export { TERMS, TERMS_INTRO, TERMS_EFFECTIVE } from "./terms";
 export type { TermsSection } from "./terms";
+
+export {
+  NEWS_SOURCES,
+  shouldPublishNews,
+  newsAllowedHosts,
+  type NewsScope,
+  type NewsSource,
+} from "./news";

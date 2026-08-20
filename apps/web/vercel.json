@@ -22,6 +22,10 @@
     {
       "path": "/api/cron/fuse-warning",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/news",
+      "schedule": "40 */6 * * *"
     }
   ]
 }
