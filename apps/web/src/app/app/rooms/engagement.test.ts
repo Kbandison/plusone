@@ -691,7 +691,9 @@ describe("nothing scrolls behind the modal", () => {
    * that nav's z-index is. The only way not to cover it is not to be over it.
    */
   it("keeps the panel clear of the bottom nav", () => {
-    expect(routeModal).toMatch(/mb-36/);
-    expect(routeModal).toMatch(/sm:mb-28/);
+    expect(routeModal).toMatch(/mb-20/);
+    // And no more than that: 144px of clearance over a 57px nav left a band of
+    // backdrop under the panel wide enough to read as a mistake.
+    expect(routeModal).not.toMatch(/mb-36|mb-28/);
   });
 });

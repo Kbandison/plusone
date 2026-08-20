@@ -25,7 +25,7 @@ function pages(dir: string, acc: string[] = []): string[] {
  */
 describe("there is air under the chrome", () => {
   it("puts the gap in the layout's content wrapper", () => {
-    expect(layout).toMatch(/className="flex-1 pt-6 pb-36 sm:pb-28"/);
+    expect(layout).toMatch(/className="flex-1 pt-6 pb-24 sm:pb-20"/);
   });
 
   /** The tab bar is a second piece of chrome, so it needs the same gap again. */

@@ -107,8 +107,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           Here rather than on each page: no page carries a top margin of its own
           today, and the moment one of them does they will disagree.
 
-          pb clears the nav, which is two rows on a narrow screen. */}
-      <div className="flex-1 pt-6 pb-36 sm:pb-28">{children}</div>
+          pb clears the nav. It was pb-36 — 144px — from when there were nine
+          items and the bar wrapped to two rows; five items fit on one, which is
+          a 44px link plus 12px of padding and a border. So every screen ended
+          in ninety pixels of nothing. */}
+      <div className="flex-1 pt-6 pb-24 sm:pb-20">{children}</div>
 
       {/* Bottom nav: thumb-reachable, and the only chrome on the page.
        *
