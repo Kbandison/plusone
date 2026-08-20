@@ -144,7 +144,7 @@ describe("views are the author's alone", () => {
   });
 
   it("records what was actually shown, once per page", () => {
-    expect(feed).toMatch(/record_room_views", \{ p_message_ids: posts\.map/);
+    expect(feed).toMatch(/record_room_views"[\s\S]{0,80}posts\.map\(\(post\) => post\.id\)/);
     expect(row).toMatch(/post\.view_count !== null/);
   });
 
@@ -349,16 +349,9 @@ describe("a thread reads from the top", () => {
    * A comment reads as an answer because it is smaller and set in from the
    * edge, not because it is labelled as one.
    */
-  it("sizes a comment below a post", () => {
-    expect(row).toMatch(/size=\{isComment \? 26 : 40\}/);
-    expect(row).toMatch(
-      /isComment \? "text-\[12\.6px\] leading-\[1\.55\]" : "text-\[15px\] leading-\[1\.6\]"/,
-    );
+  /** The sizes themselves are asserted below, where they were last changed. */
+  it("renders a comment as a comment", () => {
     expect(thread2).toMatch(/variant="comment"/);
-  });
-
-  it("sets the comments in from the page edge", () => {
-    expect(thread2).toMatch(/border-b border-line py-3 pr-6 pl-12/);
   });
 
   /**
@@ -368,5 +361,89 @@ describe("a thread reads from the top", () => {
    */
   it("puts the box at the bottom", () => {
     expect(thread2.indexOf("<CommentComposer")).toBeGreaterThan(thread2.indexOf("</ul>"));
+  });
+});
+
+const chatPage = read("../chats/[id]/page.tsx");
+const roomPage = read("./[roomId]/page.tsx");
+
+/**
+ * A PostgrestBuilder is a thenable: the request is made inside then(), so
+ * `void supabase.rpc(...)` built the call and threw it away without ever
+ * sending it. Four places did this — both view recorders, mark_room_read and
+ * mark_chat_read — so read markers never cleared and the view count sat at
+ * nought forever, silently, because a fire-and-forget failure looks exactly
+ * like a fire-and-forget success.
+ */
+describe("the fire-and-forget calls are actually sent", () => {
+  it("uses after() rather than discarding the builder", () => {
+    for (const [name, source] of [
+      ["room page", roomPage],
+      ["thread page", thread2],
+      ["chat page", chatPage],
+    ] as const) {
+      expect(withoutComments(source), `${name} must not drop a builder`).not.toMatch(
+        /void supabase\.rpc/,
+      );
+      expect(source, `${name} must schedule it`).toMatch(/after\(async \(\) => \{/);
+    }
+  });
+
+  /** after() runs once the response is sent, which is what the void was for. */
+  it("awaits inside, so the promise is not dropped again", () => {
+    expect(roomPage).toMatch(/await supabase\.rpc\("mark_room_read"/);
+    expect(roomPage).toMatch(/await supabase\.rpc\("record_room_views"/);
+    expect(chatPage).toMatch(/await supabase\.rpc\("mark_chat_read"/);
+  });
+});
+
+describe("a post and its replies do not look alike", () => {
+  it("sizes them well apart", () => {
+    expect(row).toMatch(/size=\{isComment \? 24 : 46\}/);
+    expect(row).toMatch(/isComment \? "text-\[12\.4px\] leading-\[1\.5\]" : "text-\[17px\]/);
+  });
+
+  /** An indent alone is a margin, and a margin is invisible on its own. */
+  it("rules the reply column down its left", () => {
+    expect(thread2).toMatch(/ml-12 border-b border-line border-l-2 border-l-line-2/);
+  });
+
+  /** border-y plus the list's border-t drew two rules with ground between. */
+  it("draws one rule under the post, not two", () => {
+    expect(thread2).toMatch(/-mx-6 mt-2 border-t border-line px-6 pt-5 pb-4/);
+    expect(thread2).not.toMatch(/border-y border-line/);
+  });
+
+  /**
+   * Only a post is recorded as seen — a comment was on screen because the post
+   * was — so a comment's count can only ever read "Seen by 0 people", which is
+   * a number that cannot move pretending to be one that has not.
+   */
+  it("shows no view count on a comment", () => {
+    expect(row).toMatch(/post\.view_count !== null && !isComment/);
+  });
+});
+
+/**
+ * An empty field under every thread is the product asking a question nobody
+ * was asked, on a screen somebody opened to read.
+ */
+describe("the box waits to be asked for", () => {
+  it("shows a trigger until it is", () => {
+    expect(forms).toMatch(/if \(!open\) \{/);
+    expect(forms).toMatch(/C\.postCommentOpenLabel/);
+  });
+
+  it("opens when a reply is aimed at somebody", () => {
+    expect(replyCtx).toMatch(/if \(name\) setOpen\(true\)/);
+  });
+
+  /** Pressing Reply is what renders the field; focusing before that paint focuses nothing. */
+  it("focuses after the field exists", () => {
+    expect(replyCtx).toMatch(/queueMicrotask\(\(\) => \{/);
+  });
+
+  it("closes again once something is sent", () => {
+    expect(forms).toMatch(/closeComposer\(\);/);
   });
 });

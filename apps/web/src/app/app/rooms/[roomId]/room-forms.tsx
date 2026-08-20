@@ -86,7 +86,7 @@ export function RoomComposer({ roomId }: { roomId: string }) {
  */
 export function CommentComposer({ roomId, parentId }: { roomId: string; parentId: string }) {
   const [state, act, pending] = useActionState(postComment, ROOM_INITIAL);
-  const { replyTo, setReplyTo, register } = useReply();
+  const { replyTo, open, openComposer, closeComposer, setReplyTo, register } = useReply();
   const [body, setBody] = useState("");
 
   // The name goes into the box, the way Facebook does it, so what is sent is
@@ -99,12 +99,27 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
     if (replyTo) setBody((current) => (current.startsWith(replyTo) ? current : `${replyTo} `));
   }
 
+  // Closed until asked for. An empty field under every thread is the product
+  // asking a question nobody was asked, on a screen somebody opened to read —
+  // and it was the last thing between a member and the bottom of the page.
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={openComposer}
+        className="ease-brand mt-6 flex min-h-tap items-center text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      >
+        {C.postCommentOpenLabel}
+      </button>
+    );
+  }
+
   return (
     <form
       action={(formData) => {
         act(formData);
         setBody("");
-        setReplyTo(null);
+        closeComposer();
       }}
       className="mt-6 flex flex-col gap-3"
     >

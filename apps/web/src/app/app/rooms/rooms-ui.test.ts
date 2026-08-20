@@ -79,8 +79,20 @@ describe("a tab says whether anything has happened", () => {
     expect(tabs).toMatch(/room\.unread && !current/);
   });
 
+  /**
+   * That the call HAPPENS, not how it is written. This asserted
+   * `void supabase.rpc("mark_room_read"` — which is the exact idiom that never
+   * sent the request, so the test held the bug in place and passed while the
+   * feature did nothing.
+   */
   it("makes opening a room the thing that marks it read", () => {
-    expect(room).toMatch(/void supabase\.rpc\("mark_room_read"/);
+    expect(room).toMatch(/supabase\.rpc\("mark_room_read"/);
+    const code = room
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+      .join("\n");
+    expect(code).not.toMatch(/void supabase\.rpc/);
   });
 
   /**

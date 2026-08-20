@@ -16,26 +16,33 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
  */
 interface ReplyState {
   readonly replyTo: string | null;
+  /** Whether the box is showing at all. Closed until somebody asks for it. */
+  readonly open: boolean;
   readonly setReplyTo: (name: string | null) => void;
+  readonly openComposer: () => void;
+  readonly closeComposer: () => void;
   readonly register: (input: HTMLInputElement | null) => void;
 }
 
 const Ctx = createContext<ReplyState>({
   replyTo: null,
+  open: false,
   setReplyTo: () => {},
+  openComposer: () => {},
+  closeComposer: () => {},
   register: () => {},
 });
 
 export function ReplyProvider({ children }: { children: React.ReactNode }) {
   const [replyTo, setReplyToState] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const input = useRef<HTMLInputElement | null>(null);
 
-  const setReplyTo = useCallback((name: string | null) => {
-    setReplyToState(name);
-    // Focused, and the caret after the name rather than before it. Without the
-    // move a member types in front of the person they are answering.
+  const focusInput = useCallback(() => {
     const field = input.current;
     if (!field) return;
+    // A microtask, so the field exists: pressing Reply is what renders it, and
+    // focusing before that paint focuses nothing.
     queueMicrotask(() => {
       field.focus();
       const end = field.value.length;
@@ -43,11 +50,36 @@ export function ReplyProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const openComposer = useCallback(() => {
+    setOpen(true);
+    focusInput();
+  }, [focusInput]);
+
+  const closeComposer = useCallback(() => {
+    setOpen(false);
+    setReplyToState(null);
+  }, []);
+
+  const setReplyTo = useCallback(
+    (name: string | null) => {
+      setReplyToState(name);
+      if (name) setOpen(true);
+      // Focused, and the caret after the name rather than before it. Without the
+      // move a member types in front of the person they are answering.
+      focusInput();
+    },
+    [focusInput],
+  );
+
   const register = useCallback((field: HTMLInputElement | null) => {
     input.current = field;
   }, []);
 
-  return <Ctx.Provider value={{ replyTo, setReplyTo, register }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ replyTo, open, setReplyTo, openComposer, closeComposer, register }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useReply(): ReplyState {

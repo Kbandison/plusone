@@ -84,7 +84,7 @@ export function PostRow({
       {/* An anonymous author has no photo, so the frame's empty state is the
           placeholder — the same neutral shape a member with no photo gets,
           rather than a second thing to learn the meaning of. */}
-      <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 26 : 40} />
+      <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
@@ -92,7 +92,7 @@ export function PostRow({
             {/* Bold, because it is the one thing on the row that says whose
                 words these are — and in a room where a name may be a pseudonym
                 that is the fact a reader is looking for first. */}
-            <span className={`truncate font-medium ${isComment ? "text-[12.5px]" : "text-[14px]"}`}>
+            <span className={`truncate font-medium ${isComment ? "text-[12px]" : "text-[15.5px]"}`}>
               {post.author_name ?? C.threadUnknownPerson}
             </span>
             {post.anonymous ? (
@@ -129,7 +129,7 @@ export function PostRow({
             is otherwise just "Report, button". */}
         <p
           id={`post-${post.id}`}
-          className={`mt-1 whitespace-pre-wrap ${isComment ? "text-[12.6px] leading-[1.55]" : "text-[15px] leading-[1.6]"}`}
+          className={`mt-1 whitespace-pre-wrap ${isComment ? "text-[12.4px] leading-[1.5]" : "text-[17px] leading-[1.55]"}`}
         >
           {post.body}
         </p>
@@ -154,8 +154,13 @@ export function PostRow({
 
           {/* Author only, and phrased for them. "2 views" under somebody's
               diagnosis story reads worse than no number at all; the question
-              they actually have is whether anyone saw it. */}
-          {post.view_count !== null ? (
+              they actually have is whether anyone saw it.
+
+              Never on a comment. Only a post is recorded as seen — a comment
+              was on the screen because the post was — so a comment's count can
+              only ever read "Seen by 0 people", which is a number that cannot
+              move pretending to be one that has not. */}
+          {post.view_count !== null && !isComment ? (
             <span className="text-[11px] text-ink-3">{C.postViewCount(post.view_count)}</span>
           ) : null}
         </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { after } from "next/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -64,7 +65,9 @@ export default async function PostPage({
   // The post itself counts as seen. A comment does not: it was on this screen
   // because the post was, and counting it would make "seen by" a measure of how
   // many people opened the thread.
-  void supabase.rpc("record_room_views", { p_message_ids: [root.id] });
+  after(async () => {
+    await supabase.rpc("record_room_views", { p_message_ids: [root.id] });
+  });
 
   return (
     <main id="main">
@@ -81,11 +84,18 @@ export default async function PostPage({
           above them, so the two share state through here rather than through a
           prop nobody could thread. */}
       <ReplyProvider>
-        <div className="-mx-6 mt-2 border-y border-line px-6 py-4">
+        {/* border-t only. With border-y here and border-t on the list below,
+            the gap between them drew as two rules with a stripe of ground
+            between. */}
+        <div className="-mx-6 mt-2 border-t border-line px-6 pt-5 pb-4">
           <PostRow post={root} photo={photos.get(root.author_id ?? "")} zone={zone} now={now} />
         </div>
 
-        <ul className="-mx-6 mt-4 border-t border-line">
+        {/* One rule under the post, then the replies. The vertical hairline
+            down their left is what makes the column read as answers at a
+            glance — an indent alone is a margin, and a margin is invisible
+            until you have something to compare it to. */}
+        <ul className="-mx-6 border-t border-line">
           {comments.length === 0 ? (
             <li className="px-6 py-6 text-[12.6px] text-ink-2">{C.postCommentNone}</li>
           ) : null}
@@ -94,7 +104,10 @@ export default async function PostPage({
               without any of them having to say so. The post above starts at the
               page edge; these do not. */}
           {comments.map((comment) => (
-            <li key={comment.id} className="border-b border-line py-3 pr-6 pl-12">
+            <li
+              key={comment.id}
+              className="ml-12 border-b border-line border-l-2 border-l-line-2 py-3 pr-6 pl-4"
+            >
               {/* No commentHref — a reply cannot be replied to, and the
                   database refuses one rather than trusting this not to offer
                   it. Replyable instead: answering somebody puts their name in

@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 
 import type { Metadata } from "next";
+import { after } from "next/server";
 import { notFound, redirect } from "next/navigation";
 
 import { DRAFT_COPY, promptQuestion, renderClosureTemplate } from "@plusone/config";
@@ -66,7 +67,21 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   // better outcome than a conversation that will not open because bookkeeping
   // failed. It is also why the RPC takes no timestamp — the database supplies
   // one, so a client cannot mark a thread read into the future.
-  void supabase.rpc("mark_chat_read", { p_chat_id: id });
+  // after(), not `void`.
+  //
+  // A PostgrestBuilder is a thenable: the request is made inside then(), so
+  // `void supabase.rpc(...)` built the call and threw it away without ever
+  // sending it. Four places did this — both view recorders, mark_room_read and
+  // mark_chat_read — so read markers never cleared and the view count sat at
+  // nought forever, silently, because a fire-and-forget failure looks exactly
+  // like a fire-and-forget success.
+  //
+  // after() runs the work once the response has been sent, which is what the
+  // `void` was reaching for: no latency added to the render, and the promise is
+  // actually awaited rather than dropped.
+  after(async () => {
+    await supabase.rpc("mark_chat_read", { p_chat_id: id });
+  });
 
   const { data: messages } = await supabase
     .from("messages")
