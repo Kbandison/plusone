@@ -51,6 +51,7 @@ export function PostRow({
   variant = "post",
   mentionable,
   replyable = false,
+  replyToId,
 }: {
   post: Post;
   photo: MemberPhoto | undefined;
@@ -86,6 +87,14 @@ export function PostRow({
    * actually is once you stop drawing the indent.
    */
   replyable?: boolean;
+  /**
+   * The comment a reply from this row should nest under.
+   *
+   * A row's own id when it IS the comment, and its parent's when it is one of
+   * the replies below — because two levels is the whole shape and a third
+   * would be refused.
+   */
+  replyToId?: string;
 }) {
   const postedAt = Date.parse(post.created_at);
   const isComment = variant === "comment";

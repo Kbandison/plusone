@@ -2,6 +2,21 @@
 @import "@plusone/ui-tokens/tokens.css";
 
 @layer base {
+  /* Nothing scrolls behind an open dialog.
+   *
+   * showModal() makes the rest of the page INERT — it cannot be clicked,
+   * focused or read by a screen reader — but it does not stop the document
+   * scrolling underneath. So a thread opened over a room let the room scroll
+   * away behind it, and closing the modal left the member somewhere else.
+   *
+   * :has() rather than a JS lock on every dialog: the rule is "a dialog is
+   * open", which is a fact about the document, and a class toggled by four
+   * different components is four chances to leave it on.
+   */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
   * {
     box-sizing: border-box;
   }

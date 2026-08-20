@@ -50,7 +50,12 @@ export function RouteModal({ children }: { children: React.ReactNode }) {
         // padding inside the dialog would otherwise close it.
         if (event.target === dialog.current) dialog.current?.close();
       }}
-      className="ease-brand m-0 mt-auto max-h-[88vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-8 text-ink backdrop:bg-black/45 sm:m-auto sm:rounded-2xl"
+      /* mb clears the bottom nav, which is two rows on a narrow screen and one
+         on a wide one — the same numbers the app layout pads its content by.
+         A dialog is in the top layer, so it renders above a fixed nav however
+         high that nav's z-index is; the only way to not cover it is to not be
+         over it. */
+      className="ease-brand m-0 mt-auto mb-36 max-h-[76vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-8 text-ink backdrop:bg-black/45 sm:m-auto sm:mb-28 sm:max-h-[80vh] sm:rounded-2xl"
     >
       <div className="mb-1 flex justify-end">
         {/* method="dialog" closes without any JavaScript of ours, and onClose

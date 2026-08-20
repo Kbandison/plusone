@@ -709,6 +709,13 @@ export const DRAFT_COPY = {
     postLikeCount: (n: number) => `${n} ${n === 1 ? "like" : "likes"}`,
     postCommentCount: (n: number) => (n === 1 ? "1 comment" : `${n} comments`),
     postCommentNone: "No comments yet",
+    /**
+     * Collapsed by default. A comment with nine replies under it pushes the
+     * next comment off the screen, and the member scrolling past has not
+     * decided to read that sub-conversation yet.
+     */
+    postShowReplies: (n: number) => (n === 1 ? "1 reply" : `${n} replies`),
+    postHideReplies: "Hide replies",
     /** Author-only, so it is addressed to them: "your post", not "this post". */
     postViewCount: (n: number) => `Seen by ${n} ${n === 1 ? "person" : "people"}`,
     postReplyPlaceholder: "Write a comment",

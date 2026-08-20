@@ -18,13 +18,13 @@ const C = DRAFT_COPY.app;
  * or the alias of somebody posting anonymously. Neither is an id, so addressing
  * a reply to an anonymous member does not tell anybody who they are.
  */
-export function ReplyButton({ name }: { name?: string }) {
+export function ReplyButton({ name, parentId }: { name?: string; parentId?: string }) {
   const { setReplyTo, openComposer } = useReply();
 
   return (
     <button
       type="button"
-      onClick={() => (name ? setReplyTo(name) : openComposer())}
+      onClick={() => (name ? setReplyTo(name, parentId ?? null) : openComposer())}
       className="ease-brand flex min-h-tap items-center text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
     >
       {C.postReplyToLabel}

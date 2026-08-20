@@ -533,7 +533,7 @@ describe("answering from inside a thread", () => {
    */
   it("opens the box without a name when it is the post", () => {
     expect(row).toMatch(/isComment && post\.author_name \?[\s\S]{0,60}<ReplyButton name=/);
-    expect(replyBtn).toMatch(/name \? setReplyTo\(name\) : openComposer\(\)/);
+    expect(replyBtn).toMatch(/name \? setReplyTo\(name, parentId \?\? null\) : openComposer\(\)/);
   });
 });
 
@@ -616,5 +616,82 @@ describe("the thread opens over the feed", () => {
   /** A click on padding inside the panel must not dismiss it. */
   it("tests the backdrop click against the dialog itself", () => {
     expect(routeModal).toMatch(/event\.target === dialog\.current/);
+  });
+});
+
+const replies = read("./[roomId]/replies.tsx");
+
+/**
+ * Facebook nests one layer and stops, and the reason it stops is the reason
+ * this does: a second layer is a thread, a third is a tree, and a tree on a
+ * phone is a horizontal scrollbar.
+ */
+describe("replies nest one layer and no further", () => {
+  const migration = read(
+    "../../../../../../supabase/migrations/20260819001100_one_layer_of_nesting.sql",
+  );
+
+  /** The parent being a comment is fine; the parent being a reply is not. */
+  it("refuses a third level in the database", () => {
+    expect(migration).toMatch(/if v_grandparent_parent is not null then/);
+    expect(migration).toMatch(/a reply cannot be replied to/);
+  });
+
+  it("returns the parent, so the page can nest", () => {
+    expect(migration).toMatch(/returns table \(\s*id uuid,\s*parent_id uuid,/);
+    expect(thread).toMatch(/row\.parent_id === root\?\.id/);
+    expect(thread).toMatch(/thread\.filter\(\(row\) => row\.parent_id === commentId\)/);
+  });
+
+  /**
+   * Answering a REPLY nests under that reply's parent, because a third level
+   * would be refused — so the press carries the comment it belongs to rather
+   * than the row it came from.
+   */
+  it("files a reply under the comment, not under the row pressed", () => {
+    expect(thread).toMatch(/replyToId=\{comment\.id\}/);
+    expect(thread.match(/replyToId=\{comment\.id\}/g)).toHaveLength(2);
+    expect(forms).toMatch(/value=\{replyParentId \?\? parentId\}/);
+  });
+
+  /** Nine replies under one comment push the next comment off the screen. */
+  it("collapses them until asked for", () => {
+    expect(replies).toMatch(/const \[open, setOpen\] = useState\(false\)/);
+    expect(replies).toMatch(/aria-expanded=\{open\}/);
+    expect(replies).toMatch(/C\.postShowReplies\(count\)/);
+  });
+
+  it("shows nothing at all when there are none", () => {
+    expect(replies).toMatch(/if \(count === 0\) return null;/);
+  });
+
+  /**
+   * Two questions, two answers: "3 replies" under a comment counts direct
+   * children, and a feed row claiming how many comments a post has counts
+   * every descendant.
+   */
+  it("counts direct children in a thread and every descendant in the feed", () => {
+    expect(migration).toMatch(
+      /select count\(\*\) from visible c where c\.parent_id = m\.id\)::integer/,
+    );
+    expect(migration).toMatch(
+      /or c\.parent_id in \(select d\.id from visible d where d\.parent_id = m\.id\)/,
+    );
+  });
+});
+
+describe("nothing scrolls behind the modal", () => {
+  it("locks the document while any dialog is open", () => {
+    const css = read("../../../styles/globals.css");
+    expect(css).toMatch(/html:has\(dialog\[open\]\) \{\s*overflow: hidden;/);
+  });
+
+  /**
+   * A dialog is in the top layer, so it renders above a fixed nav however high
+   * that nav's z-index is. The only way not to cover it is not to be over it.
+   */
+  it("keeps the panel clear of the bottom nav", () => {
+    expect(routeModal).toMatch(/mb-36/);
+    expect(routeModal).toMatch(/sm:mb-28/);
   });
 });

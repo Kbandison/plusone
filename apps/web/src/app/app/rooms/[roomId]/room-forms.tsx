@@ -87,7 +87,7 @@ export function RoomComposer({ roomId }: { roomId: string }) {
  */
 export function CommentComposer({ roomId, parentId }: { roomId: string; parentId: string }) {
   const [state, act, pending] = useActionState(postComment, ROOM_INITIAL);
-  const { replyTo, open, focusRequest, closeComposer, setReplyTo } = useReply();
+  const { replyTo, replyParentId, open, focusRequest, closeComposer, setReplyTo } = useReply();
   const field = useRef<HTMLInputElement>(null);
 
   // After the render that mounted it, which is the whole point: focusing in the
@@ -131,7 +131,9 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
       className="mt-6 flex flex-col gap-3"
     >
       <input type="hidden" name="room_id" value={roomId} />
-      <input type="hidden" name="parent_id" value={parentId} />
+      {/* Under the comment being answered, or under the post. parentId is the
+          post; replyParentId is set only when a Reply came from a comment. */}
+      <input type="hidden" name="parent_id" value={replyParentId ?? parentId} />
 
       {/* Said above the box as well as put in it. The name alone in the field
           could be something the member typed; this is the part that says the

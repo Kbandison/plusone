@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { PostRow, type Post } from "./post-row";
+import { Replies } from "./replies";
 import { ReplyProvider } from "./reply-context";
 import { CommentComposer } from "./room-forms";
 
@@ -29,7 +30,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
     supabase.from("profiles").select("timezone").eq("id", auth.user.id).maybeSingle(),
   ]);
 
-  const thread = (rows ?? []) as (Post & { is_root: boolean })[];
+  const thread = (rows ?? []) as (Post & { parent_id: string | null; is_root: boolean })[];
   const root = thread.find((row) => row.is_root);
 
   // An absent row means "not yours to see" as easily as "does not exist", and
@@ -37,7 +38,10 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
   // block walls itself.
   if (!root) notFound();
 
-  const comments = thread.filter((row) => !row.is_root);
+  // Two levels: comments on the post, and replies under each of them. The
+  // database refuses a third, so this cannot be given one to render.
+  const comments = thread.filter((row) => !row.is_root && row.parent_id === root?.id);
+  const repliesTo = (commentId: string) => thread.filter((row) => row.parent_id === commentId);
   const zone = (profile?.timezone as string | null) ?? "UTC";
   const now = Date.now();
 
@@ -94,11 +98,10 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
                holding the same things rather than smaller things. */
             className="ml-16 border-b border-line border-l-2 border-l-line-2 py-2 pr-6 pl-4"
           >
-            {/* No commentHref — a reply cannot be replied to, and the database
-                refuses one rather than trusting this not to offer it.
-                Replyable instead: answering somebody puts their name in the
-                same box, which is the same conversation without a second level
-                to store. */}
+            {/* No commentHref — a comment is not a page. Replyable instead:
+                answering it nests one layer down, and answering one of THOSE
+                puts the name in the box, because the database refuses a third
+                level and the mention is what stands in for it. */}
             <PostRow
               post={comment}
               photo={photos.get(comment.author_id ?? "")}
@@ -107,7 +110,25 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
               variant="comment"
               mentionable={names}
               replyable
+              replyToId={comment.id}
             />
+
+            <Replies count={comment.comment_count}>
+              {repliesTo(comment.id).map((reply) => (
+                <li key={reply.id} className="mt-2 border-l-2 border-l-line pl-4">
+                  <PostRow
+                    post={reply}
+                    photo={photos.get(reply.author_id ?? "")}
+                    zone={zone}
+                    now={now}
+                    variant="comment"
+                    mentionable={names}
+                    replyable
+                    replyToId={comment.id}
+                  />
+                </li>
+              ))}
+            </Replies>
           </li>
         ))}
       </ul>

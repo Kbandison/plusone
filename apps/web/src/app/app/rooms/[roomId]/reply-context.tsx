@@ -16,6 +16,15 @@ import { createContext, useCallback, useContext, useState } from "react";
  */
 interface ReplyState {
   readonly replyTo: string | null;
+  /**
+   * Which comment the reply nests under, or null for a comment on the post.
+   *
+   * Not the row that was pressed. Answering a REPLY nests under that reply's
+   * parent, because the database allows two levels and a third would be
+   * refused — so the press carries the comment it belongs to rather than the
+   * row it came from.
+   */
+  readonly replyParentId: string | null;
   /** Whether the box is showing at all. Closed until somebody asks for it. */
   readonly open: boolean;
   /**
@@ -27,13 +36,14 @@ interface ReplyState {
    * because the composer is the thing that mounts; this only says when.
    */
   readonly focusRequest: number;
-  readonly setReplyTo: (name: string | null) => void;
+  readonly setReplyTo: (name: string | null, parentId?: string | null) => void;
   readonly openComposer: () => void;
   readonly closeComposer: () => void;
 }
 
 const Ctx = createContext<ReplyState>({
   replyTo: null,
+  replyParentId: null,
   open: false,
   focusRequest: 0,
   setReplyTo: () => {},
@@ -43,6 +53,7 @@ const Ctx = createContext<ReplyState>({
 
 export function ReplyProvider({ children }: { children: React.ReactNode }) {
   const [replyTo, setReplyToState] = useState<string | null>(null);
+  const [replyParentId, setReplyParentId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   // A counter, not a boolean.
@@ -61,10 +72,12 @@ export function ReplyProvider({ children }: { children: React.ReactNode }) {
   const closeComposer = useCallback(() => {
     setOpen(false);
     setReplyToState(null);
+    setReplyParentId(null);
   }, []);
 
-  const setReplyTo = useCallback((name: string | null) => {
+  const setReplyTo = useCallback((name: string | null, parentId: string | null = null) => {
     setReplyToState(name);
+    setReplyParentId(parentId);
     if (name) {
       setOpen(true);
       setFocusRequest((n) => n + 1);
@@ -72,7 +85,17 @@ export function ReplyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ replyTo, open, focusRequest, setReplyTo, openComposer, closeComposer }}>
+    <Ctx.Provider
+      value={{
+        replyTo,
+        replyParentId,
+        open,
+        focusRequest,
+        setReplyTo,
+        openComposer,
+        closeComposer,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );
