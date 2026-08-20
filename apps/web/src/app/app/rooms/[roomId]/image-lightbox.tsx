@@ -69,32 +69,45 @@ export function ImageLightbox({
           if (event.target !== dialog.current) return;
           setOpen(false);
         }}
-        className="ease-brand fixed inset-0 m-0 flex h-full max-h-none w-full max-w-none flex-col bg-ground/98 p-0 text-ink backdrop:bg-black/80"
+        /* No display utility on the dialog itself.
+         *
+         * `flex` here set display:flex, which overrides the browser's own
+         * `dialog:not([open]) { display: none }` — so a CLOSED lightbox stayed
+         * in the layout as a fixed, full-viewport element. Our global rule
+         * makes it opacity: 0, so it was invisible and still caught every
+         * click: in any room holding a post with a photograph, the tab bar and
+         * the composer above the feed simply stopped responding.
+         *
+         * The column moves to a wrapper inside, where a display value is only
+         * ever a display value. */
+        className="ease-brand fixed inset-0 m-0 h-full max-h-none w-full max-w-none bg-ground/98 p-0 text-ink backdrop:bg-black/80"
       >
-        <div className="flex justify-end p-3">
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label={C.decisionDismiss}
-            className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
-          >
-            <CloseIcon />
-          </button>
-        </div>
+        <div className="flex h-full flex-col">
+          <div className="flex justify-end p-3">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label={C.decisionDismiss}
+              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+            >
+              <CloseIcon />
+            </button>
+          </div>
 
-        {/* min-h-0 on a flex child, or the image refuses to shrink below its
-            natural height and pushes the counts off the bottom. */}
-        <div className="flex min-h-0 flex-1 items-center justify-center px-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            onClick={(event) => event.stopPropagation()}
-            className="max-h-full max-w-full object-contain"
-          />
-        </div>
+          {/* min-h-0 on a flex child, or the image refuses to shrink below its
+              natural height and pushes the counts off the bottom. */}
+          <div className="flex min-h-0 flex-1 items-center justify-center px-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={alt}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
 
-        <div className="border-t border-line px-6 py-4">{footer}</div>
+          <div className="border-t border-line px-6 py-4">{footer}</div>
+        </div>
       </dialog>
     </>
   );

@@ -95,6 +95,47 @@ describe("controls meet the accessibility floors", () => {
   });
 });
 
+describe("a dialog keeps the browser's own hiding", () => {
+  /**
+   * `dialog:not([open]) { display: none }` is a UA rule, and any display
+   * utility on the element beats it. A closed dialog carrying `flex` stays in
+   * the layout — and a fixed, full-viewport one is then an invisible sheet over
+   * the page that catches every click. That is what stopped the room tab bar
+   * and the composer responding in any room holding a photograph.
+   *
+   * The fix is always the same: put the display value on a wrapper inside,
+   * where it is only ever a display value.
+   */
+  const DISPLAY = [
+    "flex",
+    "grid",
+    "block",
+    "inline-block",
+    "inline-flex",
+    "inline-grid",
+    "table",
+    "contents",
+  ];
+
+  it("carries no display utility on the element itself", () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      // Arrows blanked first: an inline handler puts a `>` inside the
+      // attributes, and the scan would stop at it and never see the className.
+      // The same trap the 16px scan above hits.
+      const source = read(f).replaceAll("=>", "==");
+      for (const match of source.matchAll(/<dialog\b[\s\S]{0,900}?>/g)) {
+        const classes = /className=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(match[0]);
+        const tokens = (classes?.[1] ?? classes?.[2] ?? "").split(/\s+/);
+        if (tokens.some((t) => DISPLAY.includes(t.replace(/^[a-z-]+:/, "")))) {
+          offenders.push(f.replace(APP, "app"));
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe("the accent is not a large fill", () => {
   /**
    * The token file's own contract: "CTAs, links, highlights, interactive states
