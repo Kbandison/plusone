@@ -126,6 +126,22 @@ export default async function ProfilePage() {
         <IntentionEditor intention={intention} changeableOn={intentionChangeableOn} />
       </section>
 
+      {/* The way back to "Skip for now".
+          A skip writes an empty row and resolveStep reads presence, so the step
+          settles and never returns — and nothing in /app linked to it. A member
+          who took the app at its word on step 8 had no way back to the twelve
+          questions that shape every Drop they will ever see.
+
+          Folded, because nothing else on this page is twelve fieldsets tall. */}
+      <section className={SECTION}>
+        <CollapsibleSection
+          heading={DRAFT_COPY.quiz.heading}
+          count={DRAFT_COPY.quiz.progress(Object.keys(quizAnswers).length, QUIZ_QUESTIONS.length)}
+        >
+          <QuizForm answered={quizAnswers} save={saveQuizSetting} />
+        </CollapsibleSection>
+      </section>
+
       {/* The slider, not a number and a link to a screen with the slider on it.
           This decides who is in tonight's Drop and who is in Browse, and it was
           shown here and changeable somewhere else. */}
@@ -163,22 +179,6 @@ export default async function ProfilePage() {
           }}
         />
       </section>
-      {/* The way back to "Skip for now".
-          A skip writes an empty row and resolveStep reads presence, so the step
-          settles and never returns — and nothing in /app linked to it. A member
-          who took the app at its word on step 8 had no way back to the twelve
-          questions that shape every Drop they will ever see.
-
-          Folded, because nothing else on this page is twelve fieldsets tall. */}
-      <section className={SECTION}>
-        <CollapsibleSection
-          heading={DRAFT_COPY.quiz.heading}
-          count={DRAFT_COPY.quiz.progress(Object.keys(quizAnswers).length, QUIZ_QUESTIONS.length)}
-        >
-          <QuizForm answered={quizAnswers} save={saveQuizSetting} />
-        </CollapsibleSection>
-      </section>
-
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{C.profileModeHeading}</h2>
         <ModeToggle mode={mode} />

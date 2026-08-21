@@ -242,6 +242,23 @@ describe("the quiz can be taken after it was skipped", () => {
     expect(page).toMatch(/<CollapsibleSection[\s\S]{0,200}<QuizForm/);
   });
 
+  /**
+   * Beside the other answer that decides who is in the Drop, not at the bottom.
+   *
+   * It sat below the preferences — a page-length from the intention it belongs
+   * next to, and under the radius, which only says how far, not who.
+   */
+  it("sits with the intention rather than under everything else", () => {
+    const at = (needle: string) => {
+      const i = page.indexOf(needle);
+      expect(i, needle).toBeGreaterThan(-1);
+      return i;
+    };
+    expect(at("<IntentionEditor")).toBeLessThan(at("<CollapsibleSection"));
+    expect(at("<CollapsibleSection")).toBeLessThan(at("<RadiusForm"));
+    expect(at("<CollapsibleSection")).toBeLessThan(at("<PreferencesForm"));
+  });
+
   it("saves each answer where it is tapped", () => {
     expect(quizForm).toMatch(/requestAnimationFrame\(\(\) => form\.current\?\.requestSubmit\(\)\)/);
     // Nothing to finish, nothing to skip, nowhere to go back to.
