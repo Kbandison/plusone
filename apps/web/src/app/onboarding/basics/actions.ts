@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { DRAFT_COPY, MAX_DISPLAY_NAME } from "@plusone/config";
 import { profile } from "@plusone/logic";
 
 import { nextRoute, requireStep } from "@/lib/onboarding";
@@ -10,7 +10,6 @@ import { getServerSupabase } from "@/lib/supabase";
 import type { BasicsState } from "./state";
 
 const E = DRAFT_COPY.basics.errors;
-const MAX_NAME = 40;
 
 /**
  * Saves display name and date of birth, creating the profile row.
@@ -29,7 +28,7 @@ export async function saveBasics(_previous: BasicsState, formData: FormData): Pr
   const birthdate = String(formData.get("birthdate") ?? "").trim();
 
   if (!displayName) return { error: E.nameRequired };
-  if (displayName.length > MAX_NAME) return { error: E.nameTooLong };
+  if (displayName.length > MAX_DISPLAY_NAME) return { error: E.nameTooLong };
   if (!birthdate) return { error: E.birthdateRequired };
 
   const today = new Date().toISOString().slice(0, 10);

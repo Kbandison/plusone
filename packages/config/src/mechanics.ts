@@ -178,3 +178,13 @@ export const RETENTION = {
    */
   blockedThreadDays: 90,
 } as const;
+
+/**
+ * The longest a display name may be.
+ *
+ * Mirrors `profiles_display_name_len` in 20260813000200. It was a local const
+ * in the onboarding action and nowhere else — so the moment a second screen
+ * could change a name there were two numbers for one column, and only the
+ * database's would have been true.
+ */
+export const MAX_DISPLAY_NAME = 40;

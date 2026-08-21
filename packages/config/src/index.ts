@@ -22,6 +22,7 @@ export {
   ROOMS,
   VERIFICATION,
   RETENTION,
+  MAX_DISPLAY_NAME,
 } from "./mechanics";
 
 export {
