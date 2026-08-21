@@ -26,7 +26,7 @@ function Error({ message }: { message: string | null }) {
 /** Where an unsent line waits. One key per chat, so two drafts never collide. */
 const draftKey = (chatId: string) => `plusone:draft:${chatId}`;
 
-export function Composer({ chatId }: { chatId: string }) {
+export function Composer({ chatId, pickerId }: { chatId: string; pickerId: string }) {
   const [state, act, pending] = useActionState(sendMessage, CHAT_INITIAL);
   const [body, setBody] = useState("");
 
@@ -90,21 +90,24 @@ export function Composer({ chatId }: { chatId: string }) {
    * Not on submit: the action can fail, and wiping the field on a send that did
    * not happen is the same loss with a worse cause. And not on "no error"
    * alone, because CHAT_INITIAL is also {error: null} — that test is true on
-   * mount, so it would throw away the draft this component had just restored,
-   * every single time the screen opened.
+   * mount, so it would throw away the draft this component had just restored.
    *
-   * So it waits for a submission to have actually been in flight.
+   * This watched `pending` go true and then false instead, which is the same
+   * mistake wearing a disguise: React can batch those two renders, and when it
+   * does, `pending: true` is never observed and nothing clears. The box kept
+   * the message that had just been sent, with the photograph still attached to
+   * it — and the draft in localStorage was never removed either, so leaving the
+   * screen and coming back restored it.
+   *
+   * `state.sent` is a fresh number on every success. It cannot equal the
+   * initial state and it cannot be batched away.
    */
-  const sent = useRef(false);
   useEffect(() => {
-    if (pending) sent.current = true;
-    else if (sent.current && state.error === null) {
-      sent.current = false;
-      setBody("");
-      setImage(null);
-      if (picker.current) picker.current.value = "";
-    }
-  }, [pending, state.error]);
+    if (!state.sent) return;
+    setBody("");
+    setImage(null);
+    if (picker.current) picker.current.value = "";
+  }, [state.sent]);
 
   return (
     <form
@@ -158,28 +161,25 @@ export function Composer({ chatId }: { chatId: string }) {
         </figure>
       ) : null}
 
-      <div className="flex gap-3">
-        {/* A label wrapping a hidden input rather than a bare file control: the
-            browser's own renders differently everywhere, and this one has to
-            sit beside the mic and look like it. The input keeps its name, so
-            the form still carries the file. */}
-        <label
-          className={`${iconButtonClass("secondary")} cursor-pointer`}
-          aria-label={C.postImageLabel}
-        >
-          <input
-            ref={picker}
-            type="file"
-            name="image"
-            // The types the server will actually take. A member picking
-            // something else would otherwise get as far as the upload.
-            accept={ACCEPTED_TYPES.join(",")}
-            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
-            className="sr-only"
-          />
-          <PhotoIcon />
-        </label>
+      {/* The control itself, kept inside the form and out of sight.
+          Its button lives in the row below, beside the microphone, and reaches
+          it by id — a <label for> works anywhere in the document, whereas a
+          file input outside the form it feeds is a file that never gets posted.
+          sr-only rather than hidden, so it stays in the tab order. */}
+      <input
+        ref={picker}
+        id={pickerId}
+        type="file"
+        name="image"
+        // The types the server will actually take. A member picking something
+        // else would otherwise get as far as the upload before being told.
+        accept={ACCEPTED_TYPES.join(",")}
+        onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+        aria-label={C.postImageLabel}
+        className="sr-only"
+      />
 
+      <div className="flex gap-3">
         <input
           name="body"
           type="text"
@@ -213,6 +213,25 @@ export function Composer({ chatId }: { chatId: string }) {
       </div>
       <Error message={state.error} />
     </form>
+  );
+}
+
+/**
+ * The photo button, for the row the microphone is in.
+ *
+ * Separate from the Composer's form because that is where it belongs on the
+ * screen and a form cannot contain another one — VoiceRecorder is its own. It
+ * drives the Composer's file input by id, which is what <label for> is for.
+ */
+export function PhotoButton({ pickerId }: { pickerId: string }) {
+  return (
+    <label
+      htmlFor={pickerId}
+      title={C.postImageLabel}
+      className={`${iconButtonClass("secondary")} cursor-pointer`}
+    >
+      <PhotoIcon />
+    </label>
   );
 }
 

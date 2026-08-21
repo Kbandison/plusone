@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
 const forms = read("./chat-forms.tsx");
+const actions = read("./actions.ts");
 const bubble = read("./text-bubble.tsx");
 const browse = read("../../browse/page.tsx");
 const drop = read("../../../../lib/drop.ts");
@@ -111,10 +112,20 @@ describe("an unsent line survives leaving the screen", () => {
    * CHAT_INITIAL is also {error: null}, so "no error" is true on mount — a
    * clear keyed on that alone would throw away the draft it had just restored,
    * every time the screen opened.
+   *
+   * Watching `pending` go true and then false was the same mistake wearing a
+   * disguise, and this test pinned it: React can batch those two renders, and
+   * when it does, `pending: true` is never observed and nothing clears. The box
+   * kept the message that had just been sent with its photograph still
+   * attached, and the draft was never removed from localStorage either.
    */
-  it("clears only after a send that actually happened", () => {
-    expect(forms).toMatch(/if \(pending\) sent\.current = true;/);
-    expect(forms).toMatch(/else if \(sent\.current && state\.error === null\)/);
+  it("clears on a success token, not on a transition it might not see", () => {
+    expect(forms).toMatch(/if \(!state\.sent\) return;/);
+    expect(forms).not.toMatch(/sent\.current/);
+    // A fresh number per success: it cannot equal the initial state, and it
+    // cannot be batched away.
+    expect(actions).toMatch(/return \{ error: null, sent: Date\.now\(\) \}/);
+    expect(read("./state.ts")).toMatch(/readonly sent\?: number/);
   });
 
   it("does not clear on submit, when the action can still fail", () => {

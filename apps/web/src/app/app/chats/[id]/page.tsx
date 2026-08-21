@@ -8,7 +8,14 @@ import { DRAFT_COPY, promptQuestion, renderClosureTemplate } from "@plusone/conf
 import { chat as chatLogic, fuse } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
-import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./chat-forms";
+import {
+  CancelPlan,
+  CloseChat,
+  Composer,
+  ConfirmPlan,
+  PhotoButton,
+  ProposePlan,
+} from "./chat-forms";
 import { VoiceRecorder } from "./voice-recorder";
 import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
@@ -22,6 +29,14 @@ import { EmptyState } from "@/app/ui";
 export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
 const C = DRAFT_COPY.app;
+
+/**
+ * The file input the photo button reaches.
+ *
+ * A constant rather than useId: both halves need the same string, only one chat
+ * is ever on screen, and the page is a Server Component with no useId to hand.
+ */
+const PICKER_ID = "chat-photo";
 
 /**
  * The shape propose_date_plan actually stores.
@@ -341,12 +356,19 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
             <p className="mt-6 text-[11.3px] text-positive">{C.datePlannedLabel}</p>
           ) : null}
 
-          <Composer chatId={id} />
+          <Composer chatId={id} pickerId={PICKER_ID} />
 
-          {/* One row: the microphone and the date proposal, side by side under
-              the box. Both were full-width blocks stacked below it, so the two
-              optional things took more of the screen than the message field. */}
+          {/* One row: the photograph, the microphone and the date proposal,
+              side by side under the box. All three were full-width blocks
+              stacked below it, so the optional things took more of the screen
+              than the message field.
+
+              The photo button drives an input that lives inside the Composer's
+              form — see PhotoButton. A form cannot contain another form, and
+              VoiceRecorder is one, so the two things that belong side by side
+              on screen cannot be siblings in the markup. */}
           <div className="mt-3 flex flex-wrap items-center gap-3">
+            <PhotoButton pickerId={PICKER_ID} />
             <VoiceRecorder chatId={id} />
             {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
           </div>

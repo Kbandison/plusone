@@ -158,9 +158,43 @@ describe("the composer shows it before it goes", () => {
     expect(forms).toMatch(/required=\{image === null\}/);
   });
 
+  /**
+   * On a token the action returns, not on `pending` going true and then false —
+   * React can batch those two renders, and when it does the box keeps the
+   * message that was just sent with the photograph still attached to it.
+   */
   it("clears the picture on a send that worked, with the draft", () => {
-    const cleared = forms.slice(forms.indexOf("sent.current = false"));
-    expect(cleared.slice(0, 200)).toMatch(/setImage\(null\)/);
+    const cleared = forms.slice(forms.indexOf("if (!state.sent) return;"));
+    expect(cleared.slice(0, 240)).toMatch(/setBody\(""\)/);
+    expect(cleared.slice(0, 240)).toMatch(/setImage\(null\)/);
+    expect(cleared.slice(0, 240)).toMatch(/picker\.current\.value = ""/);
+  });
+
+  /**
+   * A form cannot contain another form and VoiceRecorder is one, so the button
+   * beside the microphone cannot be a sibling of the input it opens. A <label
+   * for> reaches an input anywhere in the document; a file control outside the
+   * form it feeds is a file that never gets posted.
+   */
+  it("puts the button beside the microphone and the input inside the form", () => {
+    expect(forms).toMatch(/htmlFor=\{pickerId\}/);
+    const composer = forms.slice(forms.indexOf("export function Composer"));
+    const form = composer.slice(0, composer.indexOf("export function PhotoButton"));
+    expect(form).toMatch(
+      /id=\{pickerId\}[\s\S]{0,80}type="file"|type="file"[\s\S]{0,80}id=\{pickerId\}/,
+    );
+    expect(form).toMatch(/name="image"/);
+
+    const page = read("./page.tsx");
+    expect(page).toMatch(/<PhotoButton pickerId=\{PICKER_ID\} \/>\s*\n\s*<VoiceRecorder/);
+  });
+
+  /** sr-only rather than hidden, so it stays in the tab order. */
+  it("keeps the control reachable by keyboard", () => {
+    const composer = forms.slice(forms.indexOf("export function Composer"));
+    const input = composer.slice(composer.indexOf('type="file"'));
+    expect(input.slice(0, 400)).toMatch(/className="sr-only"/);
+    expect(input.slice(0, 400)).not.toMatch(/hidden|display: none/);
   });
 
   /** Beside the mic, and it has to look like it. */

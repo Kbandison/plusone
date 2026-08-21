@@ -108,7 +108,9 @@ export async function sendMessage(_prev: ChatState, formData: FormData): Promise
     return { error: "That didn't send." };
   }
   revalidatePath(`/app/chats/${chatId}`);
-  return { error: null };
+  // Not `{ error: null }`. That is also CHAT_INITIAL, so the composer could not
+  // tell a successful send from a screen that had just opened — see ChatState.
+  return { error: null, sent: Date.now() };
 }
 
 /** §5.2 — messages_voice_len caps a note at 120 seconds. */
