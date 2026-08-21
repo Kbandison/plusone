@@ -585,7 +585,7 @@ export const DRAFT_COPY = {
     navInbox: "Inbox",
     navChats: "Chats",
     navRooms: "Rooms",
-    navProfile: "You",
+    navProfile: "Profile",
     connectLabel: "Connect",
     /**
      * One section, because a connect and the chat it becomes are the same
@@ -917,6 +917,23 @@ export const DRAFT_COPY = {
     reportSubmitLabel: "Send report",
     reportSent: "Sent. A moderator will look at it.",
     reportAlsoBlock: "Block them as well",
+    /**
+     * The profile screen's own words, which were literals in the JSX.
+     *
+     * Every other screen reads its copy from here, and one that does not is one
+     * the copy tests cannot see — so "Looking for" and "Not set" were the two
+     * strings in the app nobody could have found by looking for strings.
+     */
+    profileHeading: "Profile",
+    profileLookingFor: "Looking for",
+    profileNotSet: "Not set",
+    profileRadius: "Search radius",
+    profileRadiusMiles: (miles: number) => `${miles} miles`,
+    profilePhotosHeading: "Photos",
+    profilePhotosManage: "Manage photos",
+    profilePhotosCount: (n: number) => (n === 1 ? "1 photo" : `${n} photos`),
+    profileRadiusManage: "Change distance",
+    profileModeHeading: "Mode",
     promptsHeading: "Your prompts",
     promptsIntro:
       "People connect by replying to one of these. Answer up to three — the more specific, the better the replies.",
