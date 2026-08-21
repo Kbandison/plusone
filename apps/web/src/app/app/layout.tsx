@@ -79,7 +79,18 @@ function GearIcon() {
   );
 }
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+  modal,
+}: {
+  children: React.ReactNode;
+  /**
+   * Anything opened over the app. A parallel-route slot, holding the
+   * intercepted connect form and `@modal/default.tsx` — which is null — the
+   * rest of the time.
+   */
+  modal: React.ReactNode;
+}) {
   const supabase = await getServerSupabase();
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect(STEP_ROUTES.phone);
@@ -156,6 +167,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks items={nav} />
         </ul>
       </nav>
+
+      {modal}
 
       {/* Renders nothing. It measures the bar above and publishes the height,
           because the one thing that has to sit flush on top of it cannot be

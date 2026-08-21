@@ -849,6 +849,18 @@ export const DRAFT_COPY = {
      * Claude's words, both.
      */
     browseClearFilters: "Clear filters",
+    /**
+     * Decision #15, said out loud.
+     *
+     * "Drop-card connects cost nothing — this nudges toward curation" has been
+     * true in the trigger since Milestone 1 and stated nowhere a member could
+     * read it. A mechanic that only works if people know about it, that nobody
+     * was told about, is a mechanic that does not work. All three are Claude's.
+     */
+    dropConnectsFree: "Replying to one of tonight's three costs nothing.",
+    dropBudgetLeft: (left: number, total: number) =>
+      `${left} of ${total} connects left today for anyone else.`,
+    dropBudgetNone: "You have used today's connects. Tonight's three are still free.",
     browseCount: (n: number) => (n === 1 ? "1 person" : `${n} people`),
     filterDistance: "Within",
     filterIntention: "Looking for",

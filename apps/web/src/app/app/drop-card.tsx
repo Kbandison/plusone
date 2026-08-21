@@ -24,7 +24,24 @@ function intentionLabel(intention: string | null): string | null {
  * is how the redaction survives a refactor — the two are different shapes, not
  * one shape rendered two ways.
  */
-export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | undefined }) {
+export function FullCard({
+  card,
+  photo,
+  history,
+}: {
+  card: Card;
+  photo?: MemberPhoto | undefined;
+  /**
+   * What you already have with this person, if anything.
+   *
+   * A drop excludes anyone you have connected with, but a REPLAYED drop reads
+   * the ids it served earlier — so reopening the app after accepting one of
+   * tonight's three showed the same card, with the same Connect button, for
+   * somebody you were already talking to. The button would have been refused by
+   * the trigger; the card said nothing.
+   */
+  history?: { readonly label: string; readonly live: boolean } | undefined;
+}) {
   const meta = [card.age, card.distanceMi != null ? `${card.distanceMi} mi` : null]
     .filter(Boolean)
     .join(" · ");
@@ -78,16 +95,30 @@ export function FullCard({ card, photo }: { card: Card; photo?: MemberPhoto | un
           </figure>
         ) : null}
 
+        {/* What you already have with them, where the button would be. */}
+        {history ? (
+          <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-line-2 bg-ground px-3 py-1 text-[11px] text-ink-2">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+            {history.label}
+          </p>
+        ) : null}
+
         {/* Decision #14 — a connect is a reply to a prompt, so this goes to a
             compose screen rather than sending anything. An earlier version
             POSTed straight to an RPC with a null prompt_id, which the NOT NULL
-            column would have refused: the button could never have worked. */}
-        <Link
-          href={`/app/connect/${card.id}?source=drop`}
-          className={buttonClass("primary", "mt-6 inline-block")}
-        >
-          {DRAFT_COPY.app.connectLabel}
-        </Link>
+            column would have refused: the button could never have worked.
+
+            Absent while a connect is live between the two of you: the trigger
+            refuses a second one, so offering it is a door onto a wall. A
+            finished connect is different — §6.3 lets those be tried again. */}
+        {history?.live ? null : (
+          <Link
+            href={`/app/connect/${card.id}?source=drop`}
+            className={buttonClass("primary", history ? "mt-4 inline-block" : "mt-6 inline-block")}
+          >
+            {DRAFT_COPY.app.connectLabel}
+          </Link>
+        )}
       </div>
     </li>
   );

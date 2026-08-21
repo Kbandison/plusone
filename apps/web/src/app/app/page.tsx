@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { COPY, DRAFT_COPY } from "@plusone/config";
+import { CONNECTS, COPY, DRAFT_COPY } from "@plusone/config";
+import { connects as connectsLogic } from "@plusone/logic";
 
 import { getTonightsDrop } from "@/lib/drop";
 import { photosFor, previewPhotosFor } from "@/lib/photo-urls";
@@ -21,6 +22,63 @@ export default async function TonightPage() {
   // photograph above "30–39 · within 10 mi" on a screen that promised blurred.
   const ids = drop.cards.map((c) => c.id);
   const photos = drop.preview ? await previewPhotosFor(ids) : await photosFor(ids);
+
+  /**
+   * What you already have with tonight's three, and what a connect costs.
+   *
+   * Neither existed on this screen. A drop excludes anyone you have connected
+   * with, but a REPLAYED drop reads back the ids it served earlier — so
+   * reopening the app after accepting one of tonight's showed the same card
+   * with the same Connect button for somebody you were already talking to.
+   *
+   * And Decision #15's whole nudge — a drop connect is free, a Browse one is
+   * not — has been true in the trigger since Milestone 1 and stated nowhere a
+   * member could read it.
+   *
+   * Skipped entirely for a preview: a support-only member cannot send a
+   * connect at all, so a budget is a number about something they cannot do.
+   */
+  const [{ data: myConnects }, { data: budgetRow }, { data: isPremium }] = drop.preview
+    ? [{ data: null }, { data: null }, { data: null }]
+    : await Promise.all([
+        supabase
+          .from("connects")
+          .select("initiator_id, target_id, status")
+          .or(`initiator_id.eq.${data.user.id},target_id.eq.${data.user.id}`),
+        supabase
+          .from("connect_budgets")
+          // `day` is written by the trigger as `current_date`, which is the
+          // database's date. Matching it here rather than the member's local
+          // one, so the two agree about which day it is.
+          .select("connects_used")
+          .eq("user_id", data.user.id)
+          .eq("day", new Date().toISOString().slice(0, 10))
+          .maybeSingle(),
+        supabase.rpc("i_am_premium"),
+      ]);
+
+  const HISTORY_LABEL: Record<string, string> = {
+    waiting_on_you: DRAFT_COPY.app.threadNeedsDecision,
+    waiting_on_them: DRAFT_COPY.app.threadSentWaiting,
+    talking: DRAFT_COPY.app.browseTalking,
+    past: DRAFT_COPY.app.browsePast,
+  };
+
+  const history = new Map<string, { label: string; live: boolean }>();
+  for (const row of myConnects ?? []) {
+    const initiated = (row.initiator_id as string) === data.user.id;
+    const them = initiated ? (row.target_id as string) : (row.initiator_id as string);
+    const state = connectsLogic.historyWith(row.status as connectsLogic.ConnectStatus, initiated);
+    // A live connect outranks a finished one when there are several: "Connected
+    // before" on somebody waiting for your answer right now is worse than
+    // saying nothing.
+    if (state !== "past" || !history.has(them)) {
+      history.set(them, { label: HISTORY_LABEL[state]!, live: state !== "past" });
+    }
+  }
+
+  const perDay = isPremium ? CONNECTS.premiumPerDay : CONNECTS.freePerDay;
+  const left = Math.max(0, perDay - ((budgetRow?.connects_used as number | null) ?? 0));
 
   return (
     <main id="main">
@@ -72,9 +130,28 @@ export default async function TonightPage() {
         </>
       ) : (
         <>
+          {/* What a reply here costs, which is nothing — and what one anywhere
+              else costs, which is one of a few. Decision #15 nudges toward
+              curation over browsing and this is the first time the app has said
+              so out loud. Above the cards, because it is a reason to read them
+              carefully rather than a footnote about them. */}
+          <p className="mt-6 text-[12.2px] leading-[1.6] text-ink-2">
+            {DRAFT_COPY.app.dropConnectsFree}{" "}
+            <span className="text-ink-3">
+              {left === 0
+                ? DRAFT_COPY.app.dropBudgetNone
+                : DRAFT_COPY.app.dropBudgetLeft(left, perDay)}
+            </span>
+          </p>
+
           <ul className="rise-in mt-8 flex flex-col gap-5">
             {drop.cards.map((card) => (
-              <FullCard key={card.id} card={card} photo={photos.get(card.id)} />
+              <FullCard
+                key={card.id}
+                card={card}
+                photo={photos.get(card.id)}
+                history={history.get(card.id)}
+              />
             ))}
           </ul>
 
