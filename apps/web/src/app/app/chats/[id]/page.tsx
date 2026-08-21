@@ -393,7 +393,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
               the foot of the viewport, and a composer at zero sits behind it.
               One number, defined in globals.css and reserved as padding by the
               layout — see the note there. */}
-          <div className="ease-brand sticky bottom-[var(--nav-h)] z-20 -mx-6 mt-6 border-t border-line bg-ground/95 px-[29px] pt-3 pb-2 backdrop-blur">
+          <div className="ease-brand sticky bottom-[var(--nav-h)] z-20 -mx-6 mt-6 border-t border-line bg-ground/95 px-6 pt-2.5 pb-2 backdrop-blur">
             {/* The fuse, still visible (§7.2), but next to the thing it is a
                 deadline for. At the top of the screen it was a number a member
                 scrolled past on the way to the conversation; above the box they
@@ -421,7 +421,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 Composer's form — see PhotoButton. A form cannot contain another
                 form, and VoiceRecorder is one, so the two things that belong
                 side by side on screen cannot be siblings in the markup. */}
-            <div className="mt-3 flex flex-wrap items-center gap-3">
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               <PhotoButton pickerId={PICKER_ID} />
               <VoiceRecorder chatId={id} />
               {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}

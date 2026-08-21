@@ -355,10 +355,21 @@ describe("the header and the composer are pinned", () => {
   /** Or the messages travel up through two six-pixel columns beside them. */
   it("bleeds both bars to the gutters the layout adds", () => {
     expect(page).toMatch(/sticky top-0[^"]*-mx-6[^"]*px-6/);
-    // The composer's own padding is 5px more than the page's, so the box sits
-    // in from the edges rather than running to them. The background still
-    // bleeds — only the controls move.
-    expect(page).toMatch(/sticky bottom-\[[^"]*-mx-6[^"]*px-\[29px\]/);
+    expect(page).toMatch(/sticky bottom-\[[^"]*-mx-6[^"]*px-6/);
+  });
+
+  /**
+   * The bar is chrome sitting over the conversation, so every pixel it does not
+   * need is a line of the conversation it covers. The box was made shorter
+   * rather than narrower — width is the row's, since the field is flex-1 beside
+   * Send, so height is the only dimension it owns.
+   */
+  it("spends as little height as it can", () => {
+    expect(forms).toMatch(/px-4 py-2 text-\[16px\]/);
+    // The gap under the box, and the one over it, were spacing under a thread.
+    expect(forms).toMatch(/className="mt-2 flex flex-col gap-2"/);
+    expect(page).toMatch(/<div className="mt-2 flex flex-wrap items-center gap-3">/);
+    expect(page).toMatch(/sticky bottom-\[[^"]*pt-2\.5 pb-2/);
   });
 
   /** Under the nav's z-40, and under a dialog by construction. */

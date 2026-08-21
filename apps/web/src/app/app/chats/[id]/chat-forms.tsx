@@ -130,7 +130,9 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
         }
         act(formData);
       }}
-      className="mt-6 flex flex-col gap-3"
+      /* mt-2, from mt-6. It was spacing under a thread; it is spacing inside a
+         bar now, and the fuse line above it is one line of 11px text. */
+      className="mt-2 flex flex-col gap-2"
     >
       <input type="hidden" name="chat_id" value={chatId} />
 
@@ -205,7 +207,12 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
              the composer could not be used at all on a small phone.
              is gone too — globals.css defines the keyboard
              focus ring the accessibility gate requires, and this cancelled it. */
-          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] focus:border-accent"
+          /* py-2, from py-3. Height is the only dimension this control owns —
+             it is flex-1 beside Send, so its width is the row's — and the bar
+             it now lives in is chrome that sits over the conversation, where
+             every pixel it does not need is a line of the conversation it
+             covers. */
+          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-2 text-[16px] focus:border-accent"
         />
         <button type="submit" disabled={pending || preparing} className={buttonClass("primary")}>
           {C.sendLabel}
