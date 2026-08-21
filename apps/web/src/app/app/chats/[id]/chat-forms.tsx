@@ -205,7 +205,7 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
              the composer could not be used at all on a small phone.
              is gone too — globals.css defines the keyboard
              focus ring the accessibility gate requires, and this cancelled it. */
-          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] focus:border-accent"
+          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] focus:border-accent"
         />
         <button type="submit" disabled={pending || preparing} className={buttonClass("primary")}>
           {C.sendLabel}

@@ -9,6 +9,7 @@ import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
 import { NavLinks } from "./nav-links";
+import { NavHeight } from "./nav-height";
 
 /**
  * The member app.
@@ -53,6 +54,9 @@ const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   { href: "/app/rooms", label: DRAFT_COPY.app.navRooms },
   { href: "/app/profile", label: DRAFT_COPY.app.navProfile },
 ];
+
+/** The bar NavHeight measures. One nav, so a constant is enough. */
+const NAV_ID = "app-nav";
 
 /** Drawn rather than imported: one icon does not justify a dependency. */
 function GearIcon() {
@@ -112,10 +116,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           a 44px link plus 12px of padding and a border. So every screen ended
           in ninety pixels of nothing.
 
-          --nav-h rather than the two literals it used to be: the chat's
-          composer pins itself just above the bar, and a second copy of this
-          number is a second thing to remember when the bar changes. */}
-      <div className="flex-1 pt-6 pb-[var(--nav-h)]">{children}</div>
+          --nav-h is how tall the bar IS, measured — see NavHeight. This is
+          clearance, which is a different number: a page whose last line ends
+          exactly at the top of the nav has not been given room, it has been
+          given none. So the bar's height plus a gap, rather than one value
+          doing both jobs badly. The composer, which really does want to sit
+          flush on top of the bar, uses --nav-h by itself. */}
+      <div className="flex-1 pt-6 pb-[calc(var(--nav-h)+1.5rem)]">{children}</div>
 
       {/* Bottom nav: thumb-reachable, and the only chrome on the page.
        *
@@ -139,6 +146,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
            whole post was made clickable, so they painted straight over the nav.
            Below a dialog by construction: showModal() puts those in the top
            layer, which no z-index can reach. */
+        id={NAV_ID}
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ground/95 backdrop-blur"
       >
         <ul className="mx-auto flex max-w-[550.8px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
@@ -148,6 +156,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NavLinks items={nav} />
         </ul>
       </nav>
+
+      {/* Renders nothing. It measures the bar above and publishes the height,
+          because the one thing that has to sit flush on top of it cannot be
+          told that number in advance. */}
+      <NavHeight navId={NAV_ID} />
     </div>
   );
 }

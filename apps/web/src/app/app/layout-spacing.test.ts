@@ -26,14 +26,35 @@ function pages(dir: string, acc: string[] = []): string[] {
  */
 describe("there is air under the chrome", () => {
   /**
-   * The bottom gap is --nav-h now rather than two literals: the chat's composer
-   * pins itself just above the bar, and a second copy of the number is a second
-   * thing to remember the day the bar changes height.
+   * --nav-h is how tall the bar IS. Clearance is a different number: a page
+   * whose last line ends exactly at the top of the nav has not been given room,
+   * it has been given none. One value doing both jobs left a band of empty page
+   * between the chat composer and the bar it was meant to sit on.
    */
   it("puts the gap in the layout's content wrapper", () => {
-    expect(layout).toMatch(/className="flex-1 pt-6 pb-\[var\(--nav-h\)\]"/);
-    expect(globals).toMatch(/--nav-h: 6rem/);
-    expect(globals).toMatch(/min-width: 640px[\s\S]{0,80}--nav-h: 5rem/);
+    expect(layout).toMatch(/className="flex-1 pt-6 pb-\[calc\(var\(--nav-h\)\+1\.5rem\)\]"/);
+  });
+
+  /**
+   * The real height cannot be written down: the row wraps when five labels do
+   * not fit, which depends on the labels, the font and the phone. So the
+   * stylesheet holds a first-paint value and the bar is measured on mount.
+   */
+  it("measures the bar rather than guessing at it", () => {
+    const measure = readFileSync(join(APP, "nav-height.tsx"), "utf8");
+    expect(measure).toMatch(/new ResizeObserver\(publish\)/);
+    expect(measure).toMatch(/setProperty\("--nav-h", `\$\{nav\.offsetHeight\}px`\)/);
+    expect(layout).toMatch(/<NavHeight navId=\{NAV_ID\} \/>/);
+    expect(layout).toMatch(/id=\{NAV_ID\}/);
+  });
+
+  /**
+   * A frame of gap is a gap; a frame of overlap hides the control a member is
+   * reaching for. So the pre-measurement value errs high where the bar wraps.
+   */
+  it("keeps a first-paint value that errs high on narrow screens", () => {
+    expect(globals).toMatch(/--nav-h: 6\.5rem/);
+    expect(globals).toMatch(/min-width: 640px[\s\S]{0,80}--nav-h: 3\.5625rem/);
   });
 
   /** The tab bar is a second piece of chrome, so it needs the same gap again. */

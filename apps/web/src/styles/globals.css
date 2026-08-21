@@ -2,25 +2,29 @@
 @import "@plusone/ui-tokens/tokens.css";
 
 /**
- * How much room the bottom nav takes, in one place.
+ * How tall the bottom nav is — for the first paint only.
  *
- * Two things need this number and they were about to be two literals: the app
- * layout reserves it as padding so no page ends underneath the bar, and the
- * chat's composer parks on top of it. A composer pinned to `bottom: 0` sits
- * behind the nav, and a composer pinned to a hand-copied 6rem stops matching
- * the day the bar changes height.
+ * NavHeight measures the bar and overwrites this on mount, because the real
+ * value cannot be written down: the row wraps when five labels do not fit the
+ * width, which depends on the labels, the font and the phone, so the same
+ * stylesheet would have to describe a 57px bar and a 103px one.
  *
- * The bar wraps to two rows below 640px — five labels do not fit the 312px a
- * 360px phone leaves after the gutters — which is the whole reason there are
- * two values rather than one.
+ * These two are the unwrapped and wrapped heights — a 44px link plus 12px of
+ * padding and the top border, once or twice. Erring high on the narrow end is
+ * deliberate: for the frame before the measurement lands, a gap under the
+ * composer is a gap, and an overlap hides the control being reached for.
+ *
+ * It is the height, not clearance. The layout adds its own gap on top for the
+ * bottom of a page; the chat composer wants to sit flush on the bar and uses
+ * this alone.
  */
 :root {
-  --nav-h: 6rem;
+  --nav-h: 6.5rem;
 }
 
 @media (min-width: 640px) {
   :root {
-    --nav-h: 5rem;
+    --nav-h: 3.5625rem;
   }
 }
 
