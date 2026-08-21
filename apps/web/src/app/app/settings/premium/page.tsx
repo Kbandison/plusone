@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 
-import { DRAFT_COPY, PREMIUM_INCLUDES, PREMIUM_NEVER } from "@plusone/config";
+import {
+  DRAFT_COPY,
+  PLANS,
+  PREMIUM_INCLUDES,
+  PREMIUM_NEVER,
+  formatPriceCents,
+  type PlanId,
+} from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { ManageBilling, PlanChooser } from "./plan-buttons";
@@ -19,7 +26,10 @@ export default async function PremiumPage() {
     await Promise.all([
       supabase
         .from("subscriptions")
-        .select("status, current_period_end")
+        // `plan`, which the webhook has been writing since the beginning and
+        // nothing has ever read. It is the answer to the one question a paying
+        // member opens this screen with.
+        .select("plan, status, current_period_end")
         .eq("user_id", auth.user.id)
         .maybeSingle(),
       supabase
@@ -52,6 +62,17 @@ export default async function PremiumPage() {
   // it could show them a June date and tell a currently-premium member their
   // access ended two months ago. Whether they ARE premium is is_premium's
   // answer; this line only picks which date to show.
+  /**
+   * Which of the three, resolved from the id the webhook stored.
+   *
+   * Looked up rather than trusted: `plan` is a bare text column, and a price
+   * retired in Stripe would leave a value that matches nothing here. Undefined
+   * then, and the page says "an active subscription" rather than inventing a
+   * tier — being vague is recoverable, being wrong about what somebody pays is
+   * not.
+   */
+  const plan = PLANS.find((p) => p.id === (subscription?.plan as PlanId | null));
+
   const now = Date.now();
   const grantUntil = grants?.[0]?.expires_at as string | undefined;
   const until = [subscription?.current_period_end as string | undefined, grantUntil]
@@ -69,7 +90,23 @@ export default async function PremiumPage() {
 
       {isPremium ? (
         <section className="mt-8 rounded-xl border border-accent bg-surface p-6">
-          <p className="text-[13px]">
+          {/* What they are paying for, above when it runs out. The page said
+              "Premium until 14 September" and nothing else, so the only way to
+              find out which plan you were on was to leave for Stripe. */}
+          {subscription ? (
+            <>
+              <h2 className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
+                {C.premiumPlanHeading}
+              </h2>
+              <p className="mt-1.5 text-[13px]">
+                {plan
+                  ? C.premiumPlanLine(plan.label, formatPriceCents(plan.priceCents))
+                  : C.premiumPlanUnknown}
+              </p>
+            </>
+          ) : null}
+
+          <p className={subscription ? "mt-4 text-[13px]" : "text-[13px]"}>
             {until ? C.premiumUntil(new Date(until).toLocaleDateString()) : C.premiumActive}
           </p>
           {!subscription && grantUntil ? (

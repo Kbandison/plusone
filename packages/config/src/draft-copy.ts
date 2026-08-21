@@ -865,6 +865,15 @@ export const DRAFT_COPY = {
      */
     settingsGeneral: "General",
     /**
+     * The third tab.
+     *
+     * The blocks and the threads a report took out of the inbox were two cards
+     * down the middle of General. They are the only part of Settings a member
+     * arrives at with something on their mind, and a list of people you had to
+     * block does not belong four scrolls past a checkbox. Claude's word.
+     */
+    settingsSafety: "Safety",
+    /**
      * No heading and no body any more.
      *
      * Signing out was a card with a title and a sentence explaining what
@@ -873,6 +882,22 @@ export const DRAFT_COPY = {
      */
     signOutLabel: "Sign out",
     premiumHeading: "Premium",
+    /**
+     * Which plan you are on, which the page never said.
+     *
+     * It showed "Premium until 14 September" and a Manage billing button — so
+     * the one question a paying member opens this screen to answer, "what am I
+     * actually paying for", was answerable only by leaving for Stripe. All
+     * three are Claude's words.
+     */
+    premiumPlanHeading: "Your plan",
+    premiumPlanLine: (label: string, price: string) => `${label} — ${price}`,
+    /**
+     * A subscription whose price id is not one of ours. Possible after a plan
+     * is retired in Stripe, and the honest answer is the status rather than a
+     * guess at which of the three it was.
+     */
+    premiumPlanUnknown: "An active subscription",
     premiumIntro:
       "The free version is a real app. Premium raises how far you can reach — and there are things it will never buy.",
     premiumIncludesHeading: "What it gives you",

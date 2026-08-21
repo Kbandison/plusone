@@ -20,6 +20,7 @@ const layout = withoutComments(read("./layout.tsx"));
 const tabs = read("./settings-tabs.tsx");
 const premium = withoutComments(read("./premium/page.tsx"));
 const premiumActions = read("./premium/actions.ts");
+const safety = withoutComments(read("./safety/page.tsx"));
 const copy = read("../../../../../../packages/config/src/draft-copy.ts");
 
 /**
@@ -33,8 +34,9 @@ describe("premium is a section of settings, not a page beside it", () => {
     expect(existsSync(here("../premium/page.tsx"))).toBe(false);
   });
 
-  it("is a tab, and General is the other one", () => {
+  it("is a tab, alongside General and Safety", () => {
     expect(tabs).toMatch(/href: "\/app\/settings", label: C\.settingsGeneral/);
+    expect(tabs).toMatch(/href: "\/app\/settings\/safety", label: C\.settingsSafety/);
     expect(tabs).toMatch(/href: "\/app\/settings\/premium", label: C\.premiumHeading/);
   });
 
@@ -130,5 +132,64 @@ describe("deleting asks in a dialog", () => {
   it("still asks for the word", () => {
     expect(forms).toMatch(/C\.deleteConfirmLabel/);
     expect(forms).toMatch(/id="confirm"/);
+  });
+});
+
+/**
+ * The blocks and the threads a report took out of the inbox were two cards down
+ * the middle of General. They are the only part of Settings a member arrives at
+ * with something on their mind, and a list of people you had to block does not
+ * belong four scrolls past a checkbox about other communities.
+ */
+describe("safety is its own tab", () => {
+  it("holds both lists", () => {
+    expect(safety).toMatch(/blockedHeading/);
+    expect(safety).toMatch(/reportedThreadsHeading/);
+    expect(safety).toMatch(/<UnblockButton/);
+  });
+
+  it("leaves neither behind in General", () => {
+    expect(page).not.toMatch(/blockedHeading|reportedThreadsHeading|UnblockButton/);
+    // And nothing that only existed to feed them.
+    expect(page).not.toMatch(/my_blocked_members|blockedChats|RETENTION/);
+  });
+
+  it("keeps its heading inside the landmark the skip link targets", () => {
+    expect(safety).toMatch(/<main id="main">[\s{}]{0,30}<h1/);
+  });
+});
+
+/**
+ * The page showed "Premium until 14 September" and a Manage billing button, so
+ * the one question a paying member opens this screen to answer — what am I
+ * actually paying for — was answerable only by leaving for Stripe.
+ */
+describe("a paying member can see what they are paying for", () => {
+  it("reads the plan the webhook has always been writing", () => {
+    expect(premium).toMatch(/\.select\("plan, status, current_period_end"\)/);
+    const webhook = read("../../api/stripe/webhook/route.ts");
+    expect(webhook).toMatch(/plan: priceId \? planIdForPrice\(priceId\) : null/);
+  });
+
+  it("shows its name and its price", () => {
+    expect(premium).toMatch(
+      /C\.premiumPlanLine\(plan\.label, formatPriceCents\(plan\.priceCents\)\)/,
+    );
+    expect(premium).toMatch(/C\.premiumPlanHeading/);
+  });
+
+  /**
+   * Looked up rather than trusted: `plan` is a bare text column, and a price
+   * retired in Stripe leaves a value matching nothing in PLANS. Being vague is
+   * recoverable; being wrong about what somebody pays is not.
+   */
+  it("says so plainly when the stored plan matches none of ours", () => {
+    expect(premium).toMatch(/PLANS\.find\(\(p\) => p\.id === \(subscription\?\.plan/);
+    expect(premium).toMatch(/: C\.premiumPlanUnknown/);
+  });
+
+  /** Premium from a referral grant has no subscription and no plan to name. */
+  it("shows nothing about a plan to a member who has none", () => {
+    expect(premium).toMatch(/\{subscription \? \([\s\S]{0,400}premiumPlanHeading/);
   });
 });

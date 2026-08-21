@@ -7,7 +7,10 @@ const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.ur
 const migration = read(
   "../../../../../../supabase/migrations/20260819000300_a_block_takes_the_thread_with_it.sql",
 );
-const settings = read("../settings/page.tsx");
+// Its own tab since 20260821. The blocks and the preserved threads were two
+// cards down the middle of General, four scrolls past a checkbox about other
+// communities.
+const settings = read("../settings/safety/page.tsx");
 const cron = read("../../api/cron/purge/route.ts");
 const inbox = read("../inbox/page.tsx");
 

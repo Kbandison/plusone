@@ -25,6 +25,7 @@ const C = DRAFT_COPY.app;
  */
 const TABS = [
   { href: "/app/settings", label: C.settingsGeneral },
+  { href: "/app/settings/safety", label: C.settingsSafety },
   { href: "/app/settings/premium", label: C.premiumHeading },
 ] as const;
 
