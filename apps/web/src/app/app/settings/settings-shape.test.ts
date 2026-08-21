@@ -193,3 +193,32 @@ describe("a paying member can see what they are paying for", () => {
     expect(premium).toMatch(/\{subscription \? \([\s\S]{0,400}premiumPlanHeading/);
   });
 });
+
+/**
+ * The moderation surface has existed since Milestone 3 and nothing in the app
+ * has ever linked to it. The only way in was typing /admin, and the only way to
+ * know that was to have written it.
+ */
+describe("an admin can find the admin surface", () => {
+  it("links to it from settings", () => {
+    expect(page).toMatch(/href="\/admin"/);
+    expect(page).toMatch(/adminSettingsHeading/);
+  });
+
+  /** Only for the people who have one. */
+  it("shows the door to nobody else", () => {
+    expect(page).toMatch(/\{isAdmin \? \(/);
+    expect(page).toMatch(/supabase\.rpc\("is_admin"\)/);
+  });
+
+  /**
+   * A link, not a wall. The admin layout turns a non-admin away at the door and
+   * every RPC underneath checks is_admin() itself and raises — hiding a link is
+   * not what stops anyone.
+   */
+  it("is not the thing keeping anyone out", () => {
+    const layout = read("../../admin/layout.tsx");
+    expect(layout).toMatch(/const \{ data: isAdmin \} = await supabase\.rpc\("is_admin"\)/);
+    expect(layout).toMatch(/if \(!isAdmin\) redirect\("\/"\)/);
+  });
+});

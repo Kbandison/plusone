@@ -6,8 +6,10 @@ import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plu
 import { connects as connectsLogic } from "@plusone/logic";
 
 import { photosFor } from "@/lib/photo-urls";
+import { compatibilityFor } from "@/lib/drop";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
+import { Badge } from "@/app/ui";
 import { BrowseFilters } from "./browse-filters";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navBrowse };
@@ -56,9 +58,11 @@ export default async function BrowsePage({
   if (!auth.user) redirect("/sign-in");
   const viewer = auth.user.id;
 
-  const { data: me } = await supabase
-    .rpc("my_profile")
-    .maybeSingle<{ mode: string | null; search_radius_mi: number | null }>();
+  const { data: me } = await supabase.rpc("my_profile").maybeSingle<{
+    mode: string | null;
+    search_radius_mi: number | null;
+    intention: string | null;
+  }>();
   if (me?.mode === "support_only") redirect("/app");
 
   // The member's OWN radius is the default, not the maximum.
@@ -98,7 +102,19 @@ export default async function BrowsePage({
   const { data } = await query;
   const rows = data ?? [];
 
-  const photos = await photosFor(rows.map((row) => row.id as string));
+  const ids = rows.map((row) => row.id as string);
+  const [photos, compatibility] = await Promise.all([
+    photosFor(ids),
+    /**
+     * The same number the Drop puts on the same person.
+     *
+     * It was on one surface and not the other: the Drop said "78% compatible"
+     * and the directory one tab away said nothing, about the same member, on
+     * the same evening. One function rather than a second implementation, so
+     * the two cannot drift apart.
+     */
+    compatibilityFor(auth.user.id, (me?.intention as string | null) ?? "open_to_either", ids),
+  ]);
 
   // What you already have with each of them.
   //
@@ -157,6 +173,10 @@ export default async function BrowsePage({
 
   const activeThisWeek = activeNearby ?? 0;
 
+  // Whether the emptiness is the member's own doing. A default radius is not a
+  // filter — clearing it would change nothing and the offer would be a lie.
+  const filtered = Boolean(intention) || activeOnly || Boolean(filters.distance);
+
   return (
     <main id="main">
       <h1 className="text-h2">{C.navBrowse}</h1>
@@ -168,53 +188,105 @@ export default async function BrowsePage({
 
       <BrowseFilters distanceMi={distanceMi} intention={intention} activeOnly={activeOnly} />
 
-      {rows.length === LIMIT ? (
-        <p className="mt-6 text-[11px] text-ink-3">{C.browseTruncated(LIMIT)}</p>
-      ) : null}
-
       {rows.length === 0 ? (
-        <p className="mt-10 text-[13px] text-ink-2">{C.browseEmpty}</p>
+        <div className="mt-10">
+          <p className="text-[13px] text-ink-2">{C.browseEmpty}</p>
+          {/* The way out, on the screen that caused it. "Nobody matches those
+              filters" with the filters sitting right above it and no way to
+              undo them in one press is a dead end describing itself. */}
+          {filtered ? (
+            <Link
+              href="/app/browse"
+              className="ease-brand mt-4 inline-block text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            >
+              {C.browseClearFilters}
+            </Link>
+          ) : null}
+        </div>
       ) : (
-        <ul className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {rows.map((row) => (
-            <li key={row.id as string} className="rounded-xl border border-line-2 bg-surface p-5">
-              <Link href={`/app/connect/${row.id as string}?source=browse`} className="block">
-                <MemberPhotoFrame photo={photos.get(row.id as string)} size={56} />
-                <h2 className="mt-3 text-[0.972rem]">
-                  {(row.display_name as string) ?? C.threadUnknownPerson}
-                </h2>
-                <p className="mt-1.5 text-[11.3px] text-ink-3">
-                  {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-                {/* The list is ordered by this and nothing said so, which
-                    makes the order read as arbitrary. Coarse on purpose:
-                    "active 3h ago" is a precision nobody asked to broadcast,
-                    and this is the same bucket as the filter above. */}
-                {(row.last_active_at as string) >= weekAgo ? (
-                  <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-3">
-                    <span aria-hidden="true" className="size-1.5 rounded-full bg-positive" />
-                    {C.browseActiveThisWeek}
-                  </p>
-                ) : null}
+        <>
+          {/* How many, and whether that is all of them. The grid ended at sixty
+              with no sign there were more, and with no count at all a short
+              list read as a broken page rather than as a thin evening. */}
+          <p className="mt-6 text-[11px] text-ink-3">
+            {C.browseCount(rows.length)}
+            {rows.length === LIMIT ? ` · ${C.browseTruncated(LIMIT)}` : ""}
+          </p>
 
-                {row.intention ? (
-                  <p className="mt-3 text-[11.7px] text-ink-2">
-                    {INTENTION_LABELS[row.intention as Intention]}
-                  </p>
-                ) : null}
+          {/* Two columns on every width, and the photograph leads.
+              It was a 56px circle beside a name — the shape of a search result,
+              on the surface whose whole job is showing people to each other.
+              The Drop settled this argument already; this is the same card at
+              directory density. */}
+          <ul className="mt-4 grid grid-cols-2 gap-4">
+            {rows.map((row) => {
+              const id = row.id as string;
+              const photo = photos.get(id);
+              const percent = compatibility.get(id);
+              const meta = [row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
+                .filter(Boolean)
+                .join(" · ");
 
-                {history.get(row.id as string) ? (
-                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-line-2 bg-ground px-3 py-1 text-[11px] text-ink-2">
-                    <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
-                    {HISTORY_LABEL[history.get(row.id as string)!]}
-                  </p>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
+              return (
+                <li key={id} className="overflow-hidden rounded-xl border border-line-2 bg-surface">
+                  <Link href={`/app/connect/${id}?source=browse`} className="block">
+                    <div className="relative">
+                      <MemberPhotoFrame photo={photo} fill className="aspect-[4/5] w-full" />
+
+                      {/* Over the photograph, where the Drop puts it. */}
+                      {percent != null ? (
+                        <Badge className="absolute top-2 right-2">
+                          {C.compatibilityLabel(percent)}
+                        </Badge>
+                      ) : null}
+
+                      {/* The list is ordered by this and nothing said so, which
+                          makes the order read as arbitrary. Coarse on purpose:
+                          "active 3h ago" is a precision nobody asked to
+                          broadcast, and this is the bucket the filter uses. */}
+                      {(row.last_active_at as string) >= weekAgo ? (
+                        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-ground/90 px-2 py-1 text-[10.5px] text-ink-2 backdrop-blur">
+                          <span aria-hidden="true" className="size-1.5 rounded-full bg-positive" />
+                          {C.browseActiveThisWeek}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="p-4">
+                      <h2 className="truncate text-[0.972rem]">
+                        {(row.display_name as string) ?? C.threadUnknownPerson}
+                      </h2>
+                      {meta ? <p className="mt-1 text-[11.3px] text-ink-3">{meta}</p> : null}
+
+                      {row.intention ? (
+                        <p className="mt-2 text-[11.7px] leading-[1.5] text-ink-2">
+                          {INTENTION_LABELS[row.intention as Intention]}
+                        </p>
+                      ) : null}
+
+                      {/* Why the picture is soft. Browse has rendered blurred
+                          photos since it existed and never once said why —
+                          which reads as a broken image rather than as somebody
+                          else's setting. The Drop says it. */}
+                      {photo?.isBlurred ? (
+                        <p className="mt-2 text-[10.5px] leading-[1.45] text-ink-3">
+                          {C.photoBlurredNote}
+                        </p>
+                      ) : null}
+
+                      {history.get(id) ? (
+                        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line-2 bg-ground px-2.5 py-1 text-[10.5px] text-ink-2">
+                          <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+                          {HISTORY_LABEL[history.get(id)!]}
+                        </p>
+                      ) : null}
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </main>
   );

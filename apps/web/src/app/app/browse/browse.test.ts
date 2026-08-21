@@ -135,3 +135,85 @@ describe("the page has no words of its own", () => {
     expect(page).not.toMatch(/"Someone"/);
   });
 });
+
+/**
+ * It was a 56px circle beside a name — the shape of a search result, on the
+ * surface whose whole job is showing people to each other. The Drop settled
+ * that argument already; this is the same card at directory density.
+ */
+describe("the photograph leads", () => {
+  it("fills the card rather than sitting beside the name", () => {
+    expect(page).toMatch(
+      /<MemberPhotoFrame photo=\{photo\} fill className="aspect-\[4\/5\] w-full" \/>/,
+    );
+    expect(page).not.toMatch(/size=\{56\}/);
+  });
+
+  it("keeps two columns at every width", () => {
+    expect(page).toMatch(/grid grid-cols-2 gap-4/);
+    expect(page).not.toMatch(/sm:grid-cols-2/);
+  });
+});
+
+/**
+ * The Drop said "78% compatible" and the directory one tab away said nothing,
+ * about the same member, on the same evening.
+ */
+describe("Browse shows the number the Drop shows", () => {
+  it("puts compatibility on the card", () => {
+    expect(page).toMatch(/C\.compatibilityLabel\(percent\)/);
+    expect(page).toMatch(/<Badge className="absolute top-2 right-2">/);
+  });
+
+  /** One function, so the two surfaces cannot drift apart. */
+  it("reuses the Drop's calculation rather than repeating it", () => {
+    expect(page).toMatch(/compatibilityFor\(auth\.user\.id/);
+    expect(page).toMatch(/from "@\/lib\/drop"/);
+    const drop = read("../../../lib/drop.ts");
+    expect(drop).toMatch(/export async function compatibilityFor/);
+  });
+
+  /** A member with no intention has no honest number, and a card must not invent one. */
+  it("shows nothing when there is no number", () => {
+    expect(page).toMatch(/percent != null \?/);
+  });
+});
+
+/**
+ * Browse has rendered blurred photographs since it existed and never once said
+ * why — which reads as a broken image rather than as somebody else's setting.
+ */
+describe("a soft photograph says why it is soft", () => {
+  it("carries the note the Drop carries", () => {
+    expect(page).toMatch(/photo\?\.isBlurred \?/);
+    expect(page).toMatch(/C\.photoBlurredNote/);
+  });
+});
+
+/**
+ * "Nobody matches those filters" with the filters sitting right above it and no
+ * way to undo them in one press is a dead end describing itself.
+ */
+describe("the empty state offers a way out of itself", () => {
+  it("clears the filters, when filters are the reason", () => {
+    expect(page).toMatch(/C\.browseClearFilters/);
+    expect(page).toMatch(/href="\/app\/browse"/);
+  });
+
+  /**
+   * A default radius is not a filter. Clearing it would change nothing, and the
+   * offer would be a lie.
+   */
+  it("does not offer it when nothing is filtered", () => {
+    expect(page).toMatch(
+      /const filtered = Boolean\(intention\) \|\| activeOnly \|\| Boolean\(filters\.distance\)/,
+    );
+    expect(page).toMatch(/\{filtered \? \(/);
+  });
+
+  /** With no count at all, a short list reads as a broken page. */
+  it("says how many, and whether that is all of them", () => {
+    expect(page).toMatch(/C\.browseCount\(rows\.length\)/);
+    expect(page).toMatch(/rows\.length === LIMIT \? ` · \$\{C\.browseTruncated\(LIMIT\)\}`/);
+  });
+});

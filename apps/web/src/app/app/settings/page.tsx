@@ -16,13 +16,16 @@ export default async function SettingsPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
 
-  const [{ data: profile }, { data: deletion }] = await Promise.all([
+  const [{ data: profile }, { data: deletion }, { data: isAdmin }] = await Promise.all([
     supabase.from("profiles").select("cross_community_opt_in").eq("id", auth.user.id).maybeSingle(),
     supabase
       .from("deletion_requests")
       .select("purge_after, status")
       .eq("user_id", auth.user.id)
       .maybeSingle(),
+    // No argument: is_admin() answers only about the caller, so the roster
+    // cannot be probed. See 20260814001000_self_relative_predicates.sql.
+    supabase.rpc("is_admin"),
   ]);
 
   return (
@@ -43,6 +46,26 @@ export default async function SettingsPage() {
           {DRAFT_COPY.app.inviteSettingsLink}
         </Link>
       </section>
+
+      {/* The way into the moderation surface, for the people who have one.
+          It has existed since Milestone 3 and nothing in the app linked to it:
+          the only way in was typing /admin, and the only way to know that was
+          to have written it.
+
+          A link, not a wall. The admin layout turns a non-admin away at the
+          door and every RPC underneath checks is_admin() itself and raises —
+          this only decides whether the door is visible. */}
+      {isAdmin ? (
+        <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+          <h2 className="text-[0.972rem]">{DRAFT_COPY.app.adminSettingsHeading}</h2>
+          <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">
+            {DRAFT_COPY.app.adminSettingsBody}
+          </p>
+          <Link href="/admin" className={buttonClass("secondary", "mt-5 inline-block")}>
+            {DRAFT_COPY.app.adminSettingsLink}
+          </Link>
+        </section>
+      ) : null}
 
       <SignInEmail
         email={auth.user?.email ?? null}

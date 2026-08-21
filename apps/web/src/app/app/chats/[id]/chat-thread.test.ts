@@ -164,7 +164,8 @@ describe("the Drop forgets who you have already reached", () => {
 describe("Browse remembers who you have spoken to", () => {
   it("labels a row from the connect behind it", () => {
     expect(browse).toMatch(/connectsLogic\.historyWith\(/);
-    expect(browse).toMatch(/HISTORY_LABEL\[history\.get\(row\.id as string\)!\]/);
+    // `id` is bound once per card now that the row body is a block.
+    expect(browse).toMatch(/HISTORY_LABEL\[history\.get\(id\)!\]/);
   });
 
   /** A live connect outranks a finished one when there are several. */

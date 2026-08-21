@@ -841,6 +841,15 @@ export const DRAFT_COPY = {
     voiceNoteAria: (seconds: number | null) =>
       seconds ? `Voice note, ${seconds} seconds` : "Voice note",
     browseEmpty: "Nobody matches those filters right now.",
+    /**
+     * What to do about it, on the screen that caused it.
+     *
+     * "Nobody matches those filters" with the filters sitting right above it
+     * and no way to undo them in one press is a dead end describing itself.
+     * Claude's words, both.
+     */
+    browseClearFilters: "Clear filters",
+    browseCount: (n: number) => (n === 1 ? "1 person" : `${n} people`),
     filterDistance: "Within",
     filterIntention: "Looking for",
     filterActive: "Active this week only",
@@ -891,6 +900,16 @@ export const DRAFT_COPY = {
      * when the page became a tab; this one is the tab beside it. Claude's word.
      */
     settingsGeneral: "General",
+    /**
+     * The way into /admin, for the people who have one.
+     *
+     * The moderation surface has existed since Milestone 3 and nothing in the
+     * app has ever linked to it — the only way in was typing the URL, and the
+     * only way to know the URL was to have written it. Claude's words.
+     */
+    adminSettingsHeading: "Moderation",
+    adminSettingsBody: "Reports, verifications and the rest of the admin tools.",
+    adminSettingsLink: "Open admin",
     /**
      * The third tab.
      *

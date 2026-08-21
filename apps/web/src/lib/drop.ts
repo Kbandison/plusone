@@ -359,8 +359,13 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
  * Vectors are read with the SERVICE client for the same reason the ranking
  * does: quiz_responses is own-rows-only and must stay that way. They are used
  * to produce one integer per card and never leave this function.
+ *
+ * Exported for Browse, which shows the same people and was showing them without
+ * it — the Drop said "78% compatible" and the directory one tab away said
+ * nothing, about the same person, on the same evening. One function rather than
+ * a second implementation, so the two cannot disagree.
  */
-async function compatibilityFor(
+export async function compatibilityFor(
   viewerId: string,
   viewerIntention: string,
   ids: readonly string[],
