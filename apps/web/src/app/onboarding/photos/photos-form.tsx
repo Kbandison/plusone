@@ -165,16 +165,33 @@ export function PhotoUploader({ count }: { count: number }) {
 export function PrivacyChoice({
   canContinue,
   privacy,
+  settings = false,
 }: {
   canContinue: boolean;
   /** Remembered, so walking back does not silently reset a member to "clear". */
   privacy?: string | null;
+  /**
+   * On the profile: no Continue, and the choice saves the moment it is made.
+   *
+   * A settings screen with a Save button is a screen that can be left in a
+   * state the member believes they chose and the database has never heard of.
+   * A step is different — there, Continue is the thing that means "I have
+   * decided", and pressing it is the decision.
+   */
+  settings?: boolean;
 }) {
   const blockedId = useId();
   const [state, action, pending] = useActionState(savePhotoPrivacy, PHOTOS_INITIAL);
+  const form = useRef<HTMLFormElement>(null);
+
+  // requestSubmit rather than submit(): it runs validation and fires the submit
+  // event, which is what React's action handling listens for.
+  const saveNow = () => {
+    if (settings) form.current?.requestSubmit();
+  };
 
   return (
-    <form action={action} className="mt-12 flex flex-col gap-8">
+    <form ref={form} action={action} className="mt-12 flex flex-col gap-8">
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-3 text-[12.2px]">{C.privacyLabel}</legend>
 
@@ -184,6 +201,7 @@ export function PrivacyChoice({
             name="photo_privacy"
             value="clear"
             defaultChecked={privacy !== "blurred_until_connected"}
+            onChange={saveNow}
             className="size-[14.6px] accent-accent"
           />
           {C.clearLabel}
@@ -195,6 +213,7 @@ export function PrivacyChoice({
             name="photo_privacy"
             value="blurred_until_connected"
             defaultChecked={privacy === "blurred_until_connected"}
+            onChange={saveNow}
             className="mt-1 size-[14.6px] shrink-0 accent-accent"
           />
           <span>
@@ -210,21 +229,27 @@ export function PrivacyChoice({
         </p>
       ) : null}
 
-      <StepActions step="photos">
-        <button
-          type="submit"
-          disabled={pending || !canContinue}
-          // The reason it is disabled was a loose <p> associated with nothing,
-          // and a disabled button is skipped in the tab order — so a member who
-          // could not continue was never told why by anything they would reach.
-          aria-describedby={!canContinue ? blockedId : undefined}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
-        >
-          {COPY.actions.continueLabel}
-        </button>
-      </StepActions>
+      {settings ? (
+        <p role="status" className="text-[11.3px] text-ink-3">
+          {pending ? C.privacySaving : state.error ? "" : C.privacySaved}
+        </p>
+      ) : (
+        <StepActions step="photos">
+          <button
+            type="submit"
+            disabled={pending || !canContinue}
+            // The reason it is disabled was a loose <p> associated with nothing,
+            // and a disabled button is skipped in the tab order — so a member who
+            // could not continue was never told why by anything they would reach.
+            aria-describedby={!canContinue ? blockedId : undefined}
+            className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
+          >
+            {COPY.actions.continueLabel}
+          </button>
+        </StepActions>
+      )}
 
-      {!canContinue ? (
+      {!settings && !canContinue ? (
         <p id={blockedId} className="text-[11.3px] text-ink-3">
           {C.errors.required}
         </p>
@@ -246,8 +271,17 @@ export function PrivacyChoice({
  */
 export function PhotoGallery({
   photos,
+  settings = false,
   children,
 }: {
+  /**
+   * On the profile rather than in onboarding.
+   *
+   * The step needs a heading over the grid because nothing else names it. The
+   * profile already has one, and two headings for one grid is one of them
+   * apologising for the other.
+   */
+  settings?: boolean;
   photos: readonly OwnPhoto[];
   /** The add tile, so it sits with the photos rather than above them. */
   children?: React.ReactNode;
@@ -321,8 +355,14 @@ export function PhotoGallery({
 
   return (
     <section className="mt-10">
-      <h2 className="text-center text-[12.2px]">{C.yoursHeading}</h2>
-      <p className="mx-auto mt-2 max-w-[34ch] text-center text-[11px] text-ink-3">{C.orderHint}</p>
+      {settings ? null : (
+        <>
+          <h2 className="text-center text-[12.2px]">{C.yoursHeading}</h2>
+          <p className="mx-auto mt-2 max-w-[34ch] text-center text-[11px] text-ink-3">
+            {C.orderHint}
+          </p>
+        </>
+      )}
 
       <ul className="mt-6 flex flex-wrap justify-center gap-4">
         {order.map((photo, index) => (

@@ -480,6 +480,12 @@ export const DRAFT_COPY = {
     /** The photos themselves, which the step never showed — only counted. */
     yoursHeading: "Your photos so far",
     /**
+     * On the profile there is no Continue to press, so the only evidence the
+     * choice was taken is a line that says so. Both are Claude's words.
+     */
+    privacySaving: "Saving…",
+    privacySaved: "Saved",
+    /**
      * position 0 is not a label, it is the photo every card, drop and profile
      * shows. Saying which one that is was the missing half of letting anybody
      * change it.
@@ -930,8 +936,22 @@ export const DRAFT_COPY = {
     profileRadius: "Search radius",
     profilePhotosHeading: "Photos",
     profileNameLabel: "Your name",
-    profileNameSave: "Save name",
     profileNameSaved: "Name saved.",
+    /**
+     * Changing what you are here for, and the thirty days that follow.
+     *
+     * §3.4 gives the lock notice ("You can change this once every 30 days")
+     * but says nothing about the screen where the lock is in force, so the
+     * three strings below are Claude's words and still need Kevin's.
+     *
+     * The date is spelled out rather than counted down. "23 days" is a number
+     * a member has to convert; a date is one they can put somewhere.
+     *
+     * The button reuses `saveLabel`, which already exists for exactly this —
+     * a settings control where "Continue" is the wrong word.
+     */
+    profileIntentionSaved: "Saved.",
+    profileIntentionLocked: (until: string) => `You can change this again on ${until}.`,
     profileModeHeading: "Mode",
     promptsHeading: "Your prompts",
     promptsIntro:

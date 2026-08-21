@@ -7,6 +7,7 @@ const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.ur
 const page = read("./page.tsx");
 const copy = read("../../../../../../packages/config/src/draft-copy.ts");
 const layout = read("../layout.tsx");
+const intention = read("./intention-editor.tsx");
 
 describe("the section is called Profile", () => {
   it("says so in the nav and on the page", () => {
@@ -33,7 +34,7 @@ describe("the section is called Profile", () => {
  */
 describe("photos are managed here, not linked to", () => {
   it("renders the gallery on the profile itself", () => {
-    expect(page).toMatch(/<PhotoGallery photos=\{photoList\}>/);
+    expect(page).toMatch(/<PhotoGallery photos=\{photoList\} settings>/);
     expect(page).toMatch(/<PhotoUploader count=\{photoList\.length\} \/>/);
     expect(page).toMatch(/<PrivacyChoice/);
     expect(page).not.toMatch(/href="\/app\/profile\/photos"/);
@@ -129,12 +130,16 @@ describe("the page has no words of its own", () => {
   it("reads its labels from the copy file", () => {
     for (const key of [
       "profileLookingFor",
-      "profileNotSet",
       "profileRadius",
       "profilePhotosHeading",
       "profileModeHeading",
     ]) {
       expect(page, key).toMatch(new RegExp(`C\\.${key}\\b`));
+    }
+    // The intention moved out of the page and into a control that can change
+    // it, and took its two strings with it.
+    for (const key of ["profileNotSet", "profileIntentionLocked"]) {
+      expect(intention, key).toMatch(new RegExp(`C\\.${key}\\b`));
     }
   });
 

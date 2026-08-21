@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 
 import {
-  COPY,
+  COOLDOWNS,
   DRAFT_COPY,
-  INTENTION_LABELS,
   RADIUS,
-  promptQuestion,
   type Intention,
   type ProfilePromptAnswer,
 } from "@plusone/config";
@@ -16,6 +14,8 @@ import { MAX_PHOTOS } from "@/lib/photo-limits";
 import { PhotoGallery, PhotoUploader, PrivacyChoice } from "@/app/onboarding/photos/photos-form";
 import { RadiusForm } from "@/app/onboarding/radius/radius-form";
 import { NameEditor } from "./name-editor";
+import { IntentionEditor } from "./intention-editor";
+import { saveRadiusSetting } from "./radius-actions";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
 import { ModeToggle } from "./mode-toggle";
@@ -51,7 +51,7 @@ export default async function ProfilePage() {
     // this string, and a `+` between two halves makes it a plain string and
     // every field on the result an error type.
     .select(
-      "display_name, intention, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
+      "display_name, intention, intention_changed_at, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
     )
     .eq("id", auth.user.id)
     .maybeSingle();
@@ -68,17 +68,34 @@ export default async function ProfilePage() {
   ]);
   const photoPrivacy = (profile?.photo_privacy as string | null) ?? null;
 
+  /**
+   * When the intention can change again, or null if it already can.
+   *
+   * intention_changed_at is `not null default now()`, so a profile that has
+   * never chosen still carries a clock — the same reason change_intention
+   * skips the check when `intention is null`. Read the two together or the
+   * page locks a control nobody has used.
+   */
+  const changedAt = profile?.intention_changed_at as string | null | undefined;
+  const unlocksAt =
+    intention && changedAt
+      ? new Date(new Date(changedAt).getTime() + COOLDOWNS.intentionChangeDays * 86_400_000)
+      : null;
+  const intentionChangeableOn =
+    unlocksAt && unlocksAt.getTime() > Date.now()
+      ? unlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : null;
+
   return (
     <main id="main">
+      {/* The name is the heading, and the heading is the field.
+          It was set once in onboarding and never again — and it is the word
+          every other member sees on every connect, every chat and every room
+          post they did not write anonymously. */}
       <div className="flex items-center gap-4">
         <MemberPhotoFrame photo={photos[0]} size={72} emptyLabel={DRAFT_COPY.app.photoNone} />
-        <h1 className="text-h2">{profile?.display_name ?? C.profileHeading}</h1>
+        <NameEditor name={(profile?.display_name as string | null) ?? ""} />
       </div>
-
-      {/* The name, which was set once in onboarding and never again — and is
-          the word every other member sees on every connect, every chat and
-          every room post they did not write anonymously. */}
-      <NameEditor name={(profile?.display_name as string | null) ?? ""} />
 
       {/* The gallery itself, not a link to it.
           It has existed since Milestone 2 and lived at /onboarding/photos,
@@ -88,25 +105,20 @@ export default async function ProfilePage() {
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{C.profilePhotosHeading}</h2>
 
-        <PhotoGallery photos={photoList}>
+        <PhotoGallery photos={photoList} settings>
           {photoList.length < MAX_PHOTOS ? <PhotoUploader count={photoList.length} /> : null}
         </PhotoGallery>
 
-        <PrivacyChoice canContinue={photoList.length > 0} privacy={photoPrivacy} />
+        <PrivacyChoice canContinue={photoList.length > 0} privacy={photoPrivacy} settings />
       </section>
 
-      <dl className={`${SECTION} flex flex-col gap-5`}>
-        <div>
-          <dt className="text-[11px] tracking-[0.04em] text-ink-3 uppercase">
-            {C.profileLookingFor}
-          </dt>
-          <dd className="mt-1.5 text-[13px]">
-            {intention ? INTENTION_LABELS[intention] : C.profileNotSet}
-          </dd>
-          {/* §3.4, verbatim. The lock is what makes the answer mean something. */}
-          <dd className="mt-1.5 text-[11.3px] text-ink-3">{COPY.intention.lockNotice}</dd>
-        </div>
-      </dl>
+      {/* Changeable, not just displayed. This is the answer that decides who is
+          in the Drop; a member who picked wrong on their sixth screen could
+          read the rule here and had nothing to do about it. */}
+      <section className={SECTION}>
+        <h2 className="text-[0.972rem]">{C.profileLookingFor}</h2>
+        <IntentionEditor intention={intention} changeableOn={intentionChangeableOn} />
+      </section>
 
       {/* The slider, not a number and a link to a screen with the slider on it.
           This decides who is in tonight's Drop and who is in Browse, and it was
@@ -116,22 +128,9 @@ export default async function ProfilePage() {
         <RadiusForm
           radiusMi={(profile?.search_radius_mi as number | null) ?? RADIUS.defaultMi}
           approximate={approximate}
+          save={saveRadiusSetting}
         />
       </section>
-
-      {prompts.length > 0 ? (
-        <section className={SECTION}>
-          <h2 className="text-[0.972rem]">{DRAFT_COPY.app.promptsHeading}</h2>
-          <ul className="mt-4 flex flex-col gap-4">
-            {prompts.map((prompt) => (
-              <li key={prompt.id} className="rounded-lg border border-line px-5 py-4">
-                <p className="text-[11px] text-ink-3">{promptQuestion(prompt.id)}</p>
-                <p className="mt-1.5 text-[12.6px] leading-[1.6]">{prompt.answer}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <PromptEditor answers={prompts} />
 

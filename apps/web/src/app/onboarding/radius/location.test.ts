@@ -51,7 +51,11 @@ describe("a member gets a location to be measured from", () => {
    * the instant a screen renders is the one people refuse by reflex.
    */
   it("asks the device only when the member presses the button", () => {
-    expect(form).toMatch(/action=\{async \(formData\) => \{[\s\S]{0,200}await locate\(\)/);
+    // The profile reuses this form with its own action and never asks for a
+    // location, so the prompt now lives in the onboarding branch of a ternary
+    // rather than being the whole action prop.
+    expect(form).toMatch(/: async \(formData\) => \{[\s\S]{0,200}await locate\(\)/);
+    expect(form).toMatch(/settings\s*\?\s*action/);
     expect(form).not.toMatch(/useEffect\([\s\S]{0,120}getCurrentPosition/);
   });
 

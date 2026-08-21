@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId, useRef, useState } from "react";
 
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
@@ -15,12 +15,24 @@ const INITIAL: RadiusState = { error: null };
 export function RadiusForm({
   radiusMi,
   approximate,
+  save,
 }: {
   radiusMi?: number | null;
   /** From the request's IP. Used only if the device will not say. */
   approximate?: { lat: number; lon: number } | null;
+  /**
+   * The profile's action, which saves on release and stays put.
+   *
+   * Passed in rather than switched on a boolean so the onboarding step keeps
+   * importing exactly one action and the profile keeps importing exactly one:
+   * a `settings` flag would have put a redirect and a requireStep in the
+   * bundle of a screen that must never reach either.
+   */
+  save?: (previous: RadiusState, formData: FormData) => Promise<RadiusState>;
 }) {
-  const [state, action, pending] = useActionState(saveRadius, INITIAL);
+  const settings = save !== undefined;
+  const [state, action, pending] = useActionState(save ?? saveRadius, INITIAL);
+  const form = useRef<HTMLFormElement>(null);
   const [outcome, setOutcome] = useState<"asking" | "approximate" | "unknown" | null>(null);
 
   /**
@@ -70,18 +82,23 @@ export function RadiusForm({
 
   return (
     <form
-      action={async (formData) => {
-        const where = await locate();
-        if (where) {
-          formData.set("lat", String(where.lat));
-          formData.set("lon", String(where.lon));
-        }
-        action(formData);
-      }}
-      className="mt-10 flex flex-col gap-8"
+      ref={form}
+      action={
+        settings
+          ? action
+          : async (formData) => {
+              const where = await locate();
+              if (where) {
+                formData.set("lat", String(where.lat));
+                formData.set("lon", String(where.lon));
+              }
+              action(formData);
+            }
+      }
+      className={settings ? "mt-6 flex flex-col gap-8" : "mt-10 flex flex-col gap-8"}
     >
       <div className="flex flex-col gap-4">
-        <label htmlFor={sliderId} className="text-[12.2px]">
+        <label htmlFor={sliderId} className={settings ? "sr-only" : "text-[12.2px]"}>
           {C.label}
         </label>
 
@@ -104,6 +121,13 @@ export function RadiusForm({
           // page says "50 miles". The unit is the part that matters.
           aria-valuetext={C.unit(radius)}
           onChange={(event) => setRadius(Number(event.target.value))}
+          {...(settings
+            ? {
+                onPointerUp: () => form.current?.requestSubmit(),
+                onKeyUp: () => form.current?.requestSubmit(),
+                onTouchEnd: () => form.current?.requestSubmit(),
+              }
+            : {})}
           /* A native range is about 16px tall. LAYOUT.minTapTarget declares a
              44px floor and this was one of the controls ignoring it — on a
              phone it is a hairline to hit with a thumb. The height is padding
@@ -112,7 +136,9 @@ export function RadiusForm({
         />
       </div>
 
-      <p className="max-w-[46ch] text-[11px] leading-[1.6] text-ink-3">{C.locationHint}</p>
+      {settings ? null : (
+        <p className="max-w-[46ch] text-[11px] leading-[1.6] text-ink-3">{C.locationHint}</p>
+      )}
 
       {outcome === "approximate" ? (
         <p role="status" className="text-[11px] text-ink-3">
@@ -132,15 +158,25 @@ export function RadiusForm({
         </p>
       ) : null}
 
-      <StepActions step="radius">
-        <button
-          type="submit"
-          disabled={pending}
-          className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
-        >
-          {C.continueLabel}
-        </button>
-      </StepActions>
+      {settings ? (
+        <p role="status" className="text-[11.3px] text-ink-3">
+          {pending
+            ? DRAFT_COPY.photos.privacySaving
+            : state.error
+              ? ""
+              : DRAFT_COPY.photos.privacySaved}
+        </p>
+      ) : (
+        <StepActions step="radius">
+          <button
+            type="submit"
+            disabled={pending}
+            className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
+          >
+            {C.continueLabel}
+          </button>
+        </StepActions>
+      )}
     </form>
   );
 }
