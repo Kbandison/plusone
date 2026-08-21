@@ -61,6 +61,9 @@ export default async function PremiumPage() {
 
   return (
     <main id="main">
+      {/* Repeated from the tab above it, the way a room's title is. The skip
+          link lands on #main, and a page whose first thing inside #main is a
+          paragraph has not told the member who used it where they are. */}
       <h1 className="text-h2">{C.premiumHeading}</h1>
       <p className="mt-5 text-[13.4px] leading-[1.7] text-ink-2">{C.premiumIntro}</p>
 

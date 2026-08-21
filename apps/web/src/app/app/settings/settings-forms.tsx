@@ -7,6 +7,7 @@ import { COPY, DRAFT_COPY } from "@plusone/config";
 import { addSignInEmail, requestDeletion, setCrossCommunityOptIn } from "./actions";
 import { SETTINGS_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { Modal } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
 
@@ -56,6 +57,10 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
   );
 }
 
+/** The one red button in the app, and both spellings of it. */
+const DANGER =
+  "ease-brand min-h-tap rounded-lg border border-critical px-5 py-2.5 text-[12.2px] text-critical transition-colors duration-200 hover:bg-critical hover:text-ground disabled:opacity-55";
+
 /**
  * Deleting (§9.3, §3.4).
  *
@@ -63,6 +68,13 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
  * — and we mean actually deleted." A product that says that has to make the
  * control match, so this asks the member to type the word rather than tap a
  * red button they could hit by accident.
+ *
+ * The typing happens in a dialog rather than on the page. A text box sitting
+ * open at the bottom of Settings is a text box a member scrolls past on their
+ * way to somewhere else, with the most irreversible action in the product
+ * already half set up — and the field was reachable by a stray tab press from
+ * the sign-out button above it. showModal() also makes everything behind it
+ * inert, so at the moment of confirming there is exactly one thing on screen.
  */
 export function DeleteAccount() {
   const [state, act, pending] = useActionState(requestDeletion, SETTINGS_INITIAL);
@@ -77,36 +89,46 @@ export function DeleteAccount() {
   }
 
   return (
-    <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+    <section className="mt-10 rounded-xl border border-critical/40 bg-surface p-6">
       <h2 className="text-[0.972rem]">{C.deleteHeading}</h2>
       <p className="mt-4 text-[12.6px] leading-[1.7] text-ink-2">{COPY.deletion.confirmation}</p>
 
-      <form action={act} className="mt-6 flex flex-col gap-4">
-        <label htmlFor="confirm" className="text-[11.3px] text-ink-2">
-          {C.deleteConfirmLabel}
-        </label>
-        <input
-          id="confirm"
-          name="confirm"
-          type="text"
-          autoComplete="off"
-          className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-critical sm:w-[178.2px]"
-        />
+      <Modal
+        heading={C.deleteHeading}
+        trigger={C.deleteButton}
+        triggerClassName={`${DANGER} mt-6`}
+        panelClassName="border-critical/40"
+      >
+        {/* The warning again, inside. The panel is the whole screen at this
+            point, and a confirmation that only says "type DELETE" is a
+            confirmation of a sentence the member can no longer see. */}
+        <p className="mt-2 text-[12.6px] leading-[1.7] text-ink-2">{COPY.deletion.confirmation}</p>
 
-        {state.error ? (
-          <p role="alert" className="text-[11.3px] text-critical">
-            {state.error}
-          </p>
-        ) : null}
+        <form action={act} className="mt-6 flex flex-col gap-4">
+          <label htmlFor="confirm" className="text-[11.3px] text-ink-2">
+            {C.deleteConfirmLabel}
+          </label>
+          <input
+            id="confirm"
+            name="confirm"
+            type="text"
+            autoComplete="off"
+            // Not autoFocus: landing a member's cursor in the field that
+            // deletes their account is the dialog finishing the setup for them.
+            className="w-full rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[16px] focus:border-critical"
+          />
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="ease-brand self-start rounded-lg border border-critical px-5 py-2.5 text-[12.2px] text-critical transition-colors duration-200 hover:bg-critical hover:text-ground disabled:opacity-55"
-        >
-          {C.deleteButton}
-        </button>
-      </form>
+          {state.error ? (
+            <p role="alert" className="text-[11.3px] text-critical">
+              {state.error}
+            </p>
+          ) : null}
+
+          <button type="submit" disabled={pending} className={`${DANGER} self-start`}>
+            {C.deleteButton}
+          </button>
+        </form>
+      </Modal>
     </section>
   );
 }

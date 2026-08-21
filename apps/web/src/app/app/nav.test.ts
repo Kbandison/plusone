@@ -96,7 +96,12 @@ describe("the bottom nav", () => {
   it("reaches invite and premium from Settings instead", () => {
     const settings = readFileSync(join(import.meta.dirname, "settings/page.tsx"), "utf8");
     expect(settings).toMatch(/href="\/app\/invite"/);
-    expect(settings).toMatch(/href="\/app\/premium"/);
+
+    // Premium is a tab of Settings now rather than a card linking out to a page
+    // of its own, so the link lives in the bar the layout renders.
+    const tabs = readFileSync(join(import.meta.dirname, "settings/settings-tabs.tsx"), "utf8");
+    expect(tabs).toMatch(/href: "\/app\/settings\/premium"/);
+    expect(tabs).toMatch(/href: "\/app\/settings"/);
   });
 
   it("wraps rather than overflowing, because the overflow is clipped", () => {

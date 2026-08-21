@@ -92,19 +92,9 @@ export default async function SettingsPage() {
 
       <CrossCommunityToggle optIn={Boolean(profile?.cross_community_opt_in)} />
 
-      {/* §7.4 puts the referral screen and subscription management inside
-          Settings. They sit above signing out because they are things a member
-          might want, not things they do on the way out. */}
-      <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.app.premiumSettingsHeading}</h2>
-        <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">
-          {DRAFT_COPY.app.premiumSettingsBody}
-        </p>
-        <Link href="/app/premium" className={buttonClass("secondary", "mt-5 inline-block")}>
-          {DRAFT_COPY.app.premiumSettingsLink}
-        </Link>
-      </section>
-
+      {/* §7.4 puts the referral screen inside Settings. Subscription
+          management is the tab next to this one now, rather than a card whose
+          only content was a link to it. */}
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
         <h2 className="text-[0.972rem]">{DRAFT_COPY.app.inviteSettingsHeading}</h2>
         <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">
@@ -115,20 +105,6 @@ export default async function SettingsPage() {
         </Link>
       </section>
 
-      {/* Above the block list and well above deletion. Signing out is the
-          ordinary thing; deleting is not, and they should not sit together. */}
-      <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.app.signOutHeading}</h2>
-        <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">{DRAFT_COPY.app.signOutBody}</p>
-        <form action={signOut} className="mt-5">
-          <button type="submit" className={buttonClass("secondary")}>
-            {DRAFT_COPY.app.signOutLabel}
-          </button>
-        </form>
-      </section>
-
-      {/* Next to signing out, because both are about getting in and out
-          rather than about who can see you. */}
       <SignInEmail
         email={auth.user?.email ?? null}
         confirmed={Boolean(auth.user?.email_confirmed_at)}
@@ -192,6 +168,19 @@ export default async function SettingsPage() {
           </>
         )}
       </section>
+
+      {/* A button, not a card.
+          It was a bordered panel with a title and a sentence explaining what
+          signing out is — the most ordinary control in the app, given the same
+          weight as the block list. At the bottom because that is where you
+          leave from, and above deletion rather than beside it: they are next to
+          each other only in the sense that both end a session, and one of them
+          ends rather more than that. */}
+      <form action={signOut} className="mt-12 flex justify-center">
+        <button type="submit" className={buttonClass("secondary")}>
+          {DRAFT_COPY.app.signOutLabel}
+        </button>
+      </form>
 
       {deletion?.status === "requested" ? (
         <section className="mt-10 rounded-xl border border-critical/40 bg-surface p-6">

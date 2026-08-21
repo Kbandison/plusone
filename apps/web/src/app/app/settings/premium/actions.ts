@@ -49,8 +49,8 @@ export async function startCheckout(
       // a payment we took and cannot honour.
       subscription_data: { metadata: { user_id: auth.user.id, plan: planId } },
       metadata: { user_id: auth.user.id, plan: planId },
-      success_url: `${NEXT_PUBLIC_APP_URL}/app/premium?checkout=done`,
-      cancel_url: `${NEXT_PUBLIC_APP_URL}/app/premium`,
+      success_url: `${NEXT_PUBLIC_APP_URL}/app/settings/premium?checkout=done`,
+      cancel_url: `${NEXT_PUBLIC_APP_URL}/app/settings/premium`,
     });
     url = session.url;
   } catch {
@@ -92,7 +92,7 @@ export async function openBillingPortal(
   try {
     const session = await stripe().billingPortal.sessions.create({
       customer: subscription.stripe_customer_id as string,
-      return_url: `${NEXT_PUBLIC_APP_URL}/app/premium`,
+      return_url: `${NEXT_PUBLIC_APP_URL}/app/settings/premium`,
     });
     url = session.url;
   } catch {

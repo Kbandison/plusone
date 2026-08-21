@@ -855,13 +855,22 @@ export const DRAFT_COPY = {
     inviteSettingsBody:
       "Every person who joins and gets verified adds free premium time to your account, and to theirs.",
     inviteSettingsLink: "Open invites",
-    premiumSettingsHeading: "Premium",
-    premiumSettingsBody: "More connects a day, and filters that narrow who reaches you.",
-    premiumSettingsLink: "Manage premium",
     settingsHeading: "Settings",
-    signOutHeading: "Sign out",
-    signOutBody:
-      "Signs you out on this device. Your account and everything in it stay exactly as they are.",
+    /**
+     * The other settings tab.
+     *
+     * Premium had a card in Settings — a heading, a sentence and a link — whose
+     * only job was to point at a page. The card's three strings went with it
+     * when the page became a tab; this one is the tab beside it. Claude's word.
+     */
+    settingsGeneral: "General",
+    /**
+     * No heading and no body any more.
+     *
+     * Signing out was a card with a title and a sentence explaining what
+     * signing out is, which is a paragraph nobody has ever needed. It is a
+     * button at the bottom of the page now, and the button says it.
+     */
     signOutLabel: "Sign out",
     premiumHeading: "Premium",
     premiumIntro:
