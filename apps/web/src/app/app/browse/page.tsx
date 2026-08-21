@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { COPY, DRAFT_COPY, INTENTION_LABELS, RADIUS, type Intention } from "@plusone/config";
+import {
+  COPY,
+  DRAFT_COPY,
+  INTENTION_LABELS,
+  RADIUS,
+  promptQuestion,
+  type Intention,
+  type ProfilePromptAnswer,
+} from "@plusone/config";
 import { connects as connectsLogic } from "@plusone/logic";
 
 import { photosFor } from "@/lib/photo-urls";
@@ -91,7 +99,11 @@ export default async function BrowsePage({
     // rule the Drop obeys. Reading the wider view meant a member seeking women
     // saw every man in range one tab away from a Drop that had excluded them.
     .from("matched_profiles")
-    .select("id, display_name, age, intention, distance_mi, last_active_at")
+    // `prompts` comes through from visible_profiles, which matched_profiles
+    // selects wholesale. It is the one thing on a card that is something the
+    // person SAID rather than another measurement of them — and, per Decision
+    // #14, the thing the next screen will ask you to reply to.
+    .select("id, display_name, age, intention, distance_mi, last_active_at, prompts")
     .lte("distance_mi", distanceMi)
     .order("last_active_at", { ascending: false })
     .limit(LIMIT);
@@ -226,6 +238,11 @@ export default async function BrowsePage({
               const meta = [row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
                 .filter(Boolean)
                 .join(" · ");
+              // The first one they answered. A card has room for one, and which
+              // one is their choice of order rather than ours.
+              const prompt = ((row.prompts ?? []) as ProfilePromptAnswer[]).find((entry) =>
+                entry.answer?.trim(),
+              );
 
               return (
                 <li key={id} className="overflow-hidden rounded-xl border border-line-2 bg-surface">
@@ -262,6 +279,27 @@ export default async function BrowsePage({
                         <p className="mt-2 text-[11.7px] leading-[1.5] text-ink-2">
                           {INTENTION_LABELS[row.intention as Intention]}
                         </p>
+                      ) : null}
+
+                      {/* Something they said, not another measurement of them.
+                          Decision #14 makes a connect a reply to a prompt, so
+                          this is also what the sheet that opens next will ask
+                          about — a directory that shows you people without
+                          showing you the thing you would reply to is a
+                          directory of faces.
+
+                          Clamped rather than truncated in the query: three
+                          lines is what a card of this width can hold, and the
+                          full answer is one press away on the connect sheet. */}
+                      {prompt ? (
+                        <figure className="mt-3 border-l-2 border-line-2 pl-3">
+                          <figcaption className="line-clamp-1 text-[10px] tracking-[0.02em] text-ink-3 uppercase">
+                            {promptQuestion(prompt.id)}
+                          </figcaption>
+                          <blockquote className="mt-1 line-clamp-3 text-[11.7px] leading-[1.45] text-ink">
+                            {prompt.answer}
+                          </blockquote>
+                        </figure>
                       ) : null}
 
                       {/* Why the picture is soft. Browse has rendered blurred

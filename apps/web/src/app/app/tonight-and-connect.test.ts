@@ -64,37 +64,77 @@ describe("connecting happens over the screen you were on", () => {
 });
 
 /**
- * A drop excludes anyone you have connected with, but a REPLAYED drop reads
- * back the ids it served earlier — so reopening the app after accepting one of
- * tonight's three showed the same card, with the same Connect button, for
- * somebody you were already talking to.
+ * There is no "you already connected" state on a drop card, and there must not
+ * be one: nothing could ever render it.
+ *
+ * I added one anyway, on the strength of a note saying already_connected was
+ * computed and unused. It had been fixed since. Both paths remove those members
+ * before a card exists — isEligible refuses an alreadyConnected candidate when
+ * a drop is built, and withoutConnected strips them when one is replayed — so
+ * the branch was unreachable the moment it was written. Dead code that looks
+ * like a feature is worse than no feature: the next person reads it as proof
+ * the case is handled.
  */
-describe("tonight's cards remember what you did with them", () => {
-  it("labels a card from the connect behind it", () => {
-    expect(tonight).toMatch(/connectsLogic\.historyWith\(/);
-    expect(tonight).toMatch(/history=\{history\.get\(card\.id\)\}/);
-    expect(card).toMatch(/\{history\.label\}/);
+describe("a card for somebody you are talking to cannot reach the screen", () => {
+  it("is removed when the drop is built", () => {
+    const logic = read("../../../../../packages/logic/src/drop/drop.ts");
+    expect(logic).toMatch(/if \(candidate\.alreadyConnected\) return false;/);
   });
 
-  /** The same four words Browse uses, not a second set meaning the same. */
-  it("reuses Browse's labels", () => {
-    for (const key of ["threadNeedsDecision", "threadSentWaiting", "browseTalking", "browsePast"]) {
-      expect(tonight, key).toMatch(new RegExp(`DRAFT_COPY\\.app\\.${key}`));
-    }
+  it("is removed when the drop is replayed", () => {
+    const lib = read("../../lib/drop.ts");
+    expect(lib).toMatch(/withoutConnected\(userId, existing\.served_profile_ids as string\[\]\)/);
+  });
+
+  it("carries no branch for a case that cannot happen", () => {
+    expect(card).not.toMatch(/history/);
+    expect(tonight).not.toMatch(/historyWith|HISTORY_LABEL/);
+  });
+});
+
+/**
+ * DROP.hourLocal has declared 20:00 since Milestone 1 and nothing read it. A
+ * drop was keyed on the member's local CALENDAR date, so it arrived whenever
+ * they first opened the app that day — "three a night" was three a day.
+ */
+describe("a drop lands at the hour it says it does", () => {
+  it("keys the drop on the night rather than the date", () => {
+    const lib = read("../../lib/drop.ts");
+    expect(lib).toMatch(
+      /dropLogic\.dropNightDate\(now, profile\?\.timezone \?\? "UTC", DROP\.hourLocal\)/,
+    );
+    // The old spelling, which ignored the hour entirely.
+    expect(lib).not.toMatch(/function localDate/);
+  });
+
+  /** The rhythm is the product — it is why there is no infinite feed here. */
+  it("says when the next three land", () => {
+    expect(tonight).toMatch(/dropLogic\.nextDropIsToday\(/);
+    expect(tonight).toMatch(/DRAFT_COPY\.app\.dropNextTonight\(dropClock\)/);
+    expect(tonight).toMatch(/DRAFT_COPY\.app\.dropNextTomorrow\(dropClock\)/);
+    expect(tonight).toMatch(/dropLogic\.clockLabel\(DROP\.hourLocal\)/);
   });
 
   /**
-   * The trigger refuses a second live connect, so offering one is a door onto a
-   * wall. A finished connect is different — §6.3 lets those be tried again.
+   * record_drop allowed a day either side of UTC today, which was exactly
+   * enough when the key could only differ by a timezone offset. A night key can
+   * differ by the offset AND the shift back across the hour — a member at
+   * UTC-11 at 19:00 local is two days behind UTC. The insert would have raised,
+   * no row would have been stored, and a stored row is what makes a drop
+   * stable: every page load would have built them a different three.
    */
-  it("hides the button only while a connect is live", () => {
-    expect(card).toMatch(/\{history\?\.live \? null : \(/);
-    expect(tonight).toMatch(/live: state !== "past"/);
+  it("lets the database accept a night key two days behind UTC", () => {
+    const sql = read("../../../../../supabase/migrations/20260821000200_a_night_not_a_day.sql");
+    expect(sql).toMatch(/p_drop_date < v_today - 2/);
+    expect(sql).not.toMatch(/p_drop_date < v_today - 1/);
+    // The forged-drop wall is unchanged, and must stay.
+    expect(sql).toMatch(/a drop card must be someone you can see/);
   });
 
-  /** A live connect outranks a finished one when there are several. */
-  it("prefers the current state over an old one", () => {
-    expect(tonight).toMatch(/if \(state !== "past" \|\| !history\.has\(them\)\)/);
+  /** The empty state is the other place a member wants to know when to return. */
+  it("says it on an empty night too", () => {
+    const empty = tonight.slice(tonight.indexOf("COPY.drop.thin"));
+    expect(empty.slice(0, 400)).toMatch(/dropNextTonight|dropNextTomorrow/);
   });
 });
 

@@ -861,6 +861,17 @@ export const DRAFT_COPY = {
     dropBudgetLeft: (left: number, total: number) =>
       `${left} of ${total} connects left today for anyone else.`,
     dropBudgetNone: "You have used today's connects. Tonight's three are still free.",
+    /**
+     * When the next three land, which the app could not honestly say before.
+     *
+     * DROP.hourLocal declared 20:00 from Milestone 1 and nothing read it — a
+     * drop was keyed on the local calendar date, so it arrived whenever a
+     * member first opened the app that day. Saying "at 8pm" would have been a
+     * claim about a schedule nothing kept. Now a night runs from the hour, and
+     * these are true. Claude's words.
+     */
+    dropNextTonight: (time: string) => `Tonight's three land at ${time}.`,
+    dropNextTomorrow: (time: string) => `Three more tomorrow at ${time}.`,
     browseCount: (n: number) => (n === 1 ? "1 person" : `${n} people`),
     filterDistance: "Within",
     filterIntention: "Looking for",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { CONNECTS, COPY, DRAFT_COPY } from "@plusone/config";
-import { connects as connectsLogic } from "@plusone/logic";
+import { CONNECTS, COPY, DRAFT_COPY, DROP } from "@plusone/config";
+import { drop as dropLogic } from "@plusone/logic";
 
 import { getTonightsDrop } from "@/lib/drop";
 import { photosFor, previewPhotosFor } from "@/lib/photo-urls";
@@ -24,27 +24,18 @@ export default async function TonightPage() {
   const photos = drop.preview ? await previewPhotosFor(ids) : await photosFor(ids);
 
   /**
-   * What you already have with tonight's three, and what a connect costs.
+   * What a connect costs, and when the next three land.
    *
-   * Neither existed on this screen. A drop excludes anyone you have connected
-   * with, but a REPLAYED drop reads back the ids it served earlier — so
-   * reopening the app after accepting one of tonight's showed the same card
-   * with the same Connect button for somebody you were already talking to.
+   * Decision #15's whole nudge — a drop connect is free, a Browse one is not —
+   * has been true in the trigger since Milestone 1 and stated nowhere a member
+   * could read it.
    *
-   * And Decision #15's whole nudge — a drop connect is free, a Browse one is
-   * not — has been true in the trigger since Milestone 1 and stated nowhere a
-   * member could read it.
-   *
-   * Skipped entirely for a preview: a support-only member cannot send a
-   * connect at all, so a budget is a number about something they cannot do.
+   * Skipped entirely for a preview: a support-only member cannot send a connect
+   * at all, so a budget is a number about something they cannot do.
    */
-  const [{ data: myConnects }, { data: budgetRow }, { data: isPremium }] = drop.preview
-    ? [{ data: null }, { data: null }, { data: null }]
+  const [{ data: budgetRow }, { data: isPremium }] = drop.preview
+    ? [{ data: null }, { data: null }]
     : await Promise.all([
-        supabase
-          .from("connects")
-          .select("initiator_id, target_id, status")
-          .or(`initiator_id.eq.${data.user.id},target_id.eq.${data.user.id}`),
         supabase
           .from("connect_budgets")
           // `day` is written by the trigger as `current_date`, which is the
@@ -57,28 +48,23 @@ export default async function TonightPage() {
         supabase.rpc("i_am_premium"),
       ]);
 
-  const HISTORY_LABEL: Record<string, string> = {
-    waiting_on_you: DRAFT_COPY.app.threadNeedsDecision,
-    waiting_on_them: DRAFT_COPY.app.threadSentWaiting,
-    talking: DRAFT_COPY.app.browseTalking,
-    past: DRAFT_COPY.app.browsePast,
-  };
-
-  const history = new Map<string, { label: string; live: boolean }>();
-  for (const row of myConnects ?? []) {
-    const initiated = (row.initiator_id as string) === data.user.id;
-    const them = initiated ? (row.target_id as string) : (row.initiator_id as string);
-    const state = connectsLogic.historyWith(row.status as connectsLogic.ConnectStatus, initiated);
-    // A live connect outranks a finished one when there are several: "Connected
-    // before" on somebody waiting for your answer right now is worse than
-    // saying nothing.
-    if (state !== "past" || !history.has(them)) {
-      history.set(them, { label: HISTORY_LABEL[state]!, live: state !== "past" });
-    }
-  }
-
   const perDay = isPremium ? CONNECTS.premiumPerDay : CONNECTS.freePerDay;
   const left = Math.max(0, perDay - ((budgetRow?.connects_used as number | null) ?? 0));
+
+  // Now that a night actually runs from DROP.hourLocal, this is a true sentence
+  // rather than a claim about a schedule nothing kept.
+  const { data: whereIAm } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  const nextDropTonight = dropLogic.nextDropIsToday(
+    new Date(),
+    (whereIAm?.timezone as string | null) ?? "UTC",
+    DROP.hourLocal,
+  );
+  const dropClock = dropLogic.clockLabel(DROP.hourLocal);
 
   return (
     <main id="main">
@@ -100,6 +86,12 @@ export default async function TonightPage() {
           <h2 className="text-[0.972rem]">{DRAFT_COPY.app.dropEmptyHeading}</h2>
           {/* §3.4, verbatim — an honest empty state rather than padding. */}
           <p className="mt-3 text-[13px] leading-[1.7] text-ink-2">{COPY.drop.thin}</p>
+          {/* "Check back tomorrow" is in the line above; this says when. */}
+          <p className="mt-4 text-[12.2px] text-ink-3">
+            {nextDropTonight
+              ? DRAFT_COPY.app.dropNextTonight(dropClock)
+              : DRAFT_COPY.app.dropNextTomorrow(dropClock)}
+          </p>
         </div>
       ) : drop.preview ? (
         <>
@@ -146,20 +138,24 @@ export default async function TonightPage() {
 
           <ul className="rise-in mt-8 flex flex-col gap-5">
             {drop.cards.map((card) => (
-              <FullCard
-                key={card.id}
-                card={card}
-                photo={photos.get(card.id)}
-                history={history.get(card.id)}
-              />
+              <FullCard key={card.id} card={card} photo={photos.get(card.id)} />
             ))}
           </ul>
+
+          {/* When the next three land. The rhythm is the product — it is why
+              there is no infinite feed here — and the screen it happens on
+              never said when. */}
+          <p className="mt-8 text-[12.2px] text-ink-2">
+            {nextDropTonight
+              ? DRAFT_COPY.app.dropNextTonight(dropClock)
+              : DRAFT_COPY.app.dropNextTomorrow(dropClock)}
+          </p>
 
           {/* Once, under the list, rather than on every card. A percentage with
               no stated basis invites a member to read it as a measurement of
               two people; it is intention and twelve questions, and saying so is
               the difference between a hint and a claim. */}
-          <p className="mt-6 text-[11px] leading-[1.6] text-ink-3">
+          <p className="mt-4 text-[11px] leading-[1.6] text-ink-3">
             {DRAFT_COPY.app.compatibilityNote}
           </p>
         </>

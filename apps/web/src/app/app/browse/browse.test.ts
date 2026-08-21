@@ -217,3 +217,36 @@ describe("the empty state offers a way out of itself", () => {
     expect(page).toMatch(/rows\.length === LIMIT \? ` · \$\{C\.browseTruncated\(LIMIT\)\}`/);
   });
 });
+
+/**
+ * Decision #14 makes a connect a reply to a prompt. Browse showed you people
+ * without showing you the thing you would reply to — a directory of faces, one
+ * press away from a screen asking you to answer something you had not read.
+ */
+describe("a card carries something they said", () => {
+  it("reads the prompts through the view that holds the walls", () => {
+    expect(page).toMatch(/last_active_at, prompts"\)/);
+    expect(page).toMatch(/from\("matched_profiles"\)/);
+  });
+
+  /** Which one is their choice of order, not ours — and never an empty one. */
+  it("takes the first they actually answered", () => {
+    expect(page).toMatch(/\.find\(\(entry\) =>\s*\n?\s*entry\.answer\?\.trim\(\)/);
+  });
+
+  /** The question by id, so a reworded prompt does not strand old answers. */
+  it("renders the question from config", () => {
+    expect(page).toMatch(/promptQuestion\(prompt\.id\)/);
+    expect(page).toMatch(/\{prompt\.answer\}/);
+  });
+
+  /**
+   * Clamped rather than truncated in the query: three lines is what a card of
+   * this width holds, and the full answer is one press away on the sheet.
+   */
+  it("clamps rather than cutting the stored answer", () => {
+    expect(page).toMatch(/line-clamp-3/);
+    expect(page).toMatch(/line-clamp-1/);
+    expect(page).not.toMatch(/\.slice\(0, \d+\)\s*\+\s*"…"/);
+  });
+});

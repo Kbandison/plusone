@@ -96,16 +96,6 @@ interface CandidateRow {
   last_served_to_viewer_at: string | null;
 }
 
-/** The member's own local date, which is what a drop is keyed on. */
-function localDate(timezone: string, now: Date): string {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
-  } catch {
-    // An unknown timezone must not cost someone their drop.
-    return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" }).format(now);
-  }
-}
-
 /**
  * The subset of `ids` the viewer has no connect with, in either direction.
  *
@@ -143,7 +133,18 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
 
   const memberRadiusMi = profile?.search_radius_mi ?? RADIUS.defaultMi;
   const preview = profile?.mode === "support_only";
-  const dropDate = localDate(profile?.timezone ?? "UTC", now);
+  /**
+   * Which NIGHT'S drop this is — not which calendar day it is.
+   *
+   * It was the local date, so a drop arrived the moment a member first opened
+   * the app after midnight. DROP.hourLocal has said 20:00 since Milestone 1 and
+   * nothing read it: "three a night" was three a day, and the number that said
+   * otherwise was config nobody called.
+   *
+   * A night now runs 20:00 to 20:00. At 19:00 you are still on last night's
+   * three; at 20:01 tonight's have landed. See dropNightDate.
+   */
+  const dropDate = dropLogic.dropNightDate(now, profile?.timezone ?? "UTC", DROP.hourLocal);
 
   const { data: existing } = await supabase
     .from("drops")
