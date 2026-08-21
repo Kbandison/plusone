@@ -8,12 +8,14 @@ import { connects as connectsLogic } from "@plusone/logic";
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
-import { buttonClass } from "@/app/ui";
+import { BrowseFilters } from "./browse-filters";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navBrowse };
 
 const C = DRAFT_COPY.app;
 const DAY = 24 * 60 * 60 * 1000;
+/** As many as one screen of browsing is worth fetching. Also a promise the page has to keep. */
+const LIMIT = 60;
 
 /**
  * Browse (§7.2) — the secondary directory.
@@ -65,7 +67,20 @@ export default async function BrowsePage({
   // miles — so the last step of onboarding decided nothing here until a member
   // found this filter and set the same number a second time. An explicit
   // ?distance= still wins: this is a default, not a ceiling.
-  const distanceMi = Number(filters.distance) || me?.search_radius_mi || RADIUS.defaultMi;
+  //
+  // Clamped, because ?distance= is a URL and a URL is typed by hand. The select
+  // only offers the ladder, so nothing a member can click needs this — but
+  // `.lte("distance_mi", 99999)` is a whole country, and RADIUS.maxMi exists to
+  // mean something. Not a wall: matched_profiles holds every one of those, and
+  // widening a radius cannot reach anybody it excluded.
+  const asked = Number(filters.distance) || me?.search_radius_mi || RADIUS.defaultMi;
+  const distanceMi = Math.min(RADIUS.maxMi, Math.max(RADIUS.minMi, Math.round(asked)));
+
+  // One boundary for the filter, the stat and the card marker. Three separate
+  // `Date.now() - 7 * DAY` calls would be three moments a few milliseconds
+  // apart, which is how a card says "active this week" on a page whose count
+  // did not include it.
+  const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
 
   let query = supabase
     // matched_profiles, not visible_profiles: the same gender, seeking and age
@@ -75,10 +90,10 @@ export default async function BrowsePage({
     .select("id, display_name, age, intention, distance_mi, last_active_at")
     .lte("distance_mi", distanceMi)
     .order("last_active_at", { ascending: false })
-    .limit(60);
+    .limit(LIMIT);
 
   if (intention && intention in INTENTION_LABELS) query = query.eq("intention", intention);
-  if (activeOnly) query = query.gte("last_active_at", new Date(Date.now() - 7 * DAY).toISOString());
+  if (activeOnly) query = query.gte("last_active_at", weekAgo);
 
   const { data } = await query;
   const rows = data ?? [];
@@ -117,9 +132,30 @@ export default async function BrowsePage({
     past: C.browsePast,
   };
 
-  const activeThisWeek = rows.filter(
-    (row) => Date.parse(row.last_active_at as string) >= Date.now() - 7 * DAY,
-  ).length;
+  /**
+   * The honest count (§3.4), which this was not.
+   *
+   * It counted the rows on the page — and the page asks for sixty. In any city
+   * with more than sixty matches the stat read "60 people active this week"
+   * whatever the truth was, and with the active-only filter on it read exactly
+   * the number of cards below it, which is not a statistic at all.
+   *
+   * A count query rather than a longer fetch: the number is the only thing
+   * wanted, head:true sends no rows back for it, and the alternative is pulling
+   * every matching profile in the radius to call .length on them.
+   *
+   * Deliberately not narrowed by the intention filter. The sentence says how
+   * many people are near you, which is a fact about the area rather than about
+   * the current search — an "N people active" line that drops when you pick a
+   * filter is describing the filter.
+   */
+  const { count: activeNearby } = await supabase
+    .from("matched_profiles")
+    .select("id", { count: "exact", head: true })
+    .lte("distance_mi", distanceMi)
+    .gte("last_active_at", weekAgo);
+
+  const activeThisWeek = activeNearby ?? 0;
 
   return (
     <main id="main">
@@ -130,53 +166,11 @@ export default async function BrowsePage({
         {COPY.browse.activityStat(activeThisWeek, distanceMi)}
       </p>
 
-      <form className="mt-8 flex flex-wrap items-end gap-4" method="get">
-        <label className="flex flex-col gap-2 text-[11px] text-ink-2">
-          {C.filterDistance}
-          <select
-            name="distance"
-            defaultValue={String(distanceMi)}
-            className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
-          >
-            {RADIUS.ladderMi.map((mi) => (
-              <option key={mi} value={mi}>
-                {mi} miles
-              </option>
-            ))}
-          </select>
-        </label>
+      <BrowseFilters distanceMi={distanceMi} intention={intention} activeOnly={activeOnly} />
 
-        <label className="flex flex-col gap-2 text-[11px] text-ink-2">
-          {C.filterIntention}
-          <select
-            name="intention"
-            defaultValue={intention ?? ""}
-            className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
-          >
-            <option value="">{C.filterAny}</option>
-            {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (
-              <option key={value} value={value}>
-                {INTENTION_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex items-center gap-2.5 text-[11.7px]">
-          <input
-            type="checkbox"
-            name="active"
-            value="1"
-            defaultChecked={activeOnly}
-            className="size-[14.6px] accent-accent"
-          />
-          {C.filterActive}
-        </label>
-
-        <button type="submit" className={buttonClass("secondary")}>
-          {C.applyFiltersLabel}
-        </button>
-      </form>
+      {rows.length === LIMIT ? (
+        <p className="mt-6 text-[11px] text-ink-3">{C.browseTruncated(LIMIT)}</p>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="mt-10 text-[13px] text-ink-2">{C.browseEmpty}</p>
@@ -187,13 +181,24 @@ export default async function BrowsePage({
               <Link href={`/app/connect/${row.id as string}?source=browse`} className="block">
                 <MemberPhotoFrame photo={photos.get(row.id as string)} size={56} />
                 <h2 className="mt-3 text-[0.972rem]">
-                  {(row.display_name as string) ?? "Someone"}
+                  {(row.display_name as string) ?? C.threadUnknownPerson}
                 </h2>
                 <p className="mt-1.5 text-[11.3px] text-ink-3">
                   {[row.age, row.distance_mi != null ? `${row.distance_mi} mi` : null]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
+                {/* The list is ordered by this and nothing said so, which
+                    makes the order read as arbitrary. Coarse on purpose:
+                    "active 3h ago" is a precision nobody asked to broadcast,
+                    and this is the same bucket as the filter above. */}
+                {(row.last_active_at as string) >= weekAgo ? (
+                  <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-3">
+                    <span aria-hidden="true" className="size-1.5 rounded-full bg-positive" />
+                    {C.browseActiveThisWeek}
+                  </p>
+                ) : null}
+
                 {row.intention ? (
                   <p className="mt-3 text-[11.7px] text-ink-2">
                     {INTENTION_LABELS[row.intention as Intention]}

@@ -12,6 +12,12 @@ const migration = read(
 // communities.
 const settings = read("../settings/safety/page.tsx");
 const cron = read("../../api/cron/purge/route.ts");
+/**
+ * The function was redefined when chats gained photographs — it returns a third
+ * column now. Asserted against the CURRENT definition, because a test pinned to
+ * the file that first wrote it goes on passing after the shape has moved.
+ */
+const latest = read("../../../../../../supabase/migrations/20260821000100_a_photo_in_a_chat.sql");
 const inbox = read("../inbox/page.tsx");
 
 /**
@@ -95,7 +101,7 @@ describe("the purge", () => {
 
   /** A slow queue must not be able to destroy evidence it has not read. */
   it("is held by an open report, and by a recently resolved one", () => {
-    const fn = migration.slice(migration.indexOf("returns table (chat_id uuid"));
+    const fn = latest.slice(latest.indexOf("returns table (chat_id uuid"));
     expect(fn).toMatch(/q\.status = 'open'/);
     expect(fn).toMatch(/q\.resolved_at is not null/);
     expect(fn).toMatch(/q\.resolved_at > now\(\) - make_interval\(days => v_days\)/);
@@ -103,7 +109,7 @@ describe("the purge", () => {
 
   /** The chat row is the record that a thread existed; the messages are not. */
   it("takes the messages and leaves the chat", () => {
-    const fn = migration.slice(migration.indexOf("returns table (chat_id uuid"));
+    const fn = latest.slice(latest.indexOf("returns table (chat_id uuid"));
     expect(fn).toMatch(/delete from public\.messages m/);
     expect(fn).not.toMatch(/delete from public\.chats/);
   });
@@ -112,21 +118,25 @@ describe("the purge", () => {
    * Storage cannot cascade. A voice note lives at
    * voice-notes/<chat_id>/<message_id> and the row holding that path is exactly
    * what the delete removes — the hard-delete route learned this one already.
+   * A chat image is keyed identically and has the same reason to go.
    */
-  it("hands back the voice notes so the bucket can be cleaned", () => {
-    expect(migration).toMatch(/returns table \(chat_id uuid, voice_note_paths text\[\]\)/);
+  it("hands back both kinds of media so the buckets can be cleaned", () => {
+    expect(latest).toMatch(
+      /returns table \(chat_id uuid, voice_note_paths text\[\], image_paths text\[\]\)/,
+    );
     expect(cron).toMatch(/sweep_purge_blocked_threads/);
-    expect(cron).toMatch(/from\("voice-notes"\)\.remove\(paths\)/);
+    expect(cron).toMatch(/from\("voice-notes"\)\.remove\(voice\)/);
+    expect(cron).toMatch(/from\("chat-images"\)\.remove\(images\)/);
   });
 
   /** No ids, no bodies, no member — the count is the whole entry. */
   it("audits without naming anyone", () => {
-    const audit = migration.slice(migration.indexOf("perform public.audit('retention"));
+    const audit = latest.slice(latest.indexOf("perform public.audit('retention"));
     expect(audit.slice(0, audit.indexOf(";"))).not.toMatch(/user|member|chat_id|body/);
   });
 
   it("is reachable by nobody but the service role", () => {
-    expect(migration).toMatch(
+    expect(latest).toMatch(
       /revoke all on function public\.sweep_purge_blocked_threads\(\) from public, anon, authenticated/,
     );
   });

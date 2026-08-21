@@ -12,6 +12,7 @@ import { CancelPlan, CloseChat, Composer, ConfirmPlan, ProposePlan } from "./cha
 import { VoiceRecorder } from "./voice-recorder";
 import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
+import { ChatImage } from "./chat-image";
 import { VoiceNote } from "./voice-note";
 import { MemberPhotoFrame } from "../../member-photo";
 import { photosFor } from "@/lib/photo-urls";
@@ -85,7 +86,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   const { data: messages } = await supabase
     .from("messages")
-    .select("id, sender_id, body, voice_note_path, voice_note_seconds, created_at")
+    .select("id, sender_id, body, image_path, voice_note_path, voice_note_seconds, created_at")
     .eq("chat_id", id)
     .order("created_at", { ascending: true });
 
@@ -226,7 +227,44 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 </li>
               ) : null}
 
-              {message.voice_note_path ? (
+              {message.image_path ? (
+                // Not a TextBubble either, and for the same reason the voice
+                // note is not: the picture opens full screen, and a button
+                // inside a button is invalid and stops working. So the bubble
+                // holds the image, any caption sent with it, and its own time.
+                <li
+                  className={`max-w-[85%] rounded-xl px-4 py-3 text-[12.6px] leading-[1.6] ${
+                    mine
+                      ? "self-end border-r-2 border-accent bg-surface-2 text-ink"
+                      : "border-l-2 border-line-2 bg-surface text-ink"
+                  }`}
+                >
+                  {who ? <span className="sr-only">{who}: </span> : null}
+                  <ChatImage
+                    path={message.image_path as string}
+                    footer={
+                      <time
+                        dateTime={new Date(sentAt).toISOString()}
+                        className="text-[11.7px] text-ink-2"
+                      >
+                        {chatLogic.messageTimeExact(sentAt, zone)}
+                      </time>
+                    }
+                  />
+                  {/* A caption, when there was one. An image-only message has
+                      no body at all — messages_has_content allows that now. */}
+                  {message.body ? (
+                    <p className="mt-2 break-words">{message.body as string}</p>
+                  ) : null}
+                  <time
+                    dateTime={new Date(sentAt).toISOString()}
+                    title={chatLogic.messageTimeExact(sentAt, zone)}
+                    className="mt-1.5 block text-[10.5px] text-ink-3"
+                  >
+                    {chatLogic.messageTimeLabel(sentAt, now, zone)}
+                  </time>
+                </li>
+              ) : message.voice_note_path ? (
                 // Not a TextBubble: an <audio controls> inside a button is
                 // invalid and the browser's play control stops working. So a
                 // voice note wears its time openly rather than behind a press.

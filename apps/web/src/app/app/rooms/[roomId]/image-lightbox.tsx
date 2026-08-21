@@ -18,16 +18,28 @@ const C = DRAFT_COPY.app;
  *
  * The URL is minted on the server and passed in — see PostImage — so nothing
  * here knows or needs the storage path.
+ *
+ * The trigger is styled by the caller, because the two places a photograph
+ * appears want opposite things from it: a room post fills the row, and a chat
+ * bubble is a bubble. The full-screen half is identical in both, and it is the
+ * half with the decisions in it — the `display` trap below cost a whole tab
+ * bar once, and it should exist exactly once.
  */
 export function ImageLightbox({
   src,
   alt,
   footer,
+  label = C.postImageOpen,
+  triggerClassName = "ease-brand relative z-20 mt-2 block w-full cursor-zoom-in transition-opacity duration-200 hover:opacity-95",
+  imageClassName = "h-auto max-h-[420px] w-full rounded-xl border border-line-2 object-cover",
 }: {
   src: string;
   alt: string;
-  /** The like, comment and view counts, rendered by the server row. */
+  /** The like, comment and view counts, or a chat bubble's timestamp. */
   footer: React.ReactNode;
+  label?: string;
+  triggerClassName?: string;
+  imageClassName?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
@@ -44,19 +56,15 @@ export function ImageLightbox({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={C.postImageOpen}
+        aria-label={label}
         aria-haspopup="dialog"
-        /* z-20 so it sits above the link covering the row: the picture opens
-           full screen, the rest of the post opens the thread. */
-        className="ease-brand relative z-20 mt-2 block w-full cursor-zoom-in transition-opacity duration-200 hover:opacity-95"
+        /* The room's default puts z-20 on it, so it sits above the link
+           covering the row: the picture opens full screen, the rest of the post
+           opens the thread. */
+        className={triggerClassName}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={alt}
-          decoding="async"
-          className="h-auto max-h-[420px] w-full rounded-xl border border-line-2 object-cover"
-        />
+        <img src={src} alt={alt} decoding="async" className={imageClassName} />
       </button>
 
       <dialog

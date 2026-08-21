@@ -73,7 +73,8 @@ describe("no buttonClass override that the cascade discards", () => {
   it("keeps every chat icon unshrinkable", () => {
     const icons = readFileSync(join(ROOT, "app/app/chats/[id]/chat-icons.tsx"), "utf8");
     const sized = icons.match(/className="size-\[\d+px\][^"]*"/g) ?? [];
-    expect(sized).toHaveLength(3);
+    // Four since the composer gained a photo picker beside the mic.
+    expect(sized).toHaveLength(4);
     for (const c of sized) expect(c).toMatch(/shrink-0/);
   });
 });

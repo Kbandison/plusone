@@ -23,6 +23,12 @@ interface PurgeTarget {
    * holding the path is the only index, and the cascade removes it.
    */
   readonly room_image_paths: string[] | null;
+  /**
+   * The same shape again, keyed on the CHAT: chat-images/<chat_id>/<message_id>,
+   * because who may see one is decided by chat participation. No user-id folder
+   * to list, and the messages row holding the path is what the cascade removes.
+   */
+  readonly chat_image_paths: string[] | null;
 }
 
 /**
@@ -41,7 +47,8 @@ interface PurgeTarget {
  *     rather than the member, so there is no user-id prefix to list. The
  *     messages rows holding those paths are exactly what the cascade removes.
  *     Sweeping two buckets and not this one left an unreferenced, undiscoverable
- *     recording of the voice of somebody who asked to be forgotten.
+ *     recording of the voice of somebody who asked to be forgotten. Chat
+ *     images are keyed the same way and go the same way.
  *
  *   - The Stripe customer and subscription ids live only on the subscriptions
  *     row, which cascades from profiles. §9.3 asks for a customer detach and
@@ -149,6 +156,14 @@ export async function POST(request: Request) {
       const { error: imageError } = await supabase.storage.from("room-images").remove(roomImages);
       if (imageError) orphaned.push(`room-images/${userId}`);
     }
+
+    const chatImages = target?.chat_image_paths ?? [];
+    if (chatImages.length > 0) {
+      const { error: chatImageError } = await supabase.storage
+        .from("chat-images")
+        .remove(chatImages);
+      if (chatImageError) orphaned.push(`chat-images/${userId}`);
+    }
   }
 
   // Blocked threads past retention, in the same nightly pass.
@@ -169,13 +184,23 @@ export async function POST(request: Request) {
   const blockedThreads = (blockedRows ?? []) as {
     chat_id: string;
     voice_note_paths: string[] | null;
+    image_paths: string[] | null;
   }[];
 
   for (const thread of blockedThreads) {
-    const paths = thread.voice_note_paths ?? [];
-    if (paths.length === 0) continue;
-    const { error: voiceError } = await supabase.storage.from("voice-notes").remove(paths);
-    if (voiceError) orphaned.push(`voice-notes/${thread.chat_id}`);
+    const voice = thread.voice_note_paths ?? [];
+    if (voice.length > 0) {
+      const { error: voiceError } = await supabase.storage.from("voice-notes").remove(voice);
+      if (voiceError) orphaned.push(`voice-notes/${thread.chat_id}`);
+    }
+
+    // A photograph somebody sent into a thread they were then blocked out of
+    // has exactly the same reason to go as the voice note beside it.
+    const images = thread.image_paths ?? [];
+    if (images.length > 0) {
+      const { error: imageError } = await supabase.storage.from("chat-images").remove(images);
+      if (imageError) orphaned.push(`chat-images/${thread.chat_id}`);
+    }
   }
 
   // Reported rather than swallowed: an orphaned object is a file that should

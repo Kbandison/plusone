@@ -6,8 +6,10 @@ import { CLOSURE_TEMPLATES, CONNECTS, DRAFT_COPY, renderClosureTemplate } from "
 
 import { cancelPlan, closeChat, confirmPlan, proposePlan, sendMessage } from "./actions";
 import { CHAT_INITIAL } from "./state";
-import { buttonClass } from "@/app/ui";
-import { CalendarIcon } from "./chat-icons";
+import { buttonClass, iconButtonClass } from "@/app/ui";
+import { ACCEPTED_TYPES } from "@/lib/photo-limits";
+import { downscalePhoto } from "@/lib/downscale";
+import { CalendarIcon, PhotoIcon } from "./chat-icons";
 import { CloseIcon, Modal } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
@@ -27,6 +29,38 @@ const draftKey = (chatId: string) => `plusone:draft:${chatId}`;
 export function Composer({ chatId }: { chatId: string }) {
   const [state, act, pending] = useActionState(sendMessage, CHAT_INITIAL);
   const [body, setBody] = useState("");
+
+  /**
+   * A photograph, attached before it is sent.
+   *
+   * Deliberately previewed rather than sent on selection. A picture in a chat
+   * cannot be unsent — §5.2 makes messages immutable and there is no undo
+   * anywhere in this product — so the one moment a member can still change
+   * their mind is between choosing the file and pressing Send, and a composer
+   * that skips that moment has removed the only one there is.
+   */
+  const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
+
+  // Revoked on replacement and on unmount: a blob: URL is held by the document
+  // until it is, and a member attaching six photographs in a row would leave
+  // five decoded images alive for the life of the tab.
+  useEffect(() => {
+    if (!image) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(image);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
+
+  function clearImage() {
+    setImage(null);
+    if (picker.current) picker.current.value = "";
+  }
 
   /**
    * A half-written message survives leaving the screen.
@@ -67,13 +101,85 @@ export function Composer({ chatId }: { chatId: string }) {
     else if (sent.current && state.error === null) {
       sent.current = false;
       setBody("");
+      setImage(null);
+      if (picker.current) picker.current.value = "";
     }
   }, [pending, state.error]);
 
   return (
-    <form action={act} className="mt-6 flex flex-col gap-3">
+    <form
+      action={async (formData) => {
+        // Shrunk in the browser, before it crosses anybody's mobile data. The
+        // server resizes to 1600px anyway, so sending a 12MB camera original is
+        // carrying it across a phone connection to have it thrown away at the
+        // other end.
+        //
+        // An optimisation, not a trust boundary: the server still checks the
+        // type and the size, still strips the metadata, still re-encodes.
+        const file = formData.get("image");
+        if (file instanceof File && file.size > 0) {
+          setPreparing(true);
+          try {
+            formData.set("image", (await downscalePhoto(file)).file);
+          } finally {
+            setPreparing(false);
+          }
+        }
+        act(formData);
+      }}
+      className="mt-6 flex flex-col gap-3"
+    >
       <input type="hidden" name="chat_id" value={chatId} />
+
+      {/* Shown before it is sent, which is the whole point: a photograph in a
+          chat cannot be unsent, so this is the last moment it is still a
+          choice. */}
+      {preview ? (
+        <figure className="relative self-start">
+          {/* Not next/image: a blob: URL for a file that has not left the
+              device, so there is nothing to optimise and no width to know. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={preview}
+            alt={image?.name ?? C.chatImageAlt}
+            decoding="async"
+            className="h-[160px] w-auto max-w-full rounded-xl border border-line-2 bg-surface object-contain"
+          />
+          <figcaption className="mt-2 flex items-center gap-3 text-[11px] text-ink-3">
+            <span className="max-w-[20ch] truncate">{image?.name}</span>
+            <button
+              type="button"
+              onClick={clearImage}
+              className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            >
+              {C.postImageRemove}
+            </button>
+          </figcaption>
+        </figure>
+      ) : null}
+
       <div className="flex gap-3">
+        {/* A label wrapping a hidden input rather than a bare file control: the
+            browser's own renders differently everywhere, and this one has to
+            sit beside the mic and look like it. The input keeps its name, so
+            the form still carries the file. */}
+        <label
+          className={`${iconButtonClass("secondary")} cursor-pointer`}
+          aria-label={C.postImageLabel}
+        >
+          <input
+            ref={picker}
+            type="file"
+            name="image"
+            // The types the server will actually take. A member picking
+            // something else would otherwise get as far as the upload.
+            accept={ACCEPTED_TYPES.join(",")}
+            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            className="sr-only"
+          />
+          <PhotoIcon />
+        </label>
+
         <input
           name="body"
           type="text"
@@ -83,7 +189,10 @@ export function Composer({ chatId }: { chatId: string }) {
           // early-returned {error: null}, so there was no error, no message and
           // no change. Sighted members saw nothing happen; everyone else heard
           // nothing happen.
-          required
+          //
+          // Not required once a photograph is attached: a picture with no
+          // caption is a message, and messages_has_content agrees.
+          required={image === null}
           maxLength={4000}
           placeholder={C.messagePlaceholder}
           // A placeholder is not a label: it is gone the moment a character is
@@ -98,7 +207,7 @@ export function Composer({ chatId }: { chatId: string }) {
              focus ring the accessibility gate requires, and this cancelled it. */
           className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] focus:border-accent"
         />
-        <button type="submit" disabled={pending} className={buttonClass("primary")}>
+        <button type="submit" disabled={pending || preparing} className={buttonClass("primary")}>
           {C.sendLabel}
         </button>
       </div>

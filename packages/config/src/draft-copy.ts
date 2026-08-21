@@ -727,6 +727,16 @@ export const DRAFT_COPY = {
     imageUploadFailed: "The photo did not upload. Try again in a moment.",
     /** Decorative to a reader by default: only the poster knows what is in it. */
     postImageAlt: "Photo in this post",
+    /**
+     * The same picture, in a chat rather than a room.
+     *
+     * Its own string because the alternative reads wrong in both places: a
+     * photograph sent to one person is not "in this post", and a screen reader
+     * announcing it as one is describing the wrong surface. Claude's words,
+     * both of them.
+     */
+    chatImageAlt: "Photo in this message",
+    chatImageOpen: "Open this photo",
     /** The whole row is one target; this is what a reader hears it as. */
     postOpenThread: (name: string) => `Open ${name}'s post`,
     postImageOpen: "View photo full screen",
@@ -836,6 +846,23 @@ export const DRAFT_COPY = {
     filterActive: "Active this week only",
     filterAny: "Any",
     applyFiltersLabel: "Apply",
+    /**
+     * The page asks for sixty rows and said nothing when it got sixty.
+     *
+     * A member in a dense city saw a grid that ended and had no way to know
+     * whether that was everybody or the first screen of them. Both Claude's
+     * words.
+     */
+    browseTruncated: (n: number) => `Showing the ${n} most recently active.`,
+    /**
+     * The list is ordered by it, and nothing on a card said so — the sort was
+     * invisible, which makes it read as arbitrary.
+     *
+     * Coarse on purpose. "Active 3h ago" on a dating surface is a precision
+     * nobody asked to broadcast, and the app already has this exact bucket in
+     * the filter beside it.
+     */
+    browseActiveThisWeek: "Active this week",
     roomsHeading: "Rooms",
     roomsEmpty: "No rooms yet.",
     roomJoinLabel: "Join",

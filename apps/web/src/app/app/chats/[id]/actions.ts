@@ -6,6 +6,8 @@ import { DEFAULT_CLOSURE_TEMPLATE_INDEX, DRAFT_COPY } from "@plusone/config";
 import { fuse, tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
+import { processRoomImage } from "@/lib/photos";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
 import type { ChatState } from "./state";
@@ -16,19 +18,80 @@ const C = DRAFT_COPY.app;
 export async function sendMessage(_prev: ChatState, formData: FormData): Promise<ChatState> {
   const chatId = String(formData.get("chat_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  if (!body) return { error: null };
+  const file = formData.get("image");
+  const image = file instanceof File && file.size > 0 ? file : null;
+  // A picture with no words is a message — messages_has_content says so now.
+  if (!body && !image) return { error: null };
 
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
 
+  /**
+   * The picture goes up first, under the id the row will be given.
+   *
+   * The same order sendVoiceNote arrived at the expensive way: members hold
+   * `select, insert` on messages and nothing else, because §5.2 makes them
+   * immutable, so there is no second write available to fill in a path
+   * afterwards. Upload-then-insert also fails in the recoverable direction — a
+   * failed insert leaves an object nothing points at, which the bucket's delete
+   * policy allows removing, whereas a failed upload after the row exists leaves
+   * a message rendering a broken picture forever.
+   */
+  const messageId = crypto.randomUUID();
+  let imagePath: string | null = null;
+
+  if (image) {
+    if (image.size > MAX_UPLOAD_BYTES) return { error: C.imageTooBig };
+    if (!isAcceptableUpload(image.type, image.size)) return { error: C.imageWrongType };
+
+    let processed: Buffer;
+    try {
+      // Re-encoded before it is stored, which is what drops the GPS
+      // coordinates, the device serial and the moment the camera recorded. A
+      // photograph sent to somebody you have just met should not tell them
+      // which building you took it in.
+      processed = await processRoomImage(Buffer.from(await image.arrayBuffer()));
+    } catch (cause) {
+      // sharp refusing to decode it is also the check that it is an image at
+      // all rather than something wearing an image's content type.
+      console.error("chat image decode failed", { type: image.type, size: image.size, cause });
+      return { error: C.imageUnreadable };
+    }
+
+    imagePath = `${chatId}/${messageId}.webp`;
+    const { error: uploadError } = await supabase.storage
+      .from("chat-images")
+      .upload(imagePath, processed, { contentType: "image/webp" });
+
+    if (uploadError) {
+      // A closed chat is refused by the storage policy too, and that is the one
+      // refusal here a member can do something about knowing.
+      if (uploadError.message.includes("row-level security")) {
+        revalidatePath(`/app/chats/${chatId}`);
+        return { error: C.chatClosedMidSend };
+      }
+      console.error("chat image upload failed", { message: uploadError.message });
+      return { error: C.imageUploadFailed };
+    }
+  }
+
   // Whether this chat still accepts messages is decided by RLS
   // (chat_accepts_messages), not here. A closed chat rejects the insert.
-  const { error } = await supabase
-    .from("messages")
-    .insert({ chat_id: chatId, sender_id: auth.user.id, body });
+  const { error } = await supabase.from("messages").insert({
+    id: messageId,
+    chat_id: chatId,
+    sender_id: auth.user.id,
+    // An image-only message has no body, and an empty string is not null — the
+    // constraint counts characters on anything non-null.
+    body: body || null,
+    image_path: imagePath,
+  });
 
   if (error) {
+    // Now removable, because no message points at it.
+    if (imagePath) await supabase.storage.from("chat-images").remove([imagePath]);
+
     // A closed chat is not a failed send, and saying so leaves the member
     // typing into a screen that will never accept anything. The wall itself is
     // right — the RLS with-check refuses the insert — but every failure
