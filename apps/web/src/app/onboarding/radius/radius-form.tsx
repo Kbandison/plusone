@@ -33,6 +33,18 @@ export function RadiusForm({
   const settings = save !== undefined;
   const [state, action, pending] = useActionState(save ?? saveRadius, INITIAL);
   const form = useRef<HTMLFormElement>(null);
+  /**
+   * Whether this member has moved the slider yet.
+   *
+   * Without it the page loads already saying "Saved", which is a claim about an
+   * action nobody took — and the one time it matters, when a save genuinely
+   * fails, the word was on screen before the attempt and stays there after it.
+   */
+  const [touched, setTouched] = useState(false);
+  const commit = () => {
+    setTouched(true);
+    form.current?.requestSubmit();
+  };
   const [outcome, setOutcome] = useState<"asking" | "approximate" | "unknown" | null>(null);
 
   /**
@@ -121,13 +133,7 @@ export function RadiusForm({
           // page says "50 miles". The unit is the part that matters.
           aria-valuetext={C.unit(radius)}
           onChange={(event) => setRadius(Number(event.target.value))}
-          {...(settings
-            ? {
-                onPointerUp: () => form.current?.requestSubmit(),
-                onKeyUp: () => form.current?.requestSubmit(),
-                onTouchEnd: () => form.current?.requestSubmit(),
-              }
-            : {})}
+          {...(settings ? { onPointerUp: commit, onKeyUp: commit, onTouchEnd: commit } : {})}
           /* A native range is about 16px tall. LAYOUT.minTapTarget declares a
              44px floor and this was one of the controls ignoring it — on a
              phone it is a hairline to hit with a thumb. The height is padding
@@ -158,15 +164,7 @@ export function RadiusForm({
         </p>
       ) : null}
 
-      {settings ? (
-        <p role="status" className="text-[11.3px] text-ink-3">
-          {pending
-            ? DRAFT_COPY.photos.privacySaving
-            : state.error
-              ? ""
-              : DRAFT_COPY.photos.privacySaved}
-        </p>
-      ) : (
+      {!settings ? (
         <StepActions step="radius">
           <button
             type="submit"
@@ -176,7 +174,11 @@ export function RadiusForm({
             {C.continueLabel}
           </button>
         </StepActions>
-      )}
+      ) : touched ? (
+        <p role="status" className="text-[11.3px] text-ink-3">
+          {pending ? DRAFT_COPY.app.settingSaving : state.error ? "" : DRAFT_COPY.app.settingSaved}
+        </p>
+      ) : null}
     </form>
   );
 }

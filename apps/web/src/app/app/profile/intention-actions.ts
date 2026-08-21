@@ -47,5 +47,5 @@ export async function changeIntentionSetting(
 
   // The Drop and Browse both filter on it.
   for (const path of ["/app", "/app/browse", "/app/profile"]) revalidatePath(path);
-  return { ...NAME_INITIAL, message: DRAFT_COPY.app.profileIntentionSaved };
+  return { ...NAME_INITIAL, message: DRAFT_COPY.app.settingSaved };
 }

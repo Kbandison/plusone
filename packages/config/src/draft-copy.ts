@@ -480,12 +480,6 @@ export const DRAFT_COPY = {
     /** The photos themselves, which the step never showed — only counted. */
     yoursHeading: "Your photos so far",
     /**
-     * On the profile there is no Continue to press, so the only evidence the
-     * choice was taken is a line that says so. Both are Claude's words.
-     */
-    privacySaving: "Saving…",
-    privacySaved: "Saved",
-    /**
      * position 0 is not a label, it is the photo every card, drop and profile
      * shows. Saying which one that is was the missing half of letting anybody
      * change it.
@@ -950,7 +944,18 @@ export const DRAFT_COPY = {
      * The button reuses `saveLabel`, which already exists for exactly this —
      * a settings control where "Continue" is the wrong word.
      */
-    profileIntentionSaved: "Saved.",
+    /**
+     * On the profile there is no Continue to press, so the only evidence a
+     * choice was taken is a line that says so. Shared by every control on that
+     * page rather than owned by one of them — they were under `photos` when the
+     * radius slider started using them, which is how a string ends up named
+     * after the first screen that happened to need it. Claude's words.
+     *
+     * Shown only after a change. On load it would be a claim about an action
+     * nobody took, and it would still be there after a save that failed.
+     */
+    settingSaving: "Saving…",
+    settingSaved: "Saved",
     profileIntentionLocked: (until: string) => `You can change this again on ${until}.`,
     profileModeHeading: "Mode",
     promptsHeading: "Your prompts",

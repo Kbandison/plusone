@@ -25,6 +25,8 @@ const radiusForm = read("../../onboarding/radius/radius-form.tsx");
 const radiusAction = withoutComments(read("./radius-actions.ts"));
 const intention = read("./intention-editor.tsx");
 const intentionAction = withoutComments(read("./intention-actions.ts"));
+const quizForm = withoutComments(read("../../onboarding/quiz/quiz-form.tsx"));
+const quizAction = withoutComments(read("./quiz-actions.ts"));
 
 /**
  * A settings screen with a Save button is a screen that can be left in a state
@@ -47,7 +49,9 @@ describe("the profile saves as you go", () => {
 
   it("commits the privacy choice when it is chosen", () => {
     expect(photos).toMatch(/onChange=\{saveNow\}/);
-    expect(photos).toMatch(/if \(settings\) form\.current\?\.requestSubmit\(\)/);
+    expect(photos).toMatch(
+      /if \(!settings\) return;[\s\S]{0,80}form\.current\?\.requestSubmit\(\)/,
+    );
   });
 
   /**
@@ -55,8 +59,10 @@ describe("the profile saves as you go", () => {
    * and a slider dragged the width of its track would be fifty writes.
    */
   it("commits the radius on release rather than per pixel", () => {
-    expect(radiusForm).toMatch(/onPointerUp: \(\) => form\.current\?\.requestSubmit\(\)/);
-    expect(radiusForm).toMatch(/onKeyUp: \(\) => form\.current\?\.requestSubmit\(\)/);
+    expect(radiusForm).toMatch(/onPointerUp: commit, onKeyUp: commit, onTouchEnd: commit/);
+    expect(radiusForm).toMatch(
+      /const commit = \(\) => \{[\s\S]{0,120}form\.current\?\.requestSubmit\(\)/,
+    );
     const onChange = radiusForm.slice(radiusForm.indexOf("onChange={(event) => setRadius"));
     expect(onChange.slice(0, 120)).not.toMatch(/requestSubmit/);
   });
@@ -170,5 +176,91 @@ describe("prompts are shown once", () => {
     expect(page).toMatch(/<PromptEditor answers=\{prompts\} \/>/);
     expect(page).not.toMatch(/promptQuestion/);
     expect(page.match(/promptsHeading/g) ?? []).toHaveLength(0);
+  });
+});
+
+/**
+ * "Saved" is a report on something that happened, not a greeting.
+ *
+ * On load it is a claim about an action nobody took — and the one time the word
+ * matters, when a save genuinely fails, it was already on screen before the
+ * attempt and stays there after it.
+ */
+describe("nothing says it saved before anything was saved", () => {
+  it.each([
+    ["photos", photos],
+    ["radius", radiusForm],
+    ["quiz", quizForm],
+  ])("%s reports only once the member has changed something", (_label, source) => {
+    expect(source).toMatch(/const \[touched, setTouched\] = useState\(false\)/);
+    expect(source).toMatch(/setTouched\(true\)/);
+    // Prettier breaks the nested ternary across six lines in the quiz form,
+    // so the window has to clear that rather than the shortest spelling.
+    expect(source).toMatch(/touched \? \([\s\S]{0,300}settingSaved/);
+  });
+
+  /** One pair of strings, not one per screen that happened to need them. */
+  it("shares the words rather than owning them", () => {
+    for (const source of [photos, radiusForm, quizForm]) {
+      expect(source).toMatch(/DRAFT_COPY\.app\.settingSaved/);
+      expect(source).not.toMatch(/privacySaved/);
+    }
+  });
+});
+
+/**
+ * The heading is the field, and a heading that grows a frame when you touch it
+ * is a heading that jumps. The caret is the focus indicator — which is what a
+ * caret is for, and the one control here where the browser's own outline would
+ * say less than the thing already blinking inside it.
+ */
+describe("the name does not become a box when you click it", () => {
+  it("changes no border, no fill and no padding on focus", () => {
+    const editing = name.slice(name.indexOf("editing ?"));
+    expect(editing.slice(0, 160)).not.toMatch(/border-accent|bg-surface|px-3|py-1"/);
+    expect(name).toMatch(/outline-none/);
+  });
+});
+
+/**
+ * "Skip for now" was a one-way door.
+ *
+ * A skip writes an EMPTY row, and resolveStep reads presence rather than
+ * content — so the step settles, never returns, and nothing anywhere in /app
+ * linked to it. A member who took the app at its word on step 8 had no way back
+ * to the twelve questions that shape every Drop they will ever see.
+ */
+describe("the quiz can be taken after it was skipped", () => {
+  it("is on the profile, with what is answered so far on the outside", () => {
+    expect(page).toMatch(/<QuizForm answered=\{quizAnswers\} save=\{saveQuizSetting\} \/>/);
+    expect(page).toMatch(/DRAFT_COPY\.quiz\.progress\(/);
+    expect(page).toMatch(/ownQuizAnswers\(auth\.user\.id\)/);
+  });
+
+  /** Twelve fieldsets is longer than everything else on the page put together. */
+  it("is folded until it is wanted", () => {
+    expect(page).toMatch(/<CollapsibleSection[\s\S]{0,200}<QuizForm/);
+  });
+
+  it("saves each answer where it is tapped", () => {
+    expect(quizForm).toMatch(/requestAnimationFrame\(\(\) => form\.current\?\.requestSubmit\(\)\)/);
+    // Nothing to finish, nothing to skip, nowhere to go back to.
+    expect(quizForm).toMatch(/settings \?[\s\S]{0,600}<StepActions/);
+  });
+
+  it("uses an action that stays on the page", () => {
+    expect(quizAction).not.toMatch(/requireStep|nextRoute/);
+    expect(quizAction).toMatch(/revalidatePath/);
+  });
+
+  /**
+   * Answers and vector together: storing answers alone would mean recomputing
+   * on every read with whatever the weights happen to be that week, and a
+   * member's compatibility changing because a question was reworded is not
+   * something they could ever see.
+   */
+  it("writes the vector with the answers", () => {
+    expect(quizAction).toMatch(/trait_vector: quiz\.traitVector\(answers\)/);
+    expect(quizAction).toMatch(/onConflict: "user_id"/);
   });
 });

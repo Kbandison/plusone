@@ -8,7 +8,7 @@ import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { DecisionBubble, type Decision } from "./decision-dialog";
 import { ThreadRow, type ThreadView } from "./thread-row";
-import { CollapsibleSection } from "./collapsible-section";
+import { CollapsibleSection } from "../collapsible-section";
 
 const C = DRAFT_COPY.app;
 const DAY = 86_400_000;

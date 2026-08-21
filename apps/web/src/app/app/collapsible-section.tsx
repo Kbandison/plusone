@@ -3,13 +3,16 @@
 import { useState } from "react";
 
 /**
- * A section of the inbox that folds away, with its count on the outside.
+ * A section that folds away, with its count on the outside.
  *
- * Two of these now — the connects you are waiting on and the threads that have
+ * The inbox has two — the connects you are waiting on and the threads that have
  * ended — and both are the same argument: neither is a task. A sent connect
  * cannot be acted on and a closed chat is over, so a column of either pushes
  * the threads a member actually has onto the second screen, and the list stops
  * answering "which of these is mine to do".
+ *
+ * The profile has a third, for the twelve quiz questions, where the argument is
+ * only length: nothing else on that page is twelve fieldsets tall.
  *
  * Folded, not deleted and not on another page. §6.2's whole argument is that an
  * ending is something you can go back and look at, and what you wrote to
@@ -27,7 +30,12 @@ export function CollapsibleSection({
   children,
 }: {
   heading: string;
-  count: number;
+  /**
+   * A string where the number needs units. The inbox counts threads and "3"
+   * says everything; the quiz counts answers, and "3" next to twelve questions
+   * is ambiguous in the one direction that matters.
+   */
+  count: number | string;
   /** Open on arrival, for a section a member is more likely to want. */
   defaultOpen?: boolean;
   children: React.ReactNode;
@@ -56,7 +64,7 @@ export function CollapsibleSection({
           {heading}
           {/* Smaller than the heading it belongs to. At the same size it reads
               as part of the title rather than as a count of what is inside. */}
-          <span className="text-[13px] text-ink-3 tabular-nums">{count}</span>
+          <span className="text-[13px] whitespace-nowrap text-ink-3 tabular-nums">{count}</span>
         </button>
       </h2>
 

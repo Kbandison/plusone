@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import {
   COOLDOWNS,
   DRAFT_COPY,
+  QUIZ_QUESTIONS,
   RADIUS,
   type Intention,
   type ProfilePromptAnswer,
@@ -23,6 +24,10 @@ import { BioEditor } from "./bio-editor";
 import { PreferencesForm } from "@/app/onboarding/preferences/preferences-form";
 import { updatePreferences } from "./preferences-actions";
 import { PromptEditor } from "./prompt-editor";
+import { QuizForm } from "@/app/onboarding/quiz/quiz-form";
+import { saveQuizSetting } from "./quiz-actions";
+import { CollapsibleSection } from "../collapsible-section";
+import { ownQuizAnswers } from "@/lib/own-profile";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.profileHeading };
@@ -59,12 +64,13 @@ export default async function ProfilePage() {
   const mode = profile?.mode === "support_only" ? "support_only" : "dating";
   const intention = profile?.intention as Intention | null;
   const prompts = (profile?.prompts ?? []) as ProfilePromptAnswer[];
-  const [photos, photoList, approximate] = await Promise.all([
+  const [photos, photoList, approximate, quizAnswers] = await Promise.all([
     ownPhotos(auth.user.id),
     // The manageable list, which carries the ids and positions the gallery
     // needs — ownPhotos returns rendered URLs and cannot be reordered.
     ownPhotoList(auth.user.id),
     approximateLocation(),
+    ownQuizAnswers(auth.user.id),
   ]);
   const photoPrivacy = (profile?.photo_privacy as string | null) ?? null;
 
@@ -157,6 +163,22 @@ export default async function ProfilePage() {
           }}
         />
       </section>
+      {/* The way back to "Skip for now".
+          A skip writes an empty row and resolveStep reads presence, so the step
+          settles and never returns — and nothing in /app linked to it. A member
+          who took the app at its word on step 8 had no way back to the twelve
+          questions that shape every Drop they will ever see.
+
+          Folded, because nothing else on this page is twelve fieldsets tall. */}
+      <section className={SECTION}>
+        <CollapsibleSection
+          heading={DRAFT_COPY.quiz.heading}
+          count={DRAFT_COPY.quiz.progress(Object.keys(quizAnswers).length, QUIZ_QUESTIONS.length)}
+        >
+          <QuizForm answered={quizAnswers} save={saveQuizSetting} />
+        </CollapsibleSection>
+      </section>
+
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{C.profileModeHeading}</h2>
         <ModeToggle mode={mode} />

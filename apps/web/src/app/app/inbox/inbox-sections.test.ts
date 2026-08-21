@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
-const section = read("./collapsible-section.tsx");
+const section = read("../collapsible-section.tsx");
 const browse = read("../browse/page.tsx");
 const migration = read(
   "../../../../../../supabase/migrations/20260819000200_a_no_is_allowed_to_last.sql",
@@ -59,7 +59,7 @@ describe("the inbox says what kind of thing each row is", () => {
 
   /** The count must not read as part of the title. */
   it("keeps the count smaller than the heading", () => {
-    expect(section).toMatch(/text-\[13px\] text-ink-3 tabular-nums/);
+    expect(section).toMatch(/text-\[13px\] whitespace-nowrap text-ink-3 tabular-nums/);
   });
 
   /**

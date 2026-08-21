@@ -117,13 +117,16 @@ export function NameEditor({ name }: { name: string }) {
               requestAnimationFrame(() => field.current?.blur());
             }
           }}
-          /* Nothing until you touch it: no box, no border, no fill — it is the
-             heading. The underline on hover is the only thing that says it can
-             be more than that, and the border arrives when it is. */
-          className={`ease-brand max-w-full min-w-0 rounded-lg border bg-transparent text-h2 transition-[border-color,background-color,padding] duration-200 ${
-            editing
-              ? "border-accent bg-surface px-3 py-1"
-              : "cursor-text border-transparent px-0 py-1 hover:border-line-2"
+          /* No box, no border, no fill, and none of them arrive on focus
+             either — it is the heading, and a heading that grows a frame when
+             you touch it is a heading that jumps.
+
+             The caret is the focus indicator, which is what a caret is for. It
+             is the one control on this page where the browser's own outline
+             would be a worse signal than the thing already blinking inside it.
+             The underline on hover is all that says it can be typed in. */
+          className={`ease-brand max-w-full min-w-0 cursor-text border-b bg-transparent px-0 py-1 text-h2 transition-colors duration-200 outline-none ${
+            editing ? "border-line-2" : "border-transparent hover:border-line-2"
           }`}
         />
       </h1>

@@ -183,11 +183,21 @@ export function PrivacyChoice({
   const blockedId = useId();
   const [state, action, pending] = useActionState(savePhotoPrivacy, PHOTOS_INITIAL);
   const form = useRef<HTMLFormElement>(null);
+  /**
+   * Whether this member has changed anything yet.
+   *
+   * Without it the page loads already saying "Saved", which is a claim about an
+   * action nobody took — and the one time it matters, when a save genuinely
+   * fails, the word was on screen before the attempt and stays there after it.
+   */
+  const [touched, setTouched] = useState(false);
 
   // requestSubmit rather than submit(): it runs validation and fires the submit
   // event, which is what React's action handling listens for.
   const saveNow = () => {
-    if (settings) form.current?.requestSubmit();
+    if (!settings) return;
+    setTouched(true);
+    form.current?.requestSubmit();
   };
 
   return (
@@ -229,11 +239,7 @@ export function PrivacyChoice({
         </p>
       ) : null}
 
-      {settings ? (
-        <p role="status" className="text-[11.3px] text-ink-3">
-          {pending ? C.privacySaving : state.error ? "" : C.privacySaved}
-        </p>
-      ) : (
+      {!settings ? (
         <StepActions step="photos">
           <button
             type="submit"
@@ -247,7 +253,11 @@ export function PrivacyChoice({
             {COPY.actions.continueLabel}
           </button>
         </StepActions>
-      )}
+      ) : touched ? (
+        <p role="status" className="text-[11.3px] text-ink-3">
+          {pending ? DRAFT_COPY.app.settingSaving : state.error ? "" : DRAFT_COPY.app.settingSaved}
+        </p>
+      ) : null}
 
       {!settings && !canContinue ? (
         <p id={blockedId} className="text-[11.3px] text-ink-3">
