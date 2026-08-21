@@ -20,6 +20,7 @@ import { VoiceRecorder } from "./voice-recorder";
 import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
 import { ChatImage } from "./chat-image";
+import { ScrollToLatest } from "./scroll-to-latest";
 import { VoiceNote } from "./voice-note";
 import { MemberPhotoFrame } from "../../member-photo";
 import { photosFor } from "@/lib/photo-urls";
@@ -166,7 +167,16 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           Beside it, everything that ends the conversation, folded behind one
           press. Close, report and block were three controls stacked under the
           composer, which put ending it in the same column as continuing it. */}
-      <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+      {/* Pinned. Whose conversation this is, and the way out of it, were both
+          the first thing you scrolled past — on the one screen where knowing
+          who you are talking to matters most, and where the controls that end
+          it are wanted at the moment it goes wrong rather than after a scroll
+          back to the top.
+
+          -mx-6/px-6 bleeds the background to the gutters the layout adds, or
+          the messages travel up through two six-pixel columns beside it.
+          z-30 over the thread, under the nav's z-40. */}
+      <div className="ease-brand sticky top-0 z-30 -mx-6 flex items-center justify-between gap-3 border-b border-line bg-ground/95 px-6 pt-1 pb-3 backdrop-blur">
         {/* A face with the name. Every other surface that names a member shows
             them — the inbox rows, the Drop, the connect screen — and the chat,
             the one place you are actually talking to them, showed a string. */}
@@ -318,6 +328,11 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         })}
       </ul>
 
+      {/* Keyed on the last message, so the page also comes back to the bottom
+          after one is sent — which is the other moment the newest line is the
+          one a member is looking for. */}
+      <ScrollToLatest token={`${(messages ?? []).length}:${(messages ?? []).at(-1)?.id ?? ""}`} />
+
       {isTerminal ? (
         // Every terminal state carries a note. Silence is impossible by
         // construction (§6.2) — so this branch always has something to show.
@@ -340,41 +355,12 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         </section>
       ) : (
         <>
-          {/* The fuse, still visible (§7.2), but next to the thing it is a
-              deadline for. At the top of the screen it was a number a member
-              scrolled past on the way to the conversation; above the box they
-              are about to type in, it is the reason to type. */}
-          {countdown.isRunning ? (
-            <p
-              className={`mt-6 text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}
-            >
-              {countdown.isExpiringSoon
-                ? C.fuseExpiringSoon
-                : C.fuseDaysLeft(countdown.remainingDays)}
-            </p>
-          ) : chat.status === "date_planned" ? (
-            <p className="mt-6 text-[11.3px] text-positive">{C.datePlannedLabel}</p>
-          ) : null}
-
-          <Composer chatId={id} pickerId={PICKER_ID} />
-
-          {/* One row: the photograph, the microphone and the date proposal,
-              side by side under the box. All three were full-width blocks
-              stacked below it, so the optional things took more of the screen
-              than the message field.
-
-              The photo button drives an input that lives inside the Composer's
-              form — see PhotoButton. A form cannot contain another form, and
-              VoiceRecorder is one, so the two things that belong side by side
-              on screen cannot be siblings in the markup. */}
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <PhotoButton pickerId={PICKER_ID} />
-            <VoiceRecorder chatId={id} />
-            {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
-          </div>
-
           {/* The plan itself, which nothing rendered. A chat could reach
-              date_planned with neither member ever shown what was agreed. */}
+              date_planned with neither member ever shown what was agreed.
+
+              Above the composer now rather than below it. It reads as part of
+              the conversation, and everything below the composer is now
+              underneath a pinned bar. */}
           {plan ? (
             <section className="mt-8 rounded-xl border border-line-2 bg-surface p-5">
               <h2 className="text-[0.851rem]">{C.datePlannedLabel}</h2>
@@ -396,6 +382,51 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           ) : null}
 
           {chat.status === "date_planned" ? <CancelPlan chatId={id} /> : null}
+
+          {/* Pinned, just above the nav.
+              The box you type in was at the end of the thread, so on any
+              conversation longer than a screen, answering meant scrolling to
+              the bottom first — and after every send the page came back and it
+              was gone again.
+
+              bottom-[var(--nav-h)] rather than bottom-0: the bar is fixed at
+              the foot of the viewport, and a composer at zero sits behind it.
+              One number, defined in globals.css and reserved as padding by the
+              layout — see the note there. */}
+          <div className="ease-brand sticky bottom-[var(--nav-h)] z-20 -mx-6 mt-6 border-t border-line bg-ground/95 px-6 pt-3 pb-2 backdrop-blur">
+            {/* The fuse, still visible (§7.2), but next to the thing it is a
+                deadline for. At the top of the screen it was a number a member
+                scrolled past on the way to the conversation; above the box they
+                are about to type in, it is the reason to type. */}
+            {countdown.isRunning ? (
+              <p
+                className={`text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}
+              >
+                {countdown.isExpiringSoon
+                  ? C.fuseExpiringSoon
+                  : C.fuseDaysLeft(countdown.remainingDays)}
+              </p>
+            ) : chat.status === "date_planned" ? (
+              <p className="text-[11.3px] text-positive">{C.datePlannedLabel}</p>
+            ) : null}
+
+            <Composer chatId={id} pickerId={PICKER_ID} />
+
+            {/* One row: the photograph, the microphone and the date proposal,
+                side by side under the box. All three were full-width blocks
+                stacked below it, so the optional things took more of the screen
+                than the message field.
+
+                The photo button drives an input that lives inside the
+                Composer's form — see PhotoButton. A form cannot contain another
+                form, and VoiceRecorder is one, so the two things that belong
+                side by side on screen cannot be siblings in the markup. */}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <PhotoButton pickerId={PICKER_ID} />
+              <VoiceRecorder chatId={id} />
+              {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
+            </div>
+          </div>
         </>
       )}
     </main>

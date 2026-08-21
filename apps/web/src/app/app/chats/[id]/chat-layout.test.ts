@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
+/**
+ * Where the member header starts. Named rather than repeated, because it moved
+ * when the header was pinned and two copies of the literal both broke.
+ */
+const HEADER = '<div className="ease-brand sticky top-0';
 const forms = read("./chat-forms.tsx");
 const recorder = read("./voice-recorder.tsx");
 const menu = read("../../overflow-menu.tsx");
@@ -21,10 +26,7 @@ const icons = read("./chat-icons.tsx");
  */
 describe("what ends the conversation is folded away", () => {
   it("puts all three in the header menu", () => {
-    const header = page.slice(
-      page.indexOf('<div className="flex items-center justify-between'),
-      page.indexOf("<ul className"),
-    );
+    const header = page.slice(page.indexOf(HEADER), page.indexOf("<ul className"));
     expect(header).toMatch(/<OverflowMenu>/);
     expect(header).toMatch(/CloseChat/);
     expect(header).toMatch(/ReportControl/);
@@ -89,10 +91,7 @@ describe("the composer keeps the screen", () => {
  */
 describe("reporting survives the chat", () => {
   it("keeps the menu on terminal chats", () => {
-    const header = page.slice(
-      page.indexOf('<div className="flex items-center justify-between'),
-      page.indexOf("<ul className"),
-    );
+    const header = page.slice(page.indexOf(HEADER), page.indexOf("<ul className"));
     expect(header).toMatch(/<OverflowMenu>/);
     expect(header).not.toMatch(/\{!isTerminal \? \(\s*<OverflowMenu>/);
   });
@@ -254,5 +253,98 @@ describe("repeated triggers stay told apart", () => {
 
   it("announces that the trigger opens a dialog", () => {
     expect(modal).toMatch(/aria-haspopup="dialog"/);
+  });
+});
+
+/**
+ * A chat is read from the bottom, and it opened at the top.
+ *
+ * Every load and every refresh landed on the first message the two people ever
+ * exchanged, so the newest one — the reason the screen was opened — was however
+ * many screens down.
+ */
+describe("the thread opens where the conversation is", () => {
+  const scroll = read("./scroll-to-latest.tsx");
+
+  it("jumps to the bottom on load", () => {
+    expect(page).toMatch(/<ScrollToLatest/);
+    expect(scroll).toMatch(/document\.documentElement\.scrollHeight/);
+  });
+
+  /**
+   * The page is not its final height when the effect runs: browsers restore the
+   * previous scroll position on a reload, and every photograph is a signed URL
+   * that has not loaded yet.
+   */
+  it("jumps again once the page has settled", () => {
+    expect(scroll).toMatch(/requestAnimationFrame\(jump\)/);
+    expect(scroll).toMatch(/window\.addEventListener\("load", jump\)/);
+    expect(scroll).toMatch(/cancelAnimationFrame\(frame\)/);
+    expect(scroll).toMatch(/removeEventListener\("load", jump\)/);
+  });
+
+  /**
+   * Not focus. Moving it on load takes it from wherever the member put it and
+   * makes a screen reader announce a message they did not ask for.
+   */
+  it("moves the view and not the focus", () => {
+    expect(scroll).not.toMatch(/\.focus\(\)|autoFocus|tabIndex/);
+  });
+
+  /** An animated jump on every load is motion nobody asked for. */
+  it("does not animate", () => {
+    expect(scroll).toMatch(/behavior: "instant"/);
+    expect(scroll).not.toMatch(/behavior: "smooth"/);
+  });
+
+  /** The other moment the bottom is where a member wants to be. */
+  it("comes back to the bottom when a message is sent", () => {
+    expect(page).toMatch(/token=\{`\$\{\(messages \?\? \[\]\)\.length\}/);
+    expect(scroll).toMatch(/\}, \[token\]\)/);
+  });
+});
+
+/**
+ * Both ends of the screen stay put. Whose conversation this is and the way out
+ * of it were the first thing you scrolled past; the box you type in was at the
+ * end of the thread, so answering meant scrolling to the bottom first — and
+ * after every send the page came back and it was gone again.
+ */
+describe("the header and the composer are pinned", () => {
+  it("sticks the header to the top, above the thread", () => {
+    expect(page).toMatch(/sticky top-0 z-30/);
+    const header = page.slice(page.indexOf(HEADER), page.indexOf("<ul className"));
+    expect(header).toMatch(/MemberPhotoFrame/);
+    expect(header).toMatch(/<OverflowMenu>/);
+  });
+
+  /**
+   * The bar is fixed at the foot of the viewport, so a composer at zero sits
+   * behind it. One number, defined once and reserved as padding by the layout.
+   */
+  it("parks the composer above the nav rather than under it", () => {
+    expect(page).toMatch(/sticky bottom-\[var\(--nav-h\)\] z-20/);
+    expect(page).not.toMatch(/sticky bottom-0/);
+  });
+
+  /** Or the messages travel up through two six-pixel columns beside them. */
+  it("bleeds both bars to the gutters the layout adds", () => {
+    for (const bar of [/sticky top-0[^"]*-mx-6[^"]*px-6/, /sticky bottom-\[[^"]*-mx-6[^"]*px-6/]) {
+      expect(page).toMatch(bar);
+    }
+  });
+
+  /** Under the nav's z-40, and under a dialog by construction. */
+  it("stays below the navigation", () => {
+    const layout = read("../../layout.tsx");
+    expect(layout).toMatch(/fixed inset-x-0 bottom-0 z-40/);
+  });
+
+  /** Everything below a pinned bar is underneath it. */
+  it("leaves nothing stranded under the composer", () => {
+    const composer = page.indexOf("sticky bottom-[var(--nav-h)]");
+    expect(page.indexOf("<ConfirmPlan")).toBeLessThan(composer);
+    expect(page.indexOf("<CancelPlan")).toBeLessThan(composer);
+    expect(page.indexOf("{plan ? (")).toBeLessThan(composer);
   });
 });

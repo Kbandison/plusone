@@ -110,8 +110,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           pb clears the nav. It was pb-36 — 144px — from when there were nine
           items and the bar wrapped to two rows; five items fit on one, which is
           a 44px link plus 12px of padding and a border. So every screen ended
-          in ninety pixels of nothing. */}
-      <div className="flex-1 pt-6 pb-24 sm:pb-20">{children}</div>
+          in ninety pixels of nothing.
+
+          --nav-h rather than the two literals it used to be: the chat's
+          composer pins itself just above the bar, and a second copy of this
+          number is a second thing to remember when the bar changes. */}
+      <div className="flex-1 pt-6 pb-[var(--nav-h)]">{children}</div>
 
       {/* Bottom nav: thumb-reachable, and the only chrome on the page.
        *

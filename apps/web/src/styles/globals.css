@@ -1,6 +1,29 @@
 @import "tailwindcss";
 @import "@plusone/ui-tokens/tokens.css";
 
+/**
+ * How much room the bottom nav takes, in one place.
+ *
+ * Two things need this number and they were about to be two literals: the app
+ * layout reserves it as padding so no page ends underneath the bar, and the
+ * chat's composer parks on top of it. A composer pinned to `bottom: 0` sits
+ * behind the nav, and a composer pinned to a hand-copied 6rem stops matching
+ * the day the bar changes height.
+ *
+ * The bar wraps to two rows below 640px — five labels do not fit the 312px a
+ * 360px phone leaves after the gutters — which is the whole reason there are
+ * two values rather than one.
+ */
+:root {
+  --nav-h: 6rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --nav-h: 5rem;
+  }
+}
+
 @layer utilities {
   /**
    * A horizontal scroller with no bar, and a shadow at whichever edge has more
