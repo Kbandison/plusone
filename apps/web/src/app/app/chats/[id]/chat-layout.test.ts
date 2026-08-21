@@ -272,15 +272,40 @@ describe("the thread opens where the conversation is", () => {
   });
 
   /**
-   * The page is not its final height when the effect runs: browsers restore the
-   * previous scroll position on a reload, and every photograph is a signed URL
-   * that has not loaded yet.
+   * Jumping once did not work and neither did jumping twice. Everything that
+   * decides where this page sits happens after a mount effect: the router
+   * scrolls a new route to the top, the browser restores a position on reload,
+   * every photograph is a signed URL that has not loaded, and so are the fonts.
+   * Racing four things with a guess at the delay is how both attempts went.
    */
-  it("jumps again once the page has settled", () => {
-    expect(scroll).toMatch(/requestAnimationFrame\(jump\)/);
-    expect(scroll).toMatch(/window\.addEventListener\("load", jump\)/);
-    expect(scroll).toMatch(/cancelAnimationFrame\(frame\)/);
-    expect(scroll).toMatch(/removeEventListener\("load", jump\)/);
+  it("holds the bottom while the page is still settling", () => {
+    // Height changes — photographs, fonts, the keyboard.
+    expect(scroll).toMatch(/new ResizeObserver\(jump\)/);
+    expect(scroll).toMatch(/growth\.observe\(document\.body\)/);
+    // And the one a height observer cannot see: the router moving the page
+    // without changing its size.
+    expect(scroll).toMatch(/addEventListener\("scroll", jump/);
+    expect(scroll).toMatch(/addEventListener\("load", jump\)/);
+  });
+
+  /**
+   * A wheel, a drag or an arrow key is somebody reading back through the
+   * thread. The scroll event itself cannot be the signal — every jump fires one
+   * — and all three of these fire BEFORE the scroll they produce, so the
+   * listener is gone by the time a member's own scroll arrives.
+   */
+  it("lets go the moment the member scrolls", () => {
+    for (const event of ["wheel", "touchstart", "keydown"]) {
+      expect(scroll, event).toMatch(new RegExp(`addEventListener\\("${event}", release`));
+    }
+    expect(scroll).toMatch(/holding = false/);
+    expect(scroll).toMatch(/if \(!holding\) return;/);
+  });
+
+  /** And a hard stop, so nothing fights a reader for the life of the screen. */
+  it("gives up after a second and a half either way", () => {
+    expect(scroll).toMatch(/setTimeout\(release, 1500\)/);
+    expect(scroll).toMatch(/return release;/);
   });
 
   /**
@@ -329,9 +354,11 @@ describe("the header and the composer are pinned", () => {
 
   /** Or the messages travel up through two six-pixel columns beside them. */
   it("bleeds both bars to the gutters the layout adds", () => {
-    for (const bar of [/sticky top-0[^"]*-mx-6[^"]*px-6/, /sticky bottom-\[[^"]*-mx-6[^"]*px-6/]) {
-      expect(page).toMatch(bar);
-    }
+    expect(page).toMatch(/sticky top-0[^"]*-mx-6[^"]*px-6/);
+    // The composer's own padding is 5px more than the page's, so the box sits
+    // in from the edges rather than running to them. The background still
+    // bleeds — only the controls move.
+    expect(page).toMatch(/sticky bottom-\[[^"]*-mx-6[^"]*px-\[29px\]/);
   });
 
   /** Under the nav's z-40, and under a dialog by construction. */
