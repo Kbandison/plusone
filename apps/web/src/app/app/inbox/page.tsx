@@ -6,6 +6,7 @@ import { inbox as inboxLogic } from "@plusone/logic";
 
 import { photosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
+import { LiveRefresh } from "@/app/app/live-refresh";
 import { DecisionBubble, type Decision } from "./decision-dialog";
 import { ThreadRow, type ThreadView } from "./thread-row";
 import { CollapsibleSection } from "../collapsible-section";
@@ -236,6 +237,19 @@ export default async function InboxPage() {
 
   return (
     <main id="main">
+      {/* Three watches for one screen, because the inbox is two lists.
+          A connect can arrive or be answered, and a chat can gain a message or
+          close — chats has no member column to filter on, but "participants
+          read their chats" already means "mine", and Realtime evaluates that
+          per subscriber. RLS is the filter. */}
+      <LiveRefresh
+        watch={[
+          { table: "connects", filter: `initiator_id=eq.${me}` },
+          { table: "connects", filter: `target_id=eq.${me}` },
+          { table: "chats" },
+        ]}
+      />
+
       {/* One heading, and it is the queue's.
        *
        * A page needs an h1 — without one a screen reader announces nothing and

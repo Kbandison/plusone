@@ -21,7 +21,7 @@ import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
 import { ChatImage } from "./chat-image";
 import { ScrollToLatest } from "./scroll-to-latest";
-import { LiveChat } from "./live-chat";
+import { LiveRefresh } from "@/app/app/live-refresh";
 import { PublishHeight } from "@/app/app/publish-height";
 import { VoiceNote } from "./voice-note";
 import { MemberPhotoFrame } from "../../member-photo";
@@ -336,10 +336,10 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       {/* Keyed on the last message, so the page also comes back to the bottom
           after one is sent — which is the other moment the newest line is the
           one a member is looking for. */}
-      {/* Renders nothing. It listens for the doorbell ring_chat() sends and
-          asks the page to re-render — which is a normal server render, so every
-          wall applies as it does on a cold load. */}
-      <LiveChat chatId={id} />
+      {/* Renders nothing. ring_chat() touches this chat's row when a message
+          lands; this notices and asks the page to re-render, which is a normal
+          server render, so every wall applies as on a cold load. */}
+      <LiveRefresh watch={[{ table: "chats", filter: `id=eq.${id}` }]} />
 
       <ScrollToLatest token={`${(messages ?? []).length}:${(messages ?? []).at(-1)?.id ?? ""}`} />
 

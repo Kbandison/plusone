@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { chat as chatLogic } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { LiveRefresh } from "@/app/app/live-refresh";
 import { parseClientEnv } from "@plusone/config";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { photosFor } from "@/lib/photo-urls";
@@ -141,6 +142,12 @@ export default async function RoomPage({
 
   return (
     <main id="main">
+      {/* ring_room() touches this room when a post or a reply lands. What comes
+          back is room_feed(), which is where the anonymity redaction and the
+          block wall live — so the refetch is the only thing that could have
+          rendered it correctly. */}
+      <LiveRefresh watch={[{ table: "rooms", filter: `id=eq.${roomId}` }]} />
+
       <h1 className="text-h2">{room.title as string}</h1>
       {room.description ? (
         <p className="mt-3 text-[12.6px] leading-[1.7] text-ink-2">{room.description as string}</p>
