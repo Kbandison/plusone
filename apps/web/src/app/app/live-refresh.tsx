@@ -19,6 +19,15 @@ export interface Watch {
    * at.
    */
   readonly filter?: string | undefined;
+  /**
+   * Which change to listen for. Everything, unless narrowed.
+   *
+   * The bell narrows it to INSERT, and needs to. Marking the list read is an
+   * UPDATE on the same table, so a watch for `*` would hear the page's own
+   * bookkeeping and refresh the screen the member is reading — turning a
+   * once-per-arrival doorbell into one that also rings when you answer it.
+   */
+  readonly event?: "INSERT" | "UPDATE" | "DELETE" | "*" | undefined;
 }
 
 /**
@@ -99,7 +108,7 @@ export function LiveRefresh({ watch }: { watch: readonly Watch[] }) {
         joining = joining.on(
           "postgres_changes",
           {
-            event: "*",
+            event: target.event ?? "*",
             schema: "public",
             table: target.table,
             ...(target.filter ? { filter: target.filter } : {}),

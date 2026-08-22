@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { FUSE } from "@plusone/config";
-import { notify } from "@plusone/logic";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notifier } from "@/lib/notifier";
+import { notify } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +34,15 @@ export async function POST(request: Request) {
   // fire consumed a whole window of warnings and then threw, and nobody would
   // ever have been warned about a closing chat. Constructing it up here means a
   // refusal costs nothing: the rows stay unclaimed for a run that can deliver.
-  let send: notify.Notifier;
+  //
+  // Still a pre-flight even though notify() builds its own, and MORE necessary
+  // now: notify() swallows its failures on purpose, because a notification is
+  // a courtesy attached to something that already succeeded. That is right at
+  // a call site and wrong here, where the claim is consumed whether or not
+  // anything was delivered. So the construction is tested before the claim and
+  // the result is thrown away.
   try {
-    send = notifier();
+    notifier();
   } catch (error) {
     return NextResponse.json({ error: String(error), claimed: 0 }, { status: 500 });
   }
@@ -65,8 +71,23 @@ export async function POST(request: Request) {
   ];
   if (recipients.length === 0) return NextResponse.json({ notified: 0 });
 
-  const deliveries = notify.planDeliveries("fuse_warning", recipients);
-  const result = await send.send(deliveries);
+  /**
+   * Through the shared dispatcher, so the in-app copy is written and the
+   * member's own switches are honoured.
+   *
+   * This built its own deliveries and sent them directly, which was right when
+   * push was the only channel there was. It is not any more: a member who has
+   * turned this one's push off would still have been buzzed, and one who
+   * missed the buzz would have had nothing to come back to — which for a chat
+   * closing tomorrow is the difference between a note answered and a fuse run
+   * out.
+   *
+   * No subject. The warning deliberately does not say WHICH chat: a member with
+   * three closing tomorrow gets one line, because the count is itself
+   * information nobody asked to broadcast.
+   */
+  await notify("fuse_warning", recipients);
+  const result = { sent: recipients.length, failed: 0 };
 
   // A TRADE-OFF, stated rather than assumed.
   //

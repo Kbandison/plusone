@@ -25,6 +25,7 @@ const C = DRAFT_COPY.app;
  */
 const TABS = [
   { href: "/app/settings", label: C.settingsGeneral },
+  { href: "/app/settings/notifications", label: C.settingsNotifications },
   { href: "/app/settings/safety", label: C.settingsSafety },
   { href: "/app/settings/premium", label: C.premiumHeading },
 ] as const;
@@ -34,9 +35,11 @@ export function SettingsTabs() {
 
   return (
     <nav aria-label={C.settingsHeading} className="-mx-6 border-b border-line px-6">
-      {/* Same bar as the rooms, down to the edge-to-edge bleed: two tabs fit
-          anything, but a settings section that looked like a different kind of
-          navigation from the rooms one would be two answers to one question. */}
+      {/* Same bar as the rooms, down to the edge-to-edge bleed. Four tabs is
+          where the horizontal scroll starts to matter on a narrow phone, which
+          is what snap-x and the scroll shadows are for — a settings section
+          that looked like a different kind of navigation from the rooms one
+          would be two answers to one question. */}
       <ul className="scroll-shadows-x flex snap-x gap-1">
         {TABS.map((tab) => {
           const current = pathname === tab.href;

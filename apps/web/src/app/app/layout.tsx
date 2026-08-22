@@ -8,6 +8,7 @@ import { onboarding } from "@plusone/logic";
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
+import { LiveRefresh } from "./live-refresh";
 import { NavLinks } from "./nav-links";
 import { PublishHeight } from "./publish-height";
 import { ServiceWorker } from "./service-worker";
@@ -60,7 +61,23 @@ const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
 /** The bar PublishHeight measures. One nav, so a constant is enough. */
 const NAV_ID = "app-nav";
 
-/** Drawn rather than imported: one icon does not justify a dependency. */
+/** Drawn rather than imported: two icons do not justify a dependency. */
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[21px]">
+      <path
+        d="M12 3.5a5.5 5.5 0 0 0-5.5 5.5c0 3.2-.7 5-1.4 6a.8.8 0 0 0 .65 1.25h12.5A.8.8 0 0 0 18.9 15c-.7-1-1.4-2.8-1.4-6A5.5 5.5 0 0 0 12 3.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M10 19a2 2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+/** Drawn rather than imported: two icons do not justify a dependency. */
 function GearIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[21px]">
@@ -100,9 +117,14 @@ export default async function AppLayout({
   const step = onboarding.resolveStep(await loadFacts(data.user.id));
   if (step !== "done") redirect(STEP_ROUTES[step]);
 
-  const { data: me } = await supabase
-    .rpc("my_profile")
-    .maybeSingle<{ mode: string | null; timezone: string | null }>();
+  const [{ data: me }, { data: unreadData }] = await Promise.all([
+    supabase.rpc("my_profile").maybeSingle<{ mode: string | null; timezone: string | null }>(),
+    // A count rather than the list. The bell is on every screen, and rendering
+    // it through my_notifications would fetch fifty rows and their joins on
+    // every page load to produce one integer.
+    supabase.rpc("my_unread_notifications"),
+  ]);
+  const unread = Number(unreadData ?? 0);
   const supportOnly = me?.mode === "support_only";
   const nav = NAV.filter((item) => !(item.datingOnly && supportOnly));
 
@@ -111,16 +133,61 @@ export default async function AppLayout({
       <header className="flex items-center justify-between pt-4 pb-3">
         <Wordmark className="text-[26px]" />
 
-        {/* Labelled, because a gear on its own is a shape. The 44px box is the
-            LAYOUT.minTapTarget floor — an 18px icon is not a target. */}
-        <Link
-          href="/app/settings"
-          aria-label={DRAFT_COPY.app.navSettings}
-          className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
-        >
-          <GearIcon />
-        </Link>
+        <div className="flex items-center">
+          {/* The way to the list, from every screen.
+           *
+           * §8's whole matrix delivered to a lock screen and nowhere else: a
+           * push dismissed is a thing that happened and cannot be found again.
+           * Beside the gear rather than on the bottom bar, because the five
+           * items down there are places a member goes to DO the thing the app
+           * is for, and this is a record of what has already been done to them.
+           *
+           * The count is in the label, not only in the badge. A badge is a
+           * coloured dot to somebody not looking at it and nothing at all to
+           * somebody listening. */}
+          <Link
+            href="/app/notifications"
+            aria-label={DRAFT_COPY.app.notificationsBellLabel(unread)}
+            className="ease-brand relative flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+          >
+            <BellIcon />
+            {unread > 0 ? (
+              /* A dot, not a number. §8 keeps count granularity out of
+                 notifications, and the same argument holds one layer in: the
+                 header is visible over somebody's shoulder, and "11" is a
+                 different disclosure from "something". */
+              <span
+                aria-hidden="true"
+                className="absolute top-[9px] right-[9px] size-2 rounded-full border-2 border-ground bg-accent"
+              />
+            ) : null}
+          </Link>
+
+          {/* Labelled, because a gear on its own is a shape. The 44px box is
+              the LAYOUT.minTapTarget floor — an 18px icon is not a target. */}
+          <Link
+            href="/app/settings"
+            aria-label={DRAFT_COPY.app.navSettings}
+            className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+          >
+            <GearIcon />
+          </Link>
+        </div>
       </header>
+
+      {/* The bell, live, on every screen in the app.
+       *
+       * INSERT only. Marking the list read is an UPDATE on the same table, so a
+       * watch for `*` would hear the notifications page's own bookkeeping and
+       * refresh the screen the member is currently reading.
+       *
+       * Filtered to this member, though "members read their own notifications"
+       * would already scope it: without the filter every member is woken by
+       * every other member's row and refetches a page they are not looking at.
+       */}
+      <LiveRefresh
+        watch={[{ table: "notifications", filter: `user_id=eq.${data.user.id}`, event: "INSERT" }]}
+      />
 
       {/* pt-6 above, so a page's heading is not sitting on the wordmark.
           Here rather than on each page: no page carries a top margin of its own

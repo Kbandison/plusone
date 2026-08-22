@@ -35,7 +35,7 @@ if (!DB_URL) {
 // rooms is 7, not the 5 §5.2 names: Latest news is a room now (20260820000300)
 // and there are two of it, one per community, because rooms are scoped by
 // community and news is too. The five the spec names are still all there.
-const EXPECT = { tables: 29, views: 5, functions: 106, enums: 21, rooms: 7, config: 23 };
+const EXPECT = { tables: 31, views: 5, functions: 115, enums: 21, rooms: 7, config: 23 };
 const INVOKER_VIEWS = [];
 const DEFINER_VIEWS = ["visible_profile_photos", "visible_profiles", "preview_profiles"];
 const NO_UPDATE_PATH = ["connects", "chats"];
@@ -70,13 +70,19 @@ const noRls = await q(`
     and not exists (
       select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relname = t.tablename and c.relrowsecurity)`);
-check(noRls.length === 0, `every table enables RLS${noRls.length ? ` — missing: ${noRls.map((r) => r.tablename).join(", ")}` : ""}`);
+check(
+  noRls.length === 0,
+  `every table enables RLS${noRls.length ? ` — missing: ${noRls.map((r) => r.tablename).join(", ")}` : ""}`,
+);
 
 const noPolicy = await q(`
   select tablename from pg_tables t where schemaname = 'public'
     and not exists (
       select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = t.tablename)`);
-check(noPolicy.length === 0, `every table has at least one policy${noPolicy.length ? ` — missing: ${noPolicy.map((r) => r.tablename).join(", ")}` : ""}`);
+check(
+  noPolicy.length === 0,
+  `every table has at least one policy${noPolicy.length ? ` — missing: ${noPolicy.map((r) => r.tablename).join(", ")}` : ""}`,
+);
 
 // Two of the three views are projections over data the caller could already
 // read, so they run as the caller and the policies underneath still apply.
@@ -106,7 +112,10 @@ for (const view of INVOKER_VIEWS) {
      where n.nspname = 'public' and c.relname = $1`,
     [view],
   );
-  check(row?.si === "true" || row?.si === "on", `${view}: security_invoker = ${row?.si ?? "MISSING VIEW"}`);
+  check(
+    row?.si === "true" || row?.si === "on",
+    `${view}: security_invoker = ${row?.si ?? "MISSING VIEW"}`,
+  );
 }
 
 for (const view of DEFINER_VIEWS) {
@@ -169,7 +178,9 @@ console.log("\n── SECURITY DEFINER functions pin search_path ──");
 const definers = await q(`
   select p.proname, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.prosecdef order by p.proname`);
-const unpinned = definers.filter((d) => !(d.proconfig ?? []).some((x) => x.startsWith("search_path=")));
+const unpinned = definers.filter(
+  (d) => !(d.proconfig ?? []).some((x) => x.startsWith("search_path=")),
+);
 check(
   unpinned.length === 0,
   `all ${definers.length} SECURITY DEFINER functions pin search_path${unpinned.length ? ` — unpinned: ${unpinned.map((d) => d.proname).join(", ")}` : ""}`,
@@ -182,7 +193,10 @@ for (const table of NO_UPDATE_PATH) {
     `select policyname from pg_policies where schemaname = 'public' and tablename = $1 and cmd = 'UPDATE'`,
     [table],
   );
-  check(ups.length === 0, `${table}: no UPDATE policy${ups.length ? ` — found ${ups.map((u) => u.policyname).join(", ")}` : ""}`);
+  check(
+    ups.length === 0,
+    `${table}: no UPDATE policy${ups.length ? ` — found ${ups.map((u) => u.policyname).join(", ")}` : ""}`,
+  );
 }
 
 console.log("\n── PostGIS resolves at call time ──");
@@ -245,27 +259,52 @@ const CAST = {
   onboarded_at: "timestamptz",
 };
 const EMPTY = {
-  display_name: null, birthdate: null, community: null, condition: null,
-  intention: null, search_radius_mi: null, u_equals_u: false,
-  verification_status: "unverified", onboarded_at: null,
+  display_name: null,
+  birthdate: null,
+  community: null,
+  condition: null,
+  intention: null,
+  search_radius_mi: null,
+  u_equals_u: false,
+  verification_status: "unverified",
+  onboarded_at: null,
 };
 const FULL = {
-  display_name: "Sam", birthdate: "1990-06-15", community: "hiv", condition: "hiv",
-  intention: "long_term", search_radius_mi: 50, u_equals_u: true,
-  verification_status: "verified", onboarded_at: "2026-08-14T00:00:00Z",
+  display_name: "Sam",
+  birthdate: "1990-06-15",
+  community: "hiv",
+  condition: "hiv",
+  intention: "long_term",
+  search_radius_mi: 50,
+  u_equals_u: true,
+  verification_status: "verified",
+  onboarded_at: "2026-08-14T00:00:00Z",
 };
 const CASES = [
   ["a bare row from the sign-up trigger is allowed", EMPTY, true],
-  ["mismatched community and condition is rejected",
-    { ...EMPTY, community: "hsv", condition: "hiv" }, false],
-  ["U=U without the hiv community is rejected",
-    { ...EMPTY, community: "hsv", condition: "hsv2", u_equals_u: true }, false],
-  ["an under-18 birthdate is rejected",
-    { ...EMPTY, display_name: "Sam", birthdate: "2020-01-01" }, false],
+  [
+    "mismatched community and condition is rejected",
+    { ...EMPTY, community: "hsv", condition: "hiv" },
+    false,
+  ],
+  [
+    "U=U without the hiv community is rejected",
+    { ...EMPTY, community: "hsv", condition: "hsv2", u_equals_u: true },
+    false,
+  ],
+  [
+    "an under-18 birthdate is rejected",
+    { ...EMPTY, display_name: "Sam", birthdate: "2020-01-01" },
+    false,
+  ],
   // Liveness runs before basics, so a member can be verified with an empty
   // profile. That is correct and must stay allowed — an administrator upholding
   // an appeal for someone flagged at step 2 depends on it.
-  ["verified but not yet onboarded is allowed", { ...EMPTY, verification_status: "verified" }, true],
+  [
+    "verified but not yet onboarded is allowed",
+    { ...EMPTY, verification_status: "verified" },
+    true,
+  ],
   ["complete and onboarded is allowed", FULL, true],
   ["onboarded with no name is rejected", { ...FULL, display_name: null }, false],
   ["onboarded with no birthdate is rejected", { ...FULL, birthdate: null }, false],
@@ -281,7 +320,9 @@ for (const [label, row, expected] of CASES) {
     .map(([name, def]) => `coalesce((${def}), true) as "${name}"`)
     .join(", ");
   const [r] = await q(`with candidate as (select ${bindings}) select ${exprs} from candidate`);
-  const violated = Object.entries(r).filter(([, ok]) => ok === false).map(([n]) => n);
+  const violated = Object.entries(r)
+    .filter(([, ok]) => ok === false)
+    .map(([n]) => n);
   const accepted = violated.length === 0;
   check(accepted === expected, `${label}${violated.length ? ` (by ${violated.join(", ")})` : ""}`);
 }
@@ -296,7 +337,10 @@ for (const bucket of buckets) {
   check(bucket.public === false, `${bucket.id} is private`);
 }
 for (const expected of ["photos", "verification-selfies"]) {
-  check(buckets.some((b) => b.id === expected), `${expected} bucket exists`);
+  check(
+    buckets.some((b) => b.id === expected),
+    `${expected} bucket exists`,
+  );
 }
 
 // Members write selfies and never read them back; the liveness path purges them
@@ -391,15 +435,27 @@ for (const fn of RLS_HELPERS) {
 console.log("\n── the never-cut list has somewhere to live ──");
 const NEVER_CUT = [
   ["voice notes", `select 1 from storage.buckets where id = 'voice-notes' and public = false`],
-  ["hard delete", `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-                   where n.nspname = 'public' and p.proname = 'purge_due_deletions'`],
-  ["deletion requests", `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-                         where n.nspname = 'public' and p.proname = 'request_deletion'`],
-  ["the fuse sweep", `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-                      where n.nspname = 'public' and p.proname = 'sweep_expired_fuses'`],
-  ["consent records", `select 1 from information_schema.columns
+  [
+    "hard delete",
+    `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                   where n.nspname = 'public' and p.proname = 'purge_due_deletions'`,
+  ],
+  [
+    "deletion requests",
+    `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public' and p.proname = 'request_deletion'`,
+  ],
+  [
+    "the fuse sweep",
+    `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                      where n.nspname = 'public' and p.proname = 'sweep_expired_fuses'`,
+  ],
+  [
+    "consent records",
+    `select 1 from information_schema.columns
                        where table_schema = 'public' and table_name = 'consents'
-                         and column_name = 'copy_version'`],
+                         and column_name = 'copy_version'`,
+  ],
 ];
 for (const [label, sql] of NEVER_CUT) {
   const rows = await q(sql);

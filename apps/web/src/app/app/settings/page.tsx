@@ -5,7 +5,6 @@ import { DRAFT_COPY } from "@plusone/config";
 import { getServerSupabase } from "@/lib/supabase";
 import { signOut } from "./sign-out";
 import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
-import { PushToggle } from "./push-toggle";
 import { InstallApp } from "./install-app";
 import { buttonClass } from "@/app/ui";
 import { redirect } from "next/navigation";
@@ -69,17 +68,13 @@ export default async function SettingsPage() {
         </section>
       ) : null}
 
-      {/* Above the notification control, because it changes what a
-          notification shows. In a browser Chrome prints the site's address
-          under every one — §8 keeps a person and a condition off a lock screen
-          and then the domain says "dating app" to anyone glancing at the
-          phone. Installed, it says ⁺One. */}
+      {/* Installing is about the app shell rather than about notifications —
+          it opens on its own, out of the browser — so it stays here while the
+          push switch has moved to the Notifications tab beside its forty-two
+          others. The one fact it carried that the push control needs, that a
+          lock screen shows the web address whether or not the app is
+          installed, is in pushPrivacyNote as well. */}
       <InstallApp />
-
-      {/* The Drop lands at 8pm whether or not anybody is looking, so this is
-          the control that decides whether that means anything. Per device,
-          because a push subscription belongs to a browser install. */}
-      <PushToggle vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
 
       <SignInEmail
         email={auth.user?.email ?? null}

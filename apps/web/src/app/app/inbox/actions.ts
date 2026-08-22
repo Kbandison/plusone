@@ -8,14 +8,40 @@ import { tone } from "@plusone/logic";
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
+import { notify } from "@/lib/notify";
 import type { InboxState } from "./state";
 
 export async function acceptConnect(_prev: InboxState, formData: FormData): Promise<InboxState> {
+  const connectId = String(formData.get("connect_id") ?? "");
   const supabase = await getServerSupabase();
-  const { error } = await supabase.rpc("accept_connect", {
-    p_connect_id: String(formData.get("connect_id") ?? ""),
-  });
+  const { error } = await supabase.rpc("accept_connect", { p_connect_id: connectId });
   if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
+
+  /**
+   * The person who sent it, who has been waiting.
+   *
+   * Read after the accept rather than before: the RPC is the wall, and a row
+   * this member could not act on would have been refused there. `own connects
+   * are readable` scopes the select to the two of them.
+   *
+   * A DECLINE is deliberately not notified. §3.5 makes a decline carry a note,
+   * and that note is the message — it is waiting in the inbox and it is a thing
+   * to read when they choose to, not a buzz saying somebody said no.
+   */
+  const { data: auth } = await supabase.auth.getUser();
+  const { data: connect } = await supabase
+    .from("connects")
+    .select("initiator_id")
+    .eq("id", connectId)
+    .maybeSingle<{ initiator_id: string }>();
+
+  if (auth.user && connect) {
+    await notify("connect_accepted", [connect.initiator_id], {
+      actorId: auth.user.id,
+      subjectId: connectId,
+    });
+  }
+
   revalidatePath("/app/inbox");
   revalidatePath("/app/chats");
   return { error: null };

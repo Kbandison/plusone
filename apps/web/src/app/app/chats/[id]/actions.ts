@@ -10,6 +10,7 @@ import { MAX_UPLOAD_BYTES, isAcceptableUpload } from "@/lib/photo-limits";
 import { processRoomImage } from "@/lib/photos";
 import { describeViolations } from "@/lib/tone-messages";
 import { memberFacingError } from "@/lib/rpc-error";
+import { notify, otherInChat } from "@/lib/notify";
 import type { ChatState } from "./state";
 import { redirect } from "next/navigation";
 
@@ -108,6 +109,12 @@ export async function sendMessage(_prev: ChatState, formData: FormData): Promise
     return { error: "That didn't send." };
   }
   revalidatePath(`/app/chats/${chatId}`);
+
+  // The other person, who may not be looking. The realtime doorbell only
+  // reaches somebody with the chat open; this reaches everyone else.
+  const them = await otherInChat(chatId, auth.user.id);
+  if (them) await notify("message_received", [them], { actorId: auth.user.id, subjectId: chatId });
+
   // Not `{ error: null }`. That is also CHAT_INITIAL, so the composer could not
   // tell a successful send from a screen that had just opened — see ChatState.
   return { error: null, sent: Date.now() };
@@ -211,6 +218,10 @@ export async function proposePlan(_prev: ChatState, formData: FormData): Promise
   });
   if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
 
+  // §6.2 makes a plan the point of the whole thing, and it happened silently
+  // until now — the other person found out by opening the chat.
+  await tellTheOther(chatId, "plan_proposed");
+
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };
 }
@@ -222,8 +233,28 @@ export async function confirmPlan(_prev: ChatState, formData: FormData): Promise
     p_chat_id: chatId,
   });
   if (error) return { error: memberFacingError(error, "That didn't work. Try again.") };
+
+  // A confirmed plan clears the fuse (Decision #13). The person who proposed it
+  // has been waiting on exactly this answer.
+  await tellTheOther(chatId, "plan_confirmed");
+
   revalidatePath(`/app/chats/${chatId}`);
   return { error: null };
+}
+
+/**
+ * Tells whoever is not the caller.
+ *
+ * Both plan actions do the same lookup and the same guard, and both run after
+ * an RPC that has already established the caller is a participant — so the only
+ * thing left to work out is which of the two they are.
+ */
+async function tellTheOther(chatId: string, event: "plan_proposed" | "plan_confirmed") {
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return;
+  const them = await otherInChat(chatId, auth.user.id);
+  if (them) await notify(event, [them], { actorId: auth.user.id, subjectId: chatId });
 }
 
 /** §6.2 — cancelling re-arms the fuse at +72h rather than closing the chat. */

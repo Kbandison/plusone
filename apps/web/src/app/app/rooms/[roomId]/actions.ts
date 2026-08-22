@@ -6,6 +6,7 @@ import { DRAFT_COPY } from "@plusone/config";
 import { tone } from "@plusone/logic";
 
 import { memberFacingError } from "@/lib/rpc-error";
+import { notify, roomPostAuthor } from "@/lib/notify";
 import { randomUUID } from "node:crypto";
 
 import { getServerSupabase } from "@/lib/supabase";
@@ -190,6 +191,26 @@ export async function toggleLike(
   // which is the same correction a throw would produce and does not put an
   // unhandled error in the console of somebody who double-tapped.
   if (error || !data) return null;
+
+  /**
+   * Only on the way up, and never with a name.
+   *
+   * Unliking is not an event anybody wants told about, so the notification is
+   * one-directional — otherwise a member tapping twice would send two.
+   *
+   * And no actor. A like is the one interaction this app does not attribute
+   * anywhere: the room shows a count and never who. Putting a name on the
+   * notification would invent a disclosure the interface deliberately does not
+   * make, in rooms named for a diagnosis. "Someone liked your post" is what the
+   * push template already says, and it is what the list says too.
+   */
+  if (data.liked) {
+    const author = await roomPostAuthor(messageId);
+    if (author) {
+      await notify("like_received", [author.userId], { subjectId: messageId });
+    }
+  }
+
   return { liked: data.liked, count: data.like_count };
 }
 
@@ -224,6 +245,23 @@ export async function postComment(_prev: RoomState, formData: FormData): Promise
   });
 
   if (error) return { error: memberFacingError(error, "That didn't post.") };
+
+  /**
+   * The author of the post being replied to.
+   *
+   * The actor is dropped when the reply is anonymous. The thread shows that
+   * reply under an alias — that is the whole point of the box being ticked —
+   * and a notification saying who wrote it would undo it in the one place the
+   * author is guaranteed to look.
+   */
+  const parentAuthor = await roomPostAuthor(parentId);
+  if (parentAuthor) {
+    const anonymous = formData.get("anonymous") === "on";
+    await notify("reply_received", [parentAuthor.userId], {
+      actorId: anonymous ? undefined : auth.user.id,
+      subjectId: parentId,
+    });
+  }
 
   revalidatePath(`/app/rooms/${roomId}/${parentId}`);
   revalidatePath(`/app/rooms/${roomId}`);

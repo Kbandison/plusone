@@ -244,14 +244,30 @@ describe("the drop tells people it landed", () => {
    * — which is exactly how the fuse warning managed to never warn anybody.
    */
   it("builds the notifier before it claims anything", () => {
-    expect(cron.indexOf("send = notifier()")).toBeLessThan(
-      cron.indexOf("claim_drop_notifications"),
-    );
+    // Both indices asserted present. This read `indexOf(...) < indexOf(...)`
+    // alone, and when the route stopped holding the notifier in a variable the
+    // left side became -1 — which is less than everything, so the test went on
+    // passing while checking nothing.
+    const built = cron.indexOf("notifier();");
+    const claimed = cron.indexOf("claim_drop_notifications");
+    expect(built).toBeGreaterThan(-1);
+    expect(claimed).toBeGreaterThan(-1);
+    expect(built).toBeLessThan(claimed);
   });
 
-  /** Push only: a nudge in an inbox sits beside work mail on a shared screen. */
-  it("sends on one channel", () => {
-    expect(cron).toMatch(/planDeliveries\("drop_ready", recipients, \["push"\]\)/);
+  /**
+   * Through the shared dispatcher now, so the in-app copy is written and the
+   * member's own switches are honoured — this built its deliveries by hand and
+   * sent them straight out, which meant a member who had turned the drop's push
+   * off was buzzed anyway and one who missed the buzz had nothing to return to.
+   *
+   * notify() still resolves to push alone for this event: NOTIFICATION_DEFAULTS
+   * gives drop_ready in-app and push and no email, because a nudge in an inbox
+   * sits beside work mail on a screen anyone can glance at.
+   */
+  it("goes through the dispatcher rather than sending on its own", () => {
+    expect(cron).toMatch(/notifyMember\("drop_ready", recipients\)/);
+    expect(cron).not.toMatch(/planDeliveries\(/);
   });
 
   /** §9.6 — counts, never ids. */
@@ -442,9 +458,27 @@ describe("installing is offered by the app, not hunted for in a menu", () => {
     expect(manifest).toMatch(/id: "\/app"/);
   });
 
-  /** It changes what a notification shows, so it comes before the toggle. */
-  it("sits above the notification control", () => {
-    expect(settings.indexOf("<InstallApp />")).toBeLessThan(settings.indexOf("<PushToggle"));
+  /**
+   * Installing stays in General; the push switch has moved to the Notifications
+   * tab, beside the forty-two per-event switches whose push column it decides
+   * the meaning of.
+   *
+   * They used to be adjacent because installing changes what a notification
+   * shows. The fact that argument rested on — that a lock screen shows the web
+   * address either way — is in pushPrivacyNote as well, which is on the screen
+   * where somebody actually grants the permission.
+   */
+  it("keeps installing in General and the push switch with the notifications", () => {
+    expect(settings).toMatch(/<InstallApp \/>/);
+    expect(settings).not.toMatch(/<PushToggle/);
+
+    const notifications = read("src/app/app/settings/notifications/page.tsx");
+    expect(notifications).toMatch(/<PushToggle/);
+    // The device switch first: it is the one that decides whether the push
+    // column below it means anything at all.
+    expect(notifications.indexOf("<PushToggle")).toBeLessThan(
+      notifications.indexOf("<NotificationSwitches"),
+    );
   });
 });
 

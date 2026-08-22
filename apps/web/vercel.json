@@ -30,6 +30,14 @@
     {
       "path": "/api/cron/news",
       "schedule": "40 */6 * * *"
+    },
+    {
+      "path": "/api/cron/premium-expiry",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/nearby-joins",
+      "schedule": "0 17 * * 3"
     }
   ]
 }

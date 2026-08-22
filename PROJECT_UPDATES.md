@@ -1,5 +1,113 @@
 # Project Updates
 
+## 2026-08-22 — Notifications, and the half of §8 that had no trigger
+
+Kevin asked for in-app notifications — the drop, connects, messages, likes,
+replies, the chat and connect timers, premium reminders — all turnable off, and
+all three of push, email and in-app.
+
+**A notification here is an event and two references. It carries no text.**
+
+That is the whole design. A stored sentence freezes the world as it was when it
+was written: the name of somebody since blocked, the author of a post written
+anonymously, a member since deleted. Storing the FACT and rendering it at read
+time means the reader's own permissions decide what it says, every time they
+look — `my_notifications()` resolves the actor through `visible_profiles` and the
+destination through the member's own grants, so a name they may no longer see is
+simply absent and a post since deleted is simply not a link.
+
+It also keeps §8's guarantee intact. `buildPayload` is still the only way to make
+a push or an email and it still refuses a condition word. In-app is behind the
+login on a screen already showing names, so it can afford to say more — but it
+says more by RENDERING more, not by storing more.
+
+### What was actually missing
+
+§8 named fifteen events. Six of them had a template, a channel plan and no code
+anywhere that would ever send one. That was survivable while they were
+unreachable strings in a config file. It stopped being survivable the moment each
+became a labelled row on a settings screen, because **a control panel is a
+promise about what the machine does**.
+
+So every one of them now has a trigger, and a test asserts it:
+
+| Event                        | Fires from                                        |
+| ---------------------------- | ------------------------------------------------- |
+| `connect_expiring`           | `connect-sweep` — warn, then sweep, in that order |
+| `chat_closed`                | `fuse-sweep`, via `claim_chat_closed_notices()`   |
+| `premium_expiring`           | new daily `premium-expiry` cron                   |
+| `nearby_joins`               | new weekly `nearby-joins` cron                    |
+| `verification_decided`       | the admin decision action                         |
+| `referral_converted`         | `referral-rewards`, once per conversion           |
+| `fuse_warning`, `drop_ready` | existing crons, now through the shared dispatcher |
+
+`notifications-are-wired.test.ts` walks every source file, collects each event
+name passed to `notify()`, and fails by name for any event that has a switch and
+no sender. It is the loudest test in the file on purpose: this codebase keeps
+producing the same failure — the quiz that could be skipped and never returned
+to, `/admin` as a layout over nothing, `DROP.hourLocal` declared and never used,
+`profiles.timezone` read in four places and written in none.
+
+### Three decisions worth disagreeing with
+
+**A connect warning goes only to the person who was asked.** Telling the sender
+their connect is about to lapse is telling them the other person has not
+answered — information about somebody else's behaviour that they can do nothing
+with.
+
+**A block is never announced.** `close_chats_on_block` ends the thread for both
+people, and a notification there tells the blocked member something happened at
+the exact moment the product's job is to make them disappear from each other
+quietly. `claim_chat_closed_notices` excludes them, and excludes whoever did the
+closing.
+
+**`verification_decided` has no off switch.** A member waiting on a human to look
+at their account has nothing to do but check, and a switch for it is a switch for
+stranding yourself. `set_notification_mute` refuses it in the database, and the
+settings screen says so rather than hiding the row.
+
+### The switches store only OFF
+
+A row in `notification_mutes` means "do not send me this, here". Absence means
+the configured default. So a member who has never touched the screen has no rows
+at all, and changing a default later reaches everybody who never expressed a
+preference — which is what a default is for. Turning something back on DELETES
+the row rather than writing a true.
+
+Email is off by default everywhere except `premium_expiring`. §8 gives every
+transactional email one subject with the content behind the login, so an email
+adds a line in an inbox and nothing else — it is there for the member who wants
+it, not as a default. `like_received` and `nearby_joins` are in-app only:
+buzzing a phone for each is the engagement loop §3.3 bans.
+
+### Where it lives
+
+The bell sits beside the gear in the header rather than on the bottom bar. The
+five items down there are places a member goes to DO the thing the app is for;
+this is a record of what has already happened to them. The badge is a dot, not a
+number — §8 keeps count granularity out of a notification, and the same argument
+holds one layer in, because a header is visible over somebody's shoulder.
+
+Opening the list is what marks it read, in an `after()` once the response has
+gone — so the render the member is looking at still shows what was new, and the
+bell is clear by the time they navigate. The layout's realtime watch is
+INSERT-only for exactly this reason: a watch for everything would hear the page's
+own bookkeeping and refresh the screen under the reader.
+
+Settings gained a fourth tab. The device push switch moved there from General, so
+that turning `message_received` on for push and finding nothing arrives — because
+this browser was never subscribed — has its answer in view. The install card
+stays in General: it is about the app shell rather than about notifications, and
+the one fact it carried that the push control needs, that a lock screen shows the
+web address either way, is in `pushPrivacyNote` too.
+
+### Not done, and said out loud
+
+`pnpm lint` cannot run in this environment at all — typescript-eslint refuses TS
+7.0. That is pre-existing and unrelated to this work, but it means the lint gate
+has not been passing for some time. `pnpm typecheck`, `pnpm test`, `pnpm build`,
+`pnpm check:sql` and `pnpm check:db` all pass.
+
 ## 2026-08-17 — Twilio Verify is live, and the cheapest payment path is decided
 
 **Verify is running.** The project reports `sms_provider: twilio_verify` with the
@@ -2068,6 +2176,27 @@ Also mine, added 2026-08-19: `chatMenuLabel`, `proposeToggleLabel`,
 `chatOriginNote`, `browseTalking`, `browsePast`, `inboxChatsHeading`,
 `inboxSentHeading`, `inboxClosedHeading`, `inboxClosedCount`, and the
 `"Today"`/`"Yesterday"` day dividers inside `packages/logic/src/chat`.
+
+Also mine, added 2026-08-22 with the notification system — and this batch is
+larger than a label pass, because **every sentence a notification says is in
+it**:
+
+- `NOTIFICATION_LINES` — the fifteen lines the in-app list renders, each in two
+  forms depending on whether the reader may see a name.
+- `NOTIFICATION_EVENT_LABELS` — the fifteen switch names on the settings screen.
+- `NOTIFICATION_CHANNEL_LABELS` — "In app", "Push", "Email".
+- `notificationsHeading`, `notificationsEmpty`, `notificationsBellLabel`,
+  `notificationsUnreadDivider`, `settingsNotifications`,
+  `notificationSettingsHeading`, `notificationSettingsBody`,
+  `notificationSettingsAlwaysOn`, `notificationSettingsPushOff`,
+  `notificationSettingsSaveFailed`.
+
+The **channel defaults** in `NOTIFICATION_DEFAULTS` are mine too, and they are a
+product decision rather than copy: which of the fifteen buzz a phone by default,
+which only appear in the list, and which send email. The events are Kevin's; the
+channel each takes by default is not. Same for `NOTIFY_TIMING` — a day's notice
+on a connect, three days on a lapsing subscription, a week's window on new
+arrivals nearby.
 
 ### Held placeholders
 

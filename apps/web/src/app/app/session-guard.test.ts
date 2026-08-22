@@ -60,10 +60,18 @@ describe("nothing behind the wall asserts that a session exists", () => {
           source.indexOf(call) + call.length,
           source.indexOf(call) + call.length + 200,
         );
-        // Either it redirects, or it handles the null itself (`?.`, an explicit
-        // branch). What it may not do is assume.
+        // Either it redirects, or it handles the null itself (`?.`, a negative
+        // branch, or a POSITIVE one). What it may not do is assume.
+        //
+        // The positive form is not a loophole, it is the right shape for the
+        // notification call sites: `if (auth.user) await notify(...)`. Those
+        // run after an RPC that already refused an anonymous caller, and the
+        // work they follow has committed — redirecting there would abandon a
+        // connect that was successfully made because the courtesy attached to
+        // it could not name its sender.
         const handled =
           new RegExp(`if \\(!${object}\\.user\\)`).test(after) ||
+          new RegExp(`if \\(${object}\\.user[ )&]`).test(after) ||
           new RegExp(`${object}\\.user\\?\\.`).test(source) ||
           new RegExp(`!${object}\\.user`).test(source);
         if (!handled) missing.push(`${f} :: ${call}`);

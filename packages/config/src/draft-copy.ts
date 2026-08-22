@@ -11,6 +11,8 @@
  * a draft. When a string is approved it moves to `COPY` and leaves this file.
  */
 
+import type { NotificationChannel, NotificationEvent } from "./notifications";
+
 export const DRAFT_COPY = {
   /**
    * Shared across every onboarding step.
@@ -1203,8 +1205,129 @@ export const DRAFT_COPY = {
     roomNoDmNote:
       "You can reach someone here through a connect — there are no direct messages in rooms.",
     previewCtaAria: "Switch to dating mode to connect",
+    /**
+     * The list, and the bell that leads to it.
+     *
+     * §8 built a matrix of pushes and nothing a member could look at. A push is
+     * a MOMENT: dismiss it, or have the phone face down, and the thing that
+     * happened is gone — and everything in this app that matters arrived
+     * exactly once. All Claude's words.
+     */
+    notificationsHeading: "Notifications",
+    notificationsEmpty: "Nothing yet. What happens here will show up in this list.",
+    /**
+     * Named for a screen reader, which otherwise announces a bell as "link".
+     * The count is in the label rather than only in the badge, because the
+     * badge is a coloured dot to anyone not looking at it.
+     */
+    notificationsBellLabel: (unread: number) =>
+      unread === 0 ? "Notifications" : `Notifications, ${unread} unread`,
+    /**
+     * The list keeps everything and marks it, rather than emptying.
+     *
+     * A notification list that clears is a list you cannot go back to — and the
+     * one case where somebody comes looking is the one they already dismissed.
+     * There is no "mark all as read" button either: opening the list is what
+     * marks it, in an after() once the response has gone, so the render the
+     * member is looking at still shows what was new.
+     *
+     * Which leaves the dot as the only thing saying so, and a dot is nothing at
+     * all to somebody listening. This is the word it says instead.
+     */
+    notificationsUnreadDivider: "New",
+    /** Settings, where each of these can be turned off. */
+    settingsNotifications: "Notifications",
+    notificationSettingsHeading: "What you're told about",
+    notificationSettingsBody:
+      "Every one of these is off or on per channel. In-app is the list behind the bell; push reaches your phone; email arrives as one line with nothing in it.",
+    notificationSettingsAlwaysOn:
+      "Always on. You are waiting on a person to look at your account, and there is nothing else to check.",
+    notificationSettingsSaveFailed: "That didn't save. Try again in a moment.",
+    /**
+     * Turning something on that the device is not set up for.
+     *
+     * A push switch flipped on in an account that has no push subscription does
+     * exactly nothing, silently, and the member has no way to tell that from a
+     * broken feature.
+     */
+    notificationSettingsPushOff:
+      "Push is off for this device. Turn it on above and these will start arriving.",
   },
 } as const;
+
+/**
+ * What each notification SAYS in the list, given whatever name the reader is
+ * allowed to see.
+ *
+ * DRAFT — all Claude's words, none reviewed.
+ *
+ * These are deliberately not the push templates. A push is read on a lock
+ * screen by whoever is holding the phone, so `NOTIFICATIONS` says as little as
+ * it can and `buildPayload` refuses a condition word. This list is behind the
+ * login, on a screen already showing names and messages, so it can afford to
+ * say who — and it says who by being HANDED a name at render time rather than
+ * by having stored one. A member since blocked, an anonymous author, an
+ * account since deleted: all arrive here as null, and each line has an answer
+ * for that.
+ *
+ * Two of them never take a name even when one is available. A like is the one
+ * interaction the rooms do not attribute — the post shows a count and never
+ * who — so naming the liker here would invent a disclosure the interface
+ * deliberately does not make. And nothing about a moderator reaches the member
+ * they decided about.
+ */
+export const NOTIFICATION_LINES: Record<NotificationEvent, (actor: string | null) => string> = {
+  drop_ready: () => "Tonight's Drop is ready.",
+  connect_received: (actor) =>
+    actor ? `${actor} sent you a connect.` : "Someone sent you a connect.",
+  connect_accepted: (actor) =>
+    actor ? `${actor} accepted your connect.` : "Your connect was accepted.",
+  connect_expiring: () => "A connect is waiting on your answer, and runs out tomorrow.",
+  message_received: (actor) => (actor ? `${actor} sent you a message.` : "You have a new message."),
+  fuse_warning: () => "One of your chats closes tomorrow.",
+  chat_closed: () => "A chat has closed. There's a note waiting in it.",
+  plan_proposed: (actor) => (actor ? `${actor} proposed a plan.` : "Someone proposed a plan."),
+  plan_confirmed: (actor) => (actor ? `${actor} confirmed the plan.` : "A plan is confirmed."),
+  like_received: () => "Someone liked your post.",
+  reply_received: (actor) =>
+    actor ? `${actor} replied to your post.` : "Someone replied to your post.",
+  verification_decided: () => "Your verification has been reviewed.",
+  premium_expiring: () => "Your premium is ending soon.",
+  nearby_joins: () => "New members joined near you.",
+  referral_converted: () => "Someone you invited joined and was verified.",
+};
+
+/**
+ * The name of each switch on the settings screen.
+ *
+ * DRAFT — Claude's words. These name the EVENT rather than restate the
+ * message: a member scanning fourteen rows for the one they want to silence is
+ * reading labels, not sentences.
+ */
+export const NOTIFICATION_EVENT_LABELS: Record<NotificationEvent, string> = {
+  drop_ready: "Tonight's Drop",
+  connect_received: "Someone connects with you",
+  connect_accepted: "Your connect is accepted",
+  connect_expiring: "A connect is about to run out",
+  message_received: "New messages",
+  fuse_warning: "A chat is about to close",
+  chat_closed: "A chat has closed",
+  plan_proposed: "Someone proposes a plan",
+  plan_confirmed: "A plan is confirmed",
+  like_received: "Likes on your posts",
+  reply_received: "Replies to your posts",
+  verification_decided: "Your verification is decided",
+  premium_expiring: "Premium is ending",
+  nearby_joins: "New members near you",
+  referral_converted: "Someone you invited joins",
+};
+
+/** DRAFT — Claude's words. The three columns, named for the header row. */
+export const NOTIFICATION_CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  in_app: "In app",
+  push: "Push",
+  email: "Email",
+};
 
 /**
  * Profile prompts (Decision #14).

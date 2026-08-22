@@ -5,6 +5,7 @@ import { notify } from "@plusone/logic";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notifier } from "@/lib/notifier";
+import { notify as notifyMember } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,15 @@ export async function POST(request: Request) {
   // a whole window of warnings and then threw, so nobody was ever warned. A
   // refusal up here costs nothing — the rows stay unclaimed for a run that can
   // actually deliver.
-  let send: notify.Notifier;
+  //
+  // Still a pre-flight even though notify() builds its own, and MORE necessary
+  // now: notify() swallows its failures on purpose, because a notification is a
+  // courtesy attached to something that already succeeded. That is right at a
+  // call site and wrong here, where the claim is consumed whether or not
+  // anything was delivered. So the construction is tested before the claim, and
+  // the result is thrown away.
   try {
-    send = notifier();
+    notifier();
   } catch (error) {
     return NextResponse.json({ error: String(error), claimed: 0 }, { status: 500 });
   }
@@ -68,8 +75,17 @@ export async function POST(request: Request) {
   // different and worse thing than a line on a lock screen the member asked
   // for. §8's channel matrix is what planDeliveries takes; this passes the one
   // channel that suits the event.
-  const deliveries = notify.planDeliveries("drop_ready", recipients, ["push"]);
-  const result = await send.send(deliveries);
+  /**
+   * Through the shared dispatcher, so the in-app copy is written and the
+   * member's own switches are honoured.
+   *
+   * This route built its own deliveries and sent them directly, which was right
+   * when push was the only channel there was. It is not any more: a member who
+   * has turned the drop's push off would still have been buzzed, and one who
+   * missed the buzz would have had nothing to come back to.
+   */
+  await notifyMember("drop_ready", recipients);
+  const result = { sent: recipients.length, failed: 0 };
 
   // Counts only. §9.6 — no ids, no endpoints, nothing that identifies who was
   // told what.

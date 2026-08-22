@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { notify } from "@/lib/notify";
 import type { DecisionState, RevealState } from "./state";
 
 /**
@@ -26,6 +27,27 @@ export async function decideVerification(
   });
 
   if (error) return { error: error.message, message: null };
+
+  /**
+   * The member finds out (§7.2, §8).
+   *
+   * This is the one person in the app with nothing to do but check. Their
+   * sign-up stopped at a step a human has to clear, the app gives them no way
+   * to hurry it, and until now the decision landed silently — so the only way
+   * to learn it had been made was to keep opening the app and looking at the
+   * same screen.
+   *
+   * The body says "reviewed", not the outcome, because a push is read on a
+   * lock screen: "Your verification has been reviewed" is true either way and
+   * a rejection is not something to learn from a bystander's glance. It is the
+   * one event with no OFF switch — see MUTABLE_EVENTS and
+   * set_notification_mute, which refuses it — since a switch here is a switch
+   * for stranding yourself mid-signup.
+   *
+   * No actor. The moderator is a person, and §7.3 does not put a moderator's
+   * name in front of the member they decided about.
+   */
+  await notify("verification_decided", [userId], { subjectId: userId });
 
   revalidatePath("/admin/verifications");
   return { error: null, message: approve ? "Verified." : "Rejected." };

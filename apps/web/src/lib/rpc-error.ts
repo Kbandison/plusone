@@ -90,6 +90,14 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // a refusal here means a spoofed or mangled value, which is a bug rather than
   // something a member did.
   "not a timezone",
+  // The notification switches. Both are unreachable through the UI — the grid
+  // renders one checkbox per NOTIFICATION_CHANNELS entry, and
+  // verification_decided has no row at all because it is not in MUTABLE_EVENTS
+  // — so either one arriving means the screen and the database disagree about
+  // what exists. That is ours to fix, and "That didn't save" is what the member
+  // is shown.
+  "no such channel",
+  "that one cannot be turned off",
   "config values are numbers or objects",
   "unknown config key: ",
   // The pinned resource card, which only an admin can set. Every one of these

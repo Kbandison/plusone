@@ -4,6 +4,7 @@ import { REFERRALS } from "@plusone/config";
 import { referrals } from "@plusone/logic";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
+import { notify } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +139,27 @@ export async function POST(request: Request) {
           p_status: "auto_granted",
         });
       }
+    }
+
+    /**
+     * The referrer finds out (§8, §6.5).
+     *
+     * Premium days were being added to an account with nothing to say they
+     * had been — the invite screen's counter moved, and only if you went and
+     * looked at it. §6.5's whole mechanic is that inviting someone is worth
+     * something, and a reward nobody is told about is not a reward.
+     *
+     * Once per conversion rather than once per grant: a tier conversion pays
+     * the referrer twice and that is one event, not two. On the settled path
+     * both flags are already true and nothing new was granted, so nothing is
+     * said — the loop above skipped every payout.
+     *
+     * No actor. The invitee is a real person whose sign-up this announces, and
+     * §9.4 does not put a new member's identity in the inviter's hands; the
+     * counter is the only thing that moves.
+     */
+    if (!conversion.referrer_paid) {
+      await notify("referral_converted", [conversion.referrer_id]);
     }
   }
 

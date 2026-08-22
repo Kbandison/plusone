@@ -86,10 +86,38 @@ describe("the bottom nav", () => {
    * competing with them for a thumb.
    */
   it("puts settings in the header, with a real target and a name", () => {
-    expect(LAYOUT).toMatch(/<header[\s\S]{0,400}href="\/app\/settings"/);
+    const header = LAYOUT.slice(LAYOUT.indexOf("<header"), LAYOUT.indexOf("</header>"));
+    expect(header).toMatch(/href="\/app\/settings"/);
     expect(LAYOUT).toMatch(/aria-label=\{DRAFT_COPY\.app\.navSettings\}/);
     // A 21px icon is not a tap target; LAYOUT.minTapTarget is 44px.
     expect(LAYOUT).toMatch(/size-tap/);
+  });
+
+  /**
+   * The bell shares that corner, and for the same reason settings does: it is a
+   * record of what has already happened rather than somewhere to go and do
+   * something, so it does not belong beside five people on the bottom bar.
+   *
+   * The count has to be in the accessible name. A badge is a coloured dot to
+   * somebody not looking at it and nothing at all to somebody listening.
+   */
+  it("puts the notification list in the header too, and names the count", () => {
+    const header = LAYOUT.slice(LAYOUT.indexOf("<header"), LAYOUT.indexOf("</header>"));
+    expect(header).toMatch(/href="\/app\/notifications"/);
+    expect(header).toMatch(/aria-label=\{DRAFT_COPY\.app\.notificationsBellLabel\(unread\)\}/);
+    // Not a number on screen. §8 keeps count granularity out of a notification,
+    // and a header is visible over somebody's shoulder.
+    expect(header).not.toMatch(/\{unread\}/);
+  });
+
+  /**
+   * INSERT only. Marking the list read is an UPDATE on the same table, so a
+   * watch for everything would hear the notifications page's own bookkeeping
+   * and refresh the screen the member is reading.
+   */
+  it("watches for arrivals without hearing itself", () => {
+    expect(LAYOUT).toMatch(/table: "notifications"[\s\S]{0,80}event: "INSERT"/);
+    expect(LAYOUT).toMatch(/filter: `user_id=eq\.\$\{data\.user\.id\}`/);
   });
 
   /** Moved, not removed — both screens still exist and are still reachable. */

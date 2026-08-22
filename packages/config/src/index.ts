@@ -36,13 +36,17 @@ export {
 export type { Plan, PlanId, PriceIdEnvKey } from "./pricing";
 
 export {
+  MUTABLE_EVENTS,
   NOTIFICATIONS,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_DEFAULTS,
   PUSH_APP_NAME,
   EMAIL_SUBJECT,
   NEARBY_JOIN_MIN_COUNT,
+  NOTIFY_TIMING,
   CONTENT_BLIND_BANNED_TERMS,
 } from "./notifications";
-export type { NotificationEvent, NotificationTemplate } from "./notifications";
+export type { NotificationChannel, NotificationEvent, NotificationTemplate } from "./notifications";
 
 export { clientEnvSchema, serverEnvSchema, parseClientEnv, parseServerEnv } from "./env";
 export type { ClientEnv, ServerEnv } from "./env";
@@ -77,6 +81,9 @@ export {
   PROMPT_ANSWER_MAX_CHARS,
   MAX_PROMPTS,
   promptQuestion,
+  NOTIFICATION_LINES,
+  NOTIFICATION_EVENT_LABELS,
+  NOTIFICATION_CHANNEL_LABELS,
 } from "./draft-copy";
 export type {
   Community,

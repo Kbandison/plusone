@@ -7,6 +7,7 @@ import { tone } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { describeViolations } from "@/lib/tone-messages";
+import { notify } from "@/lib/notify";
 import type { ConnectState } from "./state";
 
 const MAX_REPLY = 500;
@@ -58,6 +59,15 @@ export async function sendConnect(
     // is the probe leak by another route.
     return { error: "That connect could not be sent right now." };
   }
+
+  // The person it was sent to, who has seven days to answer (§6.3) and had no
+  // way of knowing the clock had started.
+  //
+  // The actor is read here rather than threaded down: create_connect has
+  // already established who the caller is, and this is the only place in the
+  // action that needs their id.
+  const { data: auth } = await supabase.auth.getUser();
+  if (auth.user) await notify("connect_received", [targetId], { actorId: auth.user.id });
 
   redirect("/app/inbox");
 }
