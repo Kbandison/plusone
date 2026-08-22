@@ -172,14 +172,20 @@ describe("the like reads as instant, and stays right", () => {
       "../../../../../../supabase/migrations/20260819000900_a_like_that_answers_and_a_reply_that_does_not_wait.sql",
     );
     expect(migration).toMatch(/returns table \(liked boolean, like_count integer\)/);
-    expect(like).toMatch(/setView\(actual \?\? fromServer\)/);
+    expect(like).toMatch(/writeLike\(messageId, actual \?\? \{ liked, count \}, basis\)/);
     // Code, not the comment explaining why it is gone.
     expect(withoutComments(like)).not.toMatch(/useOptimistic/);
   });
 
-  /** A fresh render from the server has to win over a stale local value. */
+  /**
+   * A fresh render from the server has to win over a stale local value.
+   *
+   * Each stored value carries the server props it was computed FROM, so a
+   * render whose props have moved simply ignores it. No effect, no clearing
+   * pass, and nothing mutated during a render.
+   */
   it("lets new props overtake local state", () => {
-    expect(like).toMatch(/if \(fromServer\.liked !== liked \|\| fromServer\.count !== count\)/);
+    expect(like).toMatch(/shared && shared\.basis === basis/);
   });
 
   /**
@@ -860,5 +866,70 @@ describe("answering a comment opens its replies", () => {
     expect(replies).toMatch(/aria-expanded=\{showing\}/);
     expect(replies).toMatch(/\{showing \? C\.postHideReplies : C\.postShowReplies\(count\)\}/);
     expect(replies).toMatch(/\{showing \? <ul/);
+  });
+});
+
+/**
+ * A post with a photograph draws its counts TWICE — once in the feed row and
+ * once under the full-screen image — and post-row is a Server Component, so
+ * those were two client islands with two pieces of state and no way to see each
+ * other.
+ *
+ * The symptom was worse than a stale number. Liking in the row left the
+ * lightbox showing nought; pressing THAT one computed "not liked, so like it"
+ * from its own stale view, sent a toggle to a server that had it liked already,
+ * and got back the unlike — so the count flicked to 1 and snapped to 0. Both
+ * halves were behaving correctly in isolation, which is why nothing caught it:
+ * every test here rendered one button.
+ */
+describe("one like, however many buttons are drawn for it", () => {
+  const store = read("./[roomId]/like-store.ts");
+  const row = read("./[roomId]/post-row.tsx");
+
+  /** The thing that made it possible: the same counts, rendered twice. */
+  it("still renders the counts in both places", () => {
+    expect(row).toMatch(/<PostImage path=\{post\.image_path\} footer=\{<Counts \/>\} \/>/);
+    expect(row.match(/<Counts \/>/g) ?? []).toHaveLength(2);
+  });
+
+  /**
+   * Keyed by post id rather than lifted, because lifting means making post-row
+   * a Client Component and post-row signs image URLs and reads the feed.
+   */
+  it("shares one value per post", () => {
+    expect(like).toMatch(/useSyncExternalStore\(/);
+    expect(like).toMatch(/subscribeLike\(messageId, onChange\)/);
+    expect(like).toMatch(/readLike\(messageId\)/);
+    expect(store).toMatch(/const entries = new Map<string, Entry>\(\)/);
+  });
+
+  /** Every button for the post hears the press, not just the one pressed. */
+  it("notifies every listener for that post", () => {
+    expect(store).toMatch(/for \(const listener of listeners\.get\(id\) \?\? \[\]\) listener\(\)/);
+  });
+
+  /**
+   * An optimistic value must win until the server catches up and then lose.
+   * Comparing the basis does that with no effect and nothing mutated during a
+   * render — a stale entry is not wrong, it is simply not used.
+   */
+  it("expires a stored value by comparing what it was computed from", () => {
+    expect(store).toMatch(/readonly basis: string/);
+    expect(like).toMatch(/const basis = basisOf\(liked, count\)/);
+    // Prettier wraps the ternary, so the check is the comparison itself.
+    expect(like).toMatch(/shared && shared\.basis === basis/);
+  });
+
+  /** The store must not leak listeners as rows scroll in and out. */
+  it("unsubscribes the last listener for a post", () => {
+    expect(store).toMatch(/if \(set\.size === 0\) listeners\.delete\(id\)/);
+  });
+
+  /**
+   * There is no store on the server and no press has happened, so the props ARE
+   * the answer — and the markup has to match the first client render.
+   */
+  it("renders the same thing on the server as on hydration", () => {
+    expect(like).toMatch(/\(\) => undefined,/);
   });
 });

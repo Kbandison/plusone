@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useSyncExternalStore, useTransition } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
 import { toggleLike } from "./actions";
+import { basisOf, readLike, subscribeLike, writeLike } from "./like-store";
 
 const C = DRAFT_COPY.app;
 
@@ -21,8 +22,22 @@ const C = DRAFT_COPY.app;
  *
  * So the press moves the number immediately, the action returns what is now
  * actually stored, and that answer replaces the guess. A failed call falls back
- * to the last thing the server said, which is the same correction the optimistic
- * version was trying to make and this one actually keeps.
+ * to the last thing the server said.
+ *
+ * ── and the state is shared, because the button is drawn twice ───────────────
+ *
+ * A post with a photograph renders its counts in the feed row AND under the
+ * full-screen image, and post-row is a Server Component — so those were two
+ * client islands with two pieces of state and no way to see each other. Liking
+ * in one left the other showing nought; pressing THAT one computed "not liked,
+ * so like it" from its own stale view, sent a toggle to a server that had it
+ * liked already, and got back the unlike. The count flicked to 1 and snapped
+ * to 0, and both halves were behaving correctly in isolation.
+ *
+ * The store is keyed by post id — see like-store.ts — so every button for one
+ * post is one button. Entries carry the server props they were computed from,
+ * so a fresh render simply ignores a stale one rather than needing an effect to
+ * clear it.
  */
 export function LikeButton({
   messageId,
@@ -35,27 +50,33 @@ export function LikeButton({
 }) {
   const [, startTransition] = useTransition();
 
-  // Adjusting state when props change, the documented way: a fresh render from
-  // the server — after navigating away and back — has to win over a stale
-  // local value, and comparing against the last props seen is what tells the
-  // two apart without an effect.
-  const [fromServer, setFromServer] = useState({ liked, count });
-  const [view, setView] = useState({ liked, count });
-  if (fromServer.liked !== liked || fromServer.count !== count) {
-    setFromServer({ liked, count });
-    setView({ liked, count });
-  }
+  const basis = basisOf(liked, count);
+  const shared = useSyncExternalStore(
+    (onChange) => subscribeLike(messageId, onChange),
+    () => readLike(messageId),
+    // On the server there is no store and no press has happened, so the props
+    // ARE the answer. Returning undefined keeps the markup identical to the
+    // first client render and avoids a hydration mismatch.
+    () => undefined,
+  );
+
+  // A shared value only counts while the server still says what it said when
+  // that value was computed. Once the feed revalidates, the props are newer.
+  const view =
+    shared && shared.basis === basis
+      ? { liked: shared.liked, count: shared.count }
+      : { liked, count };
 
   return (
     <button
       type="button"
       onClick={() => {
         const next = { liked: !view.liked, count: view.count + (view.liked ? -1 : 1) };
-        setView(next);
+        writeLike(messageId, next, basis);
         startTransition(async () => {
           const actual = await toggleLike(messageId);
           // What is stored, or what the server last said. Never the guess.
-          setView(actual ?? fromServer);
+          writeLike(messageId, actual ?? { liked, count }, basis);
         });
       }}
       aria-pressed={view.liked}
