@@ -81,6 +81,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "a reason of at least 10 characters is required",
   "a report is resolved or dismissed",
   "no open report with that id",
+  // The browser hands register_push_device an endpoint it got from the push
+  // service. An empty one is our bug, not the member's, and there is nothing
+  // they could do about it — the permission prompt has already been answered by
+  // the time this could fire.
+  "a device needs an address",
   "config values are numbers or objects",
   "unknown config key: ",
   // The pinned resource card, which only an admin can set. Every one of these

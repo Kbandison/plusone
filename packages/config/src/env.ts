@@ -57,6 +57,16 @@ export const clientEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
   NEXT_PUBLIC_SITE_URL: origin,
   NEXT_PUBLIC_APP_URL: origin,
+
+  /**
+   * The public half of the VAPID pair, handed to the browser when it subscribes.
+   *
+   * Public by design — it is an identifier, not a secret, and the browser
+   * cannot subscribe without it. Optional: without it the app simply never asks
+   * for permission, which is the correct behaviour in an environment that
+   * cannot send.
+   */
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
 });
 
 export const serverEnvSchema = z
@@ -165,6 +175,28 @@ export const serverEnvSchema = z
     AWS_ACCESS_KEY_ID: z.string().optional(),
     AWS_SECRET_ACCESS_KEY: z.string().optional(),
 
+    /**
+     * Web push (§8), the VAPID pair.
+     *
+     * VAPID is how a push service knows the sender is us rather than anyone who
+     * scraped an endpoint. The public half is handed to the browser at
+     * subscribe time and so is NEXT_PUBLIC_; the private half signs and must
+     * never reach the bundle.
+     *
+     * Generate a pair with:  npx web-push generate-vapid-keys
+     *
+     * Both optional at the schema level and tied together by the refine below.
+     * Push is the one channel that can be absent without the app being broken —
+     * every screen still works, members simply are not told — so a missing pair
+     * disables sending rather than failing the boot. Half a pair is a mistake
+     * and is refused.
+     *
+     * VAPID_SUBJECT is the contact the push service is told to reach if we
+     * misbehave. A mailto: or https: URL; the RFC requires one.
+     */
+    VAPID_PRIVATE_KEY: z.string().optional(),
+    VAPID_SUBJECT: z.string().optional(),
+
     /** Shared secret so only Vercel Cron can invoke /api/cron/*. */
     CRON_SECRET: z.string().min(32),
 
@@ -192,6 +224,20 @@ export const serverEnvSchema = z
       path: ["AWS_REGION"],
       message:
         "AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are all required when LIVENESS_PROVIDER=aws_rekognition",
+    },
+  )
+  .refine(
+    // Half a VAPID pair is a mistake, not a choice.
+    //
+    // Absent is legal — push is the one channel that can be missing without the
+    // app being broken. But a private key with no subject signs a token no push
+    // service will accept, and the failure arrives one member at a time, at
+    // send time, as a 403 nobody is watching for.
+    (env) => !env.VAPID_PRIVATE_KEY || Boolean(env.VAPID_SUBJECT),
+    {
+      path: ["VAPID_SUBJECT"],
+      message:
+        "VAPID_SUBJECT is required when VAPID_PRIVATE_KEY is set — a mailto: or https: URL the push service can reach",
     },
   );
 
