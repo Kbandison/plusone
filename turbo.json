@@ -12,7 +12,26 @@
         "NEXT_PUBLIC_SITE_URL",
         "NEXT_PUBLIC_APP_URL"
       ],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      /**
+       * `.next/dev` must be excluded, or the cache stores the dev server.
+       *
+       * Next 16 moved `next dev` output out of `.next` and into `.next/dev` so
+       * dev and build can run at the same time, and Turbopack's dev filesystem
+       * cache — `turbopackFileSystemCacheForDev`, on by default — sits under
+       * `.next/dev/cache`. Together that is ~1.6 GB of dev-server scratch that
+       * has nothing to do with a build.
+       *
+       * `.next/**` swept all of it in. Every cached build came out at ~1 GB, of
+       * which 37 MB was the actual output; the rest was whatever `next dev` had
+       * left on disk. 1,595 entries later `.turbo/cache` was 186 GB, the WSL2
+       * disk image had grown past 300 GB, and the VM was being killed partway
+       * through writing one of them.
+       *
+       * Excluded, an artifact is the `server/` and `static/` that `next start`
+       * actually needs. `.next/cache` is the build-side Turbopack cache and is
+       * excluded for the same reason it always was.
+       */
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]
     },
     "dev": {
       "cache": false,
