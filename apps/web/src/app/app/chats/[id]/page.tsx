@@ -21,6 +21,7 @@ import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
 import { ChatImage } from "./chat-image";
 import { ScrollToLatest } from "./scroll-to-latest";
+import { PublishHeight } from "@/app/app/publish-height";
 import { VoiceNote } from "./voice-note";
 import { MemberPhotoFrame } from "../../member-photo";
 import { photosFor } from "@/lib/photo-urls";
@@ -38,6 +39,9 @@ const C = DRAFT_COPY.app;
  * is ever on screen, and the page is a Server Component with no useId to hand.
  */
 const PICKER_ID = "chat-photo";
+
+/** The pinned composer, whose height the thread has to reserve. */
+const COMPOSER_ID = "chat-composer";
 
 /**
  * The shape propose_date_plan actually stores.
@@ -393,26 +397,43 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
               the foot of the viewport, and a composer at zero sits behind it.
               One number, defined in globals.css and reserved as padding by the
               layout — see the note there. */}
-          <div className="ease-brand sticky bottom-[var(--nav-h)] z-20 -mx-6 mt-6 border-t border-line bg-ground/95 px-6 pt-2.5 pb-2 backdrop-blur">
-            {/* The fuse, still visible (§7.2), but next to the thing it is a
+          {/* FIXED, not sticky, and that is the whole fix.
+              A sticky element cannot leave its containing block, and the app
+              layout gives every page a bottom padding that clears the nav — so
+              the composer's own `bottom` was overruled by the parent's padding
+              box and it came to rest well above the bar it was meant to sit on.
+              Nudging the numbers could not solve that; the constraint was
+              structural.
+
+              Fixed takes it out of the flow entirely, which is honest: this is
+              chrome, like the nav, and chrome does not occupy content space.
+              The centring is copied from the nav rather than inherited, because
+              a fixed element is positioned against the viewport and knows
+              nothing about the layout's own max-width. */}
+          <div
+            id={COMPOSER_ID}
+            className="ease-brand fixed inset-x-0 bottom-[var(--nav-h)] z-20 border-t border-line bg-ground/95 backdrop-blur"
+          >
+            <div className="mx-auto w-full max-w-[550.8px] px-6 pt-2.5 pb-2">
+              {/* The fuse, still visible (§7.2), but next to the thing it is a
                 deadline for. At the top of the screen it was a number a member
                 scrolled past on the way to the conversation; above the box they
                 are about to type in, it is the reason to type. */}
-            {countdown.isRunning ? (
-              <p
-                className={`text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}
-              >
-                {countdown.isExpiringSoon
-                  ? C.fuseExpiringSoon
-                  : C.fuseDaysLeft(countdown.remainingDays)}
-              </p>
-            ) : chat.status === "date_planned" ? (
-              <p className="text-[11.3px] text-positive">{C.datePlannedLabel}</p>
-            ) : null}
+              {countdown.isRunning ? (
+                <p
+                  className={`text-[11.3px] ${countdown.isExpiringSoon ? "text-caution" : "text-ink-3"}`}
+                >
+                  {countdown.isExpiringSoon
+                    ? C.fuseExpiringSoon
+                    : C.fuseDaysLeft(countdown.remainingDays)}
+                </p>
+              ) : chat.status === "date_planned" ? (
+                <p className="text-[11.3px] text-positive">{C.datePlannedLabel}</p>
+              ) : null}
 
-            <Composer chatId={id} pickerId={PICKER_ID} />
+              <Composer chatId={id} pickerId={PICKER_ID} />
 
-            {/* One row: the photograph, the microphone and the date proposal,
+              {/* One row: the photograph, the microphone and the date proposal,
                 side by side under the box. All three were full-width blocks
                 stacked below it, so the optional things took more of the screen
                 than the message field.
@@ -421,12 +442,20 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 Composer's form — see PhotoButton. A form cannot contain another
                 form, and VoiceRecorder is one, so the two things that belong
                 side by side on screen cannot be siblings in the markup. */}
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <PhotoButton pickerId={PICKER_ID} />
-              <VoiceRecorder chatId={id} />
-              {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <PhotoButton pickerId={PICKER_ID} />
+                <VoiceRecorder chatId={id} />
+                {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
+              </div>
             </div>
           </div>
+
+          {/* The room the fixed bar above is taking. Measured, because the
+              composer grows a line when a fuse is running and again when a
+              photograph is attached — so a written-down number would hide the
+              last message exactly when there was most to say. */}
+          <PublishHeight targetId={COMPOSER_ID} cssVar="--composer-h" />
+          <div aria-hidden className="h-[var(--composer-h)]" />
         </>
       )}
     </main>

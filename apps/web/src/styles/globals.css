@@ -20,6 +20,13 @@
  */
 :root {
   --nav-h: 6.5rem;
+  /**
+   * The chat composer's height, for the spacer that keeps the last message off
+   * it. Published by PublishHeight on that screen and nowhere else, so this
+   * value is what every other page sees — which is why it is zero rather than a
+   * guess. A spacer of the wrong height on a page with no composer is a gap.
+   */
+  --composer-h: 0px;
 }
 
 @media (min-width: 640px) {

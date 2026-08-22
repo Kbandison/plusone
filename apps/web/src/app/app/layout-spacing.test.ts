@@ -41,10 +41,12 @@ describe("there is air under the chrome", () => {
    * stylesheet holds a first-paint value and the bar is measured on mount.
    */
   it("measures the bar rather than guessing at it", () => {
-    const measure = readFileSync(join(APP, "nav-height.tsx"), "utf8");
+    // Generalised when the chat composer needed the same treatment — its height
+    // is unwritable for the same reason the nav's is.
+    const measure = readFileSync(join(APP, "publish-height.tsx"), "utf8");
     expect(measure).toMatch(/new ResizeObserver\(publish\)/);
-    expect(measure).toMatch(/setProperty\("--nav-h", `\$\{nav\.offsetHeight\}px`\)/);
-    expect(layout).toMatch(/<NavHeight navId=\{NAV_ID\} \/>/);
+    expect(measure).toMatch(/setProperty\(cssVar, `\$\{element\.offsetHeight\}px`\)/);
+    expect(layout).toMatch(/<PublishHeight targetId=\{NAV_ID\} cssVar="--nav-h" \/>/);
     expect(layout).toMatch(/id=\{NAV_ID\}/);
   });
 

@@ -344,18 +344,62 @@ describe("the header and the composer are pinned", () => {
   });
 
   /**
-   * The bar is fixed at the foot of the viewport, so a composer at zero sits
-   * behind it. One number, defined once and reserved as padding by the layout.
+   * Fixed, not sticky, and that is structural rather than a preference.
+   *
+   * A sticky element cannot leave its containing block, and the app layout
+   * gives every page a bottom padding that clears the nav — so the composer's
+   * own `bottom` was overruled by the parent's padding box and it came to rest
+   * well above the bar. No amount of adjusting the numbers could have fixed
+   * that; it had to stop being a flow element.
    */
   it("parks the composer above the nav rather than under it", () => {
-    expect(page).toMatch(/sticky bottom-\[var\(--nav-h\)\] z-20/);
-    expect(page).not.toMatch(/sticky bottom-0/);
+    expect(page).toMatch(/fixed inset-x-0 bottom-\[var\(--nav-h\)\] z-20/);
+    // Against the code, not the comment explaining why it is not bottom-0.
+    const code = page
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+      .join("\n");
+    expect(code).not.toMatch(/sticky bottom-/);
+    expect(code).not.toMatch(/bottom-0/);
+  });
+
+  /**
+   * A fixed element is positioned against the viewport and knows nothing about
+   * the layout's max-width, so the centring is copied from the nav rather than
+   * inherited. Getting this wrong puts a full-bleed composer on a laptop.
+   */
+  it("centres itself the way the nav does", () => {
+    const bar = page.slice(page.indexOf("fixed inset-x-0 bottom-[var(--nav-h)]"));
+    expect(bar.slice(0, 400)).toMatch(/mx-auto w-full max-w-\[550\.8px\] px-6/);
+    expect(read("../../layout.tsx")).toMatch(
+      /mx-auto flex min-h-\[100dvh\] w-full max-w-\[550\.8px\]/,
+    );
+  });
+
+  /**
+   * Out of the flow means the thread has to reserve the room itself, and the
+   * composer grows a line when a fuse is running and again when a photograph is
+   * attached — so a written-down number would hide the last message exactly
+   * when there was most to say.
+   */
+  it("reserves the room it is taking, measured rather than guessed", () => {
+    expect(page).toMatch(/<PublishHeight targetId=\{COMPOSER_ID\} cssVar="--composer-h" \/>/);
+    expect(page).toMatch(/className="h-\[var\(--composer-h\)\]"/);
+    const globals = read("../../../../styles/globals.css");
+    // Zero rather than a guess: every page without a composer sees this value,
+    // and a spacer of the wrong height there is a gap.
+    expect(globals).toMatch(/--composer-h: 0px/);
   });
 
   /** Or the messages travel up through two six-pixel columns beside them. */
-  it("bleeds both bars to the gutters the layout adds", () => {
+  /**
+   * The header is still a flow element and still needs the negative margin to
+   * reach the gutters. The composer is fixed and spans the viewport already, so
+   * it has no gutters to escape.
+   */
+  it("bleeds the header to the gutters the layout adds", () => {
     expect(page).toMatch(/sticky top-0[^"]*-mx-6[^"]*px-6/);
-    expect(page).toMatch(/sticky bottom-\[[^"]*-mx-6[^"]*px-6/);
   });
 
   /**
@@ -368,8 +412,8 @@ describe("the header and the composer are pinned", () => {
     expect(forms).toMatch(/px-4 py-2 text-\[16px\]/);
     // The gap under the box, and the one over it, were spacing under a thread.
     expect(forms).toMatch(/className="mt-2 flex flex-col gap-2"/);
-    expect(page).toMatch(/<div className="mt-2 flex flex-wrap items-center gap-3">/);
-    expect(page).toMatch(/sticky bottom-\[[^"]*pt-2\.5 pb-2/);
+    expect(page).toMatch(/className="mt-2 flex flex-wrap items-center gap-3"/);
+    expect(page).toMatch(/max-w-\[550\.8px\] px-6 pt-2\.5 pb-2/);
   });
 
   /** Under the nav's z-40, and under a dialog by construction. */
@@ -380,7 +424,7 @@ describe("the header and the composer are pinned", () => {
 
   /** Everything below a pinned bar is underneath it. */
   it("leaves nothing stranded under the composer", () => {
-    const composer = page.indexOf("sticky bottom-[var(--nav-h)]");
+    const composer = page.indexOf("fixed inset-x-0 bottom-[var(--nav-h)]");
     expect(page.indexOf("<ConfirmPlan")).toBeLessThan(composer);
     expect(page.indexOf("<CancelPlan")).toBeLessThan(composer);
     expect(page.indexOf("{plan ? (")).toBeLessThan(composer);

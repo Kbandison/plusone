@@ -9,8 +9,9 @@ import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
 import { NavLinks } from "./nav-links";
-import { NavHeight } from "./nav-height";
+import { PublishHeight } from "./publish-height";
 import { ServiceWorker } from "./service-worker";
+import { Timezone } from "./timezone";
 
 /**
  * The member app.
@@ -56,7 +57,7 @@ const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
   { href: "/app/profile", label: DRAFT_COPY.app.navProfile },
 ];
 
-/** The bar NavHeight measures. One nav, so a constant is enough. */
+/** The bar PublishHeight measures. One nav, so a constant is enough. */
 const NAV_ID = "app-nav";
 
 /** Drawn rather than imported: one icon does not justify a dependency. */
@@ -99,7 +100,9 @@ export default async function AppLayout({
   const step = onboarding.resolveStep(await loadFacts(data.user.id));
   if (step !== "done") redirect(STEP_ROUTES[step]);
 
-  const { data: me } = await supabase.rpc("my_profile").maybeSingle<{ mode: string | null }>();
+  const { data: me } = await supabase
+    .rpc("my_profile")
+    .maybeSingle<{ mode: string | null; timezone: string | null }>();
   const supportOnly = me?.mode === "support_only";
   const nav = NAV.filter((item) => !(item.datingOnly && supportOnly));
 
@@ -128,7 +131,7 @@ export default async function AppLayout({
           a 44px link plus 12px of padding and a border. So every screen ended
           in ninety pixels of nothing.
 
-          --nav-h is how tall the bar IS, measured — see NavHeight. This is
+          --nav-h is how tall the bar IS, measured — see PublishHeight. This is
           clearance, which is a different number: a page whose last line ends
           exactly at the top of the nav has not been given room, it has been
           given none. So the bar's height plus a gap, rather than one value
@@ -175,10 +178,15 @@ export default async function AppLayout({
           push and the installed shell possible — see service-worker.tsx. */}
       <ServiceWorker />
 
+      {/* Nothing again. Every profile in the database said 'UTC' because
+          nothing had ever written the column — so every timestamp in the app
+          was rendered in the wrong zone and the 8pm drop landed at 8pm UTC. */}
+      <Timezone current={(me?.timezone as string | null) ?? "UTC"} />
+
       {/* Renders nothing. It measures the bar above and publishes the height,
           because the one thing that has to sit flush on top of it cannot be
           told that number in advance. */}
-      <NavHeight navId={NAV_ID} />
+      <PublishHeight targetId={NAV_ID} cssVar="--nav-h" />
     </div>
   );
 }

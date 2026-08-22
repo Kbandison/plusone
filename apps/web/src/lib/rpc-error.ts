@@ -86,6 +86,10 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // they could do about it — the permission prompt has already been answered by
   // the time this could fire.
   "a device needs an address",
+  // The browser reports its own zone and nothing shows the result to anybody —
+  // a refusal here means a spoofed or mangled value, which is a bug rather than
+  // something a member did.
+  "not a timezone",
   "config values are numbers or objects",
   "unknown config key: ",
   // The pinned resource card, which only an admin can set. Every one of these
