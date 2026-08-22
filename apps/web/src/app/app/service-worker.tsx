@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { registerPushDevice } from "./push-actions";
+
 /**
  * Registers the service worker, and nothing else.
  *
@@ -33,6 +35,48 @@ export function ServiceWorker() {
     else window.addEventListener("load", register, { once: true });
 
     return () => window.removeEventListener("load", register);
+  }, []);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+    /**
+     * Tells the server whatever address this browser currently holds.
+     *
+     * A push subscription is not permanent — browsers rotate them, and the
+     * worker takes out a new one when they do (see pushsubscriptionchange in
+     * sw.js). Nothing was reporting the new address, so the row pointed at a
+     * dead endpoint and the device went permanently silent while the settings
+     * screen still said "On for this device".
+     *
+     * Done here, on load, rather than from the worker: that event can fire with
+     * no page open and no fresh session, so a worker posting to an
+     * authenticated route would be relying on a cookie that may have expired —
+     * and failing silently, again.
+     *
+     * register_push_device is an upsert keyed on the endpoint, so the ordinary
+     * case is one write that moves last_seen_at and nothing else. The old row
+     * is not deleted here: the browser has already forgotten that endpoint, so
+     * there is nothing to unsubscribe, and the next send collects the 410 and
+     * removes it.
+     */
+    void navigator.serviceWorker.ready
+      .then((registration) => registration.pushManager.getSubscription())
+      .then(async (subscription) => {
+        if (!subscription) return;
+        const keys = subscription.toJSON().keys;
+        if (!keys?.p256dh || !keys.auth) return;
+        await registerPushDevice({
+          endpoint: subscription.endpoint,
+          p256dh: keys.p256dh,
+          auth: keys.auth,
+        });
+      })
+      .catch(() => {
+        // A member who is signed out, or a browser that refuses. Nothing to
+        // tell anybody: this is bookkeeping behind a control that reports its
+        // own state from the browser.
+      });
   }, []);
 
   return null;

@@ -55,6 +55,22 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
+    /**
+     * One window, however the app is entered.
+     *
+     * notificationclick already does this for a tapped notification: find the
+     * window that is open and navigate it, rather than opening a second copy
+     * beside it. Every OTHER way in — the home-screen icon, a link handed to
+     * the installed app — never reaches that handler, and the default is a new
+     * window. So a member who taps the icon while the app is already running
+     * gets two, and the one they were reading is the one underneath.
+     *
+     * `navigate-existing` rather than `focus-existing`: focusing alone returns
+     * them to wherever they left off, which is not where the link pointed.
+     * Chromium reads this; everything else ignores it and keeps its own
+     * behaviour, which is why notificationclick still does the work by hand.
+     */
+    launch_handler: { client_mode: "navigate-existing" },
     // Dusk's ground. The splash screen and the status bar tint read from these,
     // and a white flash before a dark app is the cheapest way to look broken.
     background_color: "#14110f",

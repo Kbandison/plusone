@@ -8,6 +8,7 @@ import { onboarding } from "@plusone/logic";
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
+import { AppBadge } from "./app-badge";
 import { LiveRefresh } from "./live-refresh";
 import { NavLinks } from "./nav-links";
 import { PublishHeight } from "./publish-height";
@@ -189,6 +190,11 @@ export default async function AppLayout({
         watch={[{ table: "notifications", filter: `user_id=eq.${data.user.id}`, event: "INSERT" }]}
       />
 
+      {/* Renders nothing. It marks the app's own icon on a home screen, which
+          is the one signal that reaches a member who has installed the app and
+          declined notifications. A dot, never a count — see AppBadge. */}
+      <AppBadge unread={unread} />
+
       {/* pt-6 above, so a page's heading is not sitting on the wordmark.
           Here rather than on each page: no page carries a top margin of its own
           today, and the moment one of them does they will disagree.
@@ -229,7 +235,12 @@ export default async function AppLayout({
            Below a dialog by construction: showModal() puts those in the top
            layer, which no z-index can reach. */
         id={NAV_ID}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ground/95 backdrop-blur"
+        /* pb-safe, now that viewport-fit is cover.
+           The inset is nought on everything without a home indicator, so this
+           costs nothing anywhere else — and on the phones that have one it is
+           the difference between a row of links and a row of links underneath
+           the bar you swipe up on. */
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
       >
         <ul className="mx-auto flex max-w-[550.8px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
           {/* A client component, only so it can read the pathname. Nine links

@@ -47,9 +47,59 @@ export const metadata: Metadata = {
   // Discretion (§9.5): the app is not something to be found by searching a
   // condition, and member surfaces are never indexed.
   robots: { index: true, follow: true },
+  /**
+   * The home-screen icon on an iPhone, which had none.
+   *
+   * scripts/generate-icons.mjs has been drawing apple-touch-icon.png since the
+   * icons existed and nothing has ever pointed at it. iOS looks for a
+   * `rel="apple-touch-icon"` link or the file at the ORIGIN ROOT, and it is at
+   * /icons/ — so neither. With no icon, iOS puts a SCREENSHOT OF THE PAGE on
+   * the home screen: a shrunken sign-in form, sitting on a phone somebody else
+   * may pick up, next to a name chosen so it would say nothing.
+   *
+   * And it is the iPhone install that matters most: Safari delivers web push
+   * only to a site added to the home screen, so this is the path the whole
+   * manifest exists to make work.
+   */
+  icons: {
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  /**
+   * The older iOS switches. `display: standalone` in the manifest is what
+   * iOS 16.4 and later read; these are what everything before it reads, and an
+   * iPhone that has not been updated is exactly the one still on a version that
+   * needs them.
+   *
+   * `title` rather than the manifest's, for the same reason short_name takes
+   * the fallback: U+207A is missing from some launcher fonts and a member whose
+   * phone cannot draw it gets a tofu box beside three letters.
+   *
+   * statusBarStyle stays `default`. `black-translucent` puts the page under the
+   * clock, which is a look rather than a feature, and it is the setting that
+   * hides a heading behind the status bar on every phone with a notch.
+   */
+  appleWebApp: {
+    capable: true,
+    title: BRAND.deviceNameFallback,
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
+  /**
+   * Lets the page reach into the rounded corners and under the home indicator,
+   * which is the ONLY thing that makes env(safe-area-inset-*) report anything
+   * but nought.
+   *
+   * Without it those insets are zero on every iPhone, so the fixed bottom nav
+   * sat under the gesture bar in an installed app — the bar the member swipes
+   * on, over the five links this app navigates by. Nothing said so on a desktop
+   * or in a browser tab, because in a tab Safari's own chrome is in the way.
+   *
+   * It is a trade: cover means every pinned element now has to say how far it
+   * is from the true edge. The nav and the two bottom sheets do.
+   */
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F4EFE7" },
     { media: "(prefers-color-scheme: dark)", color: "#14110F" },

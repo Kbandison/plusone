@@ -64,7 +64,7 @@ export function RouteModal({ children }: { children: React.ReactNode }) {
          pb-10 because the last line of something that reaches the bottom edge
          needs room for a thumb and for a phone's home indicator. On anything
          wider it goes back to centred, where a sheet is not the idiom. */
-      className="ease-brand fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[88vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-10 text-ink backdrop:bg-black/45 sm:inset-0 sm:m-auto sm:max-h-[84vh] sm:rounded-2xl sm:pb-8"
+      className="ease-brand fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[88vh] w-full max-w-[550.8px] overflow-y-auto rounded-t-2xl border border-line-2 bg-ground px-6 pt-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-ink backdrop:bg-black/45 sm:inset-0 sm:m-auto sm:max-h-[84vh] sm:rounded-2xl sm:pb-8"
     >
       <div className="mb-1 flex justify-end">
         {/* method="dialog" closes without any JavaScript of ours, and onClose

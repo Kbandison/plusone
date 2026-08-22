@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-4";
+const VERSION = "plusone-sw-6";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -47,6 +47,33 @@ self.addEventListener("install", () => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
+
+/**
+ * The dot on the app's own icon, set from here because the app is not open.
+ *
+ * AppBadge keeps this in step while a page is mounted and cannot while one is
+ * not — which is the case this exists for. A push arrives at a closed app, the
+ * member clears it from the lock screen, and the icon they glance at an hour
+ * later carries no mark: the notification was the only signal and they have
+ * already dismissed it. The icon is the one that stays.
+ *
+ * A DOT, never a count, for the reason AppBadge gives at length — an app icon
+ * sits on a home screen in front of whoever picks the phone up. setAppBadge()
+ * with no argument draws the unadorned mark. There is no count to pass here in
+ * any case: the payload is content-blind by construction and carries no total.
+ *
+ * Never cleared here. Reading is what clears it, and reading happens in the
+ * app, where AppBadge can see the unread figure this file has no way to know.
+ */
+function markIcon() {
+  if (!self.navigator || !("setAppBadge" in self.navigator)) return Promise.resolve();
+  // Swallowed, and deliberately so: an installed app whose notification
+  // permission was withdrawn rejects here, and a throw inside a push handler
+  // is silence — which Chrome answers with its own "This site has been updated
+  // in the background". The badge is the smaller of the two obligations and
+  // must never be able to cost the member the notification.
+  return self.navigator.setAppBadge().catch(() => {});
+}
 
 self.addEventListener("push", (event) => {
   // A push with no data is legal and some services send one to test an
@@ -83,6 +110,11 @@ self.addEventListener("push", (event) => {
    * The fallback drops every option that is decoration. Title and body are the
    * notification; the rest is polish, and polish is not worth the message.
    */
+  // Its own waitUntil rather than a Promise.all with the notification below.
+  // Both are kept alive to completion either way, and keeping them separate
+  // means neither can ever be the reason the other did not happen.
+  event.waitUntil(markIcon());
+
   event.waitUntil(
     self.registration
       .showNotification(title, {
@@ -162,6 +194,49 @@ self.addEventListener("notificationclick", (event) => {
       }
 
       await self.clients.openWindow(target);
+    })(),
+  );
+});
+
+/**
+ * The subscription the browser rotated out from under us.
+ *
+ * A push subscription is not permanent. Browsers rotate them — Chrome does it
+ * on its own schedule, and a key change or a storage eviction does it too — and
+ * when they do, the old endpoint stops working forever and this event fires.
+ * Unhandled, the device goes permanently silent while the settings screen still
+ * says "On for this device", which is the worst shape a failure can take here:
+ * the member has been told it works and has no way to find out it does not.
+ *
+ * All this does is take out a new subscription with the same key. Telling the
+ * SERVER about it happens in the app, on the next load — see ServiceWorker,
+ * which re-registers whatever the browser currently holds. That split is
+ * deliberate: this event can fire with no page open and no fresh session, so a
+ * worker posting to an authenticated route would be relying on a cookie that
+ * may well have expired, and failing silently again.
+ *
+ * The window between the rotation and the next app open is one where pushes do
+ * not arrive. It cannot be closed from here, and it closes itself the moment
+ * somebody opens the app.
+ */
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      // The key the old subscription was made with, which is the only place to
+      // get it: a worker has no access to the app's environment variables.
+      const key = event.oldSubscription?.options?.applicationServerKey;
+      if (event.newSubscription || !key) return;
+
+      try {
+        await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: key,
+        });
+      } catch {
+        // Permission revoked, or the service refused. Either way there is
+        // nothing to retry and nobody to tell — the settings screen reads the
+        // browser directly and will say "off" the next time it is opened.
+      }
     })(),
   );
 });

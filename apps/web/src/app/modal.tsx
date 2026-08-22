@@ -130,7 +130,7 @@ export function Modal({
          * and when those over-constrain each other the browser decides where
          * the box lands. RouteModal learned that the expensive way; this had
          * the same shape and had not been caught yet. */
-        className={`ease-brand fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[86vh] w-full max-w-[520px] overflow-y-auto rounded-t-2xl border border-line-2 bg-surface p-6 text-ink backdrop:bg-black/45 sm:inset-0 sm:m-auto sm:rounded-2xl ${panelClassName}`}
+        className={`ease-brand fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[86vh] w-full max-w-[520px] overflow-y-auto rounded-t-2xl border border-line-2 bg-surface p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-ink backdrop:bg-black/45 sm:inset-0 sm:m-auto sm:rounded-2xl sm:pb-6 ${panelClassName}`}
       >
         <div className="flex items-start justify-between gap-4">
           {heading ? <h2 className="text-h3">{heading}</h2> : <span />}

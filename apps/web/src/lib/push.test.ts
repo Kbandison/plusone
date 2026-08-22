@@ -534,3 +534,81 @@ describe("what the phone actually draws", () => {
     expect(push.slice(0, 400)).toMatch(/no app can turn off/i);
   });
 });
+
+/**
+ * What an installed app needs that a browser tab does not.
+ *
+ * Every one of these failed in a way nothing could report: an icon iOS
+ * substitutes silently, a subscription the browser rotates without telling
+ * anybody, a nav bar under a gesture bar that only exists once the app is
+ * installed on a phone with a home indicator. None of them is visible on a
+ * desktop, in a tab, or in a test that only renders the page.
+ */
+describe("the installed app", () => {
+  const root = read("src/app/layout.tsx");
+
+  /**
+   * generate-icons.mjs has drawn apple-touch-icon.png since the icons existed
+   * and nothing pointed at it. iOS looks for a rel="apple-touch-icon" link or
+   * the file at the ORIGIN ROOT, and it is under /icons/ — so neither. With no
+   * icon, iOS puts a SCREENSHOT OF THE PAGE on the home screen.
+   */
+  it("gives an iPhone an icon rather than a screenshot of the sign-in form", () => {
+    expect(root).toMatch(/apple:\s*\[\{\s*url:\s*"\/icons\/apple-touch-icon\.png"/);
+    expect(existsSync(join(WEB, "public/icons/apple-touch-icon.png"))).toBe(true);
+  });
+
+  /**
+   * The manifest is what iOS 16.4 and later read. These are what everything
+   * before it reads, and an iPhone that has not been updated is exactly the one
+   * still on a version that needs them.
+   */
+  it("carries the older iOS switches too", () => {
+    expect(root).toMatch(/appleWebApp: \{[\s\S]{0,200}capable: true/);
+    // Not black-translucent: that puts the page under the clock, which hides a
+    // heading behind the status bar on every phone with a notch.
+    expect(root).toMatch(/statusBarStyle: "default"/);
+  });
+
+  /**
+   * env(safe-area-inset-*) reports nought on every iPhone without this, so the
+   * fixed nav sat under the gesture bar — over the five links the app is
+   * navigated by. Invisible in a browser tab, where Safari's own chrome is in
+   * the way.
+   */
+  it("reaches the true edge of the screen, and then says so", () => {
+    expect(root).toMatch(/viewportFit: "cover"/);
+    const app = read("src/app/app/layout.tsx");
+    expect(app).toMatch(/pb-\[env\(safe-area-inset-bottom\)\]/);
+    // The two things that sit on the bottom edge with the nav.
+    expect(read("src/app/modal.tsx")).toMatch(/env\(safe-area-inset-bottom\)/);
+    expect(read("src/app/route-modal.tsx")).toMatch(/env\(safe-area-inset-bottom\)/);
+  });
+
+  /**
+   * A push subscription is not permanent. Unhandled, a rotation makes the
+   * device permanently silent while the settings screen still says "On for this
+   * device" — a failure the member has been told cannot happen.
+   */
+  it("survives the browser rotating the subscription", () => {
+    expect(sw).toMatch(/addEventListener\("pushsubscriptionchange"/);
+    // The key comes off the old subscription: a worker cannot read the app's
+    // environment.
+    expect(sw).toMatch(/event\.oldSubscription\?\.options\?\.applicationServerKey/);
+
+    // And the server is told on the next app load, not from the worker — that
+    // event can fire with no page open and no fresh session.
+    const registrar = read("src/app/app/service-worker.tsx");
+    expect(registrar).toMatch(/pushManager\.getSubscription\(\)/);
+    expect(registrar).toMatch(/registerPushDevice\(\{/);
+  });
+
+  /** §8 rules out count granularity below five, and an icon sits on a home
+      screen indefinitely in front of whoever picks the phone up. */
+  it("marks the app icon without saying how many", () => {
+    const badge = read("src/app/app/app-badge.tsx");
+    expect(badge).toMatch(/setAppBadge\?\.\(\)/);
+    expect(badge).not.toMatch(/setAppBadge\?\.\(unread\)/);
+    expect(badge).toMatch(/clearAppBadge/);
+  });
+});
