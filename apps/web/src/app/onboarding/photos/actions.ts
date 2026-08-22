@@ -150,7 +150,10 @@ export async function uploadPhoto(
   // revalidates does not re-render the route — the Next 16 docs say so in as
   // many words — so the photo uploaded, the count stayed at zero, the
   // confirmation line never appeared, and Continue stayed grey forever.
-  revalidatePath("/onboarding/photos");
+  // The profile too, which is where these are actually managed now. It
+  // renders the member's own face beside their name from photos[0], and that
+  // heading sat on the previous picture until somebody reloaded by hand.
+  for (const path of ["/onboarding/photos", "/app/profile"]) revalidatePath(path);
   return { error: null };
 }
 
@@ -210,7 +213,10 @@ export async function deletePhoto(
   // Already gone. Not a failure — a member who double-taps Remove should not be
   // told something went wrong.
   if (!row) {
-    revalidatePath("/onboarding/photos");
+    // The profile too, which is where these are actually managed now. It
+    // renders the member's own face beside their name from photos[0], and that
+    // heading sat on the previous picture until somebody reloaded by hand.
+    for (const path of ["/onboarding/photos", "/app/profile"]) revalidatePath(path);
     return { error: null };
   }
 
@@ -219,6 +225,9 @@ export async function deletePhoto(
   );
   if (paths.length > 0) await supabase.storage.from(BUCKET).remove(paths);
 
-  revalidatePath("/onboarding/photos");
+  // The profile too, which is where these are actually managed now. It
+  // renders the member's own face beside their name from photos[0], and that
+  // heading sat on the previous picture until somebody reloaded by hand.
+  for (const path of ["/onboarding/photos", "/app/profile"]) revalidatePath(path);
   return { error: null };
 }

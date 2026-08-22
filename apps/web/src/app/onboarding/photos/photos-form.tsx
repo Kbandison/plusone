@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { downscalePhoto, isTooLargeToSend } from "@/lib/downscale";
 import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
@@ -321,6 +322,7 @@ export function PhotoGallery({
 
   const [dragging, setDragging] = useState<string | null>(null);
   const tiles = useRef(new Map<string, HTMLElement>());
+  const router = useRouter();
 
   function commit(next: readonly OwnPhoto[]) {
     setOrder(next);
@@ -335,7 +337,26 @@ export function PhotoGallery({
         // 409 is a stale list — the browser and the database disagree about
         // which photos exist. Not the member's doing and not theirs to fix; the
         // next render settles it.
-        if (!response.ok && response.status !== 409) setOrderError(C.errors.uploadFailed);
+        if (!response.ok && response.status !== 409) {
+          setOrderError(C.errors.uploadFailed);
+          return;
+        }
+
+        /**
+         * Only on the profile, and only once the write landed.
+         *
+         * This grid is optimistic about its own order and nothing else on the
+         * page is — the profile shows the member's own face beside their name,
+         * read from photos[0] on the server, so dragging a different picture to
+         * the front left the heading on the old one until a manual reload.
+         *
+         * Deliberately not in onboarding: there is no header there, and
+         * /api/photos/order is a route handler precisely so that saving an
+         * arrangement does not drag the router through a re-render and re-sign
+         * every image. That reasoning still holds where nothing outside the
+         * grid depends on the order.
+         */
+        if (settings) router.refresh();
       })
       .catch(() => setOrderError(C.errors.uploadFailed))
       .finally(() => setSaving(false));

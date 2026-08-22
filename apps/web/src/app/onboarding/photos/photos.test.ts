@@ -304,15 +304,37 @@ describe("a reorder does not go through the router at all", () => {
     expect(route).not.toMatch(/revalidatePath|revalidateTag|updateTag/);
   });
 
-  /** Uploads and deletes DO change the set, so both must still revalidate. */
-  it("leaves upload and delete revalidating", () => {
+  /**
+   * Uploads and deletes DO change the set, so both must still revalidate — and
+   * the profile as well as the step. The profile shows the member's own face
+   * beside their name, read from photos[0] on the server, and it sat on the
+   * previous picture until somebody reloaded by hand.
+   */
+  it("leaves upload and delete revalidating, on both screens", () => {
     const upload = actions.slice(
       actions.indexOf("export async function uploadPhoto"),
       actions.indexOf("export async function savePhotoPrivacy"),
     );
     const remove = actions.slice(actions.indexOf("export async function deletePhoto"));
-    expect(upload).toMatch(/revalidatePath\("\/onboarding\/photos"\)/);
-    expect(remove).toMatch(/revalidatePath\("\/onboarding\/photos"\)/);
+    for (const [name, source] of [
+      ["upload", upload],
+      ["delete", remove],
+    ] as const) {
+      expect(source, name).toMatch(/"\/onboarding\/photos", "\/app\/profile"/);
+      expect(source, name).toMatch(/revalidatePath\(path\)/);
+    }
+  });
+
+  /**
+   * The grid is optimistic about its own order and nothing else on the page is,
+   * so dragging a different picture to the front left the profile heading on
+   * the old one. Refreshed from the client after the write lands, rather than
+   * by making the route handler revalidate — which is the thing the route
+   * exists to avoid.
+   */
+  it("refreshes the profile after a reorder, and only there", () => {
+    expect(form).toMatch(/if \(settings\) router\.refresh\(\)/);
+    expect(route).not.toMatch(/revalidatePath|revalidateTag|updateTag/);
   });
 
   it("refuses a caller with no session", () => {
