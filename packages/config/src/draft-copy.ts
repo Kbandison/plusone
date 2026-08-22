@@ -943,7 +943,7 @@ export const DRAFT_COPY = {
     pushBody:
       "Tonight's Drop lands at 8pm. A notification is the only way to know without opening the app.",
     pushPrivacyNote:
-      "Notifications never say who from, what about, or anything about anyone's health. They say ⁺One and one short line — nothing more shows on a locked phone.",
+      "Notifications never say who from, what about, or anything about anyone's health — just ⁺One and one short line. Your phone will also show the web address, which no app can turn off.",
     pushEnableLabel: "Turn on notifications",
     pushDisableLabel: "Turn off on this device",
     pushEnabled: "On for this device.",
@@ -970,20 +970,27 @@ export const DRAFT_COPY = {
      * not. Claude's words.
      */
     /**
-     * Installing, and the reason that is not cosmetic here.
+     * Installing, and what it does and does not fix.
      *
-     * A notification sent to a browser carries the site's name — Chrome shows
-     * "www.loveplusone.app" under every one, and there is no API to suppress
-     * it. §8 keeps a person, a subject and every condition word off a lock
-     * screen, and then the domain says "dating app" to anybody glancing at the
-     * phone. An installed app notifies as itself: icon, name, no origin.
+     * CORRECTION, and it matters. Claude first wrote this claiming an installed
+     * app's notifications carry no web address. They do. Every web
+     * notification shows its origin — Android draws "www.loveplusone.app"
+     * beside the title whether the app is installed or not, and the Notification
+     * API has no property that suppresses it. It is a deliberate browser
+     * security feature: a member must always be able to see which site is
+     * notifying them.
      *
-     * So this is a privacy control wearing an install button, and the copy says
-     * so. All Claude's words.
+     * What installing DOES change is the name and the icon beside it: in a
+     * browser the notification is the browser's, titled by the section it came
+     * from; installed, it is ⁺One's. Real, and worth doing, and less than was
+     * claimed.
+     *
+     * The address itself is not solvable in code. It is a domain decision, or
+     * an argument for a native app — see PROJECT_UPDATES. All Claude's words.
      */
     installHeading: "Add to your home screen",
     installBody:
-      "Installed, ⁺One opens on its own and its notifications show the app's name. In a browser they show the website address instead, which anyone glancing at your phone can read.",
+      "Installed, ⁺One opens on its own and its notifications come from ⁺One rather than from your browser. The web address still shows beside them — no app can hide that — so a locked phone reveals the site name either way.",
     installLabel: "Install",
     // No "installed" line: the section removes itself once the app is running
     // as one, and a card whose only content is a past tense is a card nobody

@@ -2009,6 +2009,34 @@ Mechanics are now namespaced in the `@plusone/logic` barrel (`fuse.transition`,
 `verification.transition`). Six more state machines are coming and they all want to
 call their reducer `transition`.
 
+### THE NOTIFICATION ORIGIN — a decision only Kevin can make
+
+Every web notification shows the site it came from. Android draws
+`www.loveplusone.app` beside the title, installed or not, and the Notification
+API has no property that suppresses it: a member must always be able to see
+which site is notifying them, by design.
+
+§8 exists because a lock-screen preview is visible to whoever is holding the
+phone. It keeps a person, a subject and twelve condition words out of every
+payload — and then the browser prints a domain that reads as a dating app,
+under all of it, on a locked screen anybody can glance at.
+
+Nothing in code fixes this. The three real options:
+
+1. **Accept it.** The domain says "dating", not "diagnosis". A bystander learns
+   less than they would from any of the apps beside it in the shade.
+2. **A quieter domain.** The notification shows whatever the origin is. This is
+   the only lever that keeps push and removes the tell, and it is a branding
+   decision with a cost.
+3. **Go native.** APNs and FCM notifications from a real app carry no origin at
+   all — just the app's name and icon. This is the strongest argument yet for
+   the native shell, and it is a stronger one than the iOS install requirement
+   that prompted it.
+
+Claude got this wrong first: the install copy claimed an installed app's
+notifications carry no address. They do. Corrected 2026-08-21, and the copy now
+says so plainly rather than promising something the platform will not do.
+
 ### AWAITING KEVIN
 
 Two lists. The first is copy **I wrote and Kevin has not read** — it works, it is

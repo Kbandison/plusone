@@ -36,6 +36,32 @@ const ACCENT = "#d69a4e";
  *   drawn smaller and the ground fills the whole square — the alternative is an
  *   icon whose arms are sliced off on every Pixel.
  */
+/**
+ * The status-bar badge, which is NOT a small version of the icon.
+ *
+ * Android draws it from the ALPHA CHANNEL only — every opaque pixel becomes
+ * solid white (or whatever the system tint is) and every transparent one
+ * disappears. A badge with an opaque background is therefore a solid white
+ * square in the status bar, which is exactly what shipped: the mark was
+ * invisible until the shade was pulled down and the full-colour icon appeared.
+ *
+ * So this draws the glyph and nothing else. The colour is irrelevant — only
+ * where the pixels are.
+ */
+function badgeSvg(size) {
+  const arm = size * 0.62;
+  const thickness = arm * 0.26;
+  const c = size / 2;
+  const radius = thickness / 2;
+
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <g fill="#ffffff">
+    <rect x="${c - arm / 2}" y="${c - thickness / 2}" width="${arm}" height="${thickness}" rx="${radius}"/>
+    <rect x="${c - thickness / 2}" y="${c - arm / 2}" width="${thickness}" height="${arm}" rx="${radius}"/>
+  </g>
+</svg>`);
+}
+
 function svg(size, maskable) {
   // The safe fraction of the width the mark may occupy.
   const scale = maskable ? 0.42 : 0.58;
@@ -61,14 +87,26 @@ const JOBS = [
   ["icon-maskable-192.png", 192, true],
   ["icon-maskable-512.png", 512, true],
   ["apple-touch-icon.png", 180, false],
-  // The badge is monochrome and Android tints it, so only the alpha matters.
-  ["badge-96.png", 96, true],
 ];
 
 for (const [name, size, maskable] of JOBS) {
   const png = await sharp(svg(size, maskable)).png({ compressionLevel: 9 }).toBuffer();
   writeFileSync(join(OUT, name), png);
   console.log(`  ${name}  ${size}×${size}${maskable ? " maskable" : ""}  ${png.length} bytes`);
+}
+
+// Transparent everywhere but the glyph — see badgeSvg.
+{
+  const png = await sharp(badgeSvg(96)).png({ compressionLevel: 9 }).toBuffer();
+  writeFileSync(join(OUT, "badge-96.png"), png);
+  const { channels, isOpaque } = await sharp(png).stats();
+  console.log(
+    `  badge-96.png  96×96  alpha-only  ${png.length} bytes  (opaque: ${isOpaque}, channels: ${channels.length})`,
+  );
+  if (isOpaque) {
+    console.error("  badge has no transparency — Android will draw a solid square");
+    process.exitCode = 1;
+  }
 }
 
 // The favicon, which the browser tab reads and which nothing else was serving.

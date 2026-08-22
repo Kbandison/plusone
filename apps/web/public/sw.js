@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-2";
+const VERSION = "plusone-sw-3";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -87,9 +87,21 @@ self.addEventListener("push", (event) => {
     self.registration
       .showNotification(title, {
         body,
-        icon: "/icons/icon-192.png",
-        // Monochrome, tinted by Android and shown in the status bar. Without it
-        // Android draws a grey circle where the app's mark should be.
+        /**
+         * No `icon`.
+         *
+         * Android already draws the app's own icon beside a notification, so
+         * supplying the same image again renders it TWICE — once as the app,
+         * once as the large icon on the right. In a browser the left slot is
+         * the browser's own logo and cannot be changed, so the second copy
+         * bought a duplicate when installed and nothing much when not.
+         *
+         * The badge is the one image worth sending: it is the status-bar mark,
+         * and Android draws it from the alpha channel alone — every opaque
+         * pixel becomes solid white. It was a full-colour square with an opaque
+         * background, so the status bar showed a solid white block until the
+         * shade was pulled down. It is the glyph and transparency now.
+         */
         badge: "/icons/badge-96.png",
         // The path travels in data rather than in the tag or the title, so
         // nothing about the destination is displayed.

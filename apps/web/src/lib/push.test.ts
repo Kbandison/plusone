@@ -447,3 +447,53 @@ describe("installing is offered by the app, not hunted for in a menu", () => {
     expect(settings.indexOf("<InstallApp />")).toBeLessThan(settings.indexOf("<PushToggle"));
   });
 });
+
+/**
+ * Two rendering bugs that only a real phone could have shown, and one claim
+ * that a real phone disproved.
+ */
+describe("what the phone actually draws", () => {
+  const icons = readFileSync(join(WEB, "../../scripts/generate-icons.mjs"), "utf8");
+
+  /**
+   * Android draws the status-bar badge from the ALPHA CHANNEL alone — every
+   * opaque pixel becomes solid white and every transparent one disappears. The
+   * badge shipped with an opaque background, so the status bar showed a solid
+   * white square until the shade was pulled down and the full-colour icon
+   * appeared underneath.
+   */
+  it("builds the badge from transparency, not colour", () => {
+    expect(icons).toMatch(/function badgeSvg/);
+    // No background rect, which is the whole bug.
+    const badge = icons.slice(icons.indexOf("function badgeSvg"));
+    expect(badge.slice(0, badge.indexOf("function svg("))).not.toMatch(/<rect width="\$\{size\}"/);
+    // And the generator refuses to ship an opaque one again.
+    expect(icons).toMatch(/if \(isOpaque\)/);
+  });
+
+  /**
+   * Android already draws the app's own icon beside a notification, so
+   * supplying the same image again rendered it twice — once as the app, once as
+   * the large icon on the right.
+   */
+  it("sends no icon, because the platform already has one", () => {
+    expect(sw).not.toMatch(/icon: "\/icons\//);
+    expect(sw).toMatch(/badge: "\/icons\/badge-96\.png"/);
+    const toggleRaw = read("src/app/app/settings/push-toggle.tsx");
+    expect(toggleRaw).not.toMatch(/icon: "\/icons\//);
+  });
+
+  /**
+   * Claude claimed an installed app's notifications carry no web address. They
+   * do — every web notification shows its origin, installed or not, and the
+   * Notification API has no property that suppresses it. It is a deliberate
+   * browser security feature. The copy said otherwise and was corrected.
+   */
+  it("does not promise the web address goes away", () => {
+    const copy = read("../../packages/config/src/draft-copy.ts");
+    const install = copy.slice(copy.indexOf("installBody:"));
+    expect(install.slice(0, 400)).toMatch(/no app can hide that/i);
+    const push = copy.slice(copy.indexOf("pushPrivacyNote:"));
+    expect(push.slice(0, 400)).toMatch(/no app can turn off/i);
+  });
+});
