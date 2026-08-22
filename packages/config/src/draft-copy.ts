@@ -969,6 +969,34 @@ export const DRAFT_COPY = {
      * knows the problem is on their device, and one who sees it knows it is
      * not. Claude's words.
      */
+    /**
+     * Installing, and the reason that is not cosmetic here.
+     *
+     * A notification sent to a browser carries the site's name — Chrome shows
+     * "www.loveplusone.app" under every one, and there is no API to suppress
+     * it. §8 keeps a person, a subject and every condition word off a lock
+     * screen, and then the domain says "dating app" to anybody glancing at the
+     * phone. An installed app notifies as itself: icon, name, no origin.
+     *
+     * So this is a privacy control wearing an install button, and the copy says
+     * so. All Claude's words.
+     */
+    installHeading: "Add to your home screen",
+    installBody:
+      "Installed, ⁺One opens on its own and its notifications show the app's name. In a browser they show the website address instead, which anyone glancing at your phone can read.",
+    installLabel: "Install",
+    // No "installed" line: the section removes itself once the app is running
+    // as one, and a card whose only content is a past tense is a card nobody
+    // needs to read twice.
+    /**
+     * iOS has no install API — Safari offers it from its own share menu and
+     * nowhere else — so this describes the gesture rather than triggering it.
+     */
+    installIos:
+      "On iPhone: the share button, then Add to Home Screen. Open ⁺One from there afterwards.",
+    /** Already installed, or a browser that cannot. Neither is worth a button. */
+    installUnavailable:
+      "Your browser will offer this from its own menu, usually as Install app or Add to Home screen.",
     pushTestLabel: "Show a test notification",
     pushTestBody: "This is what a notification looks like.",
     pushTestShown:

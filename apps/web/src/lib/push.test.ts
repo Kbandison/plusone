@@ -379,3 +379,71 @@ describe("a member can tell which half of the chain is broken", () => {
     expect(on.slice(0, 1200)).toMatch(/pushTestLabel/);
   });
 });
+
+/**
+ * Chrome's own install path is a menu item three taps deep whose label changes
+ * with whether the criteria are met — "Install app" when they are, "Add to Home
+ * screen" when they are not — and the second makes a badged bookmark that looks
+ * installed and is not.
+ *
+ * That difference is not cosmetic here. A notification from a browser carries
+ * the site's address: Chrome prints "www.loveplusone.app" under every one and
+ * there is no API to suppress it. §8 keeps a person, a subject and every
+ * condition word off a lock screen, and then the domain says "dating app" to
+ * anybody glancing at the phone. An installed app notifies as itself.
+ */
+describe("installing is offered by the app, not hunted for in a menu", () => {
+  const install = withoutComments(read("src/app/app/settings/install-app.tsx"));
+  const manifest = read("src/app/manifest.ts");
+  const settings = read("src/app/app/settings/page.tsx");
+
+  /**
+   * beforeinstallprompt fires only when every criterion is met, which makes the
+   * button its own proof: if it is there, installing works.
+   */
+  it("shows the button only when the browser says it would work", () => {
+    expect(install).toMatch(/addEventListener\("beforeinstallprompt", onPrompt\)/);
+    expect(install).toMatch(/state === "ready" && prompt/);
+  });
+
+  /** Otherwise Chrome shows its own bar, at a moment we did not choose. */
+  it("takes the prompt over from the browser", () => {
+    expect(install).toMatch(/event\.preventDefault\(\)/);
+  });
+
+  /**
+   * The event is dispatched on load and this mounts after hydration, so on a
+   * fast connection the listener can be attached too late — and the button
+   * would never appear on a device that could install perfectly well.
+   */
+  it("does not leave the section blank when the event fired first", () => {
+    expect(install).toMatch(/current === "unknown" \? "unavailable" : current/);
+    expect(install).toMatch(/installUnavailable/);
+  });
+
+  /** iOS has no such event; Safari offers it from its share menu and nowhere else. */
+  it("describes the gesture where there is no API for it", () => {
+    expect(install).toMatch(/iPad\|iPhone\|iPod/);
+    expect(install).toMatch(/installIos/);
+  });
+
+  /** Nothing to offer somebody already running the installed app. */
+  it("disappears once installed", () => {
+    expect(install).toMatch(/display-mode: standalone/);
+    expect(install).toMatch(/if \(state === "installed"\) return null;/);
+  });
+
+  /**
+   * Without `id`, Chrome identifies an installed app by its start_url — so
+   * moving where the app opens would look like a different app to a member who
+   * already has it.
+   */
+  it("pins the app's identity separately from where it opens", () => {
+    expect(manifest).toMatch(/id: "\/app"/);
+  });
+
+  /** It changes what a notification shows, so it comes before the toggle. */
+  it("sits above the notification control", () => {
+    expect(settings.indexOf("<InstallApp />")).toBeLessThan(settings.indexOf("<PushToggle"));
+  });
+});

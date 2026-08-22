@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { signOut } from "./sign-out";
 import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
 import { PushToggle } from "./push-toggle";
+import { InstallApp } from "./install-app";
 import { buttonClass } from "@/app/ui";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -67,6 +68,13 @@ export default async function SettingsPage() {
           </Link>
         </section>
       ) : null}
+
+      {/* Above the notification control, because it changes what a
+          notification shows. In a browser Chrome prints the site's address
+          under every one — §8 keeps a person and a condition off a lock screen
+          and then the domain says "dating app" to anyone glancing at the
+          phone. Installed, it says ⁺One. */}
+      <InstallApp />
 
       {/* The Drop lands at 8pm whether or not anybody is looking, so this is
           the control that decides whether that means anything. Per device,

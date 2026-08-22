@@ -39,6 +39,15 @@ export default function manifest(): MetadataRoute.Manifest {
      * argument applies with more force to the app's own name and description.
      */
     description: "Dating and support, one conversation at a time.",
+    /**
+     * The app's stable identity, separate from where it opens.
+     *
+     * Without `id`, Chrome identifies an installed app by its start_url — so
+     * changing where the app opens would look like a different app, and an
+     * already-installed member would be offered the install prompt again for
+     * something they have. Pinned to a value that has no reason to move.
+     */
+    id: "/app",
     start_url: "/app",
     // The scope has to include "/" or a sign-in redirect leaves the installed
     // window and opens a browser tab, which loses the session cookie's context
