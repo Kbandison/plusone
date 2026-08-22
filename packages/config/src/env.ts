@@ -195,7 +195,27 @@ export const serverEnvSchema = z
      * misbehave. A mailto: or https: URL; the RFC requires one.
      */
     VAPID_PRIVATE_KEY: z.string().optional(),
-    VAPID_SUBJECT: z.string().optional(),
+    /**
+     * Checked for shape here, not just presence.
+     *
+     * RFC 8292 requires a `mailto:` or `https:` URL, and web-push throws when
+     * it is anything else — inside the notifier, at send time, which is inside
+     * a cron sweep. So a subject pasted without its `mailto:` prefix would not
+     * fail a deploy: it would 500 the drop sweep every fifteen minutes, and the
+     * fuse warning with it, and nothing would look wrong until somebody read
+     * the logs.
+     *
+     * This is exactly the paste that happened once already while wiring it up.
+     * Boot is the right place to be told, because whoever set the variable is
+     * still there.
+     */
+    VAPID_SUBJECT: z
+      .string()
+      .refine((value) => /^(mailto:\S+@\S+|https:\/\/\S+)$/.test(value.trim()), {
+        message:
+          "must be a mailto: address or an https: URL — RFC 8292 requires one, and web-push rejects anything else at send time",
+      })
+      .optional(),
 
     /** Shared secret so only Vercel Cron can invoke /api/cron/*. */
     CRON_SECRET: z.string().min(32),

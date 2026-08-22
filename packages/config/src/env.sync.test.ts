@@ -81,3 +81,55 @@ describe(".env.example matches the schema", () => {
     }
   });
 });
+
+/**
+ * RFC 8292 requires a mailto: or https: subject, and web-push throws on
+ * anything else — inside the notifier, at send time, which is inside a cron
+ * sweep. A subject pasted without its "mailto:" prefix would not fail a deploy:
+ * it would 500 the drop sweep every fifteen minutes and take the fuse warning
+ * with it, and nothing would look wrong until somebody read the logs.
+ *
+ * That paste happened once while this was being wired up, which is the only
+ * reason the check exists.
+ */
+describe("VAPID_SUBJECT is checked at boot, not at send", () => {
+  const base = {
+    SUPABASE_SECRET_KEY: "sb_secret_x",
+    STRIPE_SECRET_KEY: "sk_x",
+    STRIPE_WEBHOOK_SECRET: "whsec_x",
+    STRIPE_PRICE_PREMIUM_1MO: "price_x",
+    STRIPE_PRICE_PREMIUM_3MO: "price_x",
+    STRIPE_PRICE_PREMIUM_6MO: "price_x",
+    RESEND_API_KEY: "re_x",
+    OTP_PROVIDER: "stub",
+    LIVENESS_PROVIDER: "stub",
+    CRON_SECRET: "x".repeat(32),
+  };
+
+  it.each([
+    ["mailto:alerts@loveplusone.app", true],
+    ["https://loveplusone.app/contact", true],
+    // The near-miss: a real address with the scheme dropped.
+    ["alerts@loveplusone.app", false],
+    ["loveplusone.app", false],
+    ["http://loveplusone.app", false],
+  ])("%s is %s", (subject, accepted) => {
+    const result = serverEnvSchema.safeParse({
+      ...base,
+      VAPID_SUBJECT: subject,
+      VAPID_PRIVATE_KEY: "k",
+    });
+    expect(result.success).toBe(accepted);
+  });
+
+  /** Push is the one channel that can be absent without the app being broken. */
+  it("accepts all three being absent", () => {
+    expect(serverEnvSchema.safeParse(base).success).toBe(true);
+  });
+
+  /** But half a pair signs a token no push service will accept. */
+  it("refuses a private key with no subject", () => {
+    const result = serverEnvSchema.safeParse({ ...base, VAPID_PRIVATE_KEY: "k" });
+    expect(result.success).toBe(false);
+  });
+});

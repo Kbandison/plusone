@@ -46,7 +46,30 @@ function configure(): boolean {
     return ready;
   }
 
-  webpush.setVapidDetails(subject, publicKey, privateKey);
+  try {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+  } catch (cause) {
+    /**
+     * Disabled, not thrown.
+     *
+     * The env schema checks the subject's shape at boot, which is where a bad
+     * one should be caught. This is the second line: a throw here escapes
+     * send(), which escapes the cron route, which 500s the whole sweep — so one
+     * malformed variable would take out the drop notification AND the fuse
+     * warning every fifteen minutes. Losing push is bad; losing the sweeps that
+     * carry it is worse.
+     */
+    console.error(
+      JSON.stringify({
+        at: "webpush.configure",
+        problem: "VAPID details refused — push disabled",
+        reason: cause instanceof Error ? cause.message : "unknown",
+      }),
+    );
+    ready = false;
+    return ready;
+  }
+
   ready = true;
   return ready;
 }
