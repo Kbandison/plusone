@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { DRAFT_COPY, PUSH_APP_NAME } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
 import { registerPushDevice, unregisterPushDevice } from "@/app/app/push-actions";
@@ -162,7 +162,10 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
     start(async () => {
       try {
         const registration = await navigator.serviceWorker.ready;
-        await registration.showNotification(C.pushHeading, {
+        // The app name, exactly as a real one arrives. This is answering "what
+        // will these look like", and a test wearing a different title than the
+        // thing it is testing answers a different question.
+        await registration.showNotification(PUSH_APP_NAME, {
           body: C.pushTestBody,
           icon: "/icons/icon-192.png",
           badge: "/icons/badge-96.png",

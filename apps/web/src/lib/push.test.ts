@@ -352,7 +352,9 @@ describe("the app can be installed", () => {
 describe("a member can tell which half of the chain is broken", () => {
   it("draws one locally, with no server and no push service", () => {
     expect(toggle).toMatch(/function test\(\)/);
-    expect(toggle).toMatch(/registration\.showNotification\(C\.pushHeading/);
+    // The app name, exactly as a real one arrives — a test wearing a different
+    // title than the thing it tests answers a different question.
+    expect(toggle).toMatch(/registration\.showNotification\(PUSH_APP_NAME/);
     const fn = toggle.slice(toggle.indexOf("function test()"));
     const body = fn.slice(0, fn.indexOf("function disable()"));
     expect(body).not.toMatch(/registerPushDevice|fetch\(|webpush/);
