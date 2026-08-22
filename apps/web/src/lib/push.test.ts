@@ -472,15 +472,18 @@ describe("what the phone actually draws", () => {
   });
 
   /**
-   * Android already draws the app's own icon beside a notification, so
-   * supplying the same image again rendered it twice — once as the app, once as
-   * the large icon on the right.
+   * Android draws a large icon on the right and will not leave it empty: with
+   * no `icon` it synthesises a monogram from the notification's source, which
+   * here is the origin — a grey circle with a "W" in it, for "www". The app's
+   * mark repeated is the better of the two outcomes, and there is no third.
+   * Determined on a real phone, in both directions.
    */
-  it("sends no icon, because the platform already has one", () => {
-    expect(sw).not.toMatch(/icon: "\/icons\//);
+  it("sends the icon, because the platform invents a worse one otherwise", () => {
+    expect(sw).toMatch(/icon: "\/icons\/icon-192\.png"/);
     expect(sw).toMatch(/badge: "\/icons\/badge-96\.png"/);
+    // And the test control draws exactly what a real one draws.
     const toggleRaw = read("src/app/app/settings/push-toggle.tsx");
-    expect(toggleRaw).not.toMatch(/icon: "\/icons\//);
+    expect(toggleRaw).toMatch(/icon: "\/icons\/icon-192\.png"/);
   });
 
   /**

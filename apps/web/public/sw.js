@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-3";
+const VERSION = "plusone-sw-4";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -88,19 +88,27 @@ self.addEventListener("push", (event) => {
       .showNotification(title, {
         body,
         /**
-         * No `icon`.
+         * The mark appears twice on Android and that is the better of the two
+         * available outcomes.
          *
-         * Android already draws the app's own icon beside a notification, so
-         * supplying the same image again renders it TWICE — once as the app,
-         * once as the large icon on the right. In a browser the left slot is
-         * the browser's own logo and cannot be changed, so the second copy
-         * bought a duplicate when installed and nothing much when not.
+         * Android draws the app's icon on the left AND a large icon on the
+         * right, and it will not leave the right one empty: with no `icon` it
+         * synthesises a monogram from the notification's source, which here is
+         * the origin — so removing this produced a grey circle with a "W" in
+         * it, for "www". A letter taken from the domain is a worse thing to put
+         * beside a private notification than the app's own mark repeated.
          *
-         * The badge is the one image worth sending: it is the status-bar mark,
-         * and Android draws it from the alpha channel alone — every opaque
-         * pixel becomes solid white. It was a full-colour square with an opaque
+         * Determined on a real phone, in both directions. There is no option
+         * that suppresses the large icon.
+         */
+        icon: "/icons/icon-192.png",
+        /**
+         * The status-bar mark, which Android draws from the ALPHA CHANNEL
+         * alone: every opaque pixel becomes solid white, every transparent one
+         * disappears. This shipped as a full-colour square with an opaque
          * background, so the status bar showed a solid white block until the
-         * shade was pulled down. It is the glyph and transparency now.
+         * shade was pulled down and the real icon appeared under it. It is the
+         * glyph and transparency now.
          */
         badge: "/icons/badge-96.png",
         // The path travels in data rather than in the tag or the title, so

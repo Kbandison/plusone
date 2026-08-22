@@ -165,11 +165,12 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
         // The app name, exactly as a real one arrives. This is answering "what
         // will these look like", and a test wearing a different title than the
         // thing it is testing answers a different question.
-        // The same options a real one is drawn with — no icon, because Android
-        // already shows the app's, and the badge because that is the status-bar
-        // mark. A test that looks different from the thing it tests is not one.
+        // The same options a real one is drawn with. A test that looks
+        // different from the thing it tests is not a test — including the icon,
+        // whose absence Android fills with a letter taken from the domain.
         await registration.showNotification(PUSH_APP_NAME, {
           body: C.pushTestBody,
+          icon: "/icons/icon-192.png",
           badge: "/icons/badge-96.png",
           tag: "plusone-test",
         });
