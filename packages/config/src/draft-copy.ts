@@ -959,6 +959,20 @@ export const DRAFT_COPY = {
     pushInstallFirst:
       "On iPhone, add ⁺One to your home screen first — the share button, then Add to Home Screen — and open it from there.",
     pushFailed: "That did not work. Try again in a moment.",
+    /**
+     * Proving the chain, in two halves.
+     *
+     * A push that is accepted by the push service and never appears has two
+     * possible causes, and they need completely different fixes: the browser
+     * refused to draw it, or the phone's own settings swallowed it. This draws
+     * one locally — no server, no push service — so a member who sees nothing
+     * knows the problem is on their device, and one who sees it knows it is
+     * not. Claude's words.
+     */
+    pushTestLabel: "Show a test notification",
+    pushTestBody: "This is what a notification looks like.",
+    pushTestShown:
+      "Shown. If nothing appeared, your phone is blocking them — check its notification settings for this app.",
     adminSettingsHeading: "Moderation",
     adminSettingsBody: "Reports, verifications and the rest of the admin tools.",
     adminSettingsLink: "Open admin",

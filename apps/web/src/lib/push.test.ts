@@ -106,7 +106,30 @@ describe("the service worker stores nothing", () => {
 
   /** Four unread messages are one line, not four identical ones. */
   it("replaces rather than stacks, keyed on something with no identity", () => {
-    expect(sw).toMatch(/tag: typeof payload\.event === "string"/);
+    expect(sw).toMatch(
+      /const tag = typeof payload\.event === "string" \? payload\.event : "plusone"/,
+    );
+    expect(sw).toMatch(/\btag,/);
+  });
+
+  /**
+   * showNotification validates its options and THROWS on a combination the
+   * browser dislikes — silent with renotify is one, and the set has changed
+   * between Chrome versions. A throw inside a push handler is silence, and
+   * Chrome answers silence with its own "site updated in the background", so
+   * the member gets a worse notification and we get no signal at all.
+   */
+  it("still shows something if the options are refused", () => {
+    expect(sw).toMatch(
+      /\.catch\(\(\) =>\s*\n?\s*self\.registration\.showNotification\(title, \{ body, data, tag \}\)/,
+    );
+  });
+
+  /** Both combinations throw, so they are never sent together. */
+  it("never sets silent and renotify at once", () => {
+    expect(sw).toMatch(
+      /\.\.\.\(payload\.event === "drop_ready" \? \{ renotify: true \} : \{ silent: true \}\)/,
+    );
   });
 
   it("reuses the open window rather than opening a second app", () => {
@@ -317,5 +340,40 @@ describe("the app can be installed", () => {
    */
   it("uses a label every launcher can draw", () => {
     expect(read("src/app/manifest.ts")).toMatch(/short_name: BRAND\.deviceNameFallback/);
+  });
+});
+
+/**
+ * A push accepted by the push service and never seen has two possible causes,
+ * and they need completely different fixes: the worker refused to draw it, or
+ * the phone's own settings swallowed it. Without a way to tell them apart,
+ * diagnosing it is guesswork — which is how the first one was spent.
+ */
+describe("a member can tell which half of the chain is broken", () => {
+  it("draws one locally, with no server and no push service", () => {
+    expect(toggle).toMatch(/function test\(\)/);
+    expect(toggle).toMatch(/registration\.showNotification\(C\.pushHeading/);
+    const fn = toggle.slice(toggle.indexOf("function test()"));
+    const body = fn.slice(0, fn.indexOf("function disable()"));
+    expect(body).not.toMatch(/registerPushDevice|fetch\(|webpush/);
+  });
+
+  /**
+   * The Notification constructor is unavailable in an installed app on Android,
+   * which is exactly where this question gets asked.
+   */
+  it("goes through the registration rather than the constructor", () => {
+    expect(toggle).not.toMatch(/new Notification\(/);
+  });
+
+  /** The browser's own message is more use than ours when it refuses. */
+  it("shows what the browser said when it refuses", () => {
+    expect(toggle).toMatch(/cause instanceof Error \? cause\.message : C\.pushFailed/);
+  });
+
+  /** Only offered once notifications are on — there is nothing to test before. */
+  it("is offered only when this device is subscribed", () => {
+    const on = toggle.slice(toggle.indexOf('state === "on"'));
+    expect(on.slice(0, 1200)).toMatch(/pushTestLabel/);
   });
 });

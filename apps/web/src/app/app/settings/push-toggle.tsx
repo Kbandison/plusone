@@ -54,6 +54,7 @@ type State = "checking" | "unsupported" | "install-first" | "blocked" | "off" | 
 export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }) {
   const [state, setState] = useState<State>("checking");
   const [error, setError] = useState<string | null>(null);
+  const [tested, setTested] = useState(false);
   const [pending, start] = useTransition();
 
   useEffect(() => {
@@ -142,6 +143,38 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
     });
   }
 
+  /**
+   * Draws one locally, to tell the two halves of the chain apart.
+   *
+   * A push accepted by the push service and never seen has two possible causes
+   * and they need different fixes: the service worker refused to draw it, or
+   * the phone's own notification settings swallowed it. This skips the server
+   * and the push service entirely and asks the worker to draw one now — so
+   * nothing appearing means the device is blocking, and something appearing
+   * means the device is fine and the problem is delivery.
+   *
+   * Through the registration rather than `new Notification()`: the constructor
+   * is unavailable in an installed app on Android, which is exactly where this
+   * question gets asked.
+   */
+  function test() {
+    setError(null);
+    start(async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification(C.pushHeading, {
+          body: C.pushTestBody,
+          icon: "/icons/icon-192.png",
+          badge: "/icons/badge-96.png",
+          tag: "plusone-test",
+        });
+        setTested(true);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : C.pushFailed);
+      }
+    });
+  }
+
   function disable() {
     setError(null);
     start(async () => {
@@ -190,6 +223,14 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
             </p>
             <button
               type="button"
+              onClick={test}
+              disabled={pending}
+              className={buttonClass("secondary")}
+            >
+              {C.pushTestLabel}
+            </button>
+            <button
+              type="button"
               onClick={disable}
               disabled={pending}
               className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
@@ -208,6 +249,12 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
           </button>
         )}
       </div>
+
+      {tested && !error ? (
+        <p role="status" className="mt-3 max-w-[52ch] text-[11.3px] leading-[1.6] text-ink-2">
+          {C.pushTestShown}
+        </p>
+      ) : null}
 
       {error ? (
         <p role="alert" className="mt-3 text-[11.3px] text-critical">

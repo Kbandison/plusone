@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-1";
+const VERSION = "plusone-sw-2";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -68,29 +68,49 @@ self.addEventListener("push", (event) => {
   const body = payload.body;
   if (typeof title !== "string" || typeof body !== "string") return;
 
+  const tag = typeof payload.event === "string" ? payload.event : "plusone";
+  const data = { path: typeof payload.path === "string" ? payload.path : "/app" };
+
+  /**
+   * Shown with the full options, or with the bare minimum if those are refused.
+   *
+   * showNotification validates its options and THROWS on a combination the
+   * browser dislikes — `silent` with `renotify` is one, and the set has changed
+   * between Chrome versions. A throw inside a push handler is silence, and
+   * Chrome answers silence with its own "This site has been updated in the
+   * background", so the member gets a worse notification and we get no signal.
+   *
+   * The fallback drops every option that is decoration. Title and body are the
+   * notification; the rest is polish, and polish is not worth the message.
+   */
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: "/icons/icon-192.png",
-      // Monochrome, tinted by Android and shown in the status bar. Without it
-      // Android draws a grey circle where the app's mark should be.
-      badge: "/icons/badge-96.png",
-      // The path travels in data rather than in the tag or the title, so
-      // nothing about the destination is displayed.
-      data: { path: typeof payload.path === "string" ? payload.path : "/app" },
-      /**
-       * One notification per event type, replaced rather than stacked.
-       *
-       * Four unread messages should be one line saying there are messages, not
-       * four identical lines — and the event name is the only thing here that
-       * is safe to use as a key, because it carries no identity.
-       */
-      tag: typeof payload.event === "string" ? payload.event : "plusone",
-      renotify: true,
-      // The drop is the one event worth a buzz: it is a scheduled moment the
-      // member opted into. Everything else can wait for them to look.
-      silent: payload.event !== "drop_ready",
-    }),
+    self.registration
+      .showNotification(title, {
+        body,
+        icon: "/icons/icon-192.png",
+        // Monochrome, tinted by Android and shown in the status bar. Without it
+        // Android draws a grey circle where the app's mark should be.
+        badge: "/icons/badge-96.png",
+        // The path travels in data rather than in the tag or the title, so
+        // nothing about the destination is displayed.
+        data,
+        /**
+         * One notification per event type, replaced rather than stacked.
+         *
+         * Four unread messages should be one line saying there are messages,
+         * not four identical lines — and the event name is the only thing here
+         * that is safe to use as a key, because it carries no identity.
+         */
+        tag,
+        // renotify only alongside a tag, and never alongside silent: both
+        // combinations throw. The drop is the one event worth a buzz — it is a
+        // scheduled moment the member opted into — so it is the one that is
+        // not silent, and therefore the only one that may re-alert.
+        ...(payload.event === "drop_ready" ? { renotify: true } : { silent: true }),
+      })
+      .catch(() =>
+        self.registration.showNotification(title, { body, data, tag }),
+      ),
   );
 });
 
