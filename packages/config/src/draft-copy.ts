@@ -930,6 +930,35 @@ export const DRAFT_COPY = {
      * app has ever linked to it — the only way in was typing the URL, and the
      * only way to know the URL was to have written it. Claude's words.
      */
+    /**
+     * Turning the drop's notification on, and what it does not say.
+     *
+     * The second half of that is the part worth reading: §8's whole matrix
+     * exists because a push preview is visible to anybody holding the phone,
+     * and a member deciding whether to allow notifications from THIS app is
+     * deciding exactly that. So the control says what will appear on a lock
+     * screen, in the words that will appear on it. All Claude's.
+     */
+    pushHeading: "Notifications",
+    pushBody:
+      "Tonight's Drop lands at 8pm. A notification is the only way to know without opening the app.",
+    pushPrivacyNote:
+      "Notifications never say who from, what about, or anything about anyone's health. They say ⁺One and one short line — nothing more shows on a locked phone.",
+    pushEnableLabel: "Turn on notifications",
+    pushDisableLabel: "Turn off on this device",
+    pushEnabled: "On for this device.",
+    pushBlocked:
+      "Your browser is blocking notifications for this site. You can allow them in its site settings.",
+    pushUnsupported: "This browser cannot show notifications.",
+    /**
+     * iOS delivers web push only to a site added to the home screen, and there
+     * is no API to ask — Safari offers "Add to Home Screen" from its own share
+     * menu and nowhere else. So this describes the gesture rather than
+     * triggering it, which is the only thing that can be done.
+     */
+    pushInstallFirst:
+      "On iPhone, add ⁺One to your home screen first — the share button, then Add to Home Screen — and open it from there.",
+    pushFailed: "That did not work. Try again in a moment.",
     adminSettingsHeading: "Moderation",
     adminSettingsBody: "Reports, verifications and the rest of the admin tools.",
     adminSettingsLink: "Open admin",

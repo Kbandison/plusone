@@ -45,8 +45,14 @@ describe("notification payloads are content-blind", () => {
   });
 
   it.each(templates)("$event deep link is a bare app path, not an identity", (template) => {
-    // A path with a UUID or query string would leak who or what the push is about.
-    expect(template.path).toMatch(/^\/[a-z-]+$/);
+    // A path with a UUID or query string would leak who or what the push is
+    // about. Segments, not a single one: these were /drop and /chats when the
+    // app lives under /app, so every one of them was a 404 — a notification
+    // whose whole job is bringing somebody back would have landed them on a
+    // not-found page.
+    expect(template.path).toMatch(/^(\/[a-z-]+)+$/);
+    expect(template.path).not.toMatch(/[?#=]/);
+    expect(template.path).not.toMatch(/\d/);
   });
 
   it("email subject reveals nothing beyond the app name", () => {

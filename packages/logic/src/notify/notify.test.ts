@@ -37,11 +37,21 @@ describe("every template builds a clean payload", () => {
     expect(buildPayload(event).title).toBe(PUSH_APP_NAME);
   });
 
+  /**
+   * The shape, not the depth. This required a single segment, which every path
+   * satisfied by being wrong — they were /drop and /chats when the app lives
+   * under /app, so each one was a 404. What matters is that a path carries no
+   * identity: no id, no query, no fragment. notification-paths.test.ts checks
+   * they resolve to real routes, which this cannot see from here.
+   */
   it.each(EVENTS)("%s deep-links without identity or query string", (event) => {
     const { path } = buildPayload(event);
-    expect(path).toMatch(/^\/[a-z-]+$/);
+    expect(path).toMatch(/^(\/[a-z-]+)+$/);
     expect(path).not.toContain("?");
     expect(path).not.toContain("=");
+    expect(path).not.toContain("#");
+    // A uuid or a phone number in a path is the leak this is really guarding.
+    expect(path).not.toMatch(/\d/);
   });
 });
 
@@ -54,7 +64,7 @@ describe("the dispatcher refuses to carry a condition word", () => {
     event: "message_received",
     title: PUSH_APP_NAME,
     body: "You have a new message",
-    path: "/chats",
+    path: "/app/inbox",
     emailSubject: EMAIL_SUBJECT,
   };
 
@@ -166,7 +176,7 @@ describe("the stub notifier", () => {
         event: "message_received",
         title: PUSH_APP_NAME,
         body: "your hsv result is in",
-        path: "/chats",
+        path: "/app/inbox",
         emailSubject: EMAIL_SUBJECT,
       },
     };

@@ -23,34 +23,54 @@ export interface NotificationTemplate {
   readonly path: string;
 }
 
+/**
+ * Every path is a real route, which none of them were.
+ *
+ * These were written before the app had routes and never revisited: /drop,
+ * /inbox, /chats, /browse and /invite. The app lives under /app, so every one
+ * of them was a 404 — a notification whose entire job is to bring somebody back
+ * would have landed them on a not-found page. Nothing caught it because nothing
+ * had ever delivered one.
+ *
+ * `notification-paths.test.ts` now checks each against the built route manifest,
+ * so the next renamed segment fails a test rather than a member's evening.
+ *
+ * Two of them also moved to where the thing actually is. A connect arrives in
+ * the inbox and the chat it becomes is in the inbox too — /app/chats exists but
+ * the inbox is the list a member is sent to.
+ */
 export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
-  drop_ready: { event: "drop_ready", body: "Tonight's Drop is ready", path: "/drop" },
+  drop_ready: { event: "drop_ready", body: "Tonight's Drop is ready", path: "/app" },
   connect_received: {
     event: "connect_received",
     body: "Someone sent you a connect",
-    path: "/inbox",
+    path: "/app/inbox",
   },
   connect_accepted: {
     event: "connect_accepted",
     body: "Your connect was accepted",
-    path: "/chats",
+    path: "/app/inbox",
   },
-  message_received: { event: "message_received", body: "You have a new message", path: "/chats" },
+  message_received: {
+    event: "message_received",
+    body: "You have a new message",
+    path: "/app/inbox",
+  },
   fuse_warning: {
     event: "fuse_warning",
     body: "One of your chats closes tomorrow",
-    path: "/chats",
+    path: "/app/inbox",
   },
   chat_closed: {
     event: "chat_closed",
     body: "A chat has closed — a note is waiting",
-    path: "/chats",
+    path: "/app/inbox",
   },
-  nearby_joins: { event: "nearby_joins", body: "New members joined near you", path: "/browse" },
+  nearby_joins: { event: "nearby_joins", body: "New members joined near you", path: "/app/browse" },
   referral_converted: {
     event: "referral_converted",
     body: "Your invite was accepted",
-    path: "/invite",
+    path: "/app/invite",
   },
 } as const;
 

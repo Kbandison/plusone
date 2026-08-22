@@ -8,6 +8,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/drop-notify",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/connect-sweep",
       "schedule": "0 * * * *"
     },

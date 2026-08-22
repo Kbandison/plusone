@@ -10,6 +10,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
 import { NavLinks } from "./nav-links";
 import { NavHeight } from "./nav-height";
+import { ServiceWorker } from "./service-worker";
 
 /**
  * The member app.
@@ -169,6 +170,10 @@ export default async function AppLayout({
       </nav>
 
       {modal}
+
+      {/* Renders nothing either. It puts the worker on the device that makes
+          push and the installed shell possible — see service-worker.tsx. */}
+      <ServiceWorker />
 
       {/* Renders nothing. It measures the bar above and publishes the height,
           because the one thing that has to sit flush on top of it cannot be
