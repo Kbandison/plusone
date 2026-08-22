@@ -35,7 +35,7 @@ if (!DB_URL) {
 // rooms is 7, not the 5 §5.2 names: Latest news is a room now (20260820000300)
 // and there are two of it, one per community, because rooms are scoped by
 // community and news is too. The five the spec names are still all there.
-const EXPECT = { tables: 31, views: 5, functions: 115, enums: 21, rooms: 7, config: 23 };
+const EXPECT = { tables: 31, views: 5, functions: 116, enums: 21, rooms: 7, config: 23 };
 const INVOKER_VIEWS = [];
 const DEFINER_VIEWS = ["visible_profile_photos", "visible_profiles", "preview_profiles"];
 const NO_UPDATE_PATH = ["connects", "chats"];

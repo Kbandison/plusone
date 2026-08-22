@@ -236,3 +236,112 @@ describe("the switches", () => {
     expect(MUTABLE_EVENTS).not.toContain("verification_decided");
   });
 });
+
+/**
+ * The third person in a thread.
+ *
+ * A room thread is two levels deep — enforce_flat_comments refuses a third — so
+ * answering a REPLY nests under the COMMENT above it. reply_received goes to
+ * whoever wrote the row it nests under, which meant the person actually being
+ * answered, whose name the composer had just put at the front of the message,
+ * was the one participant nobody ever told.
+ */
+describe("being spoken to", () => {
+  const actions = readFileSync(join(SRC, "app/app/rooms/[roomId]/actions.ts"), "utf8");
+
+  it("tells whoever was tagged, in a comment and in a post", () => {
+    // Both, because a tag is a tag. Excluding posts would be arbitrary — the
+    // same box writes both and the same parser reads them.
+    // `await`, or the helper's own definition counts as a third call site.
+    const calls = [...actions.matchAll(/await tellWhoeverWasTagged\(\{/g)];
+    expect(calls.length).toBe(2);
+    expect(actions).toMatch(/notify\("mention_received", tagged/);
+  });
+
+  /**
+   * Somebody both replied to and tagged in one message is ONE event. Two
+   * buzzes for it is the notification storm §3.3 exists to keep out.
+   */
+  it("does not tell the same person twice for one message", () => {
+    expect(actions).toMatch(/except: parentAuthor\?\.userId \?\? null/);
+    expect(actions).toMatch(/\.filter\(\(id\) => id !== except\)/);
+  });
+
+  /**
+   * The thread shows an anonymous message under an alias — that is the whole
+   * point of the box being ticked — and a notification naming the author would
+   * undo it in the one place the person tagged is guaranteed to look.
+   */
+  it("drops the author when the message is anonymous", () => {
+    const helper = actions.slice(actions.indexOf("async function tellWhoeverWasTagged"));
+    expect(helper).toMatch(/actorId: anonymous \? undefined : me/);
+  });
+
+  /** A tag is a courtesy attached to something already written and committed. */
+  it("never lets a tag stop a post", () => {
+    const helper = actions.slice(actions.indexOf("async function tellWhoeverWasTagged"));
+    expect(helper).toMatch(/if \(!messageId \|\| !body\) return;/);
+  });
+});
+
+describe("a name is resolved behind the wall, never in front of it", () => {
+  const sql = migration("function public.mentioned_members");
+
+  /**
+   * room_messages.user_id is REVOKED from members because an anonymous author
+   * must not be traceable. A mention has to make exactly that hop, so it makes
+   * it in a function no member may execute — one they could call would be a way
+   * to ask "is Cedar the same person as Willow".
+   */
+  it("is out of a member's reach entirely", () => {
+    expect(sql).toMatch(/security definer/);
+    expect(sql).toMatch(
+      /revoke all on function public\.mentioned_members\(uuid, uuid, text\[\]\) from public, anon, authenticated/,
+    );
+  });
+
+  it("keeps an alias and a display name apart", () => {
+    // Matching an anonymous author's display name too would let somebody find
+    // the alias by tagging the person and watching what happened.
+    const fn = sql.slice(sql.indexOf("create or replace function public.mentioned_members"));
+    expect(fn).toMatch(/case when m\.anonymous[\s\S]{0,120}author_alias[\s\S]{0,120}display_name/);
+  });
+
+  it("refuses the sender, a leaver, and both directions of a block", () => {
+    const fn = sql.slice(sql.indexOf("create or replace function public.mentioned_members"));
+    expect(fn).toMatch(/m\.user_id <> p_actor/);
+    expect(fn).toMatch(/is_member_of_room\(m\.user_id, p_room_id\)/);
+    expect(fn).toMatch(/not public\.is_blocked_either_way\(p_actor, m\.user_id\)/);
+  });
+
+  /** The ids are used to write notifications and are then gone. */
+  it("is only ever called with the service client", () => {
+    const lib = readFileSync(join(SRC, "lib/notify.ts"), "utf8");
+    const helper = lib.slice(lib.indexOf("export async function mentionedInRoom"));
+    expect(helper).toMatch(/serviceClient\(\)/);
+    expect(helper).toMatch(/return \(\(data \?\? \[\]\) as \{ user_id: string \}\[\]\)/);
+  });
+});
+
+describe("a reply to a comment does not claim to be a reply to a post", () => {
+  it("resolves the shape of the subject at read time", () => {
+    const sql = migration("subject_is_comment");
+    expect(sql).toMatch(/subject_is_comment boolean/);
+    expect(sql).toMatch(/select m\.parent_id is not null/);
+  });
+
+  /**
+   * /app/rooms/<room>/<post> is the only page a room message has — a comment is
+   * not one, and a thread rendered from a comment id has no root and draws
+   * nothing. Two hops covers the whole shape.
+   */
+  it("links to the top of the thread, however deep the subject sits", () => {
+    const sql = migration("subject_is_comment");
+    expect(sql).toMatch(/coalesce\(gp\.id, pm\.id, m\.id\)/);
+  });
+
+  it("passes it to the line rather than guessing", () => {
+    const page = readFileSync(join(SRC, "app/app/notifications/page.tsx"), "utf8");
+    expect(page).toMatch(/line\(row\.actor_name, row\.subject_is_comment\)/);
+  });
+});

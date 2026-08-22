@@ -86,6 +86,7 @@ export {
   NOTIFICATION_CHANNEL_LABELS,
 } from "./draft-copy";
 export type {
+  NotificationLine,
   Community,
   ConditionDetail,
   Intention,

@@ -122,3 +122,37 @@ export async function roomPostAuthor(
 
   return data ? { userId: data.user_id, anonymous: data.anonymous } : null;
 }
+
+/**
+ * Who, in this room, is being spoken to.
+ *
+ * The service client, and it has to be: room_messages.user_id is revoked from
+ * members, because an anonymous author must not be traceable. mentioned_members
+ * makes exactly that hop behind a function no member may execute, and the ids
+ * never leave this process — they become notifications for the people named and
+ * are then gone.
+ *
+ * Names in, ids out, nothing back to the caller's page. A version of this that
+ * a client could reach would be a way to ask "is Cedar the same person as
+ * Willow", and that question does not get an answer at any price.
+ */
+export async function mentionedInRoom(
+  roomId: string,
+  actorId: string,
+  names: readonly string[],
+): Promise<string[]> {
+  if (names.length === 0) return [];
+
+  const supabase = serviceClient();
+  const { data, error } = await supabase.rpc("mentioned_members", {
+    p_room_id: roomId,
+    p_actor: actorId,
+    p_names: names,
+  });
+
+  if (error) {
+    console.error(JSON.stringify({ at: "notify.mentions", problem: error.message }));
+    return [];
+  }
+  return ((data ?? []) as { user_id: string }[]).map((row) => row.user_id);
+}

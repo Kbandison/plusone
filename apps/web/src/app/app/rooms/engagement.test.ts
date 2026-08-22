@@ -294,10 +294,29 @@ describe("replying to a commenter", () => {
     ).toMatch(/replyable/);
   });
 
-  it("puts the name in the box the way Facebook does", () => {
-    expect(forms).toMatch(
-      /setBody\(\(current\) => \(current\.startsWith\(replyTo\) \? current : `\$\{replyTo\} `\)\)/,
+  /**
+   * Tagged now, rather than bare. A bare name only reads as a name at the very
+   * front of a message — the one place a reply can put it and the one place a
+   * member typing their own cannot — and it could not be told apart from a
+   * sentence that happens to open with a word, so nobody was ever notified of
+   * being addressed.
+   */
+  it("puts the name in the box as a tag", () => {
+    expect(forms).toMatch(/mentions\.mentionPrefix\(replyTo\)/);
+  });
+
+  /**
+   * The composer writes it and the cancel button takes it back out, and those
+   * two drifted the moment the "@" was added to one of them — leaving a lone
+   * "@" at the front of the message. One function writes it; the same function
+   * says what to remove.
+   */
+  it("removes exactly what it wrote", () => {
+    const cancel = forms.slice(
+      forms.indexOf("postReplyCancel") - 600,
+      forms.indexOf("postReplyCancel"),
     );
+    expect(cancel).toMatch(/mentions\.mentionPrefix\(replyTo\)/);
   });
 
   /** Without the move a member types in front of the person they are answering. */
@@ -521,17 +540,22 @@ describe("a mention reads as a name", () => {
 
   /** Weight alone is easy to miss at 12px. */
   it("sets it apart by weight and colour", () => {
-    expect(row).toMatch(/<span className="font-medium text-accent">\{mention\}<\/span>/);
+    expect(row).toMatch(/span\.mention \?[\s\S]{0,120}font-medium text-accent/);
   });
 
-  /** "Sepia Rose" must not read as "Sepia" with a stray word after it. */
-  it("prefers the longest name that matches", () => {
-    expect(row).toMatch(/\.sort\(\(a, b\) => b\.length - a\.length\)\[0\]/);
-  });
-
-  /** A name only counts at the start, where the reply put it. */
-  it("only recognises it at the front", () => {
-    expect(row).toMatch(/post\.body\.startsWith\(`\$\{name\} `\)/);
+  /**
+   * The recognising itself lives in packages/logic and is tested there, on the
+   * properties rather than on the source: longest name wins, a tag counts
+   * anywhere in the sentence, an email address is not a mention, and the bare
+   * leading name the box used to write still renders as one.
+   *
+   * This asserts only that the row uses it. A second copy of the matching here
+   * would be a second thing to keep right, and the first one that drifted would
+   * be the one nobody was reading.
+   */
+  it("delegates the recognising rather than repeating it", () => {
+    expect(row).toMatch(/mentionsLogic\.mentionSpans\(post\.body, mentionable\)/);
+    expect(row).not.toMatch(/startsWith\(`\$\{name\} `\)/);
   });
 });
 

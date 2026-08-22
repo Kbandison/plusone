@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import { DRAFT_COPY } from "@plusone/config";
-import { tone } from "@plusone/logic";
+import { mentions, tone } from "@plusone/logic";
 
 import { memberFacingError } from "@/lib/rpc-error";
-import { notify, roomPostAuthor } from "@/lib/notify";
+import { mentionedInRoom, notify, roomPostAuthor } from "@/lib/notify";
 import { randomUUID } from "node:crypto";
 
 import { getServerSupabase } from "@/lib/supabase";
@@ -141,13 +141,20 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   const stored = await storeRoomImage(supabase, roomId, file instanceof File ? file : null);
   if (stored && "error" in stored) return { error: stored.error };
 
-  const { error } = await supabase.from("room_messages").insert({
-    room_id: roomId,
-    user_id: auth.user.id,
-    body,
-    anonymous,
-    image_path: stored?.path ?? null,
-  });
+  const { data: posted, error } = await supabase
+    .from("room_messages")
+    .insert({
+      room_id: roomId,
+      user_id: auth.user.id,
+      body,
+      anonymous,
+      image_path: stored?.path ?? null,
+    })
+    // The id, so a tag in the body has something to point at. Nothing else is
+    // read back: the row's author column is revoked from members and asking for
+    // it here would fail.
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
   // memberFacingError, not a blanket string. 20260817000800 raises
   // "slow mode: wait N more seconds" and rpc-error.ts was extended to allow it
@@ -155,6 +162,14 @@ export async function postToRoom(_prev: RoomState, formData: FormData): Promise<
   // into "That didn't post.", which is the silent drop the trigger was written
   // to replace.
   if (error) return { error: memberFacingError(error, "That didn't post.") };
+
+  await tellWhoeverWasTagged({
+    roomId,
+    messageId: posted?.id ?? null,
+    body,
+    anonymous,
+    me: auth.user.id,
+  });
 
   revalidatePath(`/app/rooms/${roomId}`);
   // A value that changes on every success, so the composer can tell this apart
@@ -236,13 +251,18 @@ export async function postComment(_prev: RoomState, formData: FormData): Promise
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
 
-  const { error } = await supabase.from("room_messages").insert({
-    room_id: roomId,
-    parent_id: parentId,
-    user_id: auth.user.id,
-    body,
-    anonymous: formData.get("anonymous") === "on",
-  });
+  const anonymous = formData.get("anonymous") === "on";
+  const { data: posted, error } = await supabase
+    .from("room_messages")
+    .insert({
+      room_id: roomId,
+      parent_id: parentId,
+      user_id: auth.user.id,
+      body,
+      anonymous,
+    })
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
   if (error) return { error: memberFacingError(error, "That didn't post.") };
 
@@ -256,12 +276,33 @@ export async function postComment(_prev: RoomState, formData: FormData): Promise
    */
   const parentAuthor = await roomPostAuthor(parentId);
   if (parentAuthor) {
-    const anonymous = formData.get("anonymous") === "on";
     await notify("reply_received", [parentAuthor.userId], {
       actorId: anonymous ? undefined : auth.user.id,
       subjectId: parentId,
     });
   }
+
+  /**
+   * And whoever was tagged, who is usually somebody else entirely.
+   *
+   * A thread is two levels deep — enforce_flat_comments refuses a third — so
+   * answering a REPLY nests under the COMMENT above it. reply_received
+   * therefore went to whoever wrote that comment, and the person actually being
+   * answered, whose name the composer had just put at the front of the message,
+   * was the one participant nobody told.
+   *
+   * The parent author is excluded because they have just been told. Somebody
+   * who is both replied to and tagged in the same message is one event, and two
+   * buzzes for it is the notification storm §3.3 exists to keep out.
+   */
+  await tellWhoeverWasTagged({
+    roomId,
+    messageId: posted?.id ?? null,
+    body,
+    anonymous,
+    me: auth.user.id,
+    except: parentAuthor?.userId ?? null,
+  });
 
   revalidatePath(`/app/rooms/${roomId}/${parentId}`);
   revalidatePath(`/app/rooms/${roomId}`);
@@ -299,4 +340,48 @@ export async function shareToRoom(_prev: RoomState, formData: FormData): Promise
 
   revalidatePath(`/app/rooms/${targetRoomId}`);
   return { error: null, posted: Date.now() };
+}
+
+/**
+ * Tells everyone a message tags, and nobody it does not.
+ *
+ * Parsing is pure and lives in packages/logic; resolving a name to a person
+ * happens in the database behind a function members cannot call. Neither half
+ * is here — this only joins them and hands the result to the dispatcher.
+ *
+ * The actor is dropped when the message is anonymous, exactly as a reply's is:
+ * the thread shows that message under an alias, which is the whole point of the
+ * box being ticked, and a notification naming the author would undo it in the
+ * one place the person tagged is guaranteed to look.
+ *
+ * Never throws, and never blocks the post. A tag is a courtesy attached to
+ * something that has already been written and committed.
+ */
+async function tellWhoeverWasTagged({
+  roomId,
+  messageId,
+  body,
+  anonymous,
+  me,
+  except = null,
+}: {
+  roomId: string;
+  messageId: string | null;
+  body: string;
+  anonymous: boolean;
+  me: string;
+  except?: string | null;
+}): Promise<void> {
+  if (!messageId || !body) return;
+
+  const names = mentions.parseMentions(body);
+  if (names.length === 0) return;
+
+  const tagged = (await mentionedInRoom(roomId, me, names)).filter((id) => id !== except);
+  if (tagged.length === 0) return;
+
+  await notify("mention_received", tagged, {
+    actorId: anonymous ? undefined : me,
+    subjectId: messageId,
+  });
 }

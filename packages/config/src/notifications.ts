@@ -18,6 +18,7 @@ export type NotificationEvent =
   | "plan_confirmed"
   | "like_received"
   | "reply_received"
+  | "mention_received"
   | "verification_decided"
   | "premium_expiring"
   | "nearby_joins"
@@ -90,7 +91,35 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
   plan_proposed: { event: "plan_proposed", body: "Someone proposed a plan", path: "/app/inbox" },
   plan_confirmed: { event: "plan_confirmed", body: "A plan is confirmed", path: "/app/inbox" },
   like_received: { event: "like_received", body: "Someone liked your post", path: "/app/rooms" },
+  /**
+   * "to you", not "to your post".
+   *
+   * This fires to the author of whatever was replied to, and a room thread is
+   * two levels deep — so that is a post for a comment and a COMMENT for a
+   * reply. It said "replied to your post" either way, which is wrong half the
+   * time and wrong in the direction that sends somebody looking for something
+   * that is not there. The in-app line says which; a push cannot, and does not
+   * pretend to.
+   */
   reply_received: { event: "reply_received", body: "Someone replied to you", path: "/app/rooms" },
+  /**
+   * Being tagged.
+   *
+   * A thread is two levels deep and no deeper, so answering a REPLY has nowhere
+   * to nest — the product puts the person's name in the box instead and the
+   * reply sits beside the others. Nobody told them. reply_received goes to the
+   * author of the row it nests under, which is the COMMENT above, so the person
+   * actually being answered was the one participant never notified.
+   *
+   * The room is never named. Rooms here are named for a diagnosis, so "@Cedar
+   * mentioned you in …" would put the one word §8 exists to keep off a lock
+   * screen onto one.
+   */
+  mention_received: {
+    event: "mention_received",
+    body: "Someone mentioned you",
+    path: "/app/rooms",
+  },
   /**
    * A member who is mid-signup and waiting on a human is the one person here
    * with nothing to do but check. §7.2 makes verification a step, and a step
@@ -194,6 +223,13 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly Notificat
   plan_confirmed: ["in_app", "push"],
   like_received: ["in_app"],
   reply_received: ["in_app", "push"],
+  /**
+   * Push, like a reply — because it IS one, mechanically. Being tagged is how
+   * this product expresses answering somebody at the third level, and a member
+   * who is buzzed when their comment is answered and silent when they are
+   * answered by name would be told about the shallower of the two.
+   */
+  mention_received: ["in_app", "push"],
   verification_decided: ["in_app", "push"],
   premium_expiring: ["in_app", "email"],
   nearby_joins: ["in_app"],
@@ -219,6 +255,7 @@ export const MUTABLE_EVENTS: readonly NotificationEvent[] = [
   "fuse_warning",
   "chat_closed",
   "reply_received",
+  "mention_received",
   "like_received",
   "premium_expiring",
   "nearby_joins",

@@ -1,5 +1,64 @@
 # Project Updates
 
+## 2026-08-22 — Being spoken to
+
+Kevin asked for a notification when somebody replies to a person's **comment**,
+and when somebody is **tagged** in one. Those turned out to be the same missing
+mechanism.
+
+A room thread is two levels deep and no deeper — `enforce_flat_comments` refuses
+a third. So answering a REPLY has nowhere to nest, and the product does what a
+threaded conversation does once you stop drawing the indent: it puts the
+person's name in the box, and the reply sits beside the others saying who it is
+for.
+
+That worked for reading and not at all for telling. The row nests under the
+COMMENT, so `reply_received` went to whoever wrote the comment — and **the person
+actually being answered, whose name the composer had just typed at the front of
+the message, was the one participant nobody ever told.** Three people in a thread
+and only two of them heard anything.
+
+### The name became a tag
+
+`@Cedar` is the same gesture the Reply button already made, with a mark on it
+that can be found anywhere in a sentence rather than only at the front, and that
+a member can type themselves. The messages already in the database open with a
+bare name, so those still render as names — but only the tagged form is ever
+notified, because a bare name cannot be told apart from a sentence that happens
+to begin with a word.
+
+**Resolving a name to a person happens behind a wall.** `room_messages.user_id`
+is revoked from members, because an anonymous author must not be traceable. A
+mention has to make exactly that hop, so it makes it inside a definer function
+no member may execute, and the ids never travel back to anybody — they become
+notifications for the people named and are then gone. A version of this a client
+could reach would be a way to ask "is Cedar the same person as Willow", and that
+question does not get an answer at any price.
+
+The resolver also refuses the sender, anyone who has left the room, and both
+directions of a block. An anonymous author matches their **alias and not their
+display name**, so nobody can find an alias by tagging a person and watching.
+
+### And a line that was wrong half the time
+
+`reply_received` fires to the author of whatever was replied to — a post for a
+comment, a comment for a reply — and said "replied to your post" either way.
+Half of them sent somebody looking for a reply on something they had not
+written. `my_notifications` now resolves the shape of the subject at read time,
+so the line says "your comment" when it was one, and "you" when the row is gone
+and it cannot tell.
+
+Both link to the top of the thread, however deep the subject sits. A comment is
+not a page — a thread rendered from a comment id has no root and draws nothing.
+
+### Not done
+
+Somebody both replied to and tagged in one message is told **once**: the reply
+recipient is excluded from the mention recipients. And the author of a post is
+NOT told when a reply lands on a comment underneath it — their thread already
+carries a count, and a notification per descendant is the storm §3.3 exists to
+keep out.
+
 ## 2026-08-22 — Notifications, and the half of §8 that had no trigger
 
 Kevin asked for in-app notifications — the drop, connects, messages, likes,
@@ -2185,6 +2244,9 @@ it**:
   forms depending on whether the reader may see a name.
 - `NOTIFICATION_EVENT_LABELS` — the fifteen switch names on the settings screen.
 - `NOTIFICATION_CHANNEL_LABELS` — "In app", "Push", "Email".
+- Added 2026-08-22 with mentions: the `mention_received` line and its switch
+  label "Someone tags you", and the reworded `reply_received` — which now says
+  "your comment", "your post" or just "you" depending on what can be resolved.
 - `notificationsHeading`, `notificationsEmpty`, `notificationsBellLabel`,
   `notificationsUnreadDivider`, `settingsNotifications`,
   `notificationSettingsHeading`, `notificationSettingsBody`,

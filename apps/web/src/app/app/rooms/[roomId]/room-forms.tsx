@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
+import { mentions } from "@plusone/logic";
 
 import { joinRoom, postComment, postToRoom } from "./actions";
 import { ROOM_INITIAL } from "./state";
@@ -58,10 +59,18 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
   // just a message that says who it is for. Nothing structured, nothing stored
   // — and for somebody posting anonymously it is their alias, which is not an
   // id and gives nothing away.
+  //
+  // Tagged now, rather than bare. A bare name only reads as a name at the very
+  // front of a message, which is the one place a reply can put it and the one
+  // place a member typing their own cannot. It also could not be told apart
+  // from a sentence that happens to begin with a word, so nobody was ever
+  // notified of being addressed — see mentionPrefix and parseMentions, which
+  // are the same pair of functions the server reads it back with.
   const previous = useRef<string | null>(null);
   if (replyTo !== previous.current) {
     previous.current = replyTo;
-    if (replyTo) setBody((current) => (current.startsWith(replyTo) ? current : `${replyTo} `));
+    const tag = replyTo ? mentions.mentionPrefix(replyTo) : "";
+    if (replyTo) setBody((current) => (current.startsWith(tag.trim()) ? current : tag));
   }
 
   // Nothing at all until a Reply is pressed.
@@ -94,9 +103,13 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
           <button
             type="button"
             onClick={() => {
-              setBody((current) =>
-                current.startsWith(replyTo) ? current.slice(replyTo.length).trimStart() : current,
-              );
+              // The same string the box wrote, taken back out whole. These two
+              // drifted the moment the "@" was added in one of them and not the
+              // other, leaving a lone "@" at the front of the message.
+              setBody((current) => {
+                const tag = mentions.mentionPrefix(replyTo).trim();
+                return current.startsWith(tag) ? current.slice(tag.length).trimStart() : current;
+              });
               setReplyTo(null);
             }}
             className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"

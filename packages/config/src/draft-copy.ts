@@ -1276,7 +1276,19 @@ export const DRAFT_COPY = {
  * deliberately does not make. And nothing about a moderator reaches the member
  * they decided about.
  */
-export const NOTIFICATION_LINES: Record<NotificationEvent, (actor: string | null) => string> = {
+export type NotificationLine = (
+  actor: string | null,
+  /**
+   * Whether the thing this is about is a comment rather than a post.
+   *
+   * Null when it cannot be told — the row was deleted, or the reader may no
+   * longer see it — and the line then says the thing that is true either way
+   * rather than guessing. `my_notifications` resolves it at read time.
+   */
+  subjectIsComment?: boolean | null,
+) => string;
+
+export const NOTIFICATION_LINES: Record<NotificationEvent, NotificationLine> = {
   drop_ready: () => "Tonight's Drop is ready.",
   connect_received: (actor) =>
     actor ? `${actor} sent you a connect.` : "Someone sent you a connect.",
@@ -1289,8 +1301,19 @@ export const NOTIFICATION_LINES: Record<NotificationEvent, (actor: string | null
   plan_proposed: (actor) => (actor ? `${actor} proposed a plan.` : "Someone proposed a plan."),
   plan_confirmed: (actor) => (actor ? `${actor} confirmed the plan.` : "A plan is confirmed."),
   like_received: () => "Someone liked your post.",
-  reply_received: (actor) =>
-    actor ? `${actor} replied to your post.` : "Someone replied to your post.",
+  /**
+   * Which of the two it was, when that is knowable.
+   *
+   * A thread is a post, comments on it, and replies under those — so this
+   * fires to the author of a post OR of a comment, and it said "your post"
+   * both times. Half of them sent somebody looking for a reply on something
+   * they had not written.
+   */
+  reply_received: (actor, onAComment) => {
+    const what = onAComment == null ? "you" : onAComment ? "your comment" : "your post";
+    return actor ? `${actor} replied to ${what}.` : `Someone replied to ${what}.`;
+  },
+  mention_received: (actor) => (actor ? `${actor} mentioned you.` : "Someone mentioned you."),
   verification_decided: () => "Your verification has been reviewed.",
   premium_expiring: () => "Your premium is ending soon.",
   nearby_joins: () => "New members joined near you.",
@@ -1315,7 +1338,8 @@ export const NOTIFICATION_EVENT_LABELS: Record<NotificationEvent, string> = {
   plan_proposed: "Someone proposes a plan",
   plan_confirmed: "A plan is confirmed",
   like_received: "Likes on your posts",
-  reply_received: "Replies to your posts",
+  reply_received: "Replies to you",
+  mention_received: "Someone tags you",
   verification_decided: "Your verification is decided",
   premium_expiring: "Premium is ending",
   nearby_joins: "New members near you",

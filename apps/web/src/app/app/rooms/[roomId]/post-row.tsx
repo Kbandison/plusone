@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { DRAFT_COPY } from "@plusone/config";
-import { chat as chatLogic } from "@plusone/logic";
+import { chat as chatLogic, mentions as mentionsLogic } from "@plusone/logic";
 
 import type { MemberPhoto } from "@/lib/photo-urls";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
@@ -124,11 +124,18 @@ export function PostRow({
   const postedAt = Date.parse(post.created_at);
   const isComment = variant === "comment";
 
-  // The longest match wins, so "Sepia Rose" is not read as "Sepia" with a
-  // stray word after it.
-  const mention = (mentionable ?? [])
-    .filter((name) => post.body.startsWith(`${name} `))
-    .sort((a, b) => b.length - a.length)[0];
+  /**
+   * The body, with every name in it marked.
+   *
+   * This recognised one name and only at position nought, because that was the
+   * only place the composer could put one. A tag can be anywhere now — and the
+   * messages already in the database still open with a bare name, so both
+   * forms are read. mentionSpans holds that; the difference is not this row's
+   * to know.
+   */
+  const spans = mentionable?.length
+    ? mentionsLogic.mentionSpans(post.body, mentionable)
+    : [{ text: post.body, mention: false }];
 
   /**
    * The like, the comment link, Reply, and the view count.
@@ -339,17 +346,19 @@ export function PostRow({
                   : "text-[17px] leading-[1.55]"
             }`}
           >
-            {/* The person being answered, told apart from the answer.
-              It is one string in the database, so without this the name is the
-              first two words of a sentence and reads as part of it. Weight and
-              colour together, because weight alone is easy to miss at 12px. */}
-            {mention ? (
-              <>
-                <span className="font-medium text-accent">{mention}</span>
-                {post.body.slice(mention.length)}
-              </>
-            ) : (
-              post.body
+            {/* The people being spoken to, told apart from what is said.
+              It is one string in the database, so without this a name is just
+              the first two words of a sentence and reads as part of it. Weight
+              and colour together, because weight alone is easy to miss at
+              12px. */}
+            {spans.map((span, i) =>
+              span.mention ? (
+                <span key={i} className="font-medium text-accent">
+                  {span.text}
+                </span>
+              ) : (
+                <span key={i}>{span.text}</span>
+              ),
             )}
           </p>
 

@@ -20,6 +20,7 @@ interface Row {
   actor_name: string | null;
   subject_id: string | null;
   subject_path: string | null;
+  subject_is_comment: boolean | null;
   created_at: string;
   read_at: string | null;
 }
@@ -121,7 +122,12 @@ export default async function NotificationsPage() {
                     className={`size-1.5 shrink-0 rounded-full ${unread ? "bg-accent" : "bg-transparent"}`}
                   />
                   <span className="min-w-0 flex-1 text-[12.6px] leading-[1.55]">
-                    {line(row.actor_name)}
+                    {/* The second argument is why a reply to a comment does
+                        not claim to be a reply to a post. Resolved by
+                        my_notifications at read time, null when the row is
+                        gone — and the line says the thing that is true either
+                        way rather than guessing. */}
+                    {line(row.actor_name, row.subject_is_comment)}
                     {unread ? (
                       <span className="sr-only"> — {C.notificationsUnreadDivider}</span>
                     ) : null}
