@@ -49,6 +49,7 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
   // five decoded images alive for the life of the tab.
   useEffect(() => {
     if (!image) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the blob: registry is the external system; the URL and the state naming it are made and revoked together
       setPreview(null);
       return;
     }
@@ -76,6 +77,7 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
    * device — a draft on a server is a message somebody never chose to share.
    */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage does not exist on the server, so the draft cannot be read during render
     setBody(window.localStorage.getItem(draftKey(chatId)) ?? "");
   }, [chatId]);
 
@@ -104,6 +106,7 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
    */
   useEffect(() => {
     if (!state.sent) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- useActionState delivers the result after the render that sent it; nowhere earlier to clear the box
     setBody("");
     setImage(null);
     if (picker.current) picker.current.value = "";

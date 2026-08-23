@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
 import { DRAFT_COPY } from "@plusone/config";
 
@@ -69,12 +69,33 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
    * state.posted changes on every success, so the effect runs because a value
    * changed rather than because a sequence was inferred.
    */
+  // Above the effect that calls it, and useCallback rather than a hoisted
+  // function declaration. The old note here was right that the effect would
+  // otherwise reach an uninitialised const — but the real constraint is the
+  // dependency array, which is evaluated during render, so naming a const
+  // declared further down is a temporal dead zone rather than a hoist. Neither
+  // closes over anything reactive: setPreview and setName are stable and picker
+  // is a ref, so the identities hold and the effect still runs only on a post.
+  const choose = useCallback((file: File | null) => {
+    setPreview((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return file ? URL.createObjectURL(file) : null;
+    });
+    setName(file?.name ?? null);
+  }, []);
+
+  const clearImage = useCallback(() => {
+    choose(null);
+    if (picker.current) picker.current.value = "";
+  }, [choose]);
+
   useEffect(() => {
     if (!state.posted) return;
     form.current?.reset();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- useActionState delivers the result after the render that sent it; nowhere earlier to clear the composer
     clearImage();
     onPosted();
-  }, [state.posted, onPosted]);
+  }, [state.posted, onPosted, clearImage]);
 
   // Object URLs are a leak if nothing revokes them: the browser holds the file
   // alive until told otherwise, and a member trying three photographs would
@@ -85,22 +106,6 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
     },
     [preview],
   );
-
-  function choose(file: File | null) {
-    setPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return file ? URL.createObjectURL(file) : null;
-    });
-    setName(file?.name ?? null);
-  }
-
-  // Function declarations, not consts: the effect above runs before either
-  // would have been initialised otherwise, and a composer that clears itself
-  // after posting is exactly when that matters.
-  function clearImage() {
-    choose(null);
-    if (picker.current) picker.current.value = "";
-  }
 
   return (
     <form

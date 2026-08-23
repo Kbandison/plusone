@@ -30,7 +30,6 @@ export const metadata: Metadata = {
 };
 
 export default async function InvitePage() {
-
   // The cookie is set in proxy.ts, on the same request.
   //
   // It was set here, and a Server Component cannot: Next seals the cookie

@@ -223,6 +223,10 @@ describe("the share control is a sheet, not a dropdown", () => {
 
   /** Reading it during render would make the server and client markup disagree. */
   it("checks for it after mount", () => {
-    expect(share).toMatch(/useEffect\(\(\) => \{\s*\n\s*setCanShare/);
+    // Tolerates a comment between the two, which is where the eslint
+    // directive for react-hooks/set-state-in-effect now sits. What is being
+    // asserted is unchanged: setCanShare is reached through an effect and not
+    // during render.
+    expect(share).toMatch(/useEffect\(\(\) => \{[^}]*setCanShare/);
   });
 });

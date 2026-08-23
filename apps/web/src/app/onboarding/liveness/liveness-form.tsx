@@ -41,6 +41,7 @@ export function LivenessForm() {
   const [completedSession, setCompletedSession] = useState<string | null>(null);
   useEffect(() => {
     if (!completedSession) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- requestSubmit needs the session already rendered into the form, so this waits for that render
     setSpeaker("finish");
     finishRef.current?.requestSubmit();
   }, [completedSession]);

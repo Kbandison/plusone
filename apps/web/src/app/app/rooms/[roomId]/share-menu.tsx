@@ -48,6 +48,7 @@ export function ShareMenu({
   // server, and branching on it while rendering makes the markup React sends
   // disagree with the markup it finds.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator is absent on the server, for the reason the comment above gives
     setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
   }, []);
 

@@ -57,6 +57,7 @@ export function InstallApp() {
      * screen. First, because every other answer here is wrong once it is true.
      */
     if (inNativeShell()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads display-mode and the user agent, neither of which exists during a server render
       setState("installed");
       return;
     }

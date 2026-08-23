@@ -60,6 +60,7 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
 
   useEffect(() => {
     if (!vapidPublicKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads Notification and PushManager, which do not exist on the server
       setState("unsupported");
       return;
     }

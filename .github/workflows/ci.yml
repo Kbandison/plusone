@@ -46,29 +46,18 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # NON-GATING until the backlog below is cleared — not because it cannot
-      # run. It can now.
+      # Gating, finally.
       #
-      # The note this replaces was correct about everything except the way out.
-      # typescript-eslint throws on any TS >= 7 (typescript-eslint#10940), and
-      # there really is no config workaround: `typescript` is a PEER of it, and
-      # node-linker=hoisted means one copy exists in the tree, so overrides and
-      # packageExtensions both fail — verified again, including patching the
-      # version guard out, which gets a crash inside typescript-estree instead
-      # because TS 7 genuinely moved the API it reads. The guard is honest.
+      # This was dead for as long as the project was on TypeScript 7 —
+      # typescript-eslint throws at import, so no rule in the config ran. The
+      # note that used to sit here concluded there was no way out, and it was
+      # right about every mechanism it listed; what it never asked was whether
+      # anything here needed TS 7. Nothing did.
       #
-      # What was never checked is whether this project needs TS 7 at all. It
-      # does not: nothing sets experimental.useTypeScriptCli, the tsconfig is
-      # plain ES2022, and typecheck, test and build are all green on 5.9.3. So
-      # every package pins 5.9.3 and the linter runs. TS 7's headline is
-      # compile speed, against a typecheck that finishes in about a second.
-      #
-      # Turning it back on surfaced 44 problems that accumulated while nothing
-      # was looking — 25 errors, mostly react-hooks rules that ship in v7.
-      # continue-on-error stays until those are dealt with, and then it goes.
-      - name: Lint (non-gating — clearing an existing backlog)
+      # Turning it back on found 44 problems. They are cleared, so this gates
+      # now — leaving it advisory would let the next 44 accumulate the same way.
+      - name: Lint
         run: pnpm lint
-        continue-on-error: true
 
       # Parses every migration against the real PostgreSQL grammar, then
       # cross-checks that each FK target, function call, policy target and grant

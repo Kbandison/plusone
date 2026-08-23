@@ -853,7 +853,7 @@ describe("the photograph opens full screen", () => {
 
   /** A member should still be able to like the thing they are looking at. */
   it("carries the counts under it", () => {
-    expect(row).toMatch(/<PostImage path=\{post\.image_path\} footer=\{<Counts \/>\} \/>/);
+    expect(row).toMatch(/<PostImage path=\{post\.image_path\} footer=\{counts\} \/>/);
     expect(lightbox).toMatch(/\{footer\}/);
   });
 
@@ -912,8 +912,12 @@ describe("one like, however many buttons are drawn for it", () => {
 
   /** The thing that made it possible: the same counts, rendered twice. */
   it("still renders the counts in both places", () => {
-    expect(row).toMatch(/<PostImage path=\{post\.image_path\} footer=\{<Counts \/>\} \/>/);
-    expect(row.match(/<Counts \/>/g) ?? []).toHaveLength(2);
+    expect(row).toMatch(/<PostImage path=\{post\.image_path\} footer=\{counts\} \/>/);
+    // `{counts}` rather than `<Counts />`: it is a JSX value now, not a
+    // component declared inside PostRow. Same two placements, and the reason
+    // for the change is that a nested declaration remounted the row's controls
+    // on every render — post-row.tsx says it at more length.
+    expect(row.match(/\{counts\}/g) ?? []).toHaveLength(2);
   });
 
   /**

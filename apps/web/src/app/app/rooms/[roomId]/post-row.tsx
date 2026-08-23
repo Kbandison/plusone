@@ -148,48 +148,53 @@ export function PostRow({
    * z-20 lifts it above the link covering the row. Without that the whole strip
    * would open the thread and none of the controls would do anything.
    */
-  function Counts() {
-    return (
-      // flex-wrap, because this is five controls now — like, comments, share,
-      // reply and the view count — and a row that cannot wrap is a row that
-      // makes the page wider than the phone.
-      <div className="relative z-20 mt-1 flex flex-wrap items-center gap-x-5 gap-y-1">
-        <LikeButton messageId={post.id} liked={post.i_liked} count={post.like_count} />
+  // A value, not a component declared inside a component. React identifies a
+  // component by the function object, so a nested declaration is a new type on
+  // every render of PostRow — the whole row of controls unmounted and
+  // remounted, LikeButton included, each time anything here changed. As plain
+  // JSX it is the same element reused in two places, which React is happy with
+  // and which reconciles instead of remounting.
+  const counts = (
+    // flex-wrap, because this is five controls now — like, comments, share,
+    // reply and the view count — and a row that cannot wrap is a row that
+    // makes the page wider than the phone.
+    <div className="relative z-20 mt-1 flex flex-wrap items-center gap-x-5 gap-y-1">
+      <LikeButton messageId={post.id} liked={post.i_liked} count={post.like_count} />
 
-        {commentHref ? (
-          <Link
-            href={commentHref}
-            aria-label={C.postCommentCount(post.comment_count)}
-            className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
-          >
-            <CommentIcon />
-            {/* Nought shown, like the like count beside it. A row where one
+      {commentHref ? (
+        <Link
+          href={commentHref}
+          aria-label={C.postCommentCount(post.comment_count)}
+          className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
+        >
+          <CommentIcon />
+          {/* Nought shown, like the like count beside it. A row where one
                   number appears and the other does not reads as a bug. */}
-            <span className="tabular-nums">{post.comment_count}</span>
-          </Link>
-        ) : null}
+          <span className="tabular-nums">{post.comment_count}</span>
+        </Link>
+      ) : null}
 
-        {shareUrl ? (
-          <ShareMenu
-            url={shareUrl}
-            title={post.article_title ?? post.body}
-            messageId={post.id}
-            rooms={shareRooms ?? []}
-          />
-        ) : null}
+      {shareUrl ? (
+        <ShareMenu
+          url={shareUrl}
+          title={post.article_title ?? post.body}
+          messageId={post.id}
+          rooms={shareRooms ?? []}
+        />
+      ) : null}
 
-        {/* On a comment it addresses that person; on the post at the top of
+      {/* On a comment it addresses that person; on the post at the top of
               a thread it just opens the box, because a comment on a post is
               already addressed to whoever wrote it. */}
-        {replyable ? (
-          isComment && post.author_name ? (
-            <ReplyButton name={post.author_name} parentId={replyToId} />
-          ) : (
-            <ReplyButton />
-          )
-        ) : null}
+      {replyable ? (
+        isComment && post.author_name ? (
+          <ReplyButton name={post.author_name} parentId={replyToId} />
+        ) : (
+          <ReplyButton />
+        )
+      ) : null}
 
-        {/* Author only, and phrased for them. "2 views" under somebody's
+      {/* Author only, and phrased for them. "2 views" under somebody's
               diagnosis story reads worse than no number at all; the question
               they actually have is whether anyone saw it.
 
@@ -197,21 +202,20 @@ export function PostRow({
               was on the screen because the post was — so a comment's count can
               only ever read "Seen by 0 people", which is a number that cannot
               move pretending to be one that has not. */}
-        {post.view_count !== null && !isComment ? (
-          // An eye and a number, sitting with the other two counts rather
-          // than a sentence sitting beside them. The words stay for a reader,
-          // where "12" next to an eye is not self-explanatory.
-          <span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
-            <EyeIcon />
-            <span aria-hidden="true" className="tabular-nums">
-              {post.view_count}
-            </span>
-            <span className="sr-only">{C.postViewCount(post.view_count)}</span>
+      {post.view_count !== null && !isComment ? (
+        // An eye and a number, sitting with the other two counts rather
+        // than a sentence sitting beside them. The words stay for a reader,
+        // where "12" next to an eye is not self-explanatory.
+        <span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
+          <EyeIcon />
+          <span aria-hidden="true" className="tabular-nums">
+            {post.view_count}
           </span>
-        ) : null}
-      </div>
-    );
-  }
+          <span className="sr-only">{C.postViewCount(post.view_count)}</span>
+        </span>
+      ) : null}
+    </div>
+  );
 
   return (
     <div className="relative">
@@ -362,9 +366,9 @@ export function PostRow({
             )}
           </p>
 
-          {post.image_path ? <PostImage path={post.image_path} footer={<Counts />} /> : null}
+          {post.image_path ? <PostImage path={post.image_path} footer={counts} /> : null}
 
-          <Counts />
+          {counts}
         </div>
       </div>
     </div>

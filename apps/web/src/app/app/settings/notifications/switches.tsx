@@ -41,7 +41,15 @@ export function NotificationSwitches({ muted }: { muted: readonly string[] }) {
   // The server is the source of truth after a revalidate: a change made in
   // another tab, or a save that failed and was rolled back, arrives as a new
   // prop and must win over the optimistic set.
-  useEffect(() => setOff(new Set(muted)), [muted]);
+  // Adjusted during render rather than after it, which is React's shape for
+  // this and one render pass cheaper. The effect version painted the stale set
+  // first and corrected it on a second pass, so a rolled-back save showed the
+  // switch in the position it had just failed to reach.
+  const [seen, setSeen] = useState(muted);
+  if (muted !== seen) {
+    setSeen(muted);
+    setOff(new Set(muted));
+  }
 
   function toggle(event: NotificationEvent, channel: NotificationChannel, wantOn: boolean) {
     const id = key(event, channel);
@@ -175,6 +183,7 @@ function PushNotice() {
       !("serviceWorker" in navigator) ||
       !("PushManager" in window)
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- asks the browser what it supports, which has no answer during a server render
       setSubscribed(false);
       return;
     }
