@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
+import { inNativeShell } from "@/lib/native-shell";
 
 const C = DRAFT_COPY.app;
 
@@ -46,6 +47,20 @@ export function InstallApp() {
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
 
   useEffect(() => {
+    /**
+     * The shell is installed, and neither check below can tell.
+     *
+     * A WebView reports `display-mode: browser` and has no
+     * `navigator.standalone` — that one is Safari's — so both say "not
+     * installed", and the iOS branch underneath would then hand somebody
+     * already inside the app the instructions for adding it to their home
+     * screen. First, because every other answer here is wrong once it is true.
+     */
+    if (inNativeShell()) {
+      setState("installed");
+      return;
+    }
+
     // Already running as an installed app: nothing to offer.
     const installed =
       window.matchMedia("(display-mode: standalone)").matches ||

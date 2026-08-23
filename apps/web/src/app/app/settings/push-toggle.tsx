@@ -6,6 +6,7 @@ import { DRAFT_COPY, PUSH_APP_NAME } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
 import { registerPushDevice, unregisterPushDevice } from "@/app/app/push-actions";
+import { inNativeShell } from "@/lib/native-shell";
 
 const C = DRAFT_COPY.app;
 
@@ -80,6 +81,26 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
        * discouraging — the member is one gesture away. `standalone` is the only
        * way to tell whether they have already made it.
        */
+      /**
+       * The shell lands here, and must not be told to install anything.
+       *
+       * A WebView has no PushManager at all — Apple gives web push to Safari
+       * and to home-screen web apps, and to nothing else — so the native app
+       * falls into this branch, with `installed` false for the reason
+       * install-app.tsx sets out. Left alone it reads iPhone off the user agent
+       * and prints the share-menu instructions inside the app itself.
+       *
+       * `unsupported` because it is presently true: native push arrives through
+       * the Capacitor plugin rather than PushManager, and until that path is
+       * built this device cannot be switched on from this screen. This is where
+       * it plugs in, and the string it currently renders still says "browser",
+       * which will want saying differently once it can be turned on.
+       */
+      if (inNativeShell()) {
+        setState("unsupported");
+        return;
+      }
+
       const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const installed =
         window.matchMedia("(display-mode: standalone)").matches ||
