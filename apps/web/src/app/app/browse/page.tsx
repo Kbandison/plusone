@@ -92,6 +92,7 @@ export default async function BrowsePage({
   // `Date.now() - 7 * DAY` calls would be three moments a few milliseconds
   // apart, which is how a card says "active this week" on a page whose count
   // did not include it.
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
 
   let query = supabase

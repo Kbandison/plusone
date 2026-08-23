@@ -52,6 +52,7 @@ export default async function InboxPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
   const me = auth.user.id;
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
 
   const [{ data: connectData }, { data: chatData }] = await Promise.all([

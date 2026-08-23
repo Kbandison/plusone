@@ -43,6 +43,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
   const comments = thread.filter((row) => !row.is_root && row.parent_id === root?.id);
   const repliesTo = (commentId: string) => thread.filter((row) => row.parent_id === commentId);
   const zone = (profile?.timezone as string | null) ?? "UTC";
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
 
   // Every name on this page. A reply's mention is plain text in the body, so

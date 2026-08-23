@@ -314,9 +314,16 @@ export function PhotoGallery({
   // a delete — but NOT on every render, or a drag would snap back mid-gesture.
   const [order, setOrder] = useState<readonly OwnPhoto[]>(photos);
   const signature = photos.map((photo) => photo.id).join(",");
-  const seeded = useRef(signature);
-  if (seeded.current !== signature && !saving) {
-    seeded.current = signature;
+  // useState rather than useRef, which is not a style choice. This is React's
+  // documented shape for adjusting state when a prop changes, and it depends on
+  // the previous value being part of the render's committed result: a render
+  // that gets thrown away must throw the comparison away with it. A ref
+  // survives that, so a discarded render would leave seeded already advanced
+  // and the next one would skip the re-seed — the arrangement silently not
+  // catching up to an upload.
+  const [seeded, setSeeded] = useState(signature);
+  if (seeded !== signature && !saving) {
+    setSeeded(signature);
     setOrder(photos);
   }
 

@@ -88,6 +88,7 @@ export default async function ProfilePage() {
       ? new Date(new Date(changedAt).getTime() + COOLDOWNS.intentionChangeDays * 86_400_000)
       : null;
   const intentionChangeableOn =
+    // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
     unlocksAt && unlocksAt.getTime() > Date.now()
       ? unlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
       : null;

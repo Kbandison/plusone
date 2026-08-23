@@ -73,6 +73,7 @@ export default async function PremiumPage() {
    */
   const plan = PLANS.find((p) => p.id === (subscription?.plan as PlanId | null));
 
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
   const grantUntil = grants?.[0]?.expires_at as string | undefined;
   const until = [subscription?.current_period_end as string | undefined, grantUntil]

@@ -60,9 +60,13 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
   // from a sentence that happens to begin with a word, so nobody was ever
   // notified of being addressed — see mentionPrefix and parseMentions, which
   // are the same pair of functions the server reads it back with.
-  const previous = useRef<string | null>(null);
-  if (replyTo !== previous.current) {
-    previous.current = replyTo;
+  // useState, not useRef — see the same pattern in photos-form.tsx. The
+  // comparison has to be discarded along with a render that is discarded, or a
+  // thrown-away render leaves this advanced and the next Reply press does not
+  // put the name in the box.
+  const [previous, setPrevious] = useState<string | null>(null);
+  if (replyTo !== previous) {
+    setPrevious(replyTo);
     const tag = replyTo ? mentions.mentionPrefix(replyTo) : "";
     if (replyTo) setBody((current) => (current.startsWith(tag.trim()) ? current : tag));
   }

@@ -147,6 +147,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   // Read once, and passed down, so every label on the page agrees with every
   // other one — and so the server's answer is the answer, rather than a value
   // each bubble reads for itself as it renders.
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
 
   const plan = (chat.date_plan ?? null) as Plan | null;
@@ -157,6 +158,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       plan: null,
       closure: null,
     },
+    // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
     Date.now(),
   );
 

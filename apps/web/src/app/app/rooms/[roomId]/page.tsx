@@ -72,6 +72,7 @@ export default async function RoomPage({
 
   // Read once and passed down, so every age on the page agrees with every other
   // one rather than each row reading the clock as it renders.
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
 
   const [{ data: membership }, { data: feed }] = await Promise.all([

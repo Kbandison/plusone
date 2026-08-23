@@ -52,6 +52,7 @@ export default async function NotificationsPage() {
 
   const rows = (data ?? []) as Row[];
   const zone = (profile?.timezone as string | null) ?? "UTC";
+  // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
 
   /**
