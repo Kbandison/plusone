@@ -105,8 +105,6 @@ export function PreferencesForm({
   savedMessage?: string;
 }) {
   const [state, action, pending] = useActionState(save, PREFERENCES_INITIAL);
-  const minId = useId();
-  const maxId = useId();
 
   return (
     <form action={action} className="mt-10 flex flex-col gap-10">

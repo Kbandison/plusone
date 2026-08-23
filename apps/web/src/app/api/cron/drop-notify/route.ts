@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { DROP } from "@plusone/config";
-import { notify } from "@plusone/logic";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notifier } from "@/lib/notifier";

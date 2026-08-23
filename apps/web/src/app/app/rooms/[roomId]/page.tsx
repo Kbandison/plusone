@@ -3,12 +3,10 @@ import { after } from "next/server";
 import { notFound, redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
-import { chat as chatLogic } from "@plusone/logic";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { LiveRefresh } from "@/app/app/live-refresh";
 import { parseClientEnv } from "@plusone/config";
-import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { photosFor } from "@/lib/photo-urls";
 import { PostRow, type Post } from "./post-row";
 import { JoinRoom } from "./room-forms";

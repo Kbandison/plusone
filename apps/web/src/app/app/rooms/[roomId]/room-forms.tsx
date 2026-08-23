@@ -5,19 +5,13 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 import { mentions } from "@plusone/logic";
 
-import { joinRoom, postComment, postToRoom } from "./actions";
+import { joinRoom, postComment } from "./actions";
 import { ROOM_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
-import { ACCEPTED_TYPES } from "@/lib/photo-limits";
 import { useReply } from "./reply-context";
 import { CloseIcon } from "@/app/modal";
 
 const C = DRAFT_COPY.app;
-
-/** Named rather than inline, so both composers report an attachment the same way. */
-const onPick =
-  (set: (name: string | null) => void) => (event: React.ChangeEvent<HTMLInputElement>) =>
-    set(event.target.files?.[0]?.name ?? null);
 
 export function JoinRoom({ roomId }: { roomId: string }) {
   const [state, act, pending] = useActionState(joinRoom, ROOM_INITIAL);

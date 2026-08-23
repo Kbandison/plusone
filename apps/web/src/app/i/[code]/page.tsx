@@ -29,8 +29,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function InvitePage({ params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params;
+export default async function InvitePage() {
 
   // The cookie is set in proxy.ts, on the same request.
   //

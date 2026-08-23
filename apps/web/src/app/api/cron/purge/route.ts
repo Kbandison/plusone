@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       // offset deliberately stays at zero — but a remove() that reports success
       // without removing anything would spin forever, and a cron job that never
       // returns is worse than one that gives up loudly.
-      let offset = 0;
+      const offset = 0;
       for (let page = 0; page < MAX_PAGES; page += 1) {
         const { data: files, error: listError } = await supabase.storage
           .from(bucket)
