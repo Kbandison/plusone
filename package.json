@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@plusone/config": "workspace:*",
+    "@plusone/db": "workspace:*",
     "@plusone/logic": "workspace:*",
     "libpg-query": "17.7.4",
     "pg": "^8.23.0",

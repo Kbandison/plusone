@@ -13,10 +13,12 @@
  * failed it would throw here rather than being delivered.
  *
  * Usage:
- *   SUPABASE_DB_URL='postgresql://...' pnpm push:test <user-id> [event]
+ *   pnpm push:test <user-id> [event]
+ *
+ * Reads its credentials from .env.local, which already holds every one it
+ * needs. It used to want a SUPABASE_DB_URL as well — see the client below.
  */
 
-import pg from "pg";
 import webpush from "web-push";
 import { readFileSync } from "node:fs";
 
@@ -26,6 +28,7 @@ import { readFileSync } from "node:fs";
 // step that exists for a test tool.
 import { NOTIFICATIONS, PUSH_APP_NAME, EMAIL_SUBJECT } from "@plusone/config";
 import { notify } from "@plusone/logic";
+import { createServiceSupabase } from "@plusone/db";
 
 // .env.local is where the VAPID pair lives in development. Vercel supplies them
 // as real environment variables in a deployment, so this only fills the gaps.
@@ -67,21 +70,56 @@ if (payload.title !== PUSH_APP_NAME || payload.emailSubject !== EMAIL_SUBJECT) {
   process.exit(1);
 }
 
-const client = new pg.Client({
-  connectionString: process.env.SUPABASE_DB_URL,
-  ssl: { rejectUnauthorized: false },
-});
-await client.connect();
+/**
+ * The same client, and the same RPC, that the real transport uses.
+ *
+ * This opened a Postgres socket and wrote its own SQL, which cost two things.
+ * SUPABASE_DB_URL is the only credential the project would otherwise never
+ * need — nothing else here talks to Postgres directly — so the script could not
+ * run without a secret fetched specially for it. And reading
+ * push_subscriptions by hand made this a SECOND implementation of a lookup
+ * webPushNotifier does through push_devices_for: the test could have passed
+ * while the thing it stands in for was broken, which is the one outcome a test
+ * like this must not have.
+ *
+ * Both now go through the same security-definer function with the key that is
+ * already in .env.local.
+ */
+function required(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`${name} is not set — it should be in .env.local.`);
+    process.exit(1);
+  }
+  return value;
+}
 
-const { rows } = await client.query(
-  `select endpoint, p256dh, auth from public.push_subscriptions
-    where user_id = $1 and platform = 'web'`,
-  [userId],
+const supabase = createServiceSupabase(
+  required("NEXT_PUBLIC_SUPABASE_URL"),
+  required("SUPABASE_SECRET_KEY"),
+);
+
+interface Device {
+  endpoint: string;
+  p256dh: string | null;
+  auth: string | null;
+  platform: string;
+}
+
+const { data, error } = await supabase.rpc("push_devices_for", { p_user_ids: [userId] });
+if (error) {
+  console.error(`could not read that member's devices: ${error.message}`);
+  process.exit(1);
+}
+
+// Filtered here rather than in the query, exactly as webPushNotifier does it:
+// the RPC returns every transport a member has, and web push can address one.
+const rows = ((data ?? []) as Device[]).filter(
+  (device) => device.platform === "web" && device.p256dh && device.auth,
 );
 
 if (rows.length === 0) {
   console.error("That member has no registered web device. Turn notifications on first.");
-  await client.end();
   process.exit(1);
 }
 
@@ -105,10 +143,8 @@ for (const row of rows) {
     console.error(`  FAIL ${status}  ${new URL(row.endpoint).host}  ${cause?.body ?? cause?.message ?? ""}`);
     if (status === 404 || status === 410) {
       // Same rule the real transport uses: these two mean gone forever.
-      await client.query(`select public.forget_push_device($1)`, [row.endpoint]);
+      await supabase.rpc("forget_push_device", { p_endpoint: row.endpoint });
       console.error("       endpoint was dead and has been forgotten");
     }
   }
 }
-
-await client.end();
