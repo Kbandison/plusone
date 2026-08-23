@@ -46,18 +46,27 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # NON-GATING while the project is on TypeScript 7.
+      # NON-GATING until the backlog below is cleared — not because it cannot
+      # run. It can now.
       #
-      # typescript-eslint throws on any TS >= 7 and no published version accepts
-      # it; support is tracked at typescript-eslint/typescript-eslint#10940 for
-      # TS >= 7.1. There is no config workaround here: `typescript` is a PEER of
-      # typescript-eslint, and node-linker=hoisted means exactly one copy exists
-      # in the tree, so neither pnpm overrides nor packageExtensions can hand
-      # the linter its own TS 6.
+      # The note this replaces was correct about everything except the way out.
+      # typescript-eslint throws on any TS >= 7 (typescript-eslint#10940), and
+      # there really is no config workaround: `typescript` is a PEER of it, and
+      # node-linker=hoisted means one copy exists in the tree, so overrides and
+      # packageExtensions both fail — verified again, including patching the
+      # version guard out, which gets a crash inside typescript-estree instead
+      # because TS 7 genuinely moved the API it reads. The guard is honest.
       #
-      # Left in place and visibly failing rather than deleted, so it comes back
-      # the moment upstream ships. REMOVE continue-on-error then.
-      - name: Lint (non-gating — see typescript-eslint#10940)
+      # What was never checked is whether this project needs TS 7 at all. It
+      # does not: nothing sets experimental.useTypeScriptCli, the tsconfig is
+      # plain ES2022, and typecheck, test and build are all green on 5.9.3. So
+      # every package pins 5.9.3 and the linter runs. TS 7's headline is
+      # compile speed, against a typecheck that finishes in about a second.
+      #
+      # Turning it back on surfaced 44 problems that accumulated while nothing
+      # was looking — 25 errors, mostly react-hooks rules that ship in v7.
+      # continue-on-error stays until those are dealt with, and then it goes.
+      - name: Lint (non-gating — clearing an existing backlog)
         run: pnpm lint
         continue-on-error: true
 

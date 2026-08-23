@@ -48,6 +48,6 @@
     "supabase": "^2.114.0",
     "tsx": "^4.23.12",
     "turbo": "2.10.9",
-    "typescript": "7.0.2"
+    "typescript": "5.9.3"
   }
 }
