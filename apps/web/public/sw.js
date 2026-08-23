@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-6";
+const VERSION = "plusone-sw-7";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -61,6 +61,11 @@ self.addEventListener("activate", (event) => {
  * sits on a home screen in front of whoever picks the phone up. setAppBadge()
  * with no argument draws the unadorned mark. There is no count to pass here in
  * any case: the payload is content-blind by construction and carries no total.
+ *
+ * Android renders that valueless flag as a "1" — its launcher badge is numeric
+ * and has no other shape — and it stays at 1 however many arrive. A constant is
+ * not a count, so what the icon discloses is still "something", which is what
+ * was wanted. AppBadge says more about it.
  *
  * Never cleared here. Reading is what clears it, and reading happens in the
  * app, where AppBadge can see the unread figure this file has no way to know.

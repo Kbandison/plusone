@@ -18,6 +18,18 @@ import { useEffect } from "react";
  * picks the phone up, and "7" on an app called ⁺One is a different disclosure
  * from "something". The header badge is a dot for the same reason.
  *
+ * What Android actually draws is a "1", and that is not this code losing the
+ * argument. A launcher badge on Android has one shape and it is numeric, so a
+ * valueless flag — which is all a no-argument call asks for — comes out as the
+ * smallest numeral there is. Checked on a real phone against repeated pushes:
+ * it stays at 1 and never climbs.
+ *
+ * Which keeps the part §8 is about. A constant is not a count. "1" says
+ * something is waiting and nothing else, so no reader of that icon learns how
+ * much — the same sentence a dot speaks, in the only alphabet the platform has.
+ * A real total means passing an argument here, and that is a §8 decision about
+ * what an app icon may disclose rather than a one-word change to this line.
+ *
  * Unsupported almost everywhere it would be nice to have it. Safari on iOS
  * grants it only to an installed app that has been given notification
  * permission; Firefox has never shipped it. So this is progressive enhancement
