@@ -198,7 +198,11 @@ describe("permission is asked for where somebody went looking for it", () => {
    * is one gesture away.
    */
   it("tells an iPhone to install rather than calling it unsupported", () => {
-    expect(toggle).toMatch(/iPad\|iPhone\|iPod/);
+    // isAppleMobile() rather than the user-agent test that used to be inline
+    // here: a current iPad reports a Macintosh string with no "iPad" in it, so
+    // the regex alone answered no on the exact device this branch is for. See
+    // native-shell.ts, which keeps the old test and adds maxTouchPoints.
+    expect(toggle).toMatch(/isAppleMobile\(\)/);
     expect(toggle).toMatch(/display-mode: standalone/);
     expect(toggle).toMatch(/pushInstallFirst/);
   });
@@ -439,7 +443,9 @@ describe("installing is offered by the app, not hunted for in a menu", () => {
 
   /** iOS has no such event; Safari offers it from its share menu and nowhere else. */
   it("describes the gesture where there is no API for it", () => {
-    expect(install).toMatch(/iPad\|iPhone\|iPod/);
+    // As above — the detection moved into isAppleMobile() because a current
+    // iPad does not admit to being one.
+    expect(install).toMatch(/isAppleMobile\(\)/);
     expect(install).toMatch(/installIos/);
   });
 
