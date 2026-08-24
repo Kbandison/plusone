@@ -1,5 +1,198 @@
 # Project Updates
 
+## 2026-08-24 — Two shells, and a current iPad that will not say it is one
+
+The app is going to the stores. Three decisions were made to get there and one
+bug was found on the way, and the bug is the interesting part.
+
+**Hybrid, not one Capacitor project.** Android gets a Trusted Web Activity, iOS
+gets Capacitor. Kevin's case for a single Capacitor covering both was bug
+surface — one place to fix things, so a fix on iOS could not be silently missed
+on Android. Right worry, wrong premise: Capacitor runs two engines as well,
+because Android WebView is not WKWebView, and the WebKit divide that causes
+these bugs survives either choice. It unifies tooling, not rendering. A TWA is
+_real Chrome_ — the engine already tested against — so the hybrid keeps Android
+on the known-good target and confines the unfamiliar runtime to iOS, where there
+is no alternative. It also keeps web push, which works today and which Capacitor
+on Android would replace with FCM for nothing gained.
+
+That leaves a process risk rather than an architectural one, so `AGENTS.md` now
+carries a standing rule: anything touching what a shell can see is not done
+until it has been checked against both, and the commit says which.
+
+**A public store listing is worth its disclosure.** Both stores require
+declaring health-data handling on a public listing page, against a product whose
+own manifest description deliberately says nothing about who it is for. Kevin's
+call, and the better argument: absence from the stores is not read as
+discretion, it is read as unvetted. This app asks strangers to upload a face
+scan and disclose a diagnosis. Category, description and much of the
+privacy-label granularity are still controllable; member reviews are not.
+
+**Store billing on both, at 15%.** Apple's US storefront would allow linking out
+to Stripe at about 2.9% — guideline 3.1.1(a), no entitlement needed since the
+May 2025 rewrite that followed the Epic ruling — but it is a US-only carve-out
+that vanishes the day a second storefront opens. One touch against saved
+credentials also converts better than sending somebody to a browser to type a
+card, which is not free either. Play Billing is required for subscriptions
+regardless, and the policy names _dating_ in its own examples. Alternative
+billing was ruled out: 11% plus a processor is about 13.9%, a point of saving
+for the integration work and the chargeback risk.
+
+Two things worth keeping. The rate is 15%, **not** 15 plus processing — the
+store is the processor, and Stripe's fee applies only to web subscriptions. And
+Apple's 15% is not automatic: the **Small Business Program must be applied for**,
+or the first year of every subscription is 30%.
+
+**The bug.** Both settings screens asked
+`/iPad|iPhone|iPod/.test(navigator.userAgent)`, which has not been a reliable
+question since iPadOS 13. Safari browses desktop-class by default there and
+reports a Macintosh string with no "iPad" in it, so on a current iPad that test
+is false and both screens take a branch written for a desktop browser.
+`push-toggle` tells somebody one share-menu gesture from notifications that
+notifications are not available; `install-app` waits out a 1500ms grace period
+for a `beforeinstallprompt` Safari will never fire, then offers a line about
+their browser's menu instead of naming the share button. On the platform where
+installing is the precondition for push, that is the wrong sentence twice.
+
+`isAppleMobile()` keeps the user-agent test and adds the pair that still
+answers — `maxTouchPoints` against `platform`, five against nought. It only
+widens, so the paths already verified on hardware cannot move.
+
+`inTwa()` closes the other gap `AGENTS.md` names: `inNativeShell()` and
+`nativePlatform()` look for `window.Capacitor`, and a TWA has none. The
+subtlety is that `document.referrer` is `android-app://` only on the **launch**
+navigation, so the naive one-liner answers yes on arrival and no on the next
+screen. Cached per tab, and the cache is optional because `sessionStorage`
+throws rather than returning null when storage is blocked.
+
+### Held for Kevin
+
+- **The iPad check.** Open the site in a Safari _tab_ on the iPad, not the
+  installed app, and read the notifications section. "Add ⁺One to your home
+  screen first" means `isAppleMobile()` is working. "Notifications are not
+  available here" means it is not.
+- **Apple's Small Business Program application.** 15% versus 30%, not granted
+  automatically, and the cheapest item on the list.
+- **The signing key's SHA-256**, for `/.well-known/assetlinks.json`. Nothing can
+  be built for Play without it.
+- **A Mac decision.** Xcode is macOS-only; Kevin has a 2022 MacBook Pro, which
+  also brings the iOS Simulator — real WebKit with real notch and home-indicator
+  insets, and therefore the only way to check `viewport-fit: cover` without an
+  iPhone.
+
+## 2026-08-23 — The linter had not run since TypeScript 7
+
+Not "reported nothing" — `typescript-eslint` throws from its own module load,
+before ESLint reads a file. Every rule in the config was dead: the Next rules,
+react-hooks, jsx-a11y, import, all of it. `ci.yml` had this diagnosed and marked
+non-gating, and its note was correct about every mechanism it listed. Confirmed
+again here, including a scoped `pnpm` override and a root/workspace split, both
+of which lose to the six packages pinning the same version. Patching the version
+guard out reaches a crash inside `typescript-estree` reading a TS 7 API that
+moved — the guard is load-bearing, not defensive.
+
+What that note never asked is whether this project needs TS 7. It does not.
+Nothing sets `experimental.useTypeScriptCli`, the tsconfig is plain ES2022, and
+typecheck, tests and build are green on 5.9.3. The trade is compile speed —
+TS 7's whole pitch — against a typecheck that takes about a second here, in
+exchange for a linter that exists.
+
+Turning it back on found **44 problems**. Nineteen were dead bindings, each
+checked against where the thing actually lives rather than deleted on the
+linter's word, because an unused import is equally the shape of a feature
+somebody forgot to render. None were: `BlockButton` and `ReportControl` moved to
+`post-row.tsx` where safety controls sit per post, and the room composer's
+attachment went to `compose.tsx`.
+
+Four were real defects, and none of them fail loudly:
+
+- `photos-form` and `room-forms` kept a previous-value in `useRef` for React's
+  adjust-state-on-prop-change pattern. A discarded render still mutates a ref,
+  so the marker advances and the next render sees nothing to react to — an
+  upload whose tiles do not move, a Reply press that does not fill the box.
+- `switches.tsx` copied a prop into state through an effect, so a save that
+  failed and rolled back showed the switch in the position it had just failed
+  to reach.
+- `post-row` declared `Counts` inside `PostRow`, making it a new component type
+  every render — the whole control row, `LikeButton` included, remounting
+  whenever anything in the post changed.
+
+The remaining twenty-one are annotated rather than fixed. Most are
+`react-hooks/purity` firing on `Date.now()` in Server Components: the rule
+reasons about a client re-render and a Server Component renders once, per
+request, on the server. The plugin has no notion of `"use client"` and the rule
+takes no option for it.
+
+Lint gates in CI again. Left advisory it would collect the next forty-four the
+same way.
+
+## 2026-08-22 — Everything that only goes wrong once it is installed
+
+The manifest and the worker had been in for a while. What had never been checked
+is what the app does on a phone that has actually added it, and the answer in
+five places was "something worse than the browser tab".
+
+iOS had no icon — `generate-icons.mjs` had been drawing `apple-touch-icon.png`
+since the icons existed and nothing pointed at it, so iOS was putting a
+screenshot of the sign-in page on the home screen. The bottom nav sat under the
+home indicator, because `viewport-fit: cover` is the only thing that makes
+`env(safe-area-inset-*)` report anything but nought. A rotated push subscription
+died in silence, with the settings screen still saying "On for this device".
+Launching from the icon opened a second window beside the first. And the app
+icon carried no mark at all.
+
+All fixed and **verified on a real iPad**: install, permission grant, and a real
+push delivered through `web.push.apple.com`. The home-screen icon shows the mark
+rather than a screenshot.
+
+One finding worth recording because it looks like a bug and is not. On Android
+the badge draws as **"1"**, and it stays at 1 however many arrive. Every call
+here is `setAppBadge()` with no argument, and the type is `() => Promise<void>`,
+so a number cannot be passed even by accident. A launcher badge on Android has
+one shape and it is numeric, so a valueless flag comes out as the smallest
+numeral there is. The distinction §8 cares about survives — a constant is not a
+count, and "1" discloses exactly what a dot would. Kevin has asked to revisit
+making it a real total; that is a §8 decision about what an app icon may say,
+not a one-word change.
+
+`pnpm push:test` also stopped asking for a `SUPABASE_DB_URL` nothing else needs.
+It read `push_subscriptions` with its own SQL while `webPushNotifier` goes
+through `push_devices_for`, so the tool meant to exercise delivery was a second
+implementation of it and could have passed while the real path was broken.
+
+## 2026-08-22 — 186 GB of dev server, and a machine that kept dying
+
+Ubuntu had been crashing — eight boots in two days, several lasting minutes,
+journals coming back "corrupted or uncleanly shut down" with no Linux OOM-killer
+entries anywhere. Nothing in the log, because Linux never killed anything: the
+host did.
+
+The cause was in this repo. Next 16 moved `next dev` output out of `.next` and
+into `.next/dev` and turns Turbopack's dev filesystem cache on by default
+underneath it. `turbo.json` was written before that split — `.next/**` minus
+`.next/cache/**` excluded the build-side cache and took everything else, which
+now means 1.6 GB of dev-server scratch riding along in every cached build.
+Decompressing the largest artifact settled it: 1.68 GB, of which 1.645 GB was
+`apps/web/.next/dev`. The real output is 37 MB.
+
+Turborepo does not prune a local cache. 1,595 entries had settled into **186 GB**,
+and every crash lined up with an in-flight write of one — four boots ended with a
+half-written `.tar.zst.tmp` stamped seconds after the last line in the journal.
+A 6 GB VM compressing 1.6 GB with 28-thread zstd against a 13.7 GB host with
+200 MB free is a spike Windows answers by taking the whole VM.
+
+Excluding `.next/dev/**` puts an artifact at **7.4 MB**. A full build now peaks at
+1,761 MB of 5,900 and finishes in under six seconds; the whole test suite peaks
+at 2,145 MB.
+
+`/mnt/c/Users/kband/.wslconfig` did not exist, so WSL took 28 processors and
+could balloon to 7 GB. It now caps at 8 processors and 6 GB with
+`autoMemoryReclaim`, which alone moved host free memory from 0.2 GB to 1.7 GB.
+The disk image is still ~314 GB against 122 GB actually used — `fstrim` only
+punched 3.7 GB of holes, which suggests WSL 2.3.26 is not honouring guest
+discards. `wsl --update` and a re-run is the next thing to try; it is tidying
+rather than a problem now.
+
 ## 2026-08-22 — Being spoken to
 
 Kevin asked for a notification when somebody replies to a person's **comment**,
