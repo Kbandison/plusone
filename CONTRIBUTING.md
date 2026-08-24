@@ -1,124 +1,105 @@
-# Contributing Guidelines
+# Contributing
 
-Thank you for contributing! This document sets clear, lightweight defaults that work across most projects. Adapt per-repo as needed.
+What actually happens on this repo, rather than what a template suggests. The
+file this replaces described branches, pull requests, squash merges, CODEOWNERS,
+`CHANGELOG.md`, Python and Go — none of which exist here, and following any of
+it would have been wrong.
 
-## Project Priorities
+## How work lands
 
-- 1. Correctness and build quality
-- 2. Developer experience (DX) and maintainability
-- 3. UX polish and tasteful creativity
+- **Straight to `main`.** No branches, no pull requests, no squash merges. Push
+  every commit; nothing sits locally.
+- **Five gates before every commit**, all of them, every time:
 
-## Quick Start
+  ```bash
+  pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
+  ```
 
-- Fork or create a branch off `main` using GitHub Flow.
-- Write small, focused changes with tests and docs.
-- Use Conventional Commits for messages (examples below).
-- Open a draft PR early; convert to ready when checks pass.
+  CI runs the same five and gates on all of them. Do not chain a commit after
+  the checks in one shell line without gating on the result — a `FAIL` scrolls
+  past and the push goes out anyway.
 
-## Project Workflow
+- **Never commit** `yourplusone-spec.md`, `luxweb-master/`, or any `.env*` but
+  `.env.example`. They are gitignored and they stay that way.
 
-- Branching: `main` is protected. Create branches like:
-  - `feat/<short-description>` for new features
-  - `fix/<short-description>` for bug fixes
-  - `chore/<short-description>` for maintenance
-  - `docs/<short-description>` for docs-only changes
-  - `refactor/<short-description>`, `perf/<short-description>`, `test/<short-description>` as needed
-- One logical change per PR; keep PRs under ~300 lines when possible.
-- Discuss significant changes via an issue first.
+## Commits
 
-## Commit Messages (Conventional Commits)
+Conventional Commits for the subject: `type(scope): summary`, lowercase, no full
+stop.
 
-Format: `<type>(<optional scope>): <short summary>`
+The body is the point. Say what was wrong, what it cost a member, and why the
+fix is shaped the way it is. Somebody reading it in six months should not have
+to reconstruct the reasoning from the diff — most of the hard decisions in this
+codebase are only recorded in a commit body or a comment.
 
-Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+State which shells a change was verified against, and say plainly when one was
+not. See `AGENTS.md`.
 
-Examples:
+## The record
 
-- `feat(api): add pagination to list endpoint`
-- `fix(ui): prevent null deref on empty state`
-- `docs: add quickstart to README`
+`PROJECT_UPDATES.md` is the running narrative — newest first, one entry per
+theme, dated. Add one for anything that changes how the product behaves or why.
 
-Breaking changes:
+It is a **dated log**. Do not edit old entries to reflect new truth; a later
+entry supersedes an earlier one. An entry that gets rewritten backwards stops
+being a record.
 
-- Include `!` after type or add a `BREAKING CHANGE:` footer.
+Values Kevin has deferred go in an entry's "Held for Kevin" section. Never
+invent one to unblock yourself.
 
-## Pull Requests
+## Tests
 
-- Link related issues (e.g., `Closes #123`).
-- Ensure PR title also follows Conventional Commits when possible.
-- Checklist before requesting review:
-  - Lint/format passes locally
-  - Unit tests updated/added and pass
-  - Docs updated (`README`, `CHANGELOG`, examples)
-  - For major changes: update `PROJECT_UPDATES.md` with date/time (UTC), summary, minor updates, and next actions
-  - No secrets or large artifacts committed
-- Prefer squash merge to keep a clean history.
+Vitest, colocated as `*.test.ts` beside the code. There is no `tests/`
+directory.
 
-## Code Review
+- `packages/logic` must stay green independently of any surface that consumes it
+  (§12). It is pure — no clock, no network, no database — and that is what makes
+  the mechanics testable at all.
+- **Source-reading tests are deliberate here.** Several assert on the text of a
+  file to pin a decision with no runtime surface. When you move the code they
+  pin, repin them and say in the comment why the shape changed.
+- No coverage target. Nothing measures it, and a number would not mean much
+  against a suite that is mostly about behaviour nobody can see.
 
-- Be kind, specific, and actionable.
-- Reviewers check: correctness, tests, readability, security, and performance risks.
-- Authors respond to all comments or clarify why not.
-- Non-blocking nits may be deferred; avoid scope creep.
-- Briefly explain non‑obvious choices with a short inline comment when helpful.
+## Migrations and the database
 
-## Testing
+- `pnpm check:sql` parses every migration against the real PostgreSQL grammar
+  and cross-checks that every FK, function call, policy target and grant
+  resolves. It needs no database. Run it.
+- Every table needs RLS and at least one policy; `check:sql` enforces it.
+- Mechanic transitions go through `SECURITY DEFINER` RPCs, never a direct table
+  write (§5.3.4).
+- A tunable is only reachable by the admin editor if its key already exists in
+  `app_config`, so a new one has to be seeded by migration. The compiled value
+  in `packages/config` stays the fallback: deleting a row must not change
+  behaviour.
+- The other `check:*` scripts exercise the real RPCs against a live database as
+  real members. They skip without `SUPABASE_DB_URL`.
 
-- Aim for meaningful unit tests; add integration tests for critical flows.
-- Default coverage goal: ~80% lines/branches (adjust per repo).
-- Place tests alongside code (e.g., `src/**` with `tests/**`) or per-language norms:
-  - JS/TS: `**/*.test.ts` or `__tests__/`
-  - Python: `tests/test_*.py`
-  - Go: `*_test.go`
-- Example commands (adjust per repo):
-  - JS/TS: `npm test` / `pnpm test`
-  - Python: `pytest`
-  - Go: `go test ./...`
+## Style
 
-## Style and Linting
+Prettier and ESLint decide; do not fight them.
 
-- Use automatic formatters; don’t fight them.
-  - JS/TS: Prettier + ESLint
-  - Python: Black + Ruff (or Flake8/isort)
-  - Go: `gofmt`/`goimports`
-- Include an `.editorconfig` when possible.
-- For Next.js + React + Tailwind + shadcn/ui projects, follow our patterns in `CONVENTIONS.md` (server components where possible, client components for interactivity, accessible primitives, consistent spacing/typography). Keep `components/ui/` for reusable UI primitives only; place schemas/helpers in `lib/` or route/server actions; centralize dummy data in `data/index.ts`.
+- **No component library.** The design system is `@plusone/ui-tokens` — colour,
+  type scale and spacing come from there, and `tokens.test.ts` recomputes the
+  contrast ratios rather than trusting a comment.
+- Server Components by default. `'use client'` only where something is actually
+  interactive.
+- Comment the _why_, at length where the reasoning is not obvious. This codebase
+  is unusually heavily commented on purpose: the constraints are mostly
+  invisible in the code, and a future reader who cannot see them will remove
+  the thing that satisfies one.
 
-## CI/CD
+## Secrets and discretion
 
-- PRs must pass: install, build (if applicable), lint, test.
-- Keep pipelines fast; cache dependencies.
-- Block merges on failing checks.
-- Ensure new code compiles/builds cleanly and is type‑safe (TypeScript projects).
-
-## Security & Secrets
-
-- Never commit credentials, tokens, or private data.
-- Use `.env.example` to document required env vars.
-- Report vulnerabilities privately (add `SECURITY.md` in repos that accept reports).
-
-## Releases
-
-- Use Semantic Versioning: `MAJOR.MINOR.PATCH`.
-- Recommend automated release from `main` (e.g., Release Please, semantic-release) based on Conventional Commits.
-- Tag format: `vX.Y.Z`. Maintain a `CHANGELOG.md` (generated is fine).
-
-## Licensing and Ownership
-
-- Include a `LICENSE` file per repo.
-- Add `CODEOWNERS` for critical paths if applicable.
-
-## Communication
-
-- Prefer issues for proposals/bugs, PRs for changes.
-- Write concise descriptions with context, rationale, and alternatives.
-- Unknown specs/APIs: do not invent. Propose options and request a one‑line decision; proceed with a sane default if needed.
-
-## Dependencies
-
-- Keep dependencies lean; prefer first‑party or widely adopted libraries.
-- Avoid introducing a new library when a standard/first‑party solution exists.
+- `.env.example` documents every key. `vercel env pull .env.local` fills them.
+- Nothing that could identify a member's condition, message bodies or profile
+  fields goes into a log or the audit trail (§9.6). Notifications are
+  content-blind by construction, and the tests that enforce that are not
+  optional.
 
 ---
 
-Adapt these defaults to fit your stack and team norms.
+`CONVENTIONS.md` is still the template this file used to be — it describes a
+`src/` and `tests/` layout, a Dockerfile and shadcn/ui, none of which apply.
+Treat it with suspicion until it is rewritten.
