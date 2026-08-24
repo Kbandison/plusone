@@ -32,11 +32,36 @@ component, ever — a client bug must not be able to open a wall.
 
 ## Quickstart
 
+Node >= 20.9 and pnpm 10.30.3 — `corepack enable` fetches the pinned version.
+
 ```bash
 pnpm install
-cp .env.example .env.local   # fill in from the Vercel dashboard
+vercel env pull .env.local   # or: cp .env.example .env.local and fill it in
 pnpm dev
 ```
+
+Three things are deliberately absent from git and have to be carried across by
+hand when setting up another machine: `.env.local` (or re-pull it as above),
+`yourplusone-spec.md`, and `luxweb-master/`.
+
+### On a Mac
+
+Everything above runs unchanged. Nothing in the source assumes a platform, and
+the two native modules — `sharp` and `libpg-query` — both ship arm64 binaries.
+
+A Mac also provides the three things Linux cannot, all of which this project
+currently needs:
+
+- **Xcode**, without which the iOS Capacitor build cannot be produced at all.
+- **The iOS Simulator**, which runs real WebKit with real notch and
+  home-indicator insets. It is the only way to check `viewport-fit: cover`
+  without owning an iPhone.
+- **Safari and its Web Inspector**, which can attach to a physical iPhone or
+  iPad over USB — the only way to see what a home-screen install is actually
+  doing.
+
+The Simulator has no usable camera, so `getUserMedia` — the liveness step and
+the voice recorder — still needs a physical device.
 
 ## Common tasks
 
@@ -56,7 +81,7 @@ pnpm dev
 | `pnpm check:photos`     | Confirm a blurred-until-connected member's clear path never reaches a viewer                      |
 | `pnpm check:premium`    | Put a paying member and a free one against the real walls, and confirm money changed nothing      |
 | `pnpm check:config`     | Change a tunable and confirm it is hot-read, audited, and that no key can be invented             |
-| `pnpm lint`             | ESLint — **blocked on TypeScript 7**, see PROJECT_UPDATES.md                                      |
+| `pnpm lint`             | ESLint — works again; see the TypeScript pin in `package.json` for why it once did not            |
 | `pnpm build`            | Production build                                                                                  |
 
 ## Design direction
