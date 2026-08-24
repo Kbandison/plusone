@@ -54,3 +54,56 @@ export function nativePlatform(): NativePlatform | null {
   const platform = capacitor()?.getPlatform?.();
   return platform === "ios" || platform === "android" ? platform : null;
 }
+
+/**
+ * Whether this is running inside the Android Trusted Web Activity.
+ *
+ * Separate from everything above, because a TWA is not a native shell in the
+ * sense those functions mean. It is real Chrome — same engine, same cookie jar,
+ * same service worker as the browser — so `window.Capacitor` is absent and both
+ * inNativeShell() and nativePlatform() correctly answer no. A TWA registers an
+ * ordinary web push subscription, which is why push_subscriptions.platform stays
+ * 'web' for one and why nativePlatform() must not start claiming otherwise.
+ *
+ * What it is needed for is the small set of decisions where being inside a Play
+ * app matters and the engine does not: Play Billing through the Digital Goods
+ * API, which only exists in a TWA, and anything that should not offer to install
+ * an app the member has already installed.
+ *
+ * The check is `document.referrer`, which web.dev documents for this — Chrome
+ * sets it to `android-app://<package>` for the launch navigation. Note "launch":
+ * the referrer belongs to that first navigation and a reload does not carry it,
+ * so asking twice in one session would answer yes and then no. The answer is
+ * cached per tab the first time it is true.
+ *
+ * Deliberately not wired into install-app.tsx yet. A TWA reports
+ * `display-mode: standalone`, so the check already there is expected to hide the
+ * install card on its own, and swapping a working condition for an unverified
+ * one on hardware nobody here has is how a regression gets shipped. Wire it when
+ * there is a TWA to watch it in.
+ */
+const TWA_LAUNCH_KEY = "plusone:twa";
+
+export function inTwa(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") return false;
+
+  // sessionStorage throws rather than returning null when storage is blocked,
+  // and a member with cookies locked down is exactly who this must not break
+  // for. A failure to cache costs nothing but the cache.
+  try {
+    if (window.sessionStorage.getItem(TWA_LAUNCH_KEY) === "1") return true;
+  } catch {
+    // Storage unavailable. Fall through to the referrer, which still answers
+    // correctly on the launch navigation.
+  }
+
+  const launched = document.referrer.startsWith("android-app://");
+  if (!launched) return false;
+
+  try {
+    window.sessionStorage.setItem(TWA_LAUNCH_KEY, "1");
+  } catch {
+    // As above.
+  }
+  return true;
+}
