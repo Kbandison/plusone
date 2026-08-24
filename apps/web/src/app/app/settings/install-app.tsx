@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
-import { inNativeShell } from "@/lib/native-shell";
+import { inNativeShell, isAppleMobile } from "@/lib/native-shell";
 
 const C = DRAFT_COPY.app;
 
@@ -71,7 +71,7 @@ export function InstallApp() {
       return;
     }
 
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    if (isAppleMobile()) {
       setState("ios");
       return;
     }

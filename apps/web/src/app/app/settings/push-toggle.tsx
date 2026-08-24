@@ -6,7 +6,7 @@ import { DRAFT_COPY, PUSH_APP_NAME } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
 import { registerPushDevice, unregisterPushDevice } from "@/app/app/push-actions";
-import { inNativeShell } from "@/lib/native-shell";
+import { inNativeShell, isAppleMobile } from "@/lib/native-shell";
 
 const C = DRAFT_COPY.app;
 
@@ -105,7 +105,7 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
         return;
       }
 
-      const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const iOS = isAppleMobile();
       const installed =
         window.matchMedia("(display-mode: standalone)").matches ||
         (navigator as { standalone?: boolean }).standalone === true;

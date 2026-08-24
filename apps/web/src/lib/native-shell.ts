@@ -107,3 +107,37 @@ export function inTwa(): boolean {
   }
   return true;
 }
+
+/**
+ * Whether this is an iPhone or an iPad, whatever the user agent claims.
+ *
+ * Two screens branch on this, and both asked the user agent directly: iOS is
+ * where installing to the home screen is a share-menu gesture rather than a
+ * prompt, and where web push arrives only once that gesture has been made. Both
+ * needed to say so.
+ *
+ * The user agent stopped answering in iPadOS 13. Safari browses desktop-class by
+ * default there and reports a Macintosh string with no "iPad" anywhere in it, so
+ * `/iPad|iPhone|iPod/` is false on a current iPad — and the two screens fall
+ * through to branches written for a desktop browser. An iPad member who has not
+ * installed yet is told notifications are not available, when they are one
+ * gesture away, and shown a generic line about their browser's menu instead of
+ * the share button they actually need.
+ *
+ * maxTouchPoints is what separates the two: an iPad reports five, a Mac reports
+ * nought. `platform` is deprecated and still the only thing that identifies the
+ * family, which is why both are checked rather than either alone.
+ *
+ * Widening only. Anything the old test matched still matches, so the paths
+ * already verified on real hardware cannot change; the second clause can only
+ * turn a false into a true, and only for a device that really is one of these.
+ * A Mac wired to a touchscreen would be the one false positive, and it would be
+ * shown instructions for a share menu that macOS Safari does in fact have.
+ */
+export function isAppleMobile(): boolean {
+  if (typeof navigator === "undefined") return false;
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return true;
+
+  const nav = navigator as Navigator & { maxTouchPoints?: number };
+  return nav.platform === "MacIntel" && (nav.maxTouchPoints ?? 0) > 1;
+}

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { inNativeShell, inTwa, nativePlatform } from "./native-shell";
+import { inNativeShell, inTwa, isAppleMobile, nativePlatform } from "./native-shell";
 
 /** Stands in for whatever Capacitor has injected, or for nothing at all. */
 function windowWith(capacitor: unknown) {
@@ -131,5 +131,59 @@ describe("inTwa", () => {
     vi.stubGlobal("window", {});
     vi.stubGlobal("document", undefined);
     expect(inTwa()).toBe(false);
+  });
+});
+
+describe("isAppleMobile", () => {
+  function ua(userAgent: string, platform = "", maxTouchPoints = 0) {
+    vi.stubGlobal("navigator", { userAgent, platform, maxTouchPoints });
+  }
+
+  it("matches an iPhone that says so", () => {
+    ua("Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15", "iPhone", 5);
+    expect(isAppleMobile()).toBe(true);
+  });
+
+  it("matches an iPad that says so", () => {
+    ua("Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15", "iPad", 5);
+    expect(isAppleMobile()).toBe(true);
+  });
+
+  it("matches a current iPad, which claims to be a Mac", () => {
+    // iPadOS 13+ browses desktop-class by default: no "iPad" in the string.
+    // This is the case the old regex missed and the whole reason this exists.
+    ua(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.5 Safari/605.1.15",
+      "MacIntel",
+      5,
+    );
+    expect(isAppleMobile()).toBe(true);
+  });
+
+  it("does not match an actual Mac", () => {
+    // Same platform string, same user agent. maxTouchPoints is the difference.
+    ua(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.5 Safari/605.1.15",
+      "MacIntel",
+      0,
+    );
+    expect(isAppleMobile()).toBe(false);
+  });
+
+  it("does not match Android or desktop Chrome", () => {
+    ua("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126", "Linux armv8l", 5);
+    expect(isAppleMobile()).toBe(false);
+    ua("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126", "Win32", 0);
+    expect(isAppleMobile()).toBe(false);
+  });
+
+  it("survives a navigator missing maxTouchPoints", () => {
+    vi.stubGlobal("navigator", { userAgent: "something", platform: "MacIntel" });
+    expect(isAppleMobile()).toBe(false);
+  });
+
+  it("is false when there is no navigator", () => {
+    vi.stubGlobal("navigator", undefined);
+    expect(isAppleMobile()).toBe(false);
   });
 });
