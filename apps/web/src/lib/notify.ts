@@ -63,13 +63,32 @@ export async function notify(
     );
 
     const push = wanted.filter((w) => w.channels.includes("push")).map((w) => w.userId);
-    if (push.length === 0) return;
+    /**
+     * The cohort this used to throw away.
+     *
+     * notify_member has always returned email among the surviving channels —
+     * the settings screen has had an Email column for as long as it has had a
+     * Push one — and this read `push`, hard-coded ["push"], and returned early
+     * when that list was empty. So a member with push off and email on was
+     * reached by nothing, and their switches said otherwise. Two cohorts now,
+     * because the two are not the same people: somebody can want one, the
+     * other, both, or neither.
+     */
+    const email = wanted.filter((w) => w.channels.includes("email")).map((w) => w.userId);
+    if (push.length === 0 && email.length === 0) return;
 
     // planDeliveries builds the payload through buildPayload, which is still the
     // only way to make one and still refuses a condition word. In-app is richer
     // because it is RENDERED from references, not because this got looser.
+    //
+    // One send with both sets rather than a call each: the composite offers
+    // every delivery to every provider and each filters by the channel it
+    // serves, so routing stays where the knowledge is.
     const send = notifier();
-    await send.send(notifyLogic.planDeliveries(event, push, ["push"]));
+    await send.send([
+      ...notifyLogic.planDeliveries(event, push, ["push"]),
+      ...notifyLogic.planDeliveries(event, email, ["email"]),
+    ]);
   } catch (cause) {
     console.error(
       JSON.stringify({

@@ -83,6 +83,21 @@ export const serverEnvSchema = z
     RESEND_API_KEY: z.string().startsWith("re_"),
 
     /**
+     * The sender the email notifier posts as, and the switch that turns it on.
+     *
+     * Optional, and the notifier is only built when it is set — the same shape
+     * as VAPID gating push. Not because the address is hard to write, but
+     * because the domain behind it has to be verified in Resend first, and
+     * Resend refuses anything else. An app that sent from an unverified domain
+     * would fail per message, at the point where somebody was owed a
+     * notification, rather than at boot.
+     *
+     * Takes a bare address or the `Name <addr@domain>` form, which is why this
+     * is not `.email()`.
+     */
+    RESEND_FROM: z.string().min(3).optional(),
+
+    /**
      * Phone OTP provider (§7.2). Credentials live in the Supabase dashboard, not
      * here — Supabase Auth talks to the provider on our behalf, so this only
      * records WHICH one is live. `stub` accepts a fixed code and refuses to

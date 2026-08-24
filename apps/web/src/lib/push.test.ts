@@ -26,6 +26,7 @@ const withoutComments = (source: string) =>
 const sw = withoutComments(read("public/sw.js"));
 const transport = withoutComments(read("src/lib/web-push.ts"));
 const notifier = withoutComments(read("src/lib/notifier.ts"));
+const fanout = withoutComments(read("src/lib/notify.ts"));
 const toggle = withoutComments(read("src/app/app/settings/push-toggle.tsx"));
 const cron = withoutComments(read("src/app/api/cron/drop-notify/route.ts"));
 const sql = withoutComments(
@@ -167,9 +168,42 @@ describe("the transport forgets only what is really gone", () => {
   });
 
   /** Absent keys are a legal state; a half pair is not. */
-  it("is chosen by whether VAPID is configured, not by NODE_ENV", () => {
+  it("includes each transport by its own configuration, not by NODE_ENV", () => {
     expect(notifier).toMatch(/process\.env\.VAPID_PRIVATE_KEY/);
-    expect(notifier).toMatch(/return webPushNotifier\(\)/);
+    expect(notifier).toMatch(/live\.push\(webPushNotifier\(\)\)/);
+    expect(notifier).not.toMatch(/NODE_ENV/);
+  });
+
+  /**
+   * Composed, not chosen. Returning one provider assumed a single transport
+   * reaches everybody, and push is opt-in — on iOS it is not even offered until
+   * the app is on a home screen.
+   */
+  it("runs every configured transport rather than picking one", () => {
+    expect(notifier).toMatch(/composeNotifiers\(live\)/);
+    // Gated on the verified sender, not the API key: the key is always present
+    // and RESEND_FROM is the thing that actually has to be arranged.
+    expect(notifier).toMatch(/process\.env\.RESEND_FROM/);
+    expect(notifier).toMatch(/live\.push\(emailNotifier\(\)\)/);
+  });
+
+  /**
+   * The cohort that used to be dropped on the floor.
+   *
+   * notify_member has always returned email among the surviving channels, and
+   * the fan-out kept only the push list and returned early when it was empty —
+   * so somebody with push off and email on was reached by nothing at all while
+   * their settings said otherwise.
+   */
+  it("sends to the email cohort as well as the push one", () => {
+    expect(fanout).toMatch(/channels\.includes\("email"\)/);
+    expect(fanout).toMatch(/planDeliveries\(event, email, \["email"\]\)/);
+  });
+
+  it("only gives up when neither cohort wants anything", () => {
+    expect(fanout).toMatch(/push\.length === 0 && email\.length === 0/);
+    // The old early return, which is the bug itself.
+    expect(fanout).not.toMatch(/if \(push\.length === 0\) return;/);
   });
 });
 
