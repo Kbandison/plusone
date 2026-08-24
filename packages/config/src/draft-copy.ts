@@ -951,7 +951,21 @@ export const DRAFT_COPY = {
     pushEnabled: "On for this device.",
     pushBlocked:
       "Your browser is blocking notifications for this site. You can allow them in its site settings.",
-    pushUnsupported: "This browser cannot show notifications.",
+    /**
+     * No "browser", because this is also what the native shell will read.
+     *
+     * push-toggle routes a WebView here: it has no PushManager — Apple gives
+     * web push to Safari and to home-screen web apps and to nothing else — so
+     * the shell lands in the same branch a browser without the API does.
+     * "This browser cannot" is then a sentence about a browser, shown to
+     * somebody standing inside an app.
+     *
+     * It loses a hint that was only ever true half the time — that a different
+     * browser might work — in exchange for not being false anywhere. When the
+     * native push path is built the shell wants its own branch and its own
+     * line, because by then the answer is "not yet" rather than "not here".
+     */
+    pushUnsupported: "Notifications are not available here.",
     /**
      * iOS delivers web push only to a site added to the home screen, and there
      * is no API to ask — Safari offers "Add to Home Screen" from its own share

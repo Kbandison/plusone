@@ -93,9 +93,12 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
        *
        * `unsupported` because it is presently true: native push arrives through
        * the Capacitor plugin rather than PushManager, and until that path is
-       * built this device cannot be switched on from this screen. This is where
-       * it plugs in, and the string it currently renders still says "browser",
-       * which will want saying differently once it can be turned on.
+       * built this device cannot be switched on from this screen. pushUnsupported
+       * no longer says "browser" for exactly this reason.
+       *
+       * This is where the native branch plugs in, and it wants its own state
+       * when it does — "not yet" and "not here" are different sentences, and
+       * only one of them is worth a member reading twice.
        */
       if (inNativeShell()) {
         setState("unsupported");
