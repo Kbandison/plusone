@@ -15,6 +15,7 @@ import {
   score,
   selectDrop,
   underexposure,
+  weightsForPool,
   type DropCandidate,
   type DropViewer,
 } from "./index";
@@ -334,5 +335,120 @@ describe("selecting the drop", () => {
       recencyActive: 0.2,
       underexposure: 0.1,
     });
+  });
+});
+
+/**
+ * Decision #10 — "tightens as density grows". It was a sentence in the spec for
+ * a long time and these are the tests that make it a mechanism.
+ */
+describe("intention weighting tightens with local density", () => {
+  const base = DEFAULT_DROP_CONFIG.weights;
+  const { minPool } = DEFAULT_DROP_CONFIG;
+  const { saturationPool, maxIntentionCompat } = DEFAULT_DROP_CONFIG.density;
+
+  it("does not move at all in a thin area", () => {
+    // The same object, not merely an equal one — a caller can tell that nothing
+    // happened. This is also every area at launch.
+    expect(weightsForPool(0)).toBe(base);
+    expect(weightsForPool(minPool - 1)).toBe(base);
+    expect(weightsForPool(minPool)).toBe(base);
+  });
+
+  it("reaches the ceiling at saturation and stops there", () => {
+    expect(weightsForPool(saturationPool).intentionCompat).toBeCloseTo(maxIntentionCompat, 10);
+    // Twice as dense is not twice as tight.
+    expect(weightsForPool(saturationPool * 2).intentionCompat).toBeCloseTo(maxIntentionCompat, 10);
+    expect(weightsForPool(100_000).intentionCompat).toBeCloseTo(maxIntentionCompat, 10);
+  });
+
+  it("climbs linearly between the two", () => {
+    const midway = minPool + (saturationPool - minPool) / 2;
+    expect(weightsForPool(midway).intentionCompat).toBeCloseTo(
+      base.intentionCompat + (maxIntentionCompat - base.intentionCompat) / 2,
+      10,
+    );
+  });
+
+  it("moves intention and nothing else", () => {
+    // The scorer normalises by the weight total, so shifting the mix IS raising
+    // one weight. Touching the others would rescale rather than reweight.
+    const dense = weightsForPool(saturationPool);
+    expect(dense.quizCompat).toBe(base.quizCompat);
+    expect(dense.recencyActive).toBe(base.recencyActive);
+    expect(dense.underexposure).toBe(base.underexposure);
+    expect(dense.intentionCompat).toBeGreaterThan(base.intentionCompat);
+  });
+
+  it("never loosens, however the ceiling is misconfigured", () => {
+    // An admin can reach these through §7.3. A ceiling under the launch weight
+    // is a mistake, and honouring it would mean the densest areas serving the
+    // worst matches — the exact inversion of the decision.
+    const config = {
+      ...DEFAULT_DROP_CONFIG,
+      density: { ...DEFAULT_DROP_CONFIG.density, maxIntentionCompat: 0.1 },
+    };
+    expect(weightsForPool(saturationPool, config).intentionCompat).toBe(base.intentionCompat);
+  });
+
+  it("does not divide by zero when saturation sits at or below the floor", () => {
+    const config = {
+      ...DEFAULT_DROP_CONFIG,
+      density: { ...DEFAULT_DROP_CONFIG.density, saturationPool: minPool },
+    };
+    const w = weightsForPool(minPool + 1, config);
+    expect(Number.isFinite(w.intentionCompat)).toBe(true);
+    expect(w.intentionCompat).toBeCloseTo(maxIntentionCompat, 10);
+  });
+
+  it("weights the pool the ladder settled on, not everyone eligible", () => {
+    // A thin area that climbed to 250 miles to find people has not become dense
+    // by climbing. Everyone here is far away, so the pool is what the widest
+    // rung produced — and it is still under the floor.
+    const far = Array.from({ length: 8 }, (_, i) => candidate({ id: `far${i}`, distanceMi: 240 }));
+    const result = selectDrop(viewer(), far, NOW);
+    expect(result.radiusExpanded).toBe(true);
+    expect(result.weightsUsed).toBe(base);
+  });
+
+  it("reports what it actually weighted", () => {
+    const many = Array.from({ length: saturationPool }, (_, i) =>
+      candidate({ id: `c${i}`, distanceMi: 5 }),
+    );
+    const result = selectDrop(viewer(), many, NOW);
+    expect(result.poolSize).toBe(saturationPool);
+    expect(result.weightsUsed.intentionCompat).toBeCloseTo(maxIntentionCompat, 10);
+  });
+
+  /** The behaviour the decision is actually about, rather than the arithmetic. */
+  it("prefers the matching intention in a dense area and the fresher face in a thin one", () => {
+    // Two candidates, each winning one axis. `right` matches the viewer's
+    // intention and has been served often and was active a while ago; `wrong`
+    // is a poor intention match but new and recently active.
+    const right = candidate({
+      id: "right",
+      intention: "long_term",
+      timesServed: 40,
+      // At the edge of the activity window: still eligible, recency exactly 0.
+      // At 10 days it scores 0.29 there, which is enough to win on the launch
+      // weights on its own and the test proves nothing.
+      lastActiveAt: NOW - 14 * DAY,
+    });
+    const wrong = candidate({
+      id: "wrong",
+      intention: "casual",
+      timesServed: 0,
+      lastActiveAt: NOW,
+    });
+    const filler = (i: number) => candidate({ id: `f${i}`, intention: "casual", timesServed: 40 });
+
+    const thin = selectDrop(viewer(), [right, wrong], NOW);
+    expect(thin.poolSize).toBeLessThanOrEqual(minPool);
+    expect(thin.cards[0]?.id).toBe("wrong");
+
+    // Same two, now in a crowd. Nothing about either changed.
+    const crowd = [right, wrong, ...Array.from({ length: saturationPool }, (_, i) => filler(i))];
+    const dense = selectDrop(viewer(), crowd, NOW);
+    expect(dense.cards[0]?.id).toBe("right");
   });
 });

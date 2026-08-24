@@ -55,8 +55,9 @@ export const DROP = {
   activeWithinDays: 14,
   suppressRecentlyServedDays: 30,
   /**
-   * §6.1 scoring weights. Launch values; intention weight rises with density.
-   * These never sum-check at runtime — the scorer normalises.
+   * §6.1 scoring weights, at their thinnest. Intention rises from here with
+   * density — see `density` below. The scorer normalises, so these never
+   * sum-check at runtime.
    */
   weights: {
     intentionCompat: 0.4,
@@ -64,6 +65,34 @@ export const DROP = {
     recencyActive: 0.2,
     /** Counters winner-take-all so the same faces don't dominate every drop. */
     underexposure: 0.1,
+  },
+  /**
+   * Decision #10's "tightens as density grows", which was a sentence and is now
+   * a mechanism.
+   *
+   * The weights above are the floor, and they are the right floor in a thin
+   * area: insisting on intention where there are fourteen candidates means
+   * serving somebody two cards instead of three, which is a worse night than a
+   * slightly mismatched third. Where there are two hundred it is the opposite —
+   * a `long_term` member has no business being shown `casual` profiles at 0.3
+   * affinity when the area could fill the drop three times over on intention
+   * alone.
+   *
+   * So intention climbs from its launch weight to `maxIntentionCompat` as the
+   * pool grows from `minPool` to `saturationPool`, and nothing else moves: the
+   * scorer normalises by the weight total, so raising one weight is the whole
+   * of shifting the mix. Below `minPool` the weights are untouched, which means
+   * launch behaves exactly as it did before this existed.
+   *
+   * Both values are tunable through §7.3 like the weights themselves. The
+   * ceiling is a ceiling and not a target — an area twice as dense as
+   * saturation does not get twice the tightening.
+   */
+  density: {
+    /** Pool size at which intention weight reaches its ceiling. */
+    saturationPool: 120,
+    /** The most intention compatibility may be worth, however dense it gets. */
+    maxIntentionCompat: 0.7,
   },
 } as const;
 

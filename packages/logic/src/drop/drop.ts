@@ -10,6 +10,7 @@ export const DEFAULT_DROP_CONFIG: DropConfig = {
   minPool: RADIUS.minPool,
   ladderMi: RADIUS.ladderMi,
   weights: DROP.weights,
+  density: DROP.density,
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -63,6 +64,47 @@ export function score(
     parts.underexposure * w.underexposure;
 
   return { id: candidate.id, score: total === 0 ? 0 : weighted / total, parts };
+}
+
+/**
+ * Decision #10 — the scoring weights, tightened for how dense the area is.
+ *
+ * Intention climbs from its configured weight toward the ceiling as the pool
+ * grows from `minPool` to `saturationPool`, linearly, and clamps at both ends.
+ * Nothing else moves: `score` normalises by the weight total, so raising one
+ * weight is the entire operation.
+ *
+ * Pure, and a function of the pool that the radius actually produced rather
+ * than of the candidates that went in. That distinction matters — a thin area
+ * that had to climb to 250 miles to find fourteen people has not become dense
+ * by climbing, and weighting it as though it had is exactly the mistake this
+ * is meant to prevent.
+ */
+export function weightsForPool(
+  poolSize: number,
+  config: DropConfig = DEFAULT_DROP_CONFIG,
+): DropConfig["weights"] {
+  const base = config.weights;
+
+  // Identity below the floor, deliberately — the same object, so callers can
+  // tell nothing happened. This is also every area at launch, which is why
+  // shipping this changes no drop that exists today.
+  if (poolSize <= config.minPool) return base;
+
+  // Never loosens. An admin who puts the ceiling below the launch weight has
+  // misconfigured it, and the answer is to ignore them rather than to start
+  // serving worse matches in the densest places on earth.
+  const ceiling = Math.max(base.intentionCompat, config.density.maxIntentionCompat);
+
+  // A saturation point at or below the floor means "tighten immediately"
+  // rather than a division by zero.
+  const span = config.density.saturationPool - config.minPool;
+  const climbed = span <= 0 ? 1 : Math.min(1, (poolSize - config.minPool) / span);
+
+  return {
+    ...base,
+    intentionCompat: base.intentionCompat + climbed * (ceiling - base.intentionCompat),
+  };
 }
 
 /**
@@ -121,8 +163,13 @@ export function selectDrop(
   const eligible = distinct.filter((c) => isEligible(c, now, config));
   const { radiusMi, pool } = resolveRadius(eligible, viewer.radiusMi, config);
 
+  // Decided by the pool the ladder settled on, not by everything eligible.
+  const weightsUsed = weightsForPool(pool.length, config);
+  const scoringConfig =
+    weightsUsed === config.weights ? config : { ...config, weights: weightsUsed };
+
   const ranked = pool
-    .map((c) => score(viewer, c, now, config))
+    .map((c) => score(viewer, c, now, scoringConfig))
     // A NaN score makes `b.score - a.score` NaN, which makes the comparator
     // non-total — and the poisoned candidate ends up served first rather than
     // last. Drop it instead of ranking it.
@@ -139,5 +186,6 @@ export function selectDrop(
     radiusExpanded: radiusMi > viewer.radiusMi,
     preview: viewer.mode === "support_only",
     poolSize: pool.length,
+    weightsUsed,
   };
 }

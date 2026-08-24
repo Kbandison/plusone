@@ -47,5 +47,15 @@ export async function dropConfig(): Promise<dropLogic.DropConfig> {
     minPool: num(config, "radius.min_pool", RADIUS.minPool),
     ladderMi: RADIUS.ladderMi,
     weights,
+    // Decision #10 — tunable for the same reason the weights are. The curve is
+    // in packages/logic; these two numbers are where it starts and stops.
+    density: {
+      saturationPool: num(config, "drop.density.saturation_pool", DROP.density.saturationPool),
+      maxIntentionCompat: num(
+        config,
+        "drop.density.max_intention",
+        DROP.density.maxIntentionCompat,
+      ),
+    },
   };
 }

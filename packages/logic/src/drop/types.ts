@@ -68,6 +68,15 @@ export interface DropResult {
   readonly preview: boolean;
   /** How many candidates survived filtering at the radius used. */
   readonly poolSize: number;
+  /**
+   * The weights this drop was actually scored with, after density.
+   *
+   * Returned rather than inferred: the whole point of Decision #10 is that the
+   * mix moves on its own, and a mechanism that adjusts itself invisibly is one
+   * nobody can check. An admin looking at a drop should be able to see what it
+   * weighted, not recompute it.
+   */
+  readonly weightsUsed: DropConfig["weights"];
 }
 
 export interface DropConfig {
@@ -81,5 +90,10 @@ export interface DropConfig {
     readonly quizCompat: number;
     readonly recencyActive: number;
     readonly underexposure: number;
+  };
+  /** Decision #10 — how the weights above tighten as the local pool grows. */
+  readonly density: {
+    readonly saturationPool: number;
+    readonly maxIntentionCompat: number;
   };
 }
