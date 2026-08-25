@@ -43,8 +43,21 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
-    "test": {
-      "outputs": ["coverage/**"]
-    }
+    /**
+     * No `outputs`, because nothing here produces any.
+     *
+     * This declared `coverage/**` and no vitest config asks for coverage, so
+     * every run printed "no output files found for task X#test — please check
+     * your outputs key" once per package. Four warnings a run, all of them
+     * correct and none of them actionable, which is the shape of warning that
+     * teaches people to stop reading warnings.
+     *
+     * A task with no outputs still caches. Turbo hashes the inputs and replays
+     * the logs on a hit; what `outputs` adds is restoring files afterwards, and
+     * a test run leaves none behind. Declare it again if coverage is ever
+     * turned on — CONTRIBUTING says there is no coverage target and nothing
+     * measures it.
+     */
+    "test": {}
   }
 }
