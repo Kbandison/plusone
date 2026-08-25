@@ -2,6 +2,7 @@ import "server-only";
 
 import { notify } from "@plusone/logic";
 
+import { apnsNotifier } from "./apns";
 import { emailNotifier } from "./email";
 import { webPushNotifier } from "./web-push";
 
@@ -32,6 +33,15 @@ export function notifier(): notify.Notifier {
   }
   if (process.env.RESEND_FROM && process.env.RESEND_API_KEY) {
     live.push(emailNotifier());
+  }
+  // All four, because a partial set cannot send and would fail per message.
+  if (
+    process.env.APNS_KEY_ID &&
+    process.env.APNS_TEAM_ID &&
+    process.env.APNS_BUNDLE_ID &&
+    process.env.APNS_PRIVATE_KEY
+  ) {
+    live.push(apnsNotifier());
   }
   if (live.length > 0) return notify.composeNotifiers(live);
 

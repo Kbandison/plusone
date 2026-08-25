@@ -98,6 +98,27 @@ export const serverEnvSchema = z
     RESEND_FROM: z.string().min(3).optional(),
 
     /**
+     * APNs, for the iOS shell. All four or none — `notifier()` builds the
+     * provider only when the set is complete, because a partial one fails per
+     * message rather than at the seam.
+     *
+     * A WebView has no PushManager, so this is what replaces web push inside
+     * Capacitor rather than an addition to it. Nothing here is reachable until
+     * Kevin has a Team ID and a .p8 key, which is why every field is optional
+     * and the app boots without them.
+     *
+     * APNS_PRIVATE_KEY is the .p8 file's contents, newlines included. Vercel's
+     * editor keeps them; a shell `export` usually does not, so a literal `\n`
+     * is accepted and rewritten at use.
+     */
+    APNS_KEY_ID: z.string().optional(),
+    APNS_TEAM_ID: z.string().optional(),
+    APNS_BUNDLE_ID: z.string().optional(),
+    APNS_PRIVATE_KEY: z.string().optional(),
+    /** `sandbox` for a development build; anything else means production. */
+    APNS_ENVIRONMENT: z.enum(["production", "sandbox"]).optional(),
+
+    /**
      * Phone OTP provider (§7.2). Credentials live in the Supabase dashboard, not
      * here — Supabase Auth talks to the provider on our behalf, so this only
      * records WHICH one is live. `stub` accepts a fixed code and refuses to
