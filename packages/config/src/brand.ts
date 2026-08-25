@@ -30,7 +30,19 @@ export const BRAND = {
   legalName: "LuxWeb Studio LLC",
   /** Secured 2026-08-17. Was yourplusone.app, which was never bought. */
   domain: "loveplusone.app",
-  supportEmail: "hello@loveplusone.app",
+  /**
+   * The address the privacy policy and terms send people to.
+   *
+   * support@ rather than hello@, chosen by Kevin on 2026-08-25 when both were
+   * confirmed to receive. It is the one a policy should name: what arrives here
+   * is a question about data, a correction, or a rights request with a response
+   * clock attached, and that is a different queue from whatever reaches a
+   * general address.
+   *
+   * Referenced from legal.ts and terms.ts rather than written into either, so
+   * the two documents cannot drift apart or from this.
+   */
+  supportEmail: "support@loveplusone.app",
 } as const;
 
 /**
