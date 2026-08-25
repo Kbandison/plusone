@@ -41,6 +41,26 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    before.
 7. **A release Xcode.** `apps/ios` is driven by 27 beta 6 through
    `DEVELOPER_DIR`. Fine for the Simulator, not for a submission build.
+8. **Signing is unconfigured.** `CODE_SIGN_STYLE = Automatic` with **no
+   `DEVELOPMENT_TEAM`** in `project.pbxproj`, so the target builds for the
+   Simulator and nothing else — no device, no TestFlight. Item 2's device test
+   and the camera check in item 11 both sit behind it. Needs the Team ID, Kevin
+   lane.
+9. **No `PrivacyInfo.xcprivacy` for the App target.** Capacitor ships one for
+   its own frameworks; the app needs its own, declaring required-reason API use
+   and what it collects. Rejected at upload without it, and this app collects
+   the categories Apple looks hardest at.
+10. **Universal links.** Without them a tapped notification, or an emailed link,
+    opens Safari — which has its own cookie jar, so it reads as being signed
+    out. The Associated Domains entitlement is this lane; the
+    `apple-app-site-association` half is the server lane.
+11. **Verification debt**, all needing a Simulator or a device. The keyboard
+    against the fixed composer (`bottom-[var(--nav-h)]` — the classic WKWebView
+    failure is the inset staying applied when the keyboard is up). Dusk, since
+    every shell screenshot so far is Linen and nothing sets the status-bar
+    style. The offline page `server.errorPath` points at, which has never been
+    made to render. And the camera, which is the liveness gate and needs real
+    hardware, so it waits on item 8.
 
 ## Lane: server and schema (WSL session)
 
@@ -66,6 +86,18 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
 6. **Account binding.** A StoreKit entitlement belongs to an Apple ID, not a
    Plus One account. Bind `original_transaction_id` to `user_id` at purchase and
    refuse to re-bind, or one subscription unlocks several people.
+7. **The Stripe path must not be reachable inside the shell.**
+   `settings/premium/actions.ts` creates a Checkout session, and offering that
+   for a subscription inside an iOS app is guideline 3.1.1 — a hard rejection,
+   against a store-billing decision already made on the 24th. Branch it on
+   `inNativeShell()`. Small, and independent of items 2–4, so it does not wait
+   on App Store Connect.
+8. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
+9. **`NEXT_PUBLIC_APP_URL` points at `app.loveplusone.app`, which answers 404.**
+   It is Stripe's return URL, the add-an-address email target, and what room
+   share links are built from. Bundled with it: whether the apex or `www` is
+   canonical — `NEXT_PUBLIC_SITE_URL` is the apex, which 308s, and the shell
+   loads `www` because of it.
 
 ## Lane: Kevin
 
@@ -79,21 +111,31 @@ unblock other work.
    starting before it is the only thing left.
 2. **The signing key's SHA-256**, for `assetlinks.json`. Blocks the whole TWA
    lane item 5.
-3. **App Store Connect**: the app record, subscription products, and privacy
+3. **The Apple Developer Team ID.** One value, and every "needs a real device"
+   item on iOS is behind it: shells lane 8, the device half of native push, and
+   the camera check that gates joining at all.
+4. **App Store Connect**: the app record, subscription products, and privacy
    labels. Unblocks server lane items 2–4.
-4. **A Resend-verified sending domain**, then set `RESEND_FROM`. Until then
+5. **Whether a remote-URL shell is submittable** (guideline 4.2, minimum
+   functionality). Capacitor's own declarations call `server.url` "not intended
+   for use in production". The answer is mostly a function of how much native
+   capability it has by then, which is what the push and StoreKit work buys.
+6. **The app icon and launch image.** Both are placeholder geometry — Claude's,
+   not a design. Replacing the SVG in `scripts/generate-icons.mjs` replaces
+   every surface at once, web and iOS.
+7. **A Resend-verified sending domain**, then set `RESEND_FROM`. Until then
    `emailNotifier` is never constructed and nothing reaches an inbox.
-5. **Whether any event should default to email.** The notifier is built and
+8. **Whether any event should default to email.** The notifier is built and
    inert — every `NOTIFICATION_DEFAULTS` entry is `["in_app", "push"]`. A §8
    decision about a channel that persists and is searchable.
-6. **Small Business Program approval.** Separate from the $99 membership and
+9. **Small Business Program approval.** Separate from the $99 membership and
    usually lands the following month. Until confirmed, the rate is 30% on a
    subscription's first year rather than 15%.
-7. **Whether the badge should count rather than mark.** Also §8 — see
-   `app-badge.tsx`, which argues at length that an app icon sits in front of
-   whoever picks the phone up.
-8. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
-   ~190 GB the disk image is holding. Tidying, not urgent.
+10. **Whether the badge should count rather than mark.** Also §8 — see
+    `app-badge.tsx`, which argues at length that an app icon sits in front of
+    whoever picks the phone up.
+11. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
+    ~190 GB the disk image is holding. Tidying, not urgent.
 
 ---
 

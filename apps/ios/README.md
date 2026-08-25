@@ -70,9 +70,10 @@ whole directory, for the reason written down in it.
 
 ## What is left
 
-`WORK.md`, beside this file. It lists everything the shell still needs, tagged
-by which machine can do it — most of it is mac-only, and the handful that lives
-in `apps/web` carries a claiming rule so two sessions do not start it twice.
+`BACKLOG.md`, at the repo root, under **Lane: shells**. The pieces the shell
+needs that live in `apps/web` rather than here — the APNs notifier, the StoreKit
+branch, `apple-app-site-association` — sit in the server lane instead, which is
+the point of splitting it by machine rather than by feature.
 
 ## Not wired yet
 
