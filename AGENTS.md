@@ -54,4 +54,12 @@ followed in time is not a mechanism. The cost is that its length is paid by
 every session, which is the real reason for its own three-entry cap — a handoff
 file that grows into an archive starts charging rent.
 
+`BACKLOG.md` is the other half of the same problem, and is imported too. It
+says what "keep going" means in each lane, because two sessions given an
+open-ended instruction converge — on 2026-08-25 both built a handoff file within
+minutes of each other and one was thrown away. Take the top unclaimed item in
+your lane and claim it in `HANDOFF.md` before starting. If your lane is empty,
+say so rather than wandering into the other one.
+
 @HANDOFF.md
+@BACKLOG.md
