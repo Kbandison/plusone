@@ -224,6 +224,25 @@ describe("the privacy policy draft", () => {
     expect(text).not.toMatch(/keep[^.]*confidence score/i);
   });
 
+  /**
+   * The processor list said "as few companies as we can manage" and then named
+   * five, leaving out the ones a notification demonstrably passes through.
+   *
+   * web-push.ts posts to whatever endpoint the browser handed us, and the
+   * hostnames are not hypothetical — a real send goes to fcm.googleapis.com or
+   * web.push.apple.com. They route it and they see which device it went to. The
+   * payload is encrypted under RFC 8291 with keys only the browser holds, which
+   * is worth stating and is not the same as their not being in the path.
+   */
+  it("names the push service among the companies that touch data", () => {
+    const processors = PRIVACY_POLICY.find((section) => section.id === "who-else-touches-it");
+    const text = (processors?.list ?? []).join(" ");
+    expect(text).toMatch(/push service/i);
+    // The reassurance has to travel with the disclosure, or naming Google and
+    // Apple reads as though they can read notifications. They cannot.
+    expect(text).toMatch(/encrypted/i);
+  });
+
   it("carries an effective date the page can show", () => {
     expect(PRIVACY_POLICY_EFFECTIVE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });

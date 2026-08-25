@@ -166,6 +166,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
       "An identity verification provider, which checks your selfie and then deletes it.",
       "Stripe, for payments.",
       "An email provider, for transactional email.",
+      "Your browser's push service — Google, Apple or Mozilla, depending on which browser you use — which carries a notification to your device. It sees that one was sent and to which device, never what it says: the contents are encrypted with a key only your browser holds.",
     ],
   },
   {
