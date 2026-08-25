@@ -131,7 +131,23 @@ export default async function AppLayout({
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[550.8px] flex-col px-6">
-      <header className="flex items-center justify-between pt-4 pb-3">
+      {/* pt clears the status bar as well as giving the header its own space.
+       *
+       * The 1rem was the whole of it, and that was right for every surface
+       * that existed when it was written. It is wrong in the iOS shell: there,
+       * the WKWebView IS the view controller's root view, so the page starts at
+       * the physical top of the screen and the wordmark is drawn UNDERNEATH the
+       * clock. Verified in the Simulator on an iPhone 17 Pro, where the top
+       * inset is 59pt and the header's ink began at 24pt — the two overlap, and
+       * "⁺One" comes out as a grey smudge behind the time.
+       *
+       * Nothing else showed it. A browser tab has Safari's chrome above the
+       * page; the installed web app has `statusBarStyle: "default"`, which is
+       * the setting that makes iOS start the web view BELOW the status bar
+       * (§ the note in the root layout, which chose it for exactly this reason).
+       * Both report a top inset of nought, so this calc adds nothing there and
+       * the layout is unchanged on every surface but the one that was broken. */}
+      <header className="flex items-center justify-between pt-[calc(1rem+env(safe-area-inset-top))] pb-3">
         <Wordmark className="text-[26px]" />
 
         <div className="flex items-center">

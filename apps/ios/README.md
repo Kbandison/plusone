@@ -34,10 +34,22 @@ pnpm sync        # copy public/ and capacitor.config.ts into the Xcode project
 pnpm open        # open it in Xcode
 ```
 
-`CAP_SERVER_URL` overrides the origin the shell loads. It has to be **https** —
-a plain-http dev server needs an App Transport Security exception that this
-project deliberately does not ship, so point it at a preview deployment or a
-tunnel rather than at `localhost:3000`.
+`CAP_SERVER_URL` overrides the URL the shell loads, and a local dev server is
+fine: App Transport Security exempts loopback, so `http://localhost:3000` needs
+no exception and none is shipped. A dev server reached by LAN address would need
+one.
+
+Give it the path, not just the origin:
+
+```bash
+CAP_SERVER_URL=http://localhost:3000/app pnpm sync && pnpm open
+```
+
+Capacitor decides whether a navigation stays in the shell by prefix-matching the
+whole `server.url` string, so pointing it at `/app` keeps every screen under
+`/app` inside. Pointed at the bare origin, the first navigation away from `/`
+leaves the prefix behind and iOS opens it in Safari instead — see the long
+comment on `allowNavigation` in `capacitor.config.ts`.
 
 ## What is hand-written in `ios/`
 

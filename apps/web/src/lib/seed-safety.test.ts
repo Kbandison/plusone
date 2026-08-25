@@ -50,10 +50,51 @@ describe("test members can always be told apart and taken back out", () => {
     expect(gate).toMatch(/seeded test member/i);
   });
 
-  /** The seeder must never invent a member without the marker. */
+  /**
+   * The seeder must never invent a member without the marker.
+   *
+   * Repinned 2026-08-25. This read `insert into auth.users[\s\S]{0,200}$2` — a
+   * character count standing in for "in the same statement" — and the statement
+   * outgrew 200 characters when it started naming the token columns below. The
+   * count was never the point, so the whole statement is captured and searched
+   * instead, and the assertion stops depending on how long the insert is.
+   */
   it("gives every seeded member the marker", () => {
     expect(seed).toMatch(/const email = `seed-\$\{id\}@\$\{DOMAIN\}`/);
-    expect(seed).toMatch(/insert into auth\.users[\s\S]{0,200}\$2/);
+    const insert = /insert into auth\.users[\s\S]*?`/.exec(seed)?.[0] ?? "";
+    expect(insert).toContain("$2");
+  });
+
+  /**
+   * The empty strings in that insert are load-bearing, and they look like
+   * padding — which is exactly how they would come to be deleted.
+   *
+   * GoTrue scans these token columns into plain Go strings with no null
+   * handling, so a NULL in any of them makes the row unreadable. Because
+   * `auth.admin.listUsers()` reads every user, ONE seeded member with NULLs
+   * here is enough to break it for the whole project with "Database error
+   * finding user" — which is what happened, and what dev/sign-in/actions.ts
+   * worked around without knowing the cause.
+   *
+   * phone_confirmed_at is here for a different reason with the same shape: the
+   * onboarding resolver reads it off auth.users, so without it a seeded member
+   * with a complete profile is still sent back to step one on sign-in.
+   */
+  it("writes auth rows Supabase Auth can actually read", () => {
+    const insert = /insert into auth\.users[\s\S]*?`/.exec(seed)?.[0] ?? "";
+    for (const column of [
+      "confirmation_token",
+      "recovery_token",
+      "email_change",
+      "email_change_token_new",
+      "email_change_token_current",
+      "phone_change",
+      "phone_change_token",
+      "reauthentication_token",
+    ]) {
+      expect(insert, `${column} must be written, not left NULL`).toContain(column);
+    }
+    expect(insert).toContain("phone_confirmed_at");
   });
 
   /** A seed with no location is invisible to every surface in the app. */

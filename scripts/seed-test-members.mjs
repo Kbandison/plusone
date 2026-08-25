@@ -30,9 +30,8 @@ import sharp from "sharp";
 // draft-copy.ts imports nothing, so Node's type stripping can load it directly.
 // The package barrel cannot be imported the same way — its subpaths are
 // extensionless and Node will not resolve them.
-const { PROFILE_PROMPTS, QUIZ_QUESTIONS, QUIZ_TRAITS } = await import(
-  "../packages/config/src/draft-copy.ts"
-);
+const { PROFILE_PROMPTS, QUIZ_QUESTIONS, QUIZ_TRAITS } =
+  await import("../packages/config/src/draft-copy.ts");
 
 const DOMAIN = "seed.plusone.invalid";
 const COUNT = Number(process.env.SEED_COUNT ?? 12);
@@ -54,7 +53,13 @@ const envFile = Object.fromEntries(
     .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
     .map((line) => {
       const at = line.indexOf("=");
-      return [line.slice(0, at).trim(), line.slice(at + 1).trim().replace(/^["\x27]|["\x27]$/g, "")];
+      return [
+        line.slice(0, at).trim(),
+        line
+          .slice(at + 1)
+          .trim()
+          .replace(/^["\x27]|["\x27]$/g, ""),
+      ];
     }),
 );
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? envFile.NEXT_PUBLIC_SUPABASE_URL;
@@ -85,9 +90,24 @@ const PROMPT_ANSWERS = [
 ];
 
 const NAMES = [
-  "Rae", "Marcus", "Sofia", "Devon", "Priya", "Elliot",
-  "Naomi", "Jonah", "Camille", "Theo", "Alina", "Wes",
-  "Nadia", "Callum", "Imani", "Rowan", "Beatriz", "Aziz",
+  "Rae",
+  "Marcus",
+  "Sofia",
+  "Devon",
+  "Priya",
+  "Elliot",
+  "Naomi",
+  "Jonah",
+  "Camille",
+  "Theo",
+  "Alina",
+  "Wes",
+  "Nadia",
+  "Callum",
+  "Imani",
+  "Rowan",
+  "Beatriz",
+  "Aziz",
 ];
 const GENDERS = ["woman", "man", "non_binary", "other"];
 const INTENTIONS = ["long_term", "casual", "open_to_either", "friends_support"];
@@ -150,9 +170,23 @@ async function drawPhoto(initial, hue) {
   );
   const base = sharp(svg);
   return {
-    full: await base.clone().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer(),
-    card: await base.clone().resize({ width: 320, height: 320, fit: "cover" }).webp({ quality: 78 }).toBuffer(),
-    blurred: await base.clone().resize({ width: 32, height: 32, fit: "inside" }).resize({ width: 480, height: 480, fit: "inside", kernel: "cubic" }).blur(18).webp({ quality: 60 }).toBuffer(),
+    full: await base
+      .clone()
+      .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer(),
+    card: await base
+      .clone()
+      .resize({ width: 320, height: 320, fit: "cover" })
+      .webp({ quality: 78 })
+      .toBuffer(),
+    blurred: await base
+      .clone()
+      .resize({ width: 32, height: 32, fit: "inside" })
+      .resize({ width: 480, height: 480, fit: "inside", kernel: "cubic" })
+      .blur(18)
+      .webp({ quality: 60 })
+      .toBuffer(),
   };
 }
 
@@ -189,6 +223,16 @@ try {
   for (let i = 0; i < COUNT; i += 1) {
     const id = randomUUID();
     const email = `seed-${id}@${DOMAIN}`;
+    /**
+     * A number that cannot belong to anybody.
+     *
+     * NPA 555 is not assignable by the NANP, so nothing beginning +1555 will
+     * ever reach a real handset however the remaining digits fall — which means
+     * the digits can come from the uuid and be unique per run. A fixed block
+     * would collide the second time somebody seeded without removing first, and
+     * would also run into the +1555555010x numbers dev/sign-in mints.
+     */
+    const phone = `+1555${id.replace(/\D/g, "").padEnd(7, "0").slice(0, 7)}`;
     const community = i % 4 === 3 ? "hiv" : "hsv";
     const gender = pick(GENDERS, i);
     // Everybody wants somebody: a seed seeking nothing matches everyone, which
@@ -223,10 +267,39 @@ try {
       .toISOString()
       .slice(0, 10);
 
+    // The empty strings are not padding, and leaving them out poisons Supabase
+    // Auth for the WHOLE project rather than just for this member.
+    //
+    // GoTrue is Go, and it scans these token columns into plain strings with no
+    // null handling. A NULL in any of them makes the row unreadable — and
+    // because auth.admin.listUsers() reads every row, ONE seeded member with
+    // NULLs here is enough to make it fail for every caller with "Database
+    // error finding user". generateLink() on that member fails the same way, so
+    // nothing can mint a session for a test member either.
+    //
+    // That error is already recorded in dev/sign-in/actions.ts, where it was
+    // met head-on and worked around by dropping listUsers. The workaround was
+    // right; the diagnosis stopped one layer short. This is where it came from.
+    //
+    // phone/phone_confirmed_at are set for the same reason the profile below is
+    // marked verified: the onboarding resolver reads phone_confirmed_at off
+    // auth.users, so without it a seeded member who signs in is sent back to
+    // step one of onboarding no matter how complete their profile is.
     await client.query(
-      `insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at, created_at, updated_at)
-       values ($1, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', $2, now(), now(), now())`,
-      [id, email],
+      `insert into auth.users (
+         id, instance_id, aud, role, email, email_confirmed_at,
+         phone, phone_confirmed_at,
+         confirmation_token, recovery_token, email_change,
+         email_change_token_new, email_change_token_current,
+         phone_change, phone_change_token, reauthentication_token,
+         created_at, updated_at)
+       values ($1, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', $2, now(),
+         $3, now(),
+         '', '', '',
+         '', '',
+         '', '', '',
+         now(), now())`,
+      [id, email, phone],
     );
 
     // create_profile_on_signup already made the row; this fills it in.
@@ -267,7 +340,7 @@ try {
         "A seeded account for testing. Not a real person.",
         // Scattered over roughly forty miles so the radius filter has something
         // to actually exclude.
-        lon + (((i % 7) - 3) * 0.09),
+        lon + ((i % 7) - 3) * 0.09,
         lat + ((Math.floor(i / 7) % 5) - 2) * 0.09,
         i * 6,
       ],
@@ -317,7 +390,7 @@ try {
     // have something to render.
     for (const slot of [0, 1]) {
       const photoId = randomUUID();
-      const variants = await drawPhoto(pick(NAMES, i)[0], ((i * 47) + slot * 25) % 360);
+      const variants = await drawPhoto(pick(NAMES, i)[0], (i * 47 + slot * 25) % 360);
       const paths = {
         storage_path: `${id}/${photoId}.webp`,
         card_path: `${id}/${photoId}-card.webp`,

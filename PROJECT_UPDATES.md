@@ -1,5 +1,133 @@
 # Project Updates
 
+## 2026-08-25 — The safe-area check, finally done, and what it found
+
+The check that has been top of Held for Kevin since the 24th is done. It needed
+a signed-in session on a notched iPhone, which needed the database URL, which
+needed most of what is below.
+
+**The bottom edge is correct, and now measured rather than believed.** The nav
+was screenshotted in the shell on an iPhone 17 Pro and an iPad Pro 11", and the
+gap between the last drawn pixel of the active tab and the physical bottom of
+the screen came out:
+
+| device        | scale | clearance          | inset | remainder |
+| ------------- | ----- | ------------------ | ----- | --------- |
+| iPhone 17 Pro | @3x   | 120px → **40.0pt** | 34pt  | 6pt       |
+| iPad Pro 11"  | @2x   | 52px → **26.0pt**  | 20pt  | 6pt       |
+
+The remainder is identical on both and equals the `<ul>`'s `py-1.5`. The part
+that moves is exactly `env(safe-area-inset-bottom)` for each device. That is the
+proof the single-device screenshot could not give: the padding is being read
+from the engine per device, not hard-coded, not zero, and not doubled — a
+doubled inset would have put the iPhone at 74pt, which is what `contentInset`
+being anything other than `never` would have caused.
+
+**The top edge was wrong, and only in the shell.** `/app`'s header is
+`pt-4` and nothing else, so in the iOS shell — where the WKWebView _is_ the view
+controller's root view and the page starts at the physical top of the screen —
+the wordmark was drawn **underneath the status bar clock**. "⁺One" came out as a
+grey smudge behind "13:27".
+
+Nothing else could have shown it. A browser tab has Safari's chrome above the
+page. The installed web app sets `statusBarStyle: "default"`, which is precisely
+the setting that makes iOS start the web view below the status bar — chosen back
+when the manifest was written, for exactly this reason, and it is why the PWA
+was fine. Both report a top inset of nought.
+
+The header now reads `pt-[calc(1rem+env(safe-area-inset-top))]`, the same shape
+the nav and the two sheets already use at the bottom. It adds nothing on any
+surface that reports no inset, so only the broken one changes. Verified in the
+Simulator against a local dev server: the wordmark clears the clock and is
+legible.
+
+**Still not checked: the two bottom sheets.** `modal.tsx` and `route-modal.tsx`
+both carry `env(safe-area-inset-bottom)` and both need a tap to open. `simctl`
+has no way to inject one, so they were not exercised. They are written the same
+way the nav is, which the nav's numbers now vindicate — but that is an argument,
+not a measurement.
+
+### Three defects found on the way in
+
+**`allowNavigation` was wrong in the shell shipped this morning.** Capacitor
+decides what stays inside the WebView with two rules, and both are narrower than
+they look. `shouldAllowNavigation` splits host and pattern on dots and refuses
+to compare them at all unless the counts match — so `loveplusone.app` matches
+the apex and _nothing beneath it_. The fallback is
+`navURL.absoluteString.starts(with: serverURL.absoluteString)`: a prefix test on
+the **whole string**, not on the host. It covered `www` only because `server.url`
+happened to be exactly the origin with no path.
+
+Found by giving `server.url` a path — the auth callback — at which point every
+other page on the same host stopped matching and iOS threw the session into
+Safari mid-sign-in. `app.loveplusone.app` was never covered either, and that is
+where `NEXT_PUBLIC_APP_URL` points: Stripe's return URL, the add-an-address
+email, and room share links. All three hosts are now named.
+
+**`app.loveplusone.app` answers 404.** It resolves to Vercel with no deployment
+attached. `NEXT_PUBLIC_APP_URL` is set to it, so a member finishing Stripe
+checkout on the web is currently returned to a 404. Web-side and pre-existing;
+not touched here.
+
+**`seed-test-members.mjs` poisons Supabase Auth for the whole project.** It
+inserted `auth.users` rows leaving `confirmation_token`, `recovery_token`,
+`email_change` and `email_change_token_new` NULL. GoTrue is Go and scans those
+into plain strings with no null handling, so **one** such row makes
+`auth.admin.listUsers()` fail for every caller — it reads all users — with
+"Database error finding user", and `generateLink()` fails on that member too.
+
+That error is already in the record: `dev/sign-in/actions.ts` met it head-on and
+worked around it by dropping `listUsers`. The workaround was right and the
+diagnosis stopped one layer short of the cause. It was the seeds all along.
+Fixed at the source, with `phone`/`phone_confirmed_at` set too — the onboarding
+resolver reads `phone_confirmed_at` off `auth.users`, so a seeded member with a
+complete profile was still sent back to step one on sign-in. The phone is
+derived from the member's uuid under NPA 555, which the NANP does not assign, so
+it can never reach a handset and cannot collide between runs.
+
+### Two things about this machine
+
+**`check:seed` had been red.** 24 seeded members were sitting in the production
+database when this session started — the gate that exists so "we forgot to clean
+up" cannot be a silent state had been failing, unnoticed, because it is not one
+of the five CI runs and needs a credential CI does not have. They are gone and
+the gate is green. Three `@dev.invalid` members from `/dev/sign-in` remain; no
+gate covers those.
+
+**The database is only reachable through the pooler.**
+`db.<ref>.supabase.co` has an AAAA record and no A record, and this network has
+no IPv6 egress, so the direct connection string from the dashboard fails with
+ENOTFOUND. `.env.local` now uses the session pooler at
+`aws-0-us-west-2.pooler.supabase.com:5432`. `.env.example` had said either would
+do; it now says which.
+
+**`pnpm dev` could not read `.env.local`.** README's quickstart puts it at the
+repo root, and Next reads it from `apps/web/`, so the dev server came up with no
+environment and every page threw. Symlinked for now — `apps/web/.env.local` →
+`../../.env.local`, one source of truth, and gitignored either way. The README
+still says the wrong thing and is left for Kevin, because which of the two
+locations is meant to be canonical is his call.
+
+### Shells
+
+Verified against **iOS / WKWebView** — Simulator, iPhone 17 Pro and iPad Pro 11",
+iOS 27.0. **Android / TWA is unverified.** The header change is web-side and will
+reach the TWA, where it should be inert: Chrome in a TWA reports a top inset of
+nought and the calc adds nothing. Should be. Nobody has looked.
+
+### Held for Kevin
+
+- **The two bottom sheets**, which need a tap the tooling cannot give.
+- **`NEXT_PUBLIC_APP_URL` pointing at a 404**, and whether the apex or `www` is
+  the canonical origin — `NEXT_PUBLIC_SITE_URL` still says the apex, which 308s.
+- **Whether a WebView-only shell is the shape to submit** (guideline 4.2).
+- **A released Xcode** before anything is uploaded; this is 27 beta 6.
+- **Rotating the database password**, still, and now more so — it has been
+  handled on two machines today.
+- **Small Business Program approval**, **a Resend-verified sending domain** then
+  `RESEND_FROM`, **whether the Drop should default to email**, and **the signing
+  key fingerprint** — carried forward unchanged.
+
 ## 2026-08-25 — The iOS target exists, and the check it was built for still does not
 
 The shell builds, installs and launches. `app.loveplusone` is on a simulated

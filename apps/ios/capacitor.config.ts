@@ -40,10 +40,16 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * NEXT_PUBLIC_SITE_URL is set to the apex, which is the other half of the same
  * mismatch and is a web-side question — see PROJECT_UPDATES.
  *
- * CAP_SERVER_URL overrides it for local work. Note that a plain-http dev server
- * needs an ATS exception this project deliberately does not ship, so the
- * override is only useful against an https origin (a tunnel, or a preview
- * deployment).
+ * CAP_SERVER_URL overrides it for local work, and `http://localhost:3000` does
+ * work — App Transport Security exempts loopback, so no ATS exception is needed
+ * and none is shipped. Verified in the Simulator. A dev server reached by LAN
+ * address rather than loopback is a different matter and would need one.
+ *
+ * Point it at the PATH you want, not just the origin: `http://localhost:3000/app`.
+ * The navigation rules below explain why — the fallback rule prefix-matches the
+ * whole `server.url` string, so setting it to `/app` keeps every screen under
+ * `/app` inside the shell, while setting it to the bare origin and then
+ * navigating would leave the prefix behind.
  */
 const SERVER_URL = process.env["CAP_SERVER_URL"] ?? "https://www.loveplusone.app";
 
@@ -65,7 +71,34 @@ const config: CapacitorConfig = {
   webDir: "public",
   server: {
     url: SERVER_URL,
-    allowNavigation: ["loveplusone.app"],
+    /**
+     * Every host this app legitimately navigates to, listed rather than
+     * inferred, because both of Capacitor's rules are narrower than they look.
+     *
+     * `shouldAllowNavigation` splits host and pattern on dots and refuses to
+     * compare them unless the counts match — so `loveplusone.app` matches the
+     * apex and NOTHING under it. A subdomain has to be named.
+     *
+     * The fallback rule is `navURL.absoluteString.starts(with: serverURL
+     * .absoluteString)` — a prefix test on the WHOLE string, not on the host.
+     * It covers `www` today only because `server.url` happens to be exactly the
+     * origin with no path. Give that URL a path or a query and every other page
+     * on the same host stops matching, and Capacitor hands them to Safari. That
+     * is not hypothetical: it is what happened the first time this shell was
+     * pointed at an auth callback, and the member was ejected mid-sign-in with
+     * no way back. `www` is therefore listed too, so the allowance survives
+     * whatever `server.url` is set to.
+     *
+     * `app.loveplusone.app` is where NEXT_PUBLIC_APP_URL points, which is what
+     * Stripe returns to, where the add-an-address email lands, and what a room
+     * share link is built from. It currently answers 404 — a web-side problem
+     * recorded in PROJECT_UPDATES, not one this file can fix — but the day it
+     * serves, a member must not be thrown out of the app to reach it.
+     *
+     * Anything NOT on this list still opens in the system browser, which is
+     * what should happen to a link out to somewhere this project does not run.
+     */
+    allowNavigation: ["loveplusone.app", "www.loveplusone.app", "app.loveplusone.app"],
     /**
      * What the member sees when the site cannot be reached, instead of
      * WKWebView's own blank page with a webkit error string on it. The whole

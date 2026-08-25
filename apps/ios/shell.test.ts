@@ -49,9 +49,24 @@ describe("the origin the shell loads", () => {
     expect(config).toMatch(/CAP_SERVER_URL"\]\s*\?\?\s*"https:\/\/www\.loveplusone\.app"/);
   });
 
-  /** So a link written against the apex stays inside the shell. */
-  it("keeps the apex inside the webview rather than handing it to Safari", () => {
-    expect(config).toMatch(/allowNavigation:\s*\["loveplusone\.app"\]/);
+  /**
+   * Both of Capacitor's navigation rules are narrower than they look, and a
+   * host missing from this list is not a warning — it is a member ejected into
+   * Safari, mid-flow, with the app's cookie jar left behind.
+   *
+   * `shouldAllowNavigation` compares dot-separated components and refuses a
+   * match unless the counts are equal, so the apex pattern covers the apex and
+   * nothing beneath it. The fallback is a prefix test on the WHOLE serverURL
+   * string rather than on its host, so it stops covering `www` the moment
+   * `server.url` grows a path or a query — which is exactly how this was found.
+   */
+  it("names every host the app navigates to, including the subdomains", () => {
+    const hosts = /allowNavigation:\s*\[([^\]]*)\]/.exec(config)?.[1] ?? "";
+    expect(hosts).toContain('"loveplusone.app"');
+    expect(hosts).toContain('"www.loveplusone.app"');
+    // Where NEXT_PUBLIC_APP_URL points: Stripe's return, the add-an-address
+    // email, and room share links.
+    expect(hosts).toContain('"app.loveplusone.app"');
   });
 
   /**
