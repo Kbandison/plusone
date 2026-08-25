@@ -1,5 +1,87 @@
 # Project Updates
 
+## 2026-08-25 — Three gaps closed, and a name that stopped being harmless
+
+**Decision #10 has a mechanism now.** "Intention weighting tightens as density
+grows — config-driven" had been in §6.1 from the start with nothing behind it:
+`dropConfig()` hot-read four fixed weights, `minPool` drove only the radius
+ladder, and a hand on a dial was the entire implementation. Defensible at launch
+where there is no population to tune against; not defensible the day a metro
+fills and a `long_term` member is still shown `casual` profiles at 0.3 affinity
+because nobody moved the number.
+
+`weightsForPool()` climbs intention from its configured weight to a ceiling as
+the pool grows from `minPool` to `saturationPool`, clamped both ends. Only
+intention moves — `score()` normalises by the weight total, so raising one
+weight _is_ shifting the mix, and touching the others would rescale every score
+instead. Three guards worth not removing later: it reads the pool the ladder
+**settled on** rather than everything eligible, because a thin area that climbed
+to 250 miles has not become dense by climbing; it returns the base object by
+identity below `minPool`, so every area at launch scores exactly as it did
+before this existed; and it never loosens, because an admin who sets the ceiling
+under the launch weight through §7.3 has misconfigured it and honouring that
+would make the densest places serve the worst matches. `DropResult.weightsUsed`
+reports what a drop actually scored with — a mechanism that adjusts itself
+invisibly is one nobody can check.
+
+**Everybody who never granted push was being reached by nothing.** `notify()`
+asked `notify_member` which channels survive a member's switches, kept the push
+cohort, hard-coded `["push"]`, and **returned early when that list was empty**.
+The settings screen has had an Email column for as long as it has had a Push
+one. Their preferences were read and then discarded, and nothing about the
+screen said so. Push is opt-in, plenty of people will never grant it, and on iOS
+it is not offered at all until the app is on a home screen.
+
+Four pieces, three of which fit seams that already existed. `composeNotifiers()`
+replaces choosing a provider with running all of them — `notifier()` returned
+web push _or_ the stub, which assumed one transport reaches everybody, and the
+native shells will each want a provider _beside_ the web one rather than instead
+of it. `emails_for()` reads `auth.users`, which owns the address, confirmed
+addresses only so a typo cannot put ⁺One in a stranger's inbox, and with no
+grant to `authenticated`. `emailNotifier()` posts **plain text** to Resend's
+batch endpoint a hundred at a time — no HTML, and that is the point rather than
+laziness: a remote image is how transactional mail learns it was opened, and
+clients that proxy images move who sees that signal rather than removing it.
+
+Note what it does **not** do: no event defaults to email. Every
+`NOTIFICATION_DEFAULTS` entry is still `["in_app", "push"]`, so nothing reaches
+an inbox unless a member switches it on. Whether the Drop should default to
+email is a §8 question about a channel that persists and is searchable.
+`RESEND_FROM` is also unset, so the notifier is not built — it needs a
+Resend-verified sending domain.
+
+**`BRAND.legalName` was "YourPlusOne"**, derived from `yourplusone.app`, a domain
+that was never bought. Harmless while nothing rendered it. It stopped being
+harmless when the store decision landed, because an App Store listing carries
+the seller's legal entity publicly. Kevin confirmed it on enrolling in the Apple
+Developer Program: the entity is **LuxWeb Studio LLC**, the app is PlusOne.
+
+**`CONTRIBUTING.md` described a different project.** Branches off main, pull
+requests, squash merges, CODEOWNERS, a CHANGELOG, semantic-release tagging, an
+~80% coverage target, and testing conventions for Python and Go. It now
+describes what actually happens, including the warning that earned its place —
+do not chain a commit after the checks in one shell line without gating on the
+result. That happened at `e6749ca` and left `main` red for one commit.
+
+### Where the shells stand
+
+Apple Developer Program is paid ($99) as of 2026-08-25, and the project is
+cloned to a MacBook. Vercel marks some values Sensitive and those are
+write-only, so `vercel env pull` could not fetch them — `.env.local` was carried
+across by hand.
+
+### Held for Kevin
+
+- **Small Business Program approval**, which is a separate application from the
+  $99 membership and usually lands the following month. Until it does, the rate
+  is 30% for a subscription's first year rather than 15%.
+- **Whether the Drop should default to email.** The mechanism is built and inert
+  until an event lists the channel.
+- **A Resend-verified sending domain**, then `RESEND_FROM`.
+- **The iPhone safe-area check**, now possible in Xcode's Simulator and the last
+  launch-blocking verification. An iPad does not exercise `viewport-fit: cover`.
+- **The signing key fingerprint** for `/.well-known/assetlinks.json`.
+
 ## 2026-08-24 — Two shells, and a current iPad that will not say it is one
 
 The app is going to the stores. Three decisions were made to get there and one
