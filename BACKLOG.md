@@ -17,10 +17,15 @@ each session is standing. This is what is left.
 
 Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
 
-1. **The two bottom sheets on iPhone.** `modal.tsx` and `route-modal.tsx` read
-   `env(safe-area-inset-bottom)` and were never opened in the shell — `simctl`
-   cannot inject a tap. This is the outstanding half of the safe-area check that
-   `d4f2a52` finished for the nav and the header.
+1. **The status bar contradicts the member's theme.** iOS picks the status bar
+   style from the SYSTEM appearance while the page picks its palette from the
+   member's stored choice, so the two disagree whenever those differ. On a dark
+   system with Linen chosen, iOS applies light content and then dims the app's
+   own page to make it legible — a grey scrim over the top 62pt of a cream
+   screen, fading out exactly at the safe-area inset. Measured 2026-08-25. The
+   fix is `@capacitor/status-bar` plus a bridge from the web theme to the native
+   style; the web half of that has nowhere to live yet. Shell only — the
+   installed web app sets `statusBarStyle: "default"` and never sees it.
 2. **Native push on iOS.** A WebView has no `PushManager`, so the shell is
    silent today. Needs `@capacitor/push-notifications`, an APNs key from the
    Developer account, and the token registered through `registerPushDevice`
@@ -54,13 +59,12 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
     opens Safari — which has its own cookie jar, so it reads as being signed
     out. The Associated Domains entitlement is this lane; the
     `apple-app-site-association` half is the server lane.
-11. **Verification debt**, all needing a Simulator or a device. The keyboard
-    against the fixed composer (`bottom-[var(--nav-h)]` — the classic WKWebView
-    failure is the inset staying applied when the keyboard is up). Dusk, since
-    every shell screenshot so far is Linen and nothing sets the status-bar
-    style. The offline page `server.errorPath` points at, which has never been
-    made to render. And the camera, which is the liveness gate and needs real
-    hardware, so it waits on item 8.
+11. **Verification debt.** What is left of it: the keyboard against the fixed
+    composer (`bottom-[var(--nav-h)]` — the classic WKWebView failure is the
+    inset staying applied when the keyboard is up), and the camera, which is the
+    liveness gate, needs real hardware, and therefore waits on item 8. Dusk, the
+    offline page and both bottom sheets were cleared on 2026-08-25; what Dusk
+    turned up is now item 1.
 
 ## Lane: server and schema (WSL session)
 
@@ -146,3 +150,12 @@ launch gate green against the live database. The email notifier and the
 composite that lets providers run side by side. The iOS Capacitor target and the
 safe-area fix for the nav and header. Both handoff mechanisms, reconciled to
 one.
+
+**The safe-area check, in full.** Both bottom sheets measured open in the shell
+— `route-modal` pads 74px and holds "Send connect" 75pt clear of the home
+indicator at the bottom of its scroll; `modal` pads 58px and clears by 59pt. The
+engine reports the insets directly (top 62px, bottom 34px) and the nav's
+computed `padding-bottom` is exactly the 34. Also cleared: Dusk renders and the
+offline `errorPath` page renders. Driven through `ios-webkit-debug-proxy`, which
+is how a WKWebView gets scripted when `simctl` cannot inject a tap — the reason
+these sat open for two days.

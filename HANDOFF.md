@@ -117,10 +117,35 @@ line per session; clear it when you finish or abandon the item.
 
 | session | item                                  | since      |
 | ------- | ------------------------------------- | ---------- |
-| _macOS_ | shells 1 — the two bottom sheets      | 2026-08-25 |
+| _macOS_ | —                                     | —          |
 | _WSL_   | push registration seam, then server 7 | 2026-08-25 |
 
 ## Sessions
+
+### 2026-08-25 (later) · macOS · the safe-area check closed out
+
+**Done.** Both bottom sheets measured open in the shell, plus Dusk and the
+offline page. The tool that unstuck it is worth knowing about: `simctl` cannot
+inject a tap, but Capacitor sets `isInspectable` on DEBUG builds, so
+`ios-webkit-debug-proxy` can drive the WKWebView over WebKit's remote protocol
+and evaluate JavaScript in it. That is how anything in this shell gets scripted.
+
+Two things about it that cost time:
+
+- The simulator's inspector socket is under **`/private/var/tmp/com.apple.launchd.*/`**,
+  not `/private/tmp`, and there is one per runtime — most of them answer with an
+  empty page list. Find the live one by trying each.
+- WebKit does **not** accept bare `Runtime.evaluate`. Everything is wrapped in
+  the `Target` domain: `Target.setPauseOnStart`, wait for `Target.targetCreated`
+  to learn the id, then `Target.sendMessageToTarget`, and replies come back
+  inside `Target.dispatchMessageFromTarget`.
+- **Measure sheets after the animation settles.** A reading taken straight after
+  `showModal()` had the sheet 24px below the viewport and reported a false
+  failure; three seconds later it was flush and correct.
+
+**Left off clean.** Seeds removed, `check:seed` green, shell config restored to
+`https://www.loveplusone.app` and reinstalled on both simulators, proxy stopped,
+simulator appearance back to light.
 
 ### 2026-08-25 · WSL · pushed through `1318361`
 

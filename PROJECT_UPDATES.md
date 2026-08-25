@@ -1,5 +1,95 @@
 # Project Updates
 
+## 2026-08-25 — The rest of the safe-area check, and the status bar that argues with the theme
+
+The two bottom sheets are done, and so is the reason they were not. `simctl`
+cannot inject a tap, which is where this stopped on the last pass — but
+Capacitor sets `isInspectable` on DEBUG builds, so the shell's WKWebView can be
+driven over WebKit's remote debugging protocol through
+`ios-webkit-debug-proxy`. That turns the whole surface from something that can
+only be screenshotted into something that can be measured and operated.
+
+**The insets, read from the engine rather than counted off a PNG.** On an
+iPhone 17 Pro: `env(safe-area-inset-top)` is **62px**, `-bottom` is **34px**,
+left and right nought in portrait. The nav's computed `padding-bottom` is
+**exactly 34px** and its bottom edge sits flush with the viewport, which is the
+direct form of what the last entry inferred from pixel arithmetic. The header
+fix from `d4f2a52` computes to **78px** — 1rem plus the 62 — in the shell.
+
+**Both sheets clear the home indicator, measured at the state that matters.**
+They are scroll containers, so their padding sits at the end of the content
+rather than as a fixed gap; mid-scroll content passing under the indicator is
+correct behaviour, and the real question is where the last control ends up.
+Scrolled to the bottom:
+
+| sheet             | padding-bottom     | lowest control | clearance |
+| ----------------- | ------------------ | -------------- | --------- |
+| `route-modal.tsx` | 74px (2.5rem + 34) | "Send connect" | **75pt**  |
+| `modal.tsx`       | 58px (1.5rem + 34) | close button   | **59pt**  |
+
+Both against a 34pt indicator. One caution worth keeping: the first `modal.tsx`
+reading said 33.1pt and `clearsHomeIndicator: false`. That was taken immediately
+after `showModal()`, with the sheet still 24px below the viewport mid-animation.
+Three seconds later it was flush and correct. A measurement taken during a
+transition is not a measurement.
+
+**Dusk renders correctly** — ground `#14110f`, ink `#ede7de`, white status bar
+text, the header clear of it.
+
+**The offline page renders.** `server.errorPath` was wired on the 25th and had
+never been made to fire; pointing the shell at a host that does not resolve
+brings up "No connection" with the mark, the copy and a working Try again.
+
+### What it found: the status bar contradicts the member's theme
+
+iOS decides the status bar style from the **system appearance**. The app decides
+its palette from the **member's stored choice**, which the theme script prefers
+over `prefers-color-scheme`. Nothing keeps those two in step, and when they
+disagree the result is not merely wrong — iOS compensates by dimming the app's
+own content.
+
+On a dark system with Linen chosen, the top **62pt** of the page carries a grey
+scrim, fading from `rgb(140,137,130)` at the top edge to Linen exactly at the
+safe-area inset. That is iOS applying light-content text and then darkening
+whatever is behind it to keep the text legible. A cream page with a dirty grey
+band across the top.
+
+The mirror case is fine — Dusk under a light system still gets white text and no
+scrim — so this only bites the member who has chosen the theme their phone is
+not set to, which is precisely the member who chose deliberately.
+
+Not fixed here. It needs `@capacitor/status-bar` and a bridge from the web
+theme to the native style, and the web half of that has nowhere to live yet. It
+is now item 1 in the shells lane, with the measurement attached. It is shell
+only: the installed web app sets `statusBarStyle: "default"` and never sees it.
+
+### The seed script, finished
+
+The last entry fixed the NULL token columns and `phone_confirmed_at`. That was
+still not enough to sign in as a seed: `hasHealthConsent` is a row in its own
+table and the seeder never wrote one, so a member complete in every other
+respect was returned to the consent step forever. It writes one now, reading
+`CONSENT_COPY_VERSION` from `packages/config` rather than hard-coding the date —
+the resolver counts a consent only when its `copy_version` matches the current
+wording, so a written-down date would go on looking right and quietly stop
+counting the day the copy changed.
+
+Proved end to end: four seeded members, all four signing in and reaching `/app`.
+Removed afterwards, `check:seed` green.
+
+### Shells
+
+Verified against **iOS / WKWebView** — Simulator, iPhone 17 Pro, iOS 27.0.
+**Android / TWA unaffected and unverified**; nothing here changes `apps/web`
+except the seed script, which no shell reads.
+
+### Held for Kevin
+
+Unchanged from the entry below, except that the safe-area check is off it. The
+list lives in `BACKLOG.md` now, under **Lane: Kevin** — the Apple Developer Team
+ID is the cheapest item with the widest blast radius, and counsel review of the
+policy and terms is the long pole.
+
 ## 2026-08-25 — The safe-area check, finally done, and what it found
 
 The check that has been top of Held for Kevin since the 24th is done. It needed

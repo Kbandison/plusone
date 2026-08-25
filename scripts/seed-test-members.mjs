@@ -32,6 +32,10 @@ import sharp from "sharp";
 // extensionless and Node will not resolve them.
 const { PROFILE_PROMPTS, QUIZ_QUESTIONS, QUIZ_TRAITS } =
   await import("../packages/config/src/draft-copy.ts");
+// Read rather than written down: the onboarding resolver counts a consent only
+// when its copy_version matches the CURRENT wording, so a date hard-coded here
+// would go on looking right and quietly stop counting the day the copy changed.
+const { CONSENT_COPY_VERSION } = await import("../packages/config/src/copy.ts");
 
 const DOMAIN = "seed.plusone.invalid";
 const COUNT = Number(process.env.SEED_COUNT ?? 12);
@@ -300,6 +304,26 @@ try {
          '', '', '',
          now(), now())`,
       [id, email, phone],
+    );
+
+    /**
+     * The health-data consent, without which a seeded member cannot get in.
+     *
+     * Every other fact the resolver reads lives on the profile and was already
+     * written below, so this was the last thing standing between a seed and
+     * `/app`: `hasHealthConsent` is a row in its own table, and with it missing
+     * a member whose profile is complete in every other respect is sent back to
+     * the consent step forever.
+     *
+     * It matters beyond tidiness now that seeds get signed in as. Checking
+     * anything on a device means being a member, and being a member means
+     * clearing all ten steps.
+     */
+    await client.query(
+      `insert into public.consents (user_id, kind, copy_version)
+       values ($1, 'health_data', $2)
+       on conflict (user_id, kind, copy_version) do nothing`,
+      [id, CONSENT_COPY_VERSION.health_data],
     );
 
     // create_profile_on_signup already made the row; this fills it in.
