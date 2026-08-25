@@ -1,17 +1,50 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { DRAFT_COPY, PLANS, formatPriceCents } from "@plusone/config";
 
 import { openBillingPortal, startCheckout } from "./actions";
 import { CHECKOUT_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
+import { inNativeShell } from "@/lib/native-shell";
 
 const C = DRAFT_COPY.app;
 
+/**
+ * Whether to draw anything that starts a Stripe transaction.
+ *
+ * Guideline 3.1.1: a subscription unlocked inside an iOS app must go through
+ * in-app purchase, and 3.1.3(f) adds that a free companion app may sell nothing
+ * and carry no call to action for buying elsewhere. A Checkout session is both.
+ * This is a rejection rather than a warning, and it contradicts a decision
+ * already made on the 24th — store billing on both platforms, at 15%.
+ *
+ * `null` until the effect runs, and NOTHING renders while it is null. The
+ * obvious version — start visible, hide on hydration — draws a Subscribe button
+ * inside the shell for a frame, which is the exact thing that must not be
+ * offered. The web pays one frame of blank on a settings sub-page for that, and
+ * install-app.tsx resolves the same question the same way.
+ *
+ * Temporary, and the shape of what replaces it matters: this hides the web
+ * purchase, it does not add the native one. When StoreKit lands, the shell
+ * renders IAP here instead of nothing — see BACKLOG server lane items 2 to 4.
+ */
+function useOffersPurchase(): boolean | null {
+  const [offers, setOffers] = useState<boolean | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor, which does not exist during a server render
+  useEffect(() => setOffers(!inNativeShell()), []);
+  return offers;
+}
+
 export function PlanChooser() {
   const [state, act, pending] = useActionState(startCheckout, CHECKOUT_INITIAL);
+  const offers = useOffersPurchase();
+
+  // No prices either, not only no button. "Premium is $X" with no way to buy it
+  // is still a call to action for buying it somewhere else, which is the half
+  // of 3.1.3(f) that is easy to miss.
+  if (offers !== true) return null;
 
   return (
     <form action={act} className="mt-8 flex flex-col gap-4">
@@ -67,6 +100,15 @@ export function PlanChooser() {
 
 export function ManageBilling() {
   const [state, act, pending] = useActionState(openBillingPortal, CHECKOUT_INITIAL);
+  const offers = useOffersPurchase();
+
+  // Hidden in the shell too, and this one is worth arguing. The portal manages
+  // a subscription rather than starting one — but it can also change a plan,
+  // which is a purchase, and Apple requires an IAP subscription be managed
+  // through the system. A member who bought on the web loses the portal inside
+  // the app until store billing exists. That is a real cost and the smaller
+  // one.
+  if (offers !== true) return null;
 
   return (
     <form action={act} className="mt-6">

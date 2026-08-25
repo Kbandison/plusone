@@ -192,6 +192,30 @@ describe("the transport forgets only what is really gone", () => {
     expect(actions).not.toMatch(/p_platform: "web"/);
   });
 
+  /**
+   * Guideline 3.1.1, and 3.1.3(f)'s second half.
+   *
+   * A subscription unlocked inside an iOS app must go through in-app purchase,
+   * and a free companion app may sell nothing AND carry no call to action for
+   * buying elsewhere. startCheckout creates a Stripe session, so drawing it in
+   * the shell is a rejection rather than a warning — and it contradicts the
+   * billing decision made on the 24th, which is store billing on both at 15%.
+   *
+   * The prices go with the button. "Premium is $X" and no way to buy it is
+   * still an invitation to buy it somewhere else, which is the half that is
+   * easy to miss.
+   */
+  it("offers no Stripe purchase inside the native shell", () => {
+    const buttons = withoutComments(read("src/app/app/settings/premium/plan-buttons.tsx"));
+    expect(buttons).toMatch(/inNativeShell/);
+    // Both of them: the chooser starts a subscription, and the portal can
+    // change a plan, which is also a purchase.
+    expect(buttons.match(/if \(offers !== true\) return null;/g) ?? []).toHaveLength(2);
+    // Nothing renders until the environment is known. Starting visible and
+    // hiding on hydration draws a Subscribe button in the shell for a frame.
+    expect(buttons).toMatch(/useState<boolean \| null>\(null\)/);
+  });
+
   /** Absent keys are a legal state; a half pair is not. */
   it("includes each transport by its own configuration, not by NODE_ENV", () => {
     expect(notifier).toMatch(/process\.env\.VAPID_PRIVATE_KEY/);
