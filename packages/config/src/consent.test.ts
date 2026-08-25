@@ -178,6 +178,32 @@ describe("the privacy policy draft", () => {
     expect(joined).toContain(BRAND.supportEmail);
   });
 
+  /**
+   * Two sections of this policy disagreed, and shipping the email notifier made
+   * it matter.
+   *
+   * "What we store" said the address "is used to send you a code and nothing
+   * else" while "Notifications" said "Emails all carry the same subject line" —
+   * a contradiction that was harmless only while nothing sent any. A policy is
+   * a promise about what the product does with data, so the moment notify()
+   * grew an email cohort the first line became false.
+   *
+   * Pinned by what the app can do rather than by the string, so this fails
+   * again if the address ever acquires another use that goes unmentioned.
+   */
+  it("describes every use the address is actually put to", () => {
+    const stored = PRIVACY_POLICY.find((section) => section.id === "what-we-store");
+    const address = (stored?.list ?? []).find((item) => /email address/i.test(item));
+    expect(address).toBeDefined();
+
+    // Sign-in, which is why somebody adds one.
+    expect(address).toMatch(/sign|code/i);
+    // And notifications, because emailNotifier exists and notify() plans an
+    // email cohort. "nothing else" is the phrasing this replaced.
+    expect(address).toMatch(/notification/i);
+    expect(address).not.toMatch(/nothing else/i);
+  });
+
   it("carries an effective date the page can show", () => {
     expect(PRIVACY_POLICY_EFFECTIVE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });

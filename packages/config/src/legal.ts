@@ -43,7 +43,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     ],
     list: [
       "Your phone number, used to sign you in.",
-      "An email address, if you choose to add one as a second way to sign in. It is used to send you a code and nothing else, and it is never shown to other members.",
+      "An email address, if you choose to add one. It signs you in with a code, and carries notifications if you switch them on for it — the same deliberately vague ones described below, never anything more. It is never shown to other members.",
       "The name you choose to display. It does not have to be your legal name, and we never ask for one.",
       "Your date of birth. Other members see an age, never the date.",
       "Your community and condition type, and the U=U badge if you turn it on.",
