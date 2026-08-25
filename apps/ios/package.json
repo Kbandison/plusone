@@ -1,0 +1,24 @@
+{
+  "name": "@plusone/ios",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The iOS shell. Capacitor over WKWebView \u2014 see AGENTS.md.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "sync": "cap sync ios",
+    "open": "cap open ios",
+    "simulator": "cap run ios --target"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.0",
+    "@types/node": "^20",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.5.0",
+    "@capacitor/ios": "8.5.0"
+  }
+}

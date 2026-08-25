@@ -1,0 +1,132 @@
+<!doctype html>
+<!--
+  The only page this shell carries.
+
+  `capacitor.config.ts` loads the live site, so nothing else is bundled — but a
+  shell whose entire app is remote needs something to show when the remote is
+  not there, or WKWebView shows its own blank page with an error string on it.
+  `server.errorPath` points here.
+
+  PLACEHOLDER COPY. Written here rather than in draft-copy.ts because that
+  package cannot be imported into a file the webview loads off the filesystem
+  with no bundler in front of it. It has the same status as every unreviewed
+  string in DRAFT_COPY — Kevin has not read it.
+
+  Condition-blind, like everything else that can be read over a shoulder (§9.6).
+  It says the network is down and nothing whatever about what the app is for.
+
+  No webfont, no network, no script beyond the reload: this page exists for the
+  case where the network is gone, so anything it fetches is a thing that will
+  not arrive.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Plus One</title>
+    <style>
+      /* Linen and Dusk, transcribed from packages/ui-tokens/tokens.css. Copied
+         rather than imported for the reason in the comment above; if a token
+         moves, this is a place that has to be moved by hand.
+
+         prefers-color-scheme only, with no [data-theme] counterpart. The web
+         app resolves a member's stored choice from localStorage before first
+         paint — and this page is served from the capacitor: scheme rather than
+         the site's origin, so it cannot see that key and never will. The system
+         setting is the only thing it can honour. */
+      :root {
+        --ground: #f4efe7;
+        --ink: #1c1917;
+        --ink-2: #6b6259;
+        --accent: #9f5b41;
+        --line: rgba(28, 25, 23, 0.13);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #14110f;
+          --ink: #ede7de;
+          --ink-2: #a79c90;
+          --accent: #d69a4e;
+          --line: rgba(237, 231, 222, 0.12);
+        }
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* The shell runs edge to edge — contentInset is `never` and the web app
+           sets viewport-fit: cover — so this page is responsible for its own
+           clearance the same way every pinned element over there is. */
+        padding: calc(2rem + env(safe-area-inset-top)) calc(1.5rem + env(safe-area-inset-right))
+          calc(2rem + env(safe-area-inset-bottom)) calc(1.5rem + env(safe-area-inset-left));
+        background-color: var(--ground);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        font-size: 13.8px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      main {
+        max-width: 22rem;
+        text-align: center;
+      }
+
+      .mark {
+        font-family: ui-serif, Georgia, serif;
+        font-size: 2.25rem;
+        line-height: 1;
+        color: var(--accent);
+        margin-bottom: 1.25rem;
+      }
+
+      h1 {
+        font-family: ui-serif, Georgia, serif;
+        font-weight: 400;
+        font-size: 1.5rem;
+        line-height: 1.15;
+        letter-spacing: -0.022em;
+        margin: 0 0 0.5rem;
+      }
+
+      p {
+        margin: 0 0 1.75rem;
+        color: var(--ink-2);
+      }
+
+      button {
+        font: inherit;
+        color: var(--ink);
+        background-color: transparent;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        /* 44pt, which is the Apple minimum and comfortably past WCAG 2.2's
+           24×24 — this is the only control on the screen. */
+        min-height: 44px;
+        padding: 0 1.5rem;
+        cursor: pointer;
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">⁺</div>
+      <h1>No connection</h1>
+      <p>Plus One needs a connection to load. Check your network and try again.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

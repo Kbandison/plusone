@@ -1,5 +1,153 @@
 # Project Updates
 
+## 2026-08-25 — The iOS target exists, and the check it was built for still does not
+
+The shell builds, installs and launches. `app.loveplusone` is on a simulated
+iPhone 17 Pro running iOS 27, loading the live site into WKWebView, with the
+project's own mark on the home screen. What it has **not** done is the thing it
+was stood up for — read the last section before assuming otherwise.
+
+### The machine first, because none of it worked
+
+The MacBook was a fresh clone and four separate things were in the way. None of
+them is interesting on its own; together they are most of why this took as long
+as it did, and every one of them will be in the way again on the next machine.
+
+- **Node was 20.5.1** against an `engines` floor of 20.9, and worse, the
+  Homebrew build of it was broken outright — it linked `libicui18n.73.dylib`,
+  which no longer exists on this OS, so `npm` itself died on launch. `node@22`
+  is installed keg-only with a PATH line in `~/.zshrc` (the previous file is at
+  `~/.zshrc.bak-plusone`).
+- **Homebrew did not know macOS 27** and refused to load at all — it was pinned
+  at 4.2.2, which predates the version. Repaired by fetching its own git repo
+  forward, which is the documented fix and the only one available when `brew`
+  cannot start.
+- **Xcode was downloaded but never unarchived.** `Xcode_27_beta_6.xip` had been
+  sitting complete in `~/Downloads` since 01:15, and a half-finished extraction
+  from a previous attempt was sitting beside it. Completeness was checked
+  against the archive's own table of contents rather than guessed at — 1.99 GB
+  is the real size now, not a truncation.
+- **A modern Xcode ships with no simulator to run.** The 1.99 GB is a shell:
+  the iOS SDK is in it, a bootable iOS image is not. `xcodebuild
+-downloadPlatform iOS` is a second download several times the size of the
+  first, and nothing says so until `simctl list runtimes` comes back empty.
+
+It is Xcode **27 beta 6** on a beta macOS, which is fine for the Simulator and
+is not fine for submission — App Store Connect takes builds from released
+Xcodes outside a transition window.
+
+### What was decided
+
+**Swift Package Manager, not CocoaPods.** Capacitor 8 flipped its default and
+`cap add ios` produces an SPM project unless told otherwise. CocoaPods is
+installed on this machine and unused; nothing here needs a Podfile.
+
+**`server.url` is `https://www.loveplusone.app` — the www, not the apex.** The
+apex answers 308 to www, and Capacitor hands any navigation outside
+`server.url`'s host to the **system browser**. Pointed at the apex, the launch
+navigation itself would have thrown the member into Safari before they saw the
+app, and it would have looked like the shell simply did not work. The apex is in
+`allowNavigation` so a link written against it stays inside.
+
+That leaves a loose end on the web side: `NEXT_PUBLIC_SITE_URL` is the apex.
+Every absolute URL the app builds — auth callbacks included — is therefore an
+origin that redirects. It costs a hop today rather than being broken, so it is
+recorded here rather than changed; picking a canonical origin is a decision with
+a blast radius (sessions, push endpoints, the OAuth allowlist) and it is not
+one to make on the way past.
+
+**`contentInset: "never"`.** Already Capacitor's default, and written down
+anyway with the reason, because it is the single setting that decides whether
+the safe-area work in `apps/web` is right or doubled. Anything else lets UIKit
+add its own inset for the notch and the home indicator **on top of** the
+`env(safe-area-inset-*)` padding the CSS already applies — the nav would float a
+home indicator's height above where it belongs and nothing about the CSS would
+look wrong.
+
+**Portrait, on iPhone.** `manifest.ts` has said `orientation: "portrait"` since
+it was written and iOS is the one platform that ignores it, so this is an
+existing decision finally reaching the surface it was meant to cover rather than
+a new one. It is also what keeps the safe-area work honest: everything the app
+reads is `env(safe-area-inset-bottom)`, nothing anywhere reads `-left` or
+`-right`, and those are 59pt in landscape on a notched iPhone. iPad keeps all
+four — no notch, no hazard, and Apple reads a rotation-locked iPad app as a
+phone app.
+
+**Camera and microphone purpose strings.** Not a nicety: iOS **terminates the
+process** the instant `getUserMedia` asks for a device with no string declared.
+The camera one gates the liveness check, which gates joining at all — without it
+the app dies partway through onboarding, on every device, for everybody. Both
+are condition-blind (§9.6), because a permission alert is drawn over whatever is
+on screen and is exactly the kind of thing read over a shoulder.
+
+**The icon and launch image come from `generate-icons.mjs`**, not from a PNG
+dropped into the asset catalogue. Same mark as the web icons, same placeholder
+status, and one place to replace when Kevin's design lands. Two things there are
+not obvious: App Store Connect rejects a 1024 icon carrying an alpha **channel**
+even when every pixel is opaque, so it is flattened and checked; and the launch
+image's mark is drawn at 0.11 of the canvas rather than the icon's 0.58 because
+the storyboard scales it `aspectFill` into a phone-shaped view and crops away
+everything outside the middle ~46% of the width.
+
+`apps/ios/shell.test.ts` pins all of it, in the source-reading style
+CONTRIBUTING describes. The reason is specific: `npx cap add ios` run a second
+time restores Capacitor's own Info.plist over this one and says nothing, and
+Xcode rewrites an asset catalogue whenever it is touched. Nothing else in the
+repository would notice.
+
+### What this shell actually is, said plainly
+
+It loads the live site into a WebView. It does not bundle the app, because there
+is no bundle to make — `apps/web` is server-rendered with server actions and a
+cookie-bound session, and none of that survives being served off a filesystem.
+
+Capacitor's own type declarations mark `server.url` **"not intended for use in
+production"**. That is a caution about App Store review — guideline 4.2, minimum
+functionality — rather than about anything breaking, and the honest answer today
+is that the mitigation does not exist yet: the shell has no native capability of
+its own. Push is not wired, StoreKit is not wired. An app that is a WebView and
+nothing else is the shape 4.2 is aimed at.
+
+### The safe-area check was NOT done
+
+This is the item that has been at the top of Held for Kevin for two days and it
+is still there.
+
+The shell renders the marketing pages correctly — the page ground runs under the
+status bar, which is `viewport-fit: cover` and `contentInset: never` doing what
+they should. But every element the safe-area work is about is **behind
+authentication**: the bottom nav lives in `/app/layout.tsx`, and the two bottom
+sheets go with it. Public pages have nothing pinned to the bottom edge, so
+nothing on them can prove the thing that matters.
+
+`pnpm seed` cannot run either — `SUPABASE_DB_URL` is one of the values Vercel
+marks Sensitive, and it is not in the `.env.local` that was carried across by
+hand.
+
+So: **the nav, `modal.tsx` and `route-modal.tsx` have not been looked at on a
+notched iPhone.** They are written correctly as far as reading them goes. That
+is not the same claim and this entry will not make it.
+
+### Shells
+
+Verified against **iOS / WKWebView** — Simulator, iPhone 17 Pro, iOS 27.0, build
+and launch only. **Android / TWA is untouched and unverified**; nothing in this
+change is shared with it, which is the point of the split.
+
+### Held for Kevin
+
+- **The iPhone safe-area check**, still. It needs a signed-in session: either
+  `SUPABASE_DB_URL` so `pnpm seed` can put marked test members in and
+  `pnpm seed:remove` can take them out again, or two minutes signing in by hand
+  in the Simulator.
+- **Whether a WebView-only shell is the shape to submit**, given 4.2 and given
+  that nothing native is wired yet.
+- **A released Xcode**, before anything is uploaded.
+- **Small Business Program approval**, **a Resend-verified sending domain** then
+  `RESEND_FROM`, **whether the Drop should default to email**, and **the signing
+  key fingerprint** for `/.well-known/assetlinks.json` — all carried forward
+  unchanged from the entry below.
+
 ## 2026-08-25 — Three gaps closed, and a name that stopped being harmless
 
 **Decision #10 has a mechanism now.** "Intention weighting tightens as density

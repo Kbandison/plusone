@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>PlusOne</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<!--
+		DRAFT COPY, with the same status as everything in DRAFT_COPY: Kevin has
+		not read it. It cannot live there — iOS reads these out of the bundle
+		before any JavaScript runs, so a purpose string is one of the few pieces
+		of member-facing copy this project cannot keep in one reviewable place.
+
+		Both are condition-blind on purpose (§9.6). A permission alert is drawn
+		over whatever is on screen and is exactly the kind of thing read over a
+		shoulder, so neither says what the app is for.
+
+		Missing, these are not a warning: iOS terminates the app the instant
+		getUserMedia asks for the device. The camera one is the liveness check in
+		onboarding — the step that gates joining at all.
+	-->
+	<key>NSCameraUsageDescription</key>
+	<string>For the check that confirms you are a real person, and for any photo you take in the app.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>For voice messages you record in a chat.</string>
+
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+
+	<!--
+		arm64, not the template's armv7.
+				Capacitor ships Apple's decade-old default here. armv7 is 32-bit, no
+		iOS 11 device ran it, and the deployment target is 15.0 — so the key was
+		either being ignored or describing a device that cannot install this.
+	-->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+
+	<!--
+		Portrait, matching the manifest.
+
+		`apps/web/src/app/manifest.ts` has said `orientation: "portrait"` since it
+		was written, and iOS is the one platform that ignores it — a manifest
+		orientation binds an installed web app on Android and nothing at all
+		here. So this is not a new decision; it is the existing one finally
+		reaching the surface it was always meant to cover.
+
+		It is also what keeps the safe-area work honest. Every inset the app
+		reads is `env(safe-area-inset-bottom)`; nothing anywhere reads `-left` or
+		`-right`, and in landscape on a notched iPhone those are 59pt. The nav
+		and both bottom sheets are centred inside a 550.8px column, so they would
+		probably survive — "probably" being the word that this rule exists to
+		keep out of the build. Unlock it when somebody has looked at landscape in
+		the Simulator, not before.
+
+		iPad keeps all four. It is a separate surface with its own habits, its
+		own has-no-notch geometry, and no landscape hazard worth guarding
+		against — and Apple reads a rotation-locked iPad app as a phone app.
+	-->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+</dict>
+</plist>
