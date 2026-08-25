@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import {
+  BRAND,
   BANNED_PRIVACY_CLAIMS,
   CONSENT_COPY_DIGEST,
   CONSENT_COPY_VERSION,
@@ -153,12 +154,28 @@ describe("the privacy policy draft", () => {
     }
   });
 
-  // The policy commits to rights that carry response clocks, so it needs a
-  // route for making a request. There is none yet — the domain is not secured.
-  // Delete this test and add the address when it is.
-  it("has no contact route yet, and says so honestly by not implying one", () => {
+  /**
+   * This asserted the opposite until 2026-08-25, and said why: the policy
+   * commits to rights that carry response clocks, so it needs a route for
+   * making a request — and there was none, because the domain was not secured.
+   * "Delete this test and add the address when it is."
+   *
+   * loveplusone.app was secured on 2026-08-17, so the address is in and this is
+   * the inverse. What it does NOT prove is that anybody reads the inbox; that
+   * stays a by-hand line in verify-launch, where it belongs.
+   */
+  it("gives a route for the requests it invites", () => {
+    const contact = PRIVACY_POLICY.find((section) => section.id === "contact");
+    expect(contact).toBeDefined();
+    expect(contact?.body.join(" ")).toMatch(/@[\w.-]+\.[a-z]{2,}/i);
+  });
+
+  it("names the operating entity, so a reader knows who holds the data", () => {
     const joined = all.join(" ");
-    expect(joined).not.toMatch(/@[\w.-]+\.[a-z]{2,}/i);
+    expect(joined).toContain(BRAND.legalName);
+    // Built from BRAND rather than written out, so the entity and the address
+    // cannot drift from what the rest of the app uses.
+    expect(joined).toContain(BRAND.supportEmail);
   });
 
   it("carries an effective date the page can show", () => {

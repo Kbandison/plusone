@@ -15,6 +15,8 @@
  *     conflating them would be the most consequential lie on the page.
  */
 
+import { BRAND } from "./brand";
+
 export const TERMS_EFFECTIVE = "2026-08-15";
 
 export interface TermsSection {
@@ -99,6 +101,22 @@ export const TERMS: readonly TermsSection[] = [
     body: [
       "These terms are governed by the law of the place we are established, and nothing in them takes away rights you have where you live that cannot be signed away.",
       "If a court finds part of this unenforceable, the rest still stands.",
+    ],
+  },
+  /**
+   * Who "we" is, which these terms referred to throughout without ever saying.
+   *
+   * Left to counsel: the governing law above still says "the place we are
+   * established" rather than naming one. Naming the entity is a fact and this
+   * is where a reader looks for it; choosing a jurisdiction is not, and is not
+   * mine to fill in.
+   */
+  {
+    id: "contact",
+    title: "How to reach us",
+    body: [
+      `${BRAND.name} is operated by ${BRAND.legalName}.`,
+      `Write to ${BRAND.supportEmail} about anything on this page.`,
     ],
   },
 ];

@@ -15,6 +15,8 @@
  *     nothing that needs a second reading.
  */
 
+import { BRAND } from "./brand";
+
 export const PRIVACY_POLICY_EFFECTIVE = "2026-08-14";
 
 /** Where §9.1's consent screen links. Kept here so the anchor cannot drift. */
@@ -208,6 +210,26 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     title: "Changes to this policy",
     body: [
       "If we change how we handle health data, we ask for your consent again rather than quietly updating this page. For other changes, we will tell you in the app before they take effect.",
+    ],
+  },
+  /**
+   * The section this policy went without.
+   *
+   * Fourteen sections described what is stored, who can see it and how to
+   * delete it, and none of them said how to ask anybody anything. A policy that
+   * grants rights over your own data and then gives no way to exercise them is
+   * the one part of it that cannot be checked against the schema.
+   *
+   * Built from BRAND rather than written out, so the operating entity and the
+   * address cannot drift from the values the rest of the app uses.
+   */
+  {
+    id: "contact",
+    title: "How to reach us",
+    body: [
+      `${BRAND.name} is operated by ${BRAND.legalName}.`,
+      `For anything in this policy — a question, a correction, or a request about the data held on you — write to ${BRAND.supportEmail}.`,
+      'You do not need to write to anyone to delete your account. It is a button in Settings, and "Deleting everything" above describes exactly what it removes.',
     ],
   },
 ] as const;
