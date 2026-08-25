@@ -115,10 +115,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                             | since      |
-| ------- | -------------------------------- | ---------- |
-| _macOS_ | shells 1 — the two bottom sheets | 2026-08-25 |
-| _WSL_   | —                                | —          |
+| session | item                                  | since      |
+| ------- | ------------------------------------- | ---------- |
+| _macOS_ | shells 1 — the two bottom sheets      | 2026-08-25 |
+| _WSL_   | push registration seam, then server 7 | 2026-08-25 |
 
 ## Sessions
 
