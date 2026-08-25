@@ -115,10 +115,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                  | since      |
-| ------- | ------------------------------------- | ---------- |
-| _macOS_ | shells 1 — status bar vs theme        | 2026-08-25 |
-| _WSL_   | push registration seam, then server 7 | 2026-08-25 |
+| session | item                           | since      |
+| ------- | ------------------------------ | ---------- |
+| _macOS_ | shells 1 — status bar vs theme | 2026-08-25 |
+| _WSL_   | server 1 — apnsNotifier        | 2026-08-25 |
 
 ## Sessions
 
@@ -147,42 +147,34 @@ Two things about it that cost time:
 `https://www.loveplusone.app` and reinstalled on both simulators, proxy stopped,
 simulator appearance back to light.
 
-### 2026-08-25 · WSL · pushed through `1318361`
+### 2026-08-25 (later) · WSL · pushed through `e8eee7d`
 
-**Done and pushed.** Audited the privacy policy and terms against what the code
-actually does. Five claims corrected — the email address's "nothing else", a
-verification confidence score nothing stores, a missing contact route, the push
-service as an undisclosed processor, and a landing-page "no waiting" that is
-false for anyone `flagged`. Three confirmed accurate, including the whole of
-`who-can-see-what`, which is rigorously true down to the mode wall's "zero
-exceptions, including paid ones". Each correction is pinned by a test.
+**Done and pushed.** The privacy-policy audit (five claims corrected, three
+guards, all pinned by tests) and every mechanical launch gate green against the
+live database — `pnpm check:launch` in full. Then two backlog items:
 
-**All fourteen database gates pass**, green against the live database —
-`pnpm check:launch` in full. Only "counsel has reviewed the policy and terms" is
-left on the by-hand list; the other six are done and confirmed in conversation
-even though the script cannot know it.
+- **`registerPushDevice` takes a native token** (`e4ebe23`). It hard-coded
+  `p_platform: "web"` and demanded both web keys, so an APNs or FCM token could
+  not be stored at all. The RPC and the table always allowed it. Verified in a
+  rolled-back transaction: an `'ios'` row with null keys is accepted, a `'web'`
+  row without them is still refused. **This is the seam under shells item 2** —
+  your client can call `registerPushDevice({ platform: "ios", token })` now.
+- **The shell no longer offers a Stripe checkout** (`e8eee7d`). Guideline 3.1.1,
+  a rejection rather than a warning. Prices hidden with the button, and
+  `ManageBilling` too, since changing a plan is a purchase.
 
-**Left off clean.** Nothing in flight, no local commits, gates green.
+**Please verify when you next have a Simulator up:** the premium screen should
+show subscription status and **no** buy button, no prices, and no Manage
+billing. I cannot check it — `inNativeShell()` is false everywhere I can reach,
+so that guard is proven by unit test and reasoning, not by watching it hide. If
+anything renders, say so here and I will take it back.
 
-**Not done, and not claimed:**
+**Left off clean.** Nothing half-finished, gates green, `check:launch` green.
 
-- **Whether any event should default to email.** The notifier is built and inert
-  — every `NOTIFICATION_DEFAULTS` entry is still `["in_app", "push"]`, so
-  nothing reaches an inbox unless a member switches it on. It is a §8 decision
-  about a channel that persists and is searchable, and it is Kevin's.
-- **`RESEND_FROM` is unset**, so `emailNotifier` is never constructed. Needs a
-  Resend-verified sending domain first.
-- **The IAP entitlement table.** `is_premium()` already unions two independent
-  sources, so a third `exists` clause is the whole shape of it — but there are
-  no store products defined yet and building it now would be guessing at
-  columns.
-
-**Traps paid for, so you do not have to:** both of today's cross-session breaks
-are written up in `3deaaf4` and worth reading once. The short version is that a
-key added to `.env.example` broke a test in `packages/config` nobody would think
-to open, and a typecheck failed against a workspace package that did not exist
-when this machine's `node_modules` were installed. Pull, **install**, run all
-five gates.
+**Not done, and not claimed:** the three §8 and store decisions that are Kevin's
+(email defaults, badge counting, `RESEND_FROM`), and server items 2–4, which
+genuinely wait on App Store Connect having products — building the entitlement
+columns before then is guessing at a schema.
 
 ### 2026-08-25 · macOS · pushed through `d4f2a52`
 
