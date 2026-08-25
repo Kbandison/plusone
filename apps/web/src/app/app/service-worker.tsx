@@ -67,6 +67,7 @@ export function ServiceWorker() {
         const keys = subscription.toJSON().keys;
         if (!keys?.p256dh || !keys.auth) return;
         await registerPushDevice({
+          platform: "web",
           endpoint: subscription.endpoint,
           p256dh: keys.p256dh,
           auth: keys.auth,

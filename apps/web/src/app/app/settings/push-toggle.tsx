@@ -152,7 +152,11 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
           return;
         }
 
-        const result = await registerPushDevice({ endpoint: subscription.endpoint, ...keys });
+        const result = await registerPushDevice({
+          platform: "web",
+          endpoint: subscription.endpoint,
+          ...keys,
+        });
         if (!result.ok) {
           // Rolled back, so the browser does not hold a subscription the server
           // has never heard of — that device would be permanently silent while

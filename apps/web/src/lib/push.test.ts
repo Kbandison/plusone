@@ -167,6 +167,31 @@ describe("the transport forgets only what is really gone", () => {
     for (const line of logs) expect(line).not.toMatch(/endpoint|recipientId|user_id/);
   });
 
+  /**
+   * A native token has no p256dh and no auth, and until 2026-08-25 there was
+   * nowhere to put one: registerPushDevice hard-coded `p_platform: "web"` and
+   * demanded both keys. The RPC has always taken a platform and the table has
+   * always allowed those columns null for a non-web row — verified against the
+   * live database, which accepts an 'ios' row with both null and still refuses
+   * a 'web' row missing them — so only the Server Action could not say it.
+   *
+   * Shells lane item 2 lands here, and an APNs notifier would otherwise be
+   * sending to an empty set.
+   */
+  it("can register a native device token, not only a web subscription", () => {
+    const actions = withoutComments(read("src/app/app/push-actions.ts"));
+    // A discriminated union, so the impossible pairs cannot be written: a web
+    // subscription missing its keys, or a native token carrying them.
+    expect(actions).toMatch(/platform: "web";[\s\S]*?p256dh: string/);
+    expect(actions).toMatch(/platform: "ios" \| "android"; token: string/);
+    // The native branch sends explicit nulls rather than omitting the keys.
+    expect(actions).toMatch(/p_p256dh: address\.platform === "web" \? address\.p256dh : null/);
+    expect(actions).toMatch(/p_auth: address\.platform === "web" \? address\.auth : null/);
+    // And the platform is the caller's, never a constant.
+    expect(actions).toMatch(/p_platform: address\.platform/);
+    expect(actions).not.toMatch(/p_platform: "web"/);
+  });
+
   /** Absent keys are a legal state; a half pair is not. */
   it("includes each transport by its own configuration, not by NODE_ENV", () => {
     expect(notifier).toMatch(/process\.env\.VAPID_PRIVATE_KEY/);
@@ -641,6 +666,9 @@ describe("the installed app", () => {
     const registrar = read("src/app/app/service-worker.tsx");
     expect(registrar).toMatch(/pushManager\.getSubscription\(\)/);
     expect(registrar).toMatch(/registerPushDevice\(\{/);
+    // The web path names its platform now rather than relying on a default —
+    // see the union in push-actions.ts.
+    expect(registrar).toMatch(/platform: "web"/);
   });
 
   /** §8 rules out count granularity below five, and an icon sits on a home
