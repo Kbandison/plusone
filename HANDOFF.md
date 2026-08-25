@@ -87,13 +87,62 @@ runtimes` just comes back empty.
 
 ### WSL / Windows
 
-_Owned by that session — fill in and correct as needed._
-
 - No IPv6 by default, hence the pooler note above.
+- **Node is 24.3.0 and CI pins 22.** `engines` only says `>=20.9.0`, so nothing
+  catches the drift — same failure the macOS note describes, from the other
+  direction. Nothing shipped so far depends on 24, but a green run here is not
+  evidence about CI.
+- **6 GB and 8 CPUs, by `/mnt/c/Users/kband/.wslconfig`, against a 13.7 GB
+  host.** Left at WSL's defaults it takes 28 processors and may balloon to 7 GB,
+  and Windows answers that by killing the VM outright — eight boots in two days
+  on 2026-08-22, with corrupted journals and no Linux OOM entries, because the
+  kill came from outside Linux. Do not raise those numbers casually, and prefer
+  a targeted `vitest` run to `pnpm test` when only one file is in question.
+- **The disk image does not shrink.** `ext4.vhdx` is ~314 GB against 122 GB
+  actually used. `fstrim` reclaimed 3.7 GB of that — WSL 2.3.26 does not honour
+  guest discards properly. `wsl --update`, then re-run `--set-sparse true` and
+  `fstrim`, is the untried next step. Not urgent; C: has room.
 
 ---
 
 ## Sessions
+
+### 2026-08-25 · WSL · pushed through `1318361`
+
+**Done and pushed.** Audited the privacy policy and terms against what the code
+actually does. Five claims corrected — the email address's "nothing else", a
+verification confidence score nothing stores, a missing contact route, the push
+service as an undisclosed processor, and a landing-page "no waiting" that is
+false for anyone `flagged`. Three confirmed accurate, including the whole of
+`who-can-see-what`, which is rigorously true down to the mode wall's "zero
+exceptions, including paid ones". Each correction is pinned by a test.
+
+**All fourteen database gates pass**, green against the live database —
+`pnpm check:launch` in full. Only "counsel has reviewed the policy and terms" is
+left on the by-hand list; the other six are done and confirmed in conversation
+even though the script cannot know it.
+
+**Left off clean.** Nothing in flight, no local commits, gates green.
+
+**Not done, and not claimed:**
+
+- **Whether any event should default to email.** The notifier is built and inert
+  — every `NOTIFICATION_DEFAULTS` entry is still `["in_app", "push"]`, so
+  nothing reaches an inbox unless a member switches it on. It is a §8 decision
+  about a channel that persists and is searchable, and it is Kevin's.
+- **`RESEND_FROM` is unset**, so `emailNotifier` is never constructed. Needs a
+  Resend-verified sending domain first.
+- **The IAP entitlement table.** `is_premium()` already unions two independent
+  sources, so a third `exists` clause is the whole shape of it — but there are
+  no store products defined yet and building it now would be guessing at
+  columns.
+
+**Traps paid for, so you do not have to:** both of today's cross-session breaks
+are written up in `3deaaf4` and worth reading once. The short version is that a
+key added to `.env.example` broke a test in `packages/config` nobody would think
+to open, and a typecheck failed against a workspace package that did not exist
+when this machine's `node_modules` were installed. Pull, **install**, run all
+five gates.
 
 ### 2026-08-25 · macOS · pushed through `d4f2a52`
 
