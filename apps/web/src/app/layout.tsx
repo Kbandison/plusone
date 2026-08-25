@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import { BRAND, COPY } from "@plusone/config";
 
 import "@/styles/globals.css";
+import { StatusBarStyle } from "./status-bar-style";
 
 // Instrument Serif carries the ⁺One wordmark — its high stroke contrast is what
 // lets the superscript plus read as punctuation first and identity second (§3.1).
@@ -135,6 +136,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        {/* Renders nothing. In the native shell it keeps the status bar in step
+            with the theme the page is wearing — see the component. Mounted at
+            the root rather than inside /app because the theme applies to the
+            marketing pages too, and the shell can be sent to any of them. */}
+        <StatusBarStyle />
         {children}
       </body>
     </html>

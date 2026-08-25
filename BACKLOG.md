@@ -17,15 +17,20 @@ each session is standing. This is what is left.
 
 Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
 
-1. **The status bar contradicts the member's theme.** iOS picks the status bar
-   style from the SYSTEM appearance while the page picks its palette from the
-   member's stored choice, so the two disagree whenever those differ. On a dark
-   system with Linen chosen, iOS applies light content and then dims the app's
-   own page to make it legible — a grey scrim over the top 62pt of a cream
-   screen, fading out exactly at the safe-area inset. Measured 2026-08-25. The
-   fix is `@capacitor/status-bar` plus a bridge from the web theme to the native
-   style; the web half of that has nowhere to live yet. Shell only — the
-   installed web app sets `statusBarStyle: "default"` and never sees it.
+1. **A grey band under the status bar, in one combination.** Mostly fixed on
+   2026-08-25: the status bar TEXT now follows the page theme, via
+   `status-bar-style.tsx` calling the bridge's built-in `SystemBars`. All four
+   combinations of system appearance and chosen theme now get legible text.
+   What is left is cosmetic and narrower — with the system dark and Linen
+   chosen, iOS still lays a grey gradient over the top 62pt of the page (drift
+   dropped from 301 to 100, measured). That scrim is not the status bar style;
+   setting the style resolves and demonstrably changes the text while the band
+   stays. It comes from the view controller's `overrideUserInterfaceStyle`
+   following the SYSTEM appearance, which no Capacitor API exposes — it would
+   need a small custom native tweak, or the decision that in the shell the theme
+   simply follows the system. Worth settling when the theme toggle ships, since
+   nothing writes `plusone.theme` yet.
+
 2. **Native push on iOS.** A WebView has no `PushManager`, so the shell is
    silent today. Needs `@capacitor/push-notifications`, an APNs key from the
    Developer account, and the token registered through `registerPushDevice`

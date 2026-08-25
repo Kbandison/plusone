@@ -1,5 +1,72 @@
 # Project Updates
 
+## 2026-08-25 — The status bar follows the theme, and most of the band goes with it
+
+The grey band found earlier today is mostly gone, and the part that is left has
+a different cause from the one the last entry named.
+
+**The fix.** `status-bar-style.tsx` watches `data-theme` on the root element and
+tells the native bar which way the page is dressed. All four combinations of
+system appearance and chosen theme now get legible status bar text: dark on
+Linen, white on Dusk, whatever the phone is set to.
+
+Three things about it are worth keeping.
+
+**The names describe the background, not the text.** Capacitor's `DARK` is
+documented as "light text for dark backgrounds", so Dusk takes `DARK` and Linen
+takes `LIGHT`. Read as text colours they are exactly inverted — and inverting
+them fails silently, producing white-on-cream and black-on-near-black, which is
+the original bug with worse contrast. `status-bar-style.test.ts` pins the
+mapping for that reason and says so.
+
+**`SystemBars` is already in `@capacitor/ios`.** `@capacitor/status-bar` was
+installed first, and it drives the identical `bridge.statusBarStyle` through the
+identical code path — a dependency bought for nothing. Removed. Worth checking
+core before reaching for a Capacitor plugin.
+
+**A remote page can call native without bundling anything.** The injected bridge
+defines `Capacitor.nativePromise(plugin, method, options)` alongside `toNative`
+and `nativeCallback`, so `apps/web` calls a native plugin with no
+`@capacitor/core` anywhere in its dependency tree. An earlier note in
+`BACKLOG.md` said the web half of this fix "has nowhere to live"; that was
+wrong, and wrong in a way that mattered — it made every remaining plugin item
+look harder than it is. The badge and the web half of push go the same way.
+
+The call is guarded twice: `inNativeShell()`, and a caught rejection. The shell
+loads this app over the network, so `apps/web` and `apps/ios` ship on completely
+different clocks — a web deploy reaches shells built before any of this existed
+and which will never have it. An old shell has to degrade to a wrong status bar,
+never to a broken page.
+
+### What is left, and why it is a different thing
+
+With the system dark and Linen chosen, iOS still lays a grey gradient over the
+top 62pt. Measured, the drift between the top of the screen and the page below
+it fell from **301 to 100** — better, not gone.
+
+That band is **not** the status bar style, and the last entry was wrong to imply
+it was. Setting the style resolves and demonstrably changes the text — the clock
+goes from white to black — while the band stays exactly where it was. Proved by
+painting the page red: the band came back as dark red fading to bright red, so
+it is a scrim over the app's own content rather than the WebView's background
+showing through.
+
+It comes from the view controller's `overrideUserInterfaceStyle`, which follows
+the SYSTEM appearance and which no Capacitor API exposes. Fixing it needs a
+small custom native tweak, or a decision that inside the shell the theme simply
+follows the phone. That is worth settling when the theme toggle ships rather
+than now — nothing writes `plusone.theme` today, so the divergence is reachable
+only by setting the key by hand, which is how both halves of this were
+demonstrated.
+
+### Shells
+
+Verified against **iOS / WKWebView** — Simulator, iPhone 17 Pro, iOS 27.0, all
+four appearance/theme combinations, against a local dev server. **Android / TWA
+unverified.** The component is web-side and will reach the TWA, where
+`inNativeShell()` is false by construction — a TWA has no `window.Capacitor` —
+so it should return before doing anything. Should. Nobody has looked.
+
 ## 2026-08-25 — The rest of the safe-area check, and the status bar that argues with the theme
 
 The two bottom sheets are done, and so is the reason they were not. `simctl`

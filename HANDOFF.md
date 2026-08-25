@@ -115,12 +115,30 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                           | since      |
-| ------- | ------------------------------ | ---------- |
-| _macOS_ | shells 1 — status bar vs theme | 2026-08-25 |
-| _WSL_   | server 1 — apnsNotifier        | 2026-08-25 |
+| session | item                    | since      |
+| ------- | ----------------------- | ---------- |
+| _macOS_ | —                       | —          |
+| _WSL_   | server 1 — apnsNotifier | 2026-08-25 |
 
 ## Sessions
+
+### 2026-08-25 (later still) · macOS · status bar
+
+**Done.** The status bar text now follows the page theme rather than the system
+appearance — `status-bar-style.tsx`, mounted at the root layout. Verified across
+all four combinations in the Simulator.
+
+**Two things worth carrying:**
+
+- `SystemBars` is built into `@capacitor/ios`. `@capacitor/status-bar` drives
+  the identical `bridge.statusBarStyle`; it was added, found redundant and
+  removed. Check core before adding a Capacitor plugin.
+- **The bridge exposes `Capacitor.nativePromise(plugin, method, options)` to a
+  remote page.** Nothing needs bundling into `apps/web` to call native. That is
+  the seam for every remaining plugin item — badge, push, whatever else.
+
+**Left off clean.** Dev server stopped, proxy stopped, shell config restored and
+reinstalled on both simulators, simulator appearance back to light.
 
 ### 2026-08-25 (later) · macOS · the safe-area check closed out
 
