@@ -28,6 +28,24 @@ const documented = new Set(
 
 const required = [...Object.keys(clientEnvSchema.shape), ...Object.keys(serverEnvSchema.shape)];
 
+/**
+ * Documented for the tooling rather than for the app.
+ *
+ * The check below assumed everything in .env.example is an app environment
+ * variable, and that stopped being true: `pnpm check:db`, the other `check:*`
+ * verifiers and `pnpm seed` open a Postgres connection directly and want a
+ * SUPABASE_DB_URL that apps/web never reads and Vercel is never given. It
+ * belongs in .env.example — that file is the answer to "what do I need to set",
+ * and a key nobody documents is one somebody rediscovers by watching a script
+ * fail.
+ *
+ * An allowlist rather than a loosened rule. The point of the check is that a
+ * key in this file is either wired to something or a lie about being a setting,
+ * and a script counts as wired. Anything added here has to be named and
+ * justified, which is the same bar the schema imposes.
+ */
+const TOOLING_ONLY = new Set(["SUPABASE_DB_URL"]);
+
 describe(".env.example matches the schema", () => {
   it("finds keys in both", () => {
     expect(documented.size).toBeGreaterThan(5);
@@ -42,11 +60,28 @@ describe(".env.example matches the schema", () => {
   });
 
   it("documents nothing the schema does not want", () => {
-    const orphans = [...documented].filter((key) => !required.includes(key));
+    const orphans = [...documented].filter(
+      (key) => !required.includes(key) && !TOOLING_ONLY.has(key),
+    );
     expect(
       orphans,
       `in .env.example but not in the schema — a setting that does nothing: ${orphans.join(", ")}`,
     ).toEqual([]);
+  });
+
+  /**
+   * The allowlist is an exception, so it has to stay one.
+   *
+   * A set that quietly grows is how "documented for the tooling" becomes a
+   * place to put anything that fails the check. Each entry must be present in
+   * .env.example — an allowlisted key nobody documents is dead weight — and
+   * must NOT be in the schema, or the exception is hiding a real wiring.
+   */
+  it("keeps the tooling allowlist honest", () => {
+    for (const key of TOOLING_ONLY) {
+      expect(documented.has(key), `${key} is allowlisted but not in .env.example`).toBe(true);
+      expect(required.includes(key), `${key} is in the schema and needs no exception`).toBe(false);
+    }
   });
 
   // Anything without the prefix must never reach the browser bundle

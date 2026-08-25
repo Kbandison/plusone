@@ -19,7 +19,25 @@ export const COPY = {
   marketing: {
     hero: "Dating with the talk already handled.",
     sub: "A private, verified community for people with HSV and HIV. Real people. Real privacy. Nobody gets ghosted.",
-    verificationPitch: "Every profile here is a verified human. Two minutes, no waiting, no fakes.",
+    /**
+     * "No waiting" was not true, and it was untrue for the worst-placed people.
+     *
+     * verification_status carries `flagged`, REVIEW_STATUSES names it, and
+     * there is a whole appeal flow with an `under_review` state — so when the
+     * automated check cannot decide, a person looks and the member waits. The
+     * privacy policy says exactly that ("If the automated check cannot make a
+     * decision, a member of our team reviews it"), so the landing page was
+     * contradicting this app's own policy, and the policy was the accurate one.
+     *
+     * The people it was false for are the ones already having the worst time:
+     * flagged, waiting, and told on the way in that nobody waits.
+     *
+     * Reframed rather than hedged. A person looking at the ones a machine
+     * cannot read is the reason "no fakes" survives contact with reality, so it
+     * is worth saying out loud instead of buried as an exception.
+     */
+    verificationPitch:
+      "Every profile here is a verified human. Two minutes for most people, and a person looks at the rest.",
   },
 
   drop: {
