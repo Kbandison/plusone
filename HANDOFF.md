@@ -23,6 +23,11 @@ So this file holds only what the other session cannot get from the repository:
   does not pay for them again. Both machines lost an afternoon to the same
   database hostname on 2026-08-25. That is what this file exists to stop.
 
+**Outstanding iOS work is not here — it is `apps/ios/WORK.md`**, which is a
+durable list rather than a whiteboard, and which carries the claiming rule for
+the items either machine could pick up. Read it before starting anything
+Capacitor-shaped.
+
 Keep it short. If a section has been true and unread for a month, delete it.
 
 ## How to use it

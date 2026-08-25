@@ -68,6 +68,12 @@ Everything else in `ios/` is Capacitor's, and `ios/.gitignore` already excludes
 what is generated per-build. `.prettierignore` keeps the formatter out of the
 whole directory, for the reason written down in it.
 
+## What is left
+
+`WORK.md`, beside this file. It lists everything the shell still needs, tagged
+by which machine can do it — most of it is mac-only, and the handful that lives
+in `apps/web` carries a claiming rule so two sessions do not start it twice.
+
 ## Not wired yet
 
 - **Native push.** `push_subscriptions.platform` already accepts `'ios'`, and
