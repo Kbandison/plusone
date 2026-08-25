@@ -46,3 +46,12 @@ to write that down.
 `git log` and `PROJECT_UPDATES.md` are still where _what changed_ lives, and
 `HANDOFF.md` deliberately does not repeat them. Rewrite your own block in it
 when you finish, and pull before you push — the other session may have moved.
+
+Imported below rather than only named, so it arrives with this file instead of
+waiting to be fetched. "Read it first" was already written here and both
+sessions still collided on 2026-08-25; an instruction that depends on being
+followed in time is not a mechanism. The cost is that its length is paid by
+every session, which is the real reason for its own three-entry cap — a handoff
+file that grows into an archive starts charging rent.
+
+@HANDOFF.md
