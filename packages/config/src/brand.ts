@@ -17,12 +17,17 @@ export const BRAND = {
   /**
    * Store listing and legal entity name only — never rendered in the UI.
    *
-   * NEEDS KEVIN. This was derived from the old domain and is now doubly stale:
-   * the domain is loveplusone.app, and the A2P brand was registered as LuxWeb
-   * Studio LLC with the friendly name PlusOne. Nothing renders it yet, so it is
-   * left rather than guessed at.
+   * Confirmed by Kevin 2026-08-25, on enrolling in the Apple Developer Program:
+   * the entity is LuxWeb Studio LLC and the app is PlusOne. That is the pair the
+   * A2P brand was registered under, which the previous note here had guessed at
+   * and deliberately refused to write down.
+   *
+   * It was "YourPlusOne" until now — derived from yourplusone.app, a domain that
+   * was never bought. Harmless while nothing rendered it, and no longer: an App
+   * Store listing carries the seller's legal entity publicly, so this is the
+   * name that will appear beside the app.
    */
-  legalName: "YourPlusOne",
+  legalName: "LuxWeb Studio LLC",
   /** Secured 2026-08-17. Was yourplusone.app, which was never bought. */
   domain: "loveplusone.app",
   supportEmail: "hello@loveplusone.app",
