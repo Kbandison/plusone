@@ -204,6 +204,26 @@ describe("the privacy policy draft", () => {
     expect(address).not.toMatch(/nothing else/i);
   });
 
+  /**
+   * The policy claimed to keep a confidence score. Nothing does.
+   *
+   * liveness-aws.ts computes one and the reducer thresholds on it, and then the
+   * verdict is written as verification_status, liveness_attempts and two
+   * timestamps — the action says so itself: "it does not report its score".
+   * So the app retained LESS than the policy described, which is the harmless
+   * direction to be wrong in and still wrong: this file's own header says every
+   * claim is checkable against supabase/migrations.
+   */
+  it("does not claim to keep a verification score nothing writes down", () => {
+    const verification = PRIVACY_POLICY.find((section) => section.id === "verification");
+    const text = (verification?.body ?? []).join(" ");
+    expect(text).toBeTruthy();
+    // The image is the claim that must survive.
+    expect(text).toMatch(/do not keep the image/i);
+    // "We keep whether it passed and a confidence score" was the phrasing.
+    expect(text).not.toMatch(/keep[^.]*confidence score/i);
+  });
+
   it("carries an effective date the page can show", () => {
     expect(PRIVACY_POLICY_EFFECTIVE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });

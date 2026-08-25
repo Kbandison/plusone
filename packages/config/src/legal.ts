@@ -95,7 +95,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     title: "Verification",
     body: [
       "Everyone here verifies a phone number and passes an automated selfie check. That is the whole point of the place: every profile is a real person.",
-      "The selfie is sent to an identity verification provider, checked, and then deleted. We keep whether it passed and a confidence score. We do not keep the image, and we never show it to anyone.",
+      "The selfie is sent to an identity verification provider, checked, and then deleted. We keep whether it passed and when — nothing else. The provider scores its own confidence and that score decides the outcome, but it is not written down. We do not keep the image, and we never show it to anyone.",
       "If the automated check cannot make a decision, a member of our team reviews it. You can always appeal a decision, and appealing never requires passing the check you are appealing.",
     ],
   },
