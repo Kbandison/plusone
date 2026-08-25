@@ -117,7 +117,7 @@ line per session; clear it when you finish or abandon the item.
 
 | session | item                                  | since      |
 | ------- | ------------------------------------- | ---------- |
-| _macOS_ | —                                     | —          |
+| _macOS_ | shells 1 — status bar vs theme        | 2026-08-25 |
 | _WSL_   | push registration seam, then server 7 | 2026-08-25 |
 
 ## Sessions
