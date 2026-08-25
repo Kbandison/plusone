@@ -120,9 +120,12 @@ authentication**: the bottom nav lives in `/app/layout.tsx`, and the two bottom
 sheets go with it. Public pages have nothing pinned to the bottom edge, so
 nothing on them can prove the thing that matters.
 
-`pnpm seed` cannot run either — `SUPABASE_DB_URL` is one of the values Vercel
-marks Sensitive, and it is not in the `.env.local` that was carried across by
-hand.
+`pnpm seed` cannot run either, and the first version of this entry got the
+reason wrong: `SUPABASE_DB_URL` is not a Vercel value at all. `vercel env ls`
+does not list it, because nothing in `apps/web` reads it — it is the Postgres
+connection string, used only by the scripts that talk to the database directly,
+and it has never been in this repository. It is now documented in
+`.env.example`, which claims to document every key and did not.
 
 So: **the nav, `modal.tsx` and `route-modal.tsx` have not been looked at on a
 notched iPhone.** They are written correctly as far as reading them goes. That
