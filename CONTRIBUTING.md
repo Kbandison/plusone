@@ -100,6 +100,6 @@ Prettier and ESLint decide; do not fight them.
 
 ---
 
-`CONVENTIONS.md` is still the template this file used to be — it describes a
-`src/` and `tests/` layout, a Dockerfile and shadcn/ui, none of which apply.
-Treat it with suspicion until it is rewritten.
+`CONVENTIONS.md` covers the other half: how code here is written — the layout,
+what `packages/logic` may not import, where behaviour belongs, and why the
+comments are as long as they are.

@@ -1,140 +1,111 @@
 # Engineering Conventions
 
-These conventions provide sensible defaults across common stacks. Adopt, tweak, or override per repository.
+How code in this repo is written. `CONTRIBUTING.md` covers how work _lands_ —
+branches, gates, commits — and is not repeated here.
 
-## Priorities
+The file this replaces was scaffolding: it described a `src/` and `tests/`
+layout, a Dockerfile, shadcn/ui, semantic-release tagging and testing
+conventions for Python and Go. None of that exists here.
 
-- 1. Correctness and build quality
-- 2. DX/maintainability
-- 3. UX polish and tasteful creativity
+## Layout
 
-## Repository Layout
+```
+apps/web            Next 16, App Router. The only application.
+packages/config     Compiled defaults, copy, env schema, brand, legal.
+packages/logic      The mechanics. Pure — see below.
+packages/types      Shared types with no behaviour.
+packages/db         Supabase client factories and the RPC name registry.
+packages/ui-tokens  The design system: colour, type scale, spacing.
+supabase/migrations Schema, RLS, policies, RPCs. Ordered by filename.
+scripts             Operator tools. Not part of the build.
+```
 
-- `src/` (or `app/`): application/source code
-- `tests/` (or `__tests__/`): automated tests
-- `scripts/`: developer/CI scripts (idempotent, shell-safe)
-- `docs/`: documentation and ADRs (architecture decision records)
-- `.github/`: workflows, issue/PR templates, CODEOWNERS
-- `Dockerfile`, `docker-compose.yml` (if containerized)
-- `.env.example`: example environment variables
+## `packages/logic` is pure
 
-## Naming
+No clock, no network, no database, no environment. Time arrives as a parameter
+(`now: number`), never as `Date.now()` inside a function. Randomness likewise.
 
-- Files/dirs: kebab-case for configs, snake_case for Python modules, camelCase for JS files when idiomatic.
-- Classes/Types: PascalCase (e.g., `UserService`)
-- Variables/functions: camelCase (JS/TS), snake_case (Python), mixedCaps (Go)
-- Constants: UPPER_SNAKE_CASE
-- Branches: `feat/…`, `fix/…`, `chore/…`, `docs/…`, `refactor/…`, `perf/…`, `test/…`
+This is what makes the mechanics testable at all, and it is why
+`packages/logic` must stay green independently of any surface that consumes it
+(§12). A rule that needs a database to prove is a rule nobody re-checks.
 
-## Code Style
+Each domain is a directory — `drop`, `fuse`, `connects`, `notify`, `quiz` — with
+its types beside its functions and its tests beside both.
 
-- Use auto-formatters and linters; prefer rules over taste.
-  - JS/TS: Prettier + ESLint (typescript-eslint)
-  - Python: Black + Ruff (or Flake8 + isort)
-  - Go: `gofmt` + `goimports`, `golangci-lint`
-- Include `.editorconfig` to normalize whitespace/newlines.
-- Keep functions small; avoid deep nesting; prefer pure functions where possible.
-- For non‑obvious decisions, add a brief inline comment explaining the rationale.
+## Where behaviour lives
 
-## Testing
+- **Server Components by default.** `'use client'` only where something is
+  genuinely interactive, and as far down the tree as it will go.
+- **Server Actions** for anything a member does. Route handlers are for things
+  that are not a member: webhooks, cron.
+- **Mechanic transitions go through `SECURITY DEFINER` RPCs** (§5.3.4), never a
+  direct table write. The database is the last place a rule can be enforced, so
+  it is where the rules that matter are enforced.
+- **A pure decision belongs in `packages/logic`**, with the surface calling it.
+  If a Server Action grows a branch that could be described without a database,
+  that branch is in the wrong file.
 
-- Co-locate tests near code or under `tests/`.
-- Naming:
-  - JS/TS: `*.test.ts`/`*.spec.ts`
-  - Python: `test_*.py`
-  - Go: `*_test.go`
-- Prioritize unit tests; add integration tests for critical paths; e2e for user flows.
-- Use test doubles (mocks/stubs) for external systems; avoid real network calls.
-- Keep tests deterministic and parallelizable.
+## Configuration
 
-## React/Next.js Patterns
+Two layers, and they are not interchangeable.
 
-- Prefer Next.js App Router with server components for data fetching and rendering by default; mark client components only when interactivity is needed.
-- Use file‑based routing conventions; colocate component logic and styles. Place validation schemas in `lib/` or route/server actions — not in `components/`.
-- Use shadcn/ui (Radix primitives) for accessible UI primitives in `components/ui/`; extend with Tailwind utilities.
-- Keep pages lean; move complex UI/logic into components and hooks colocated under the relevant route folder.
+`packages/config` compiles the defaults. `app_config` holds admin overrides that
+`apps/web/src/lib/tunables.ts` hot-reads and merges. The compiled value is the
+fallback: **deleting a config row must never change behaviour**.
 
-## UX Layer Defaults
+A key is only reachable by the §7.3 editor if it already exists in `app_config`,
+so a new tunable needs a seeding migration as well as a default. Unseeded, it
+works correctly and silently and nobody can touch it.
 
-- Provide polished states: empty, loading, and error with actionable copy.
-- Consistent spacing and typography using Tailwind scales; keep vertical rhythm consistent across views.
-- Form DX: define validation schemas under `lib/` or route/server actions; infer types when sensible. Zod is optional — use it when form complexity warrants or CI/build checks require runtime validation.
-- Accessibility: label controls, manage focus, respect reduced‑motion preferences.
+## Design
 
-## Validation
+There is no component library. `@plusone/ui-tokens` is the design system —
+colour, type scale and spacing come from there, both themes are defined
+together, and `tokens.test.ts` recomputes the WCAG ratios rather than trusting a
+comment. Tailwind v4 consumes the tokens; it does not replace them.
 
-- Validate at boundaries (API handlers, forms) and fail fast with friendly messages.
-- Prefer type-safe validation; Zod is optional. Introduce Zod when complexity increases or stronger runtime guarantees are necessary.
+Anything pinned to a viewport edge reads `env(safe-area-inset-*)`. `viewport-fit`
+is `cover`, so those insets are real and ignoring one puts a control under a
+gesture bar.
 
-## Animation
+## Types
 
-- Use Motion (Framer Motion) for tasteful animations; keep durations snappy (150–250ms) and respect `prefers-reduced-motion`.
-- Avoid excessive animation; prioritize clarity and performance.
+Strict TypeScript, no `any`, and no `as` that erases a real difference. Prefer a
+type that makes the wrong state unrepresentable over a check that catches it.
 
-## Component Modularity
+`readonly` on anything shared across a boundary — `packages/logic` returns
+`readonly` arrays because a caller mutating a result is a bug that surfaces
+somewhere else entirely.
 
-- Avoid oversized pages/components. Split when they become long or are likely to grow.
-- Reusable primitives live in `components/ui/` (buttons, cards, accordions, inputs, etc.). Do not store schemas or helper logic in `components/`.
-- Feature‑specific components live near their routes under `app/<route>/` (or a feature folder within `app/`) rather than under `components/`.
-- Not everything needs its own component; use judgment to keep files readable and cohesive.
+## Comments
 
-## Type Safety & Correctness
+Comment the **why**, at length where the reasoning is not obvious.
 
-- Enable strict TypeScript where applicable; prefer explicit types on public boundaries.
-- Code must build/compile cleanly; add tests for critical logic and edge cases.
+This codebase is unusually heavily commented and that is deliberate. Most of its
+constraints are invisible in the code: §8's content-blindness, a §9.6 log that
+must carry opaque ids only, a weight that must never loosen, a ref that must not
+survive a discarded render. A future reader who cannot see the constraint will
+remove the thing that satisfies it, and the comment is the only thing standing
+between them and that.
 
-## Git & PRs
+Say what was wrong and what it cost, not what the code does. The code says what
+it does.
 
-- Conventional Commits; descriptive PR titles and bodies with context and screenshots for UI.
-- Small, focused PRs; one concern at a time; squash merge.
-- Link issues (`Closes #123`) and document decisions in PR description.
+## Discretion is a code concern
 
-## CI/CD
+§8 is not a policy document that lives elsewhere — it constrains what functions
+may return.
 
-- Minimal pipeline stages: install → lint → test → build/package → (scan) → deploy.
-- Protect `main`; require checks to pass; keep pipelines <10 minutes where feasible.
-- Cache dependencies; pin tool versions for reproducibility.
+- `buildPayload` is the only way to make a notification payload, and it refuses
+  a condition word. Providers re-check on the way out.
+- Logs carry opaque ids and enums. Never message bodies, profile fields, or
+  anything about a condition (§9.6).
+- A count is a disclosure. So is a name in a subject line, an app-icon badge,
+  and a store listing category.
 
-## Dependencies
+When a change touches any of those, say so in the commit.
 
-- Commit lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `poetry.lock`, `go.sum`).
-- Prefer minimal, well-maintained deps; review licenses. Favor first‑party or widely adopted libraries.
-- Automate updates (Renovate or Dependabot) and batch weekly.
+## Shells
 
-## Configuration & Secrets
-
-- 12-factor: configuration via environment variables.
-- Provide `.env.example`; do not commit `.env` with secrets.
-- Use secret managers (GitHub Actions Secrets, cloud KMS) for CI/CD.
-
-## Documentation
-
-- Each repo has a `README` with: purpose, quickstart, common tasks, testing, release.
-- Maintain a `CHANGELOG` (generated from commits is fine).
-- Consider ADRs in `docs/adrs/` for significant decisions.
-- Maintain a `PROJECT_UPDATES.md` that summarizes major updates with date/time (UTC), bundled minor updates, and next actions so anyone can quickly understand current status.
-
-## Observability
-
-- Logging: use structured logs (JSON) in services; respect log levels; avoid PII.
-- Metrics: expose basic health/latency/error counters if applicable.
-
-## Performance & Reliability
-
-- Measure before optimizing; add benchmarks where performance-critical.
-- Timeouts, retries with backoff for I/O; circuit breakers when appropriate.
-
-## Security
-
-- Keep runtimes up to date; scan dependencies in CI.
-- Validate inputs; sanitize outputs; least-privilege defaults.
-- Add `SECURITY.md` if accepting reports; define disclosure process.
-
-## Versioning & Releases
-
-- Semantic Versioning (`MAJOR.MINOR.PATCH`).
-- Tag releases `vX.Y.Z`; automate releases based on commit history when possible.
-
----
-
-These defaults aim to reduce bikeshedding and increase consistency. Override locally as needed and document the deviation in `CONTRIBUTING.md`.
+Web, an Android TWA and an iOS Capacitor build. See `AGENTS.md` — the rule about
+verifying against both engines is there because it is easy to skip.
