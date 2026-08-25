@@ -31,3 +31,18 @@ against both:
 State in the commit which shells a change was verified against, and say plainly
 when one was not. The failure this exists to prevent is silent: a bug fixed on
 iOS, assumed fixed on Android, and never looked at again.
+
+# Two machines, and only one of them is yours
+
+This repo is worked on from a MacBook and from Windows under WSL, by two
+sessions that push to the same `main` and cannot see each other's machines.
+
+**Read `HANDOFF.md` before you touch anything.** It carries the half of the
+state a push cannot: what is installed and broken on each machine, where the
+last session stopped, and the dead ends already paid for. Both machines lost an
+afternoon to the same database hostname on 2026-08-25 because there was nowhere
+to write that down.
+
+`git log` and `PROJECT_UPDATES.md` are still where _what changed_ lives, and
+`HANDOFF.md` deliberately does not repeat them. Rewrite your own block in it
+when you finish, and pull before you push — the other session may have moved.

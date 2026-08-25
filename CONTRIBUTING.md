@@ -47,6 +47,17 @@ being a record.
 Values Kevin has deferred go in an entry's "Held for Kevin" section. Never
 invent one to unblock yourself.
 
+`HANDOFF.md` is the other half, and it is not a record — it is a whiteboard.
+Two sessions work on this repo from two machines, and it carries what a push
+cannot: what is installed or broken on each, where the last session stopped, and
+the dead ends already paid for. Rewrite your own block; keep the last three.
+
+The line between them is what the reader needs it for. A product decision, or
+the reasoning behind a change, is a dated entry in `PROJECT_UPDATES.md` and
+stays there forever. "Node drifts off 22 whenever brew touches mongosh" helps
+nobody in six months and is wrong the day it is fixed — that is `HANDOFF.md`,
+and it should be deleted the moment it stops being true.
+
 ## Tests
 
 Vitest, colocated as `*.test.ts` beside the code. There is no `tests/`
