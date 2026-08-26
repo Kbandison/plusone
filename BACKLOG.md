@@ -136,7 +136,11 @@ unblock other work.
    item on iOS is behind it: shells lane 8, the device half of native push, and
    the camera check that gates joining at all.
 4. **App Store Connect**: the app record, subscription products, and privacy
-   labels. Unblocks server lane items 2–4.
+   labels. Unblocks server lane items 2–4. The label answers are worked out and
+   kept honest in `packages/config/src/privacy-labels.ts` — copy them from
+   there rather than deciding again. One question in it is held for counsel:
+   whether the liveness check counts as collecting biometric data when nothing
+   is retained.
 5. **Whether a remote-URL shell is submittable** (guideline 4.2, minimum
    functionality). Capacitor's own declarations call `server.url` "not intended
    for use in production". The answer is mostly a function of how much native

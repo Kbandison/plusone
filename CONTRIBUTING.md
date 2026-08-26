@@ -78,6 +78,13 @@ directory.
   and cross-checks that every FK, function call, policy target and grant
   resolves. It needs no database. Run it.
 - Every table needs RLS and at least one policy; `check:sql` enforces it.
+- **Every table also needs a privacy classification.** The App Store and Play
+  labels are a public legal statement re-affirmed months apart, and the way they
+  go stale is not a bug — it is a feature landing and nobody thinking to revisit
+  a form on Apple's website. `privacy-labels.test.ts` reads the migrations and
+  fails until a new table, or a new `profiles` column, is classified in
+  `packages/config/src/privacy-labels.ts`. "Carries nothing a label covers" is a
+  valid answer; leaving it undecided is not.
 - Mechanic transitions go through `SECURITY DEFINER` RPCs, never a direct table
   write (§5.3.4).
 - A tunable is only reachable by the admin editor if its key already exists in
