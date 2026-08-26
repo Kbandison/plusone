@@ -87,6 +87,30 @@ describe(".env.example matches the schema", () => {
   // Anything without the prefix must never reach the browser bundle
   // (BACKEND.md anti-pattern #1). A secret named NEXT_PUBLIC_ is a secret
   // published to every visitor.
+  /**
+   * Apple answers a malformed key with "InvalidProviderToken" and nothing else
+   * — not which key, not what is wrong with it. A truncated paste, a
+   * base64-wrapped file, or newlines eaten by a shell all land there.
+   *
+   * The field on its own rather than the whole schema: parsing the object needs
+   * every required key present, which tests those instead of this one.
+   */
+  it("refuses an APNs key that is not a PEM", () => {
+    const field = serverEnvSchema.shape.APNS_PRIVATE_KEY;
+    const ok = (value: string) => field.safeParse(value).success;
+
+    expect(ok("-----BEGIN PRIVATE KEY-----\nMIGT\n-----END PRIVATE KEY-----")).toBe(true);
+    // The shape a shell `export` leaves behind. apns.ts rewrites it before use,
+    // so it has to survive validation.
+    expect(ok("-----BEGIN PRIVATE KEY-----\\nMIGT\\n-----END PRIVATE KEY-----")).toBe(true);
+    // Optional, so absent stays legal — the provider is simply not built.
+    expect(field.safeParse(undefined).success).toBe(true);
+
+    // A key id pasted into the key field, which is the mistake this catches.
+    expect(ok("ABCDE12345")).toBe(false);
+    expect(ok("")).toBe(false);
+  });
+
   it("keeps every secret out of the NEXT_PUBLIC_ namespace", () => {
     for (const key of Object.keys(clientEnvSchema.shape)) {
       expect(key.startsWith("NEXT_PUBLIC_"), `${key} is in the CLIENT schema`).toBe(true);

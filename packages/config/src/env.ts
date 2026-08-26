@@ -114,7 +114,25 @@ export const serverEnvSchema = z
     APNS_KEY_ID: z.string().optional(),
     APNS_TEAM_ID: z.string().optional(),
     APNS_BUNDLE_ID: z.string().optional(),
-    APNS_PRIVATE_KEY: z.string().optional(),
+    /**
+     * Checked for the PEM header, because every other way this fails is a 403.
+     *
+     * A .p8 that arrived truncated, base64-wrapped by a copy-paste, or with its
+     * newlines eaten produces a key Node cannot load or a signature Apple will
+     * not accept — and Apple's answer to all of it is "InvalidProviderToken",
+     * which names neither the key nor the problem. One assertion at boot is
+     * worth more than that message ever will be.
+     *
+     * Tolerates a literal `\n`, since that is how the file survives a shell
+     * `export`; apns.ts rewrites it before use.
+     */
+    APNS_PRIVATE_KEY: z
+      .string()
+      .refine((value) => value.includes("BEGIN PRIVATE KEY"), {
+        message:
+          "APNS_PRIVATE_KEY must be the contents of the .p8 file, including the BEGIN PRIVATE KEY line",
+      })
+      .optional(),
     /** `sandbox` for a development build; anything else means production. */
     APNS_ENVIRONMENT: z.enum(["production", "sandbox"]).optional(),
 
