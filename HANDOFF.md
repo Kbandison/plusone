@@ -57,7 +57,7 @@ Keep it short. If a section has been true and unread for a month, delete it.
   files rather than a range, one transaction each, rolled back unless every
   object the file declares resolves afterwards.
 
-  The ledger was backfilled on 2026-08-26 and now holds 73 of 89 rather than 28,
+  The ledger was backfilled on 2026-08-26 and now holds 75 of 90 rather than 28,
   every one of them checked against the live schema by
   `scripts/backfill-migration-ledger.mjs`. That does NOT make push safe. Fourteen
   files leave no trace a schema can be asked — grants, revokes, data — so they
@@ -67,6 +67,14 @@ Keep it short. If a section has been true and unread for a month, delete it.
   `20260817000600_a_voice_note_in_one_write` creates a policy without dropping it
   first. `--include-unverifiable` will record them and is Kevin's call, not a
   session's: recording a migration that never ran means push skips it forever.
+
+  **Re-run `backfill-migration-ledger.mjs` after applying anything.** Applying by
+  hand does not record it, so the ledger drifts the OTHER way from the failure
+  above — applied but unrecorded — and the symptom is somebody being told to
+  apply what is already there. That happened on 2026-08-26: 000300 and 000400
+  were applied, the ledger did not know, and a runbook nearly sent Kevin to
+  re-run an `alter table ... add column`. The dry run is read-only and settles it
+  in one command.
 
 - **A NEW table arrives with `anon` and `authenticated` holding everything.**
   Supabase's default privileges grant all on new tables in `public`, and
