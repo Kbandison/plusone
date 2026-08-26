@@ -88,8 +88,13 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    interface built for it — not a schema change.
 2. **`iap_entitlements`, and a third `exists` in `is_premium()`.** The gate
    already unions `subscriptions` with `premium_grants`, so a third source
-   changes nothing downstream. **Blocked**: no store products are defined, so
-   the columns would be guesswork. Unblocks when App Store Connect has products.
+   changes nothing downstream. **Unblocked 2026-08-26** — the products exist in
+   App Store Connect and their real ids are recorded on `PLANS` as
+   `appleProductId`: `1month`, `3months`, `6months`. Key on those, not on
+   `PlanId`; they are not derivable from it and a helper that builds one by
+   string manipulation finds nothing at purchase time. They still cannot be
+   submitted for review until there is an app version with a build to attach
+   them to — that is Apple's rule, not a setup problem.
 3. **Store webhooks.** App Store Server Notifications V2 and Play RTDN, each a
    route handler mirroring the Stripe one, writing entitlements.
 4. **Cancellation routing.** Both stores require sending a subscriber to their

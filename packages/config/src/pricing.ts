@@ -22,6 +22,23 @@ export interface Plan {
    * finding out at checkout.
    */
   readonly envPriceIdKey: PriceIdEnvKey;
+  /**
+   * The App Store product ID, which is NOT derived from `id` and must never be
+   * assumed to be.
+   *
+   * These are the strings Kevin created in App Store Connect on 2026-08-26, and
+   * they are deliberately recorded rather than generated: an in-app purchase
+   * product ID cannot be edited after it is created and cannot be reused after
+   * it is deleted, so what is in the console is what the receipts will say for
+   * the life of the app. Guessing a convention here and finding out at purchase
+   * is the failure this field exists to prevent.
+   *
+   * They are unprefixed because that is what was entered, and it is fine:
+   * uniqueness is scoped to the app rather than to the whole App Store. The one
+   * consequence to know about is that another app under the same account cannot
+   * reuse them.
+   */
+  readonly appleProductId: string;
 }
 
 export const PLANS: readonly Plan[] = [
@@ -32,6 +49,7 @@ export const PLANS: readonly Plan[] = [
     label: "1 month",
     highlighted: false,
     envPriceIdKey: "STRIPE_PRICE_PREMIUM_1MO",
+    appleProductId: "1month",
   },
   {
     id: "premium_3mo",
@@ -40,6 +58,7 @@ export const PLANS: readonly Plan[] = [
     label: "3 months",
     highlighted: true,
     envPriceIdKey: "STRIPE_PRICE_PREMIUM_3MO",
+    appleProductId: "3months",
   },
   {
     id: "premium_6mo",
@@ -48,6 +67,7 @@ export const PLANS: readonly Plan[] = [
     label: "6 months",
     highlighted: false,
     envPriceIdKey: "STRIPE_PRICE_PREMIUM_6MO",
+    appleProductId: "6months",
   },
 ] as const;
 
