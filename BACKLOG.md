@@ -330,7 +330,7 @@ unblock other work.
     accepted, and the console rejects a bad id immediately rather than later.
     They still get their own field either way.
 
-13. **A Sandbox tester**, in App Store Connect under Users and Access. It is the
+14. **A Sandbox tester**, in App Store Connect under Users and Access. It is the
     only way to put a real purchase through: a Simulator can fetch products —
     that much is verified — but the payment sheet needs a sandbox Apple ID, and
     on the iPad it is signed in under Settings → App Store → Sandbox Account,
