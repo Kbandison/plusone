@@ -92,6 +92,18 @@ runtimes` just comes back empty.
 ### WSL / Windows
 
 - No IPv6 by default, hence the pooler note above.
+- **`pnpm push:test` reaches no iPhone from here without setup**, and says so
+  quietly. It needs the four `APNS_` values in `.env.local`; `vercel env pull`
+  brings three and refuses `APNS_PRIVATE_KEY`, which is Sensitive on purpose and
+  therefore write-only — that one comes off the `.p8` by hand, newlines escaped
+  as `\n`.
+
+  The tell that a checkout predates 2026-08-26 is the output itself: the old
+  script prints `sending to 2 device(s)…` and skips every `ios` row in silence.
+  The current one prints `sending to N web and M iOS device(s)…` and names APNs
+  explicitly when it is unconfigured. Kevin lost a round trip to exactly this —
+  the send looked successful and the phone stayed quiet.
+
 - **Node is 24.3.0 and CI pins 22.** `engines` only says `>=20.9.0`, so nothing
   catches the drift — same failure the macOS note describes, from the other
   direction. Nothing shipped so far depends on 24, but a green run here is not
