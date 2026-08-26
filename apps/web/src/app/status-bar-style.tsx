@@ -31,6 +31,19 @@ import { inNativeShell } from "@/lib/native-shell";
  * thing through the same `bridge.statusBarStyle`, so it was a dependency for
  * nothing.
  *
+ * SystemBars alone was not enough, and the way it failed is worth knowing. It
+ * fixes the status bar TEXT, resolves cleanly, and the clock visibly changes —
+ * while the grey band stays exactly where it was. The band is not the status
+ * bar. It is UIKit reconciling a light page with a dark system through the view
+ * controller's `overrideUserInterfaceStyle`, which follows the system until
+ * something sets it and which no Capacitor API exposes. `PlusOneShell` is a
+ * local plugin in `apps/ios` that exists solely to set it.
+ *
+ * Measured in the Simulator, dark phone with Linen chosen, sampling the page's
+ * own ground at the top of the screen: rgb(139,134,128) before, against Linen's
+ * true rgb(239,233,223) — a drift of 100 across the top 62pt. After: 239,233,223
+ * at every row, drift of about 1.
+ *
  * Called through `Capacitor.nativePromise` rather than by importing anything.
  * The shell loads this app from the network, so nothing here is bundled into
  * it — the bridge injects `nativePromise` at document start and that is the
@@ -49,12 +62,24 @@ function setStyleFromTheme() {
   if (!bridge?.nativePromise) return;
 
   const dark = document.documentElement.getAttribute("data-theme") === "dark";
-  void bridge
-    .nativePromise("SystemBars", "setStyle", { style: dark ? "DARK" : "LIGHT" })
-    .catch(() => {
-      // A shell older than SystemBars. Nothing to do about it here, and
-      // nothing worth telling the member.
-    });
+  const style = dark ? "DARK" : "LIGHT";
+
+  void bridge.nativePromise("SystemBars", "setStyle", { style }).catch(() => {
+    // A shell older than SystemBars. Nothing to do about it here, and
+    // nothing worth telling the member.
+  });
+
+  // The second half, and the one that removes the band rather than the wrong
+  // text colour. See the note above: SystemBars resolves and demonstrably
+  // changes the clock while the grey scrim stays, because the scrim is not the
+  // status bar. Same mapping, because it answers the same question — what is
+  // this app wearing — and UIKit's `.dark` means a dark ground exactly as
+  // Capacitor's `DARK` does.
+  void bridge.nativePromise("PlusOneShell", "setInterfaceStyle", { style }).catch(() => {
+    // A shell built before PlusOneShell existed. It keeps the band; the page
+    // is unharmed, and this is the ONLY consequence — which is why the two
+    // calls are separate rather than chained.
+  });
 }
 
 export function StatusBarStyle() {

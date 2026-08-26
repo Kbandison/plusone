@@ -30,6 +30,7 @@ class MainViewController: CAPBridgeViewController {
         // that never settles: not a rejection, silence. Confirmed by reading
         // CapacitorBridge.swift after watching it happen.
         bridge?.registerPluginInstance(PlusOneStoreKitPlugin())
+        bridge?.registerPluginInstance(PlusOneShellPlugin())
         observeUniversalLinks()
     }
 

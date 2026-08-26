@@ -58,6 +58,38 @@ describe("the native status bar follows the page theme", () => {
   });
 
   /**
+   * The half that removes the BAND rather than the wrong text colour.
+   *
+   * SystemBars was shipped first and looked like the whole fix: it resolves,
+   * and the clock visibly changes colour. The grey scrim over the top 62pt
+   * stayed exactly where it was, because it is not the status bar — it is
+   * UIKit reconciling a light page with a dark system through the view
+   * controller's `overrideUserInterfaceStyle`. Measured on a dark phone with
+   * Linen chosen: rgb(139,134,128) at the top of the page against Linen's own
+   * rgb(239,233,223), and 239,233,223 at every row afterwards.
+   *
+   * There is no Capacitor API for it, which is why `PlusOneShell` exists in
+   * apps/ios at all.
+   */
+  it("also sets the interface style, which is what the band follows", () => {
+    expect(source).toMatch(/nativePromise\(\s*"PlusOneShell"\s*,\s*"setInterfaceStyle"/);
+  });
+
+  /**
+   * Two calls, two catches, deliberately not chained or awaited together.
+   *
+   * They land in shells of different ages: one built before PlusOneShell
+   * existed still has SystemBars, and must still get its status bar right.
+   * Chaining them would let the missing one take the working one down, and the
+   * failure would be a status bar that quietly stopped following the theme.
+   */
+  it("does not let one missing plugin take the other down", () => {
+    const calls = source.match(/nativePromise\([^)]*\)[\s\S]{0,120}?\.catch\(/g) ?? [];
+    expect(calls.length).toBe(2);
+    expect(source).not.toMatch(/Promise\.all/);
+  });
+
+  /**
    * The attribute is where every route to a theme change ends up — the inline
    * script on first paint, and whatever toggle eventually ships. Watching the
    * storage key instead would miss anything that sets the attribute directly.

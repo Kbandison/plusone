@@ -297,6 +297,43 @@ describe("the shell can sell the premium tier", () => {
   });
 });
 
+describe("the page decides whether the shell is light or dark", () => {
+  const shellPlugin = read("ios/App/App/ShellPlugin.swift");
+  const mainViewController = read("ios/App/App/MainViewController.swift");
+
+  /**
+   * iOS reads the SYSTEM appearance; this app reads the member's stored choice.
+   * When they disagree UIKit does not just pick the wrong status bar text — it
+   * lays a grey scrim over the top 62pt of the page to reconcile them.
+   * `SystemBars.setStyle` fixes the text and leaves the scrim, because the
+   * scrim is `overrideUserInterfaceStyle`, which no Capacitor API exposes.
+   */
+  it("can set the interface style the band actually follows", () => {
+    expect(shellPlugin).toMatch(/overrideUserInterfaceStyle/);
+    expect(shellPlugin).toMatch(/let jsName = "PlusOneShell"/);
+  });
+
+  /**
+   * On the window, not the view controller. The scrim is drawn outside the web
+   * view's own bounds, so a controller-level override leaves it in place.
+   */
+  it("overrides on the window, which is the layer the scrim is above", () => {
+    expect(shellPlugin).toMatch(/window\.overrideUserInterfaceStyle = style/);
+  });
+
+  /** Registered by instance, for the reason the StoreKit plugin records. */
+  it("is registered, and compiled into the app", () => {
+    expect(mainViewController).toMatch(/registerPluginInstance\(PlusOneShellPlugin\(\)\)/);
+    expect(read("ios/App/App.xcodeproj/project.pbxproj")).toMatch(/ShellPlugin\.swift in Sources/);
+  });
+
+  /** The name, agreed across two languages and two release clocks. */
+  it("agrees with the web side on the plugin name", () => {
+    const web = readFileSync(join(HERE, "..", "web", "src", "app", "status-bar-style.tsx"), "utf8");
+    expect(web).toMatch(/"PlusOneShell"/);
+  });
+});
+
 describe("a tapped link opens the app and not Safari", () => {
   const entitlements = read("ios/App/App/App.entitlements");
   const mainViewController = read("ios/App/App/MainViewController.swift");
