@@ -54,9 +54,23 @@ export interface EntitlementRow {
  *
  * Status before the clock, for the reason the schema gives — a refund revokes
  * access now and leaves `expires_at` weeks out.
+ *
+ * Which statuses count is `statusGrants`, and it is separate because something
+ * that has no row to hand still needs to ask. `iap-actions.ts` reported
+ * `premium: status === "active"` — correct only because `entitlementStatusOf`
+ * cannot currently return `grace`, and silently wrong for a member in a billing
+ * grace period the day it can.
  */
+export function statusGrants(status: string): boolean {
+  // `grace` is the one that is not obvious: the renewal payment failed and the
+  // store is retrying while keeping the member in service, so the row carries a
+  // PASSED expiry and still buys something. `paused`, `expired` and `revoked`
+  // buy nothing, and `revoked` buys nothing even with weeks left on the clock.
+  return status === "active" || status === "grace";
+}
+
 export function isLive(row: EntitlementRow, now: number): boolean {
-  if (row.status !== "active" && row.status !== "grace") return false;
+  if (!statusGrants(row.status)) return false;
   return Boolean(row.expires_at) && Date.parse(row.expires_at!) > now;
 }
 

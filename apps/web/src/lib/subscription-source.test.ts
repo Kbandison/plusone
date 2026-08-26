@@ -1,5 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -9,9 +8,14 @@ import {
   googleManageUrl,
   isLive,
   liveSources,
+  statusGrants,
   stripeIsLive,
   type EntitlementRow,
 } from "./subscription-source";
+// One walker, taken from source-scan.ts. Two of them would be the same shape
+// of bug these tests exist to catch, one level up: two scanners, one skipping a
+// directory the other visits, and a rival sitting in the gap.
+import { SOURCE_ROOT, sourceFiles } from "./source-scan";
 
 /**
  * Sending somebody to the wrong store to cancel is a dead end with no error.
@@ -49,6 +53,19 @@ describe("whether a row is charging anybody", () => {
   it("does not count one whose term has run out", () => {
     expect(isLive(row({ expires_at: new Date(NOW - day).toISOString() }), NOW)).toBe(false);
     expect(isLive(row({ expires_at: null }), NOW)).toBe(false);
+  });
+});
+
+describe("which entitlement statuses buy anything", () => {
+  it("counts active and grace and nothing else", () => {
+    expect(statusGrants("active")).toBe(true);
+    // The one that is not obvious: the renewal payment failed and the store is
+    // retrying while keeping the member in service, so the row carries a PASSED
+    // expiry and still buys something.
+    expect(statusGrants("grace")).toBe(true);
+    for (const status of ["expired", "revoked", "paused", "", "unknown"]) {
+      expect(statusGrants(status)).toBe(false);
+    }
   });
 });
 
@@ -239,7 +256,6 @@ describe("the premium screen and the checkout door", () => {
  * decides which statuses count is THE bug, and it has to say `trialing` out
  * loud to do it.
  */
-const SOURCE_ROOT = join(import.meta.dirname, "..");
 
 /**
  * Where the rule is allowed to live. Being on this list is a claim that
@@ -247,16 +263,6 @@ const SOURCE_ROOT = join(import.meta.dirname, "..");
  * reason: an exception nobody has to justify stops being an exception.
  */
 const MAY_DECIDE_LIVENESS = ["lib/subscription-source.ts", "lib/subscription-source.test.ts"];
-
-function sourceFiles(dir: string, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".next") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) sourceFiles(path, acc);
-    else if (/\.tsx?$/.test(entry.name)) acc.push(path);
-  }
-  return acc;
-}
 
 describe("there is one implementation of whether Stripe is charging", () => {
   it("is the only place that decides which statuses count", () => {
@@ -282,5 +288,41 @@ describe("there is one implementation of whether Stripe is charging", () => {
     expect(stripeIsLive({ status: "active", current_period_end: null }, now)).toBe(true);
     expect(stripeIsLive({ status: "trialing", current_period_end: null }, now)).toBe(true);
     expect(stripeIsLive({ status: "canceled", current_period_end: null }, now)).toBe(false);
+  });
+});
+
+describe("there is one implementation of which statuses grant", () => {
+  /**
+   * Same sweep as the Stripe one above, for the other table.
+   *
+   * `iap-actions.ts` reported `premium: status === "active"` — a second reading
+   * of which statuses grant, correct only because `entitlementStatusOf` cannot
+   * currently return `grace`. Grace arrives through a server notification, not
+   * a transaction; the day that changes, that line would have told a member in
+   * a billing grace period they were not premium while the gate said they were.
+   *
+   * `grace` is the tell for the same reason `trialing` is above: a rival that
+   * only re-reads dates is a bug, but a rival that decides WHICH STATUSES COUNT
+   * cannot be written without naming that one out loud.
+   */
+  const MAY_DECIDE_GRANTS = [
+    "lib/subscription-source.ts",
+    "lib/subscription-source.test.ts",
+    // Decides when to WRITE grace, which is a different question from whether
+    // grace grants — it maps Apple's notification types onto a status and never
+    // asks what a status buys. On the list because somebody looked, not because
+    // the pattern was inconvenient.
+    "lib/app-store-notifications.ts",
+    "lib/app-store-notifications.test.ts",
+  ];
+
+  it("is the only place that decides which entitlement statuses count", () => {
+    const offenders = sourceFiles()
+      .filter((path) => !MAY_DECIDE_GRANTS.some((allowed) => path.endsWith(allowed)))
+      .filter((path) => /["']grace["']/.test(readFileSync(path, "utf8")))
+      .map((path) => path.slice(SOURCE_ROOT.length + 1));
+    expect(offenders, `a second reading of which statuses grant: ${offenders.join(", ")}`).toEqual(
+      [],
+    );
   });
 });

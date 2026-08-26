@@ -9,6 +9,7 @@ import {
   type AppStoreTransaction,
 } from "@/lib/app-store-jws";
 import { serviceClient } from "@/lib/cron";
+import { statusGrants } from "@/lib/subscription-source";
 import { getServerSupabase } from "@/lib/supabase";
 
 /**
@@ -144,7 +145,13 @@ export async function submitAppStoreTransaction(jws: string): Promise<IapResult>
   }
 
   revalidatePath("/app/settings/premium");
-  return { ok: true, premium: status === "active" };
+  // Not `status === "active"`. That is right only because
+  // `entitlementStatusOf` cannot currently return `grace` — it reads a
+  // transaction, and grace only arrives through a server notification. The day
+  // that changes, this would report `premium: false` to somebody the gate
+  // counts as premium, and the screen would draw them as unsubscribed. One
+  // reading of which statuses grant, shared with `isLive`.
+  return { ok: true, premium: statusGrants(status) };
 }
 
 /**

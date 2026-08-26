@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import fixture from "./app-store-jws.fixture.json";
+import { SOURCE_ROOT, filesMatching } from "./source-scan";
 import {
   APPLE_ROOT_CA_G3_SHA256,
   JwsError,
@@ -260,5 +261,50 @@ describe("the purchase action", () => {
     // §9.6. A rejected JWS is still a receipt, and a transaction id is an
     // identifier.
     expect(source).not.toMatch(/console\.(error|info|log)\([^)]*jws/);
+  });
+});
+
+/**
+ * The sweep, rather than another assertion about one file.
+ *
+ * Every source-reading test above pins the shape of a line in a file it was
+ * pointed at, and 2ab1de0 showed what that cannot see: a second implementation
+ * somewhere else. These are the two properties in this area where a rival would
+ * be a hole rather than an untidiness, asked of the whole tree.
+ */
+const read = (path: string) => readFileSync(path, "utf8");
+
+describe("no rival can undo what these files promise", () => {
+  it("keeps every binding to a member behind the one RPC", () => {
+    // record_iap_entitlement is what makes a purchase belong to one member and
+    // stay there: its update list has no user_id, so a replay moves the term
+    // and not the owner. An INSERT or UPSERT anywhere else is a second way to
+    // create that binding, and PostgREST's upsert writes every column it is
+    // given — which is precisely how the first version of this got it wrong.
+    //
+    // The notification route's UPDATE is fine and deliberately not matched: it
+    // can change a term, never create a row, so there is nobody it could bind.
+    const offenders = filesMatching(
+      /from\(["']iap_entitlements["']\)[\s\S]{0,400}?\.(insert|upsert)\(/,
+      ["lib/app-store-jws.test.ts"],
+      read,
+    );
+    expect(offenders, `a second way to bind a purchase: ${offenders.join(", ")}`).toEqual([]);
+  });
+
+  it("never verifies a signature without also checking whose app it is", () => {
+    // `verifyAppleJws` deliberately answers only "did Apple sign this". Apple's
+    // root anchors EVERY app on the store, so a transaction bought in somebody
+    // else's app is just as validly signed as one bought in ours — the identity
+    // check is what makes the signature mean anything here.
+    //
+    // Its docblock says each caller checks its own fields, and until now
+    // nothing held anyone to that. A third caller that verified and read the
+    // payload would be a hole with a green test suite above it.
+    const callers = filesMatching(/verifyAppleJws</, ["lib/app-store-jws.ts"], read);
+    const unchecked = callers.filter((path) => !/bundleId/.test(read(`${SOURCE_ROOT}/${path}`)));
+    expect(unchecked, `verifies without checking the bundle: ${unchecked.join(", ")}`).toEqual([]);
+    // And the sweep only means something if it is finding the callers at all.
+    expect(callers).toContain("lib/app-store-notifications.ts");
   });
 });
