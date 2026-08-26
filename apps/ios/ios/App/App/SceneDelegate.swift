@@ -8,7 +8,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CAPBridgeViewController()
+        // MainViewController, not CAPBridgeViewController — it is the same
+        // thing plus the StoreKit plugin registration. The template ships a
+        // Main.storyboard naming the bridge controller AND this line, which
+        // builds one directly and never reads that storyboard; editing the
+        // storyboard changes nothing, silently. Found the hard way: the plugin
+        // simply did not appear in Capacitor.PluginHeaders.
+        window?.rootViewController = MainViewController()
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)

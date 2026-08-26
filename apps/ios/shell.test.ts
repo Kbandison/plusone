@@ -216,6 +216,69 @@ describe("push can actually reach the app", () => {
   });
 });
 
+describe("the shell can sell the premium tier", () => {
+  const sceneDelegate = read("ios/App/App/SceneDelegate.swift");
+  const mainViewController = read("ios/App/App/MainViewController.swift");
+  const plugin = read("ios/App/App/StoreKitPlugin.swift");
+
+  /**
+   * Guideline 3.1.1 requires in-app purchase for a subscription unlocked inside
+   * the app, and `e8eee7d` correctly hid the Stripe checkout here without
+   * replacing it — so until StoreKit works the paid tier is unreachable in the
+   * shell. Every assertion below pins a step that failed silently while it was
+   * being built: none of them produced an error, a log line, or a rejected
+   * promise. They produced a plugin that was not there.
+   */
+  it("builds the root controller that registers the plugin", () => {
+    // The template ships BOTH a Main.storyboard naming a root controller and a
+    // SceneDelegate that builds one directly, and the scene delegate wins. An
+    // hour went into editing the storyboard, which is never read.
+    expect(sceneDelegate).toMatch(/rootViewController = MainViewController\(\)/);
+  });
+
+  /**
+   * `registerPluginType` — the call every guide shows — begins
+   * `if autoRegisterPlugins { return }`, and auto-registration is the default.
+   * It returns having done nothing, silently. From the page that looks like a
+   * plugin absent from `Capacitor.PluginHeaders` and a `nativePromise` that
+   * never settles: not a rejection, no timeout of its own, just silence.
+   */
+  it("registers by instance, because registering by type is a no-op", () => {
+    expect(mainViewController).toMatch(/registerPluginInstance\(PlusOneStoreKitPlugin\(\)\)/);
+    // The call, not the word — the comment above it names the trap on purpose.
+    expect(mainViewController).not.toMatch(/registerPluginType\(/);
+  });
+
+  /** A source file that is not in the build phase is not in the app — the same
+      way PrivacyInfo.xcprivacy was not, for the same reason. */
+  it("compiles both files into the app", () => {
+    const pbxproj = read("ios/App/App.xcodeproj/project.pbxproj");
+    expect(pbxproj).toMatch(/StoreKitPlugin\.swift in Sources/);
+    expect(pbxproj).toMatch(/MainViewController\.swift in Sources/);
+  });
+
+  /** The one string the two halves have to agree on, in two languages, in two
+      apps that deploy on different clocks. */
+  it("agrees with the web side on the plugin name", () => {
+    expect(plugin).toMatch(/let jsName = "PlusOneStoreKit"/);
+    const web = readFileSync(join(HERE, "..", "web", "src", "lib", "native-iap.ts"), "utf8");
+    expect(web).toMatch(/const PLUGIN = "PlusOneStoreKit"/);
+  });
+
+  /**
+   * A transaction is finished only after the server has granted. Finishing on
+   * receipt throws away StoreKit's redelivery, which is the only thing standing
+   * between "the grant request failed" and "they paid and got nothing".
+   */
+  it("does not finish a transaction at the point of purchase", () => {
+    const purchase = plugin.slice(
+      plugin.indexOf("func purchase"),
+      plugin.indexOf("// MARK: - Recovery"),
+    );
+    expect(purchase).not.toMatch(/\.finish\(\)/);
+  });
+});
+
 describe("the identity the App Store record gets", () => {
   /**
    * A bundle id cannot be changed once a listing exists — only abandoned, along
