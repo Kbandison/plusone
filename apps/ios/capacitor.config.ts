@@ -132,21 +132,29 @@ const config: CapacitorConfig = {
     /**
      * The keyboard, and why a plugin rather than nothing.
      *
-     * Measured in the Simulator on 2026-08-26, against a faithful copy of the
-     * chat screen's fixed composer and nav. With no plugin at all iOS DOES
-     * resize the web view when the keyboard opens — the composer stays visible
-     * and 79px clear, which is the failure this was expected to have and does
-     * not. What it does not do is put it back. After the keyboard closed,
-     * `window.innerHeight` stayed at 765 against a screen of 874 and never
-     * recovered, so the bottom nav sat off the foot of the screen and the
-     * composer was clipped by it. The app's only navigation, gone, after one
-     * message.
+     * Measured in the Simulator on 2026-08-26 against a faithful copy of the
+     * chat screen's fixed composer and nav. Two things came out of it and only
+     * ONE of them is what this setting is for.
      *
-     * `native` is the plugin's default and is named here for the same reason
-     * `contentInset` is: it is the setting that decides whether the web view is
-     * restored, and a later change to it should be a decision. It resizes the
-     * view itself, which keeps `env(safe-area-inset-*)` and the measured
-     * `--nav-h` meaning what they mean — `body` and `ionic` resize the document
+     * What it is for: with no plugin, `env(safe-area-inset-bottom)` stays at 34
+     * while the keyboard is up, so the nav goes on reserving room for a home
+     * indicator that is behind the keyboard and the composer floats 34px higher
+     * than it needs to. With the plugin the inset drops to 0 while the keyboard
+     * is up and returns to 34 after. That is the whole justification.
+     *
+     * What it is NOT for, and the reason this paragraph exists: the web view
+     * does not return to full height after the keyboard closes — 874 to 765,
+     * and it stays 765, which puts the bottom nav below the fold. That happens
+     * WITH THE PLUGIN AS WELL AS WITHOUT. An earlier version of this comment
+     * described it as the no-plugin behaviour and so read as the reason for
+     * adding the plugin, which would have been believed by the next person to
+     * touch this value. It is `BACKLOG.md` shells 13, unfixed, and waiting on a
+     * real device because the numbers come from a beta simulator runtime.
+     *
+     * `native` is the plugin's default and is named here for the reason
+     * `contentInset` is — a later change to it should be a decision. It resizes
+     * the view itself, which keeps `env(safe-area-inset-*)` and the measured
+     * `--nav-h` meaning what they mean; `body` and `ionic` resize the document
      * instead and would put the safe-area work back in question.
      */
     Keyboard: {
