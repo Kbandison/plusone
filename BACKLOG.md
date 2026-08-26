@@ -194,11 +194,27 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     with no fix; the Chrome and ChromeOS billing guides never mention base plans
     at all, and the DGA reference describes item ids as product ids throughout.
 
-    Two consequences to design around rather than discover:
-    - **No in-app tier change.** Cross-product upgrade needs the Billing
-      Library's `subscriptionUpdate`, which the DGA does not expose. Switching
-      tiers on Android is cancel-then-resubscribe. Worth saying out loud on the
-      premium screen rather than letting somebody find it.
+    **Correction, same day.** I first wrote here that three products meant no
+    in-app tier change and that switching was cancel-then-resubscribe. That is
+    wrong, and the right answer is better: the PaymentRequest `data` object
+    takes `oldSku` and `purchaseToken` for the subscription being replaced,
+    alongside the new `sku`, and Play performs a real cross-product replacement.
+    Nobody has to cancel anything, and the three-product shape costs nothing
+    here. What the DGA does not expose is the base plan, and only that.
+
+    One consequence, plus the mode to use:
+
+    - **The replacement mode is a product decision, not a default.**
+      `withTimeProration` is what you get if you say nothing: the switch happens
+      at once and unused time is credited by pushing the renewal date out. For
+      an UPGRADE that is right. For a DOWNGRADE — 6 months to 1 month — it is
+      not, because it takes effect immediately against money already paid; use
+      `deferred`, which switches at renewal and leaves the paid term alone.
+      Field renamed in android-browser-helper billing-1.1.0: `replacementMode`,
+      with `prorationMode` deprecated but still honoured, and the values renamed
+      with it (`chargeProratedPrice`, not `immediateAndChargeProratedPrice`).
+      The ChromeOS guide still documents the old pair, so it will read as though
+      it disagrees.
     - **Whatever ids Kevin creates are the ids forever.** A Play product id
       cannot be reused after deletion, exactly like Apple's. Record them on
       `PLANS` beside `appleProductId` — a _separate_ field, even if the strings
