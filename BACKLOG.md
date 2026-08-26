@@ -128,6 +128,21 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     not finish either — redelivery is the recovery, and
     `submitAppStoreTransactions` is the launch pass.
 
+    **A restore is not the launch pass, and the difference decides whether to
+    finish.** `nativeUnfinishedTransactions()` returns purchases StoreKit is
+    redelivering because nothing finished them, and those get finished on
+    `ok: true`. `nativeEntitlements()` returns what Apple currently considers
+    bought, and those are ALREADY finished — submit them to grant, then stop.
+    Calling `finishNativeTransaction` on one finds nothing, `native-iap.ts`
+    swallows the rejection and returns `false`, and code that reads that as
+    failure reports an error on a restore that worked.
+
+    Two answers to expect the first time restore is tested: a restore on a
+    SECOND Plus One account returns `"not_yours"`, which is the subscription
+    staying where it was bought rather than a bug; and any Sandbox purchase made
+    without `appAccountToken` returns `"unbound"` forever, because nothing binds
+    it — the only fix is to buy again with the token.
+
     **Still NOT done: no screen calls any of it**, which stays true until a
     purchase has been exercised end to end. `plan-buttons.tsx` renders nothing in
     the shell, which is the honest state rather than a half-wired one.
