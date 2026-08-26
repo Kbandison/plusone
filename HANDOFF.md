@@ -164,14 +164,14 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                        | since      |
-| ------- | --------------------------- | ---------- |
-| _macOS_ | shells 10 — universal links | 2026-08-26 |
-| _WSL_   | —                           | —          |
+| session | item | since |
+| ------- | ---- | ----- |
+| _macOS_ | —    | —     |
+| _WSL_   | —    | —     |
 
 ## Sessions
 
-### 2026-08-26 · macOS · StoreKit, pushed through `85315e8`
+### 2026-08-26 · macOS · StoreKit and universal links, pushed through `bf01efd`
 
 **Done and pushed.** The iOS shell has a StoreKit 2 plugin and the page has a
 wrapper for it (`native-iap.ts`). Reasoning is in the commit body and in
@@ -196,6 +196,19 @@ the UI half is quick.
 
 **Not verified, and cannot be from here:** an actual purchase. That needs a
 Sandbox tester on the iPad, which is a Kevin item now on his lane.
+
+**Universal links, both halves now done.** Your association file was already
+serving; the entitlement and a handler for it are in. Two things worth carrying:
+
+- **Capacitor posts a notification for a tapped link that nothing in core
+  listens to.** `@capacitor/app` is what normally does. Without a listener the
+  app opens on whatever page it last had and the link is lost — worse than the
+  Safari behaviour, because there is nothing to say a link was involved.
+- **Simulator builds are stripped of entitlements** — the `.xcent` is an empty
+  dict — so a domain can never be claimed there and a tap cannot be tested. Same
+  shape as push. It needs TestFlight, and iOS fetches the association file at
+  INSTALL, so a build already on the iPad needs reinstalling rather than
+  relaunching.
 
 **Left off clean.** Gates all five green, shell config restored to
 `https://www.loveplusone.app` and reinstalled on the simulator, probe server and

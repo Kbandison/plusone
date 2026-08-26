@@ -75,10 +75,22 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
    exists on disk, and a manifest outside the bundle is a file nobody reads.
    Checked against `privacy-labels.ts` in both directions by a test.
 
-10. **Universal links.** Without them a tapped notification, or an emailed link,
-    opens Safari — which has its own cookie jar, so it reads as being signed
-    out. The Associated Domains entitlement is this lane; the
-    `apple-app-site-association` half is the server lane.
+10. ~~**Universal links**~~ — both halves done 2026-08-26. The association file
+    has been serving since `c19268e` and the Associated Domains entitlement
+    landed in `bf01efd`, along with the bit nobody warns you about: Capacitor
+    posts a notification for a tapped link that **nothing in core listens to**,
+    so without a handler the app opens on whatever page it last had and the link
+    is simply lost.
+
+    The apex is deliberately unclaimed — it answers 308 and iOS does not follow
+    redirects when it fetches the file. Same trap as the TWA.
+
+    **The tap itself is unverified** and cannot be from a Simulator: simulator
+    builds are stripped of entitlements, so the domain is never claimed there.
+    It is in verification debt below. Note for whoever does it that iOS fetches
+    the association file at INSTALL, so a build installed before this change
+    needs a reinstall rather than a relaunch.
+
 11. **StoreKit — the native half is in; the purchase button is not.** Landed
     2026-08-26: `PlusOneStoreKitPlugin` in `apps/ios`, registered by
     `MainViewController`, wrapped for the page by `apps/web/src/lib/native-iap.ts`.
@@ -104,7 +116,11 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     fail silently, including a call to an unregistered plugin, which never
     settles rather than rejecting.
 
-12. **Verification debt.** What is left of it: the keyboard against the fixed
+12. **Verification debt.** What is left of it: a tapped universal link, which
+    needs a TestFlight build because a Simulator strips the entitlement that
+    claims the domain — tap a link to `https://www.loveplusone.app/app` from
+    Notes or Messages and it should open the app on that page rather than
+    Safari; the keyboard against the fixed
     composer (`bottom-[var(--nav-h)]` — the classic WKWebView failure is the
     inset staying applied when the keyboard is up), and the camera, which is the
     liveness gate, needs real hardware, and therefore waits on item 8. Dusk, the
@@ -174,7 +190,7 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    against a store-billing decision already made on the 24th. Branch it on
    `inNativeShell()`. Small, and independent of items 2–4, so it does not wait
    on App Store Connect.
-9. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
+9. ~~**`/.well-known/apple-app-site-association`**~~ — done, and serving 200 as `application/json` through no redirect. The entitlement half landed in `bf01efd`.
 10. ~~**The Android TWA**~~ — built and **uploaded 2026-08-26**.
     `apps/android/app-release-bundle.aab`, Bubblewrap against the manifest,
     signed with the upload key at `~/keys/plusone-upload.jks` (outside every
