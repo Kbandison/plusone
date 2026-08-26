@@ -177,6 +177,45 @@ describe("the permissions iOS kills the app for not declaring", () => {
   });
 });
 
+describe("push can actually reach the app", () => {
+  const appDelegate = read("ios/App/App/AppDelegate.swift");
+
+  /**
+   * iOS hands the APNs device token to the app delegate. The plugin listens for
+   * a NotificationCenter post. Nothing connects the two unless these methods
+   * exist, and the Capacitor template ships an AppDelegate with neither.
+   *
+   * Missing, push does not fail loudly — it fails as silence. `register()`
+   * succeeds, iOS produces a token, and hands it to a method nobody wrote; the
+   * `registration` event never fires and the settings screen says "that did not
+   * work" with nothing anywhere to say why. It cost a TestFlight build on a real
+   * iPad to find, because the Simulator never gets far enough to produce a token
+   * — every check before that one passed.
+   */
+  it("forwards the APNs token from the app delegate to the plugin", () => {
+    expect(appDelegate).toMatch(/didRegisterForRemoteNotificationsWithDeviceToken/);
+    expect(appDelegate).toMatch(/capacitorDidRegisterForRemoteNotifications/);
+  });
+
+  it("forwards the failure too, so a refusal is not silence either", () => {
+    expect(appDelegate).toMatch(/didFailToRegisterForRemoteNotificationsWithError/);
+    expect(appDelegate).toMatch(/capacitorDidFailToRegisterForRemoteNotifications/);
+  });
+
+  /**
+   * The entitlement iOS checks before it will hand over a token at all. It is
+   * `production` because that is what TestFlight and the App Store use, and it
+   * has to agree with APNS_ENVIRONMENT in Vercel — a token minted against one
+   * host is refused by the other with 400 BadDeviceToken.
+   */
+  it("claims the push entitlement the profile grants", () => {
+    const entitlements = read("ios/App/App/App.entitlements");
+    expect(entitlements).toMatch(/<key>aps-environment<\/key>\s*<string>production<\/string>/);
+    const pbxproj = read("ios/App/App.xcodeproj/project.pbxproj");
+    expect(pbxproj).toMatch(/CODE_SIGN_ENTITLEMENTS = App\/App\.entitlements;/);
+  });
+});
+
 describe("the identity the App Store record gets", () => {
   /**
    * A bundle id cannot be changed once a listing exists — only abandoned, along

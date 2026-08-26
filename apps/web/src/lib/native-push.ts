@@ -103,7 +103,16 @@ export async function registerForNativeToken(timeoutMs = 10_000): Promise<string
       resolve(token);
     };
 
-    const timer = setTimeout(() => finish(null), timeoutMs);
+    const timer = setTimeout(() => {
+      // Silence rather than an error, which is its own diagnosis: iOS accepted
+      // `register()` and then said nothing at all. That is what an AppDelegate
+      // which does not forward didRegisterForRemoteNotificationsWithDeviceToken
+      // looks like from here, and it cost a TestFlight round trip to find.
+      console.error(
+        JSON.stringify({ at: "push.native.register", problem: "no token before timeout" }),
+      );
+      finish(null);
+    }, timeoutMs);
 
     // Listeners before register(), or a token iOS answers from cache in the
     // same tick is delivered to nobody.
@@ -112,7 +121,16 @@ export async function registerForNativeToken(timeoutMs = 10_000): Promise<string
         finish((data as { value?: string } | undefined)?.value ?? null);
       }),
     );
-    handles.push(cap.addListener!(PLUGIN, "registrationError", () => finish(null)));
+    handles.push(
+      cap.addListener!(PLUGIN, "registrationError", (data) => {
+        // The reason, never the token. §9.6 — a device token is a device
+        // identifier and does not go in a log. The reason is APNs's own words
+        // and says nothing about the member.
+        const reason = (data as { error?: string } | undefined)?.error;
+        console.error(JSON.stringify({ at: "push.native.register", problem: reason ?? "unknown" }));
+        finish(null);
+      }),
+    );
 
     void cap.nativePromise?.(PLUGIN, "register", {}).catch(() => finish(null));
   });

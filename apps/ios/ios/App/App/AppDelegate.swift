@@ -33,6 +33,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    /**
+     * The two methods that carry the APNs device token from iOS to the plugin.
+     *
+     * Without them push does not fail loudly — it fails as silence. iOS calls
+     * these on the app delegate, @capacitor/push-notifications listens for the
+     * matching NotificationCenter posts, and the Capacitor template ships an
+     * AppDelegate that implements neither. So `register()` succeeds, iOS gets a
+     * token, and it is handed to a method nobody wrote. The `registration` event
+     * never fires, the JS side waits out its timeout, and the settings screen
+     * says "that did not work" with nothing anywhere to say why.
+     *
+     * Found on 2026-08-26 from a TestFlight build on a real iPad, which is the
+     * only place it CAN be found: the Simulator never gets far enough to
+     * produce a token, so every check before this one passed.
+     */
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications,
+                                        object: deviceToken)
+    }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications,
+                                        object: error)
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
