@@ -6,7 +6,12 @@ import { DRAFT_COPY, PLANS, parseClientEnv, type PlanId } from "@plusone/config"
 
 import { priceIdFor, stripe } from "@/lib/stripe";
 import { getServerSupabase } from "@/lib/supabase";
-import { alreadyPayingAStore, type EntitlementRow } from "@/lib/subscription-source";
+import {
+  alreadyPayingAStore,
+  stripeIsLive,
+  type EntitlementRow,
+  type StripeRow,
+} from "@/lib/subscription-source";
 import type { CheckoutState } from "./state";
 
 const C = DRAFT_COPY.app;
@@ -59,12 +64,7 @@ export async function startCheckout(
    * The liveness test is the one is_premium uses on the same table, so a row it
    * would count and a row this refuses on are the same rows.
    */
-  const status = existing?.status as string | undefined;
-  const periodEnd = existing?.current_period_end as string | undefined;
-  if (
-    (status === "active" || status === "trialing") &&
-    (!periodEnd || Date.parse(periodEnd) > Date.now())
-  ) {
+  if (stripeIsLive(existing as StripeRow | null, Date.now())) {
     return { error: C.premiumAlreadySubscribed };
   }
 

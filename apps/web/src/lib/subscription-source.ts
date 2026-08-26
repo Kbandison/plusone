@@ -60,6 +60,44 @@ export function isLive(row: EntitlementRow, now: number): boolean {
   return Boolean(row.expires_at) && Date.parse(row.expires_at!) > now;
 }
 
+/** One row of `subscriptions`, as both callers select it. */
+export interface StripeRow {
+  readonly status: string | null;
+  readonly current_period_end: string | null;
+}
+
+/**
+ * Is Stripe charging this member right now.
+ *
+ * One implementation because there were two, and they disagreed. The premium
+ * page read `Boolean(end) && Date.parse(end) > now`; `startCheckout` read
+ * `!end || Date.parse(end) > now`. Same question, opposite answers when the
+ * period end is null — one would have offered a plan chooser while the other
+ * refused the purchase behind it.
+ *
+ * Unreachable today: `subscriptions_paid_status_has_an_end` (20260816000100)
+ * forbids an active or trialing row without an end, which is why nobody
+ * noticed. Unreachable is not the same as harmless — the constraint is one
+ * migration away from not existing, and by then the two readings would be in
+ * three places, since the shell's purchase guard now takes this as a prop.
+ *
+ * The surviving semantic is `is_premium()`'s, verbatim:
+ *
+ *   status in ('active','trialing')
+ *   and (current_period_end is null or current_period_end > now())
+ *
+ * Deliberately, and for the same reason `isLive` matches it below: a row the
+ * gate counts and a row this screen offers to manage must be the same rows. It
+ * also fails in the safe direction if the constraint ever goes — treating a
+ * null end as live refuses a second subscription, where the other reading sells
+ * one to somebody already being charged.
+ */
+export function stripeIsLive(row: StripeRow | null | undefined, now: number): boolean {
+  if (!row) return false;
+  if (row.status !== "active" && row.status !== "trialing") return false;
+  return !row.current_period_end || Date.parse(row.current_period_end) > now;
+}
+
 export interface LiveSource {
   readonly source: SubscriptionSource;
   readonly productId?: string;
@@ -80,12 +118,16 @@ export interface LiveSource {
  * Stripe first because it is the one we can actually cancel on their behalf.
  */
 export function liveSources(
-  stripeIsLive: boolean,
+  // Named for what it is rather than for the function that computes it. As
+  // `stripeIsLive` it shadowed that function inside this scope, which is a
+  // small thing until a rename elsewhere needs to find every use of one and
+  // not the other.
+  stripeCharging: boolean,
   entitlements: readonly EntitlementRow[],
   now: number,
 ): LiveSource[] {
   const out: LiveSource[] = [];
-  if (stripeIsLive) out.push({ source: "stripe" });
+  if (stripeCharging) out.push({ source: "stripe" });
 
   for (const row of entitlements) {
     if (!isLive(row, now)) continue;

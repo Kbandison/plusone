@@ -239,10 +239,15 @@ describe("the transport forgets only what is really gone", () => {
    */
   it("refuses a checkout from somebody who already subscribes", () => {
     const actions = withoutComments(read("src/app/app/settings/premium/actions.ts"));
-    // The same liveness test is_premium uses on the same table, so a row it
-    // would count and a row this refuses on are the same rows.
-    expect(actions).toMatch(/status === "active" \|\| status === "trialing"/);
-    expect(actions).toMatch(/Date\.parse\(periodEnd\) > Date\.now\(\)/);
+    // Through the one liveness function, not an expression written out here.
+    //
+    // This used to pin the inline `status === "active" || ...` and the
+    // Date.parse beside it, and that was pinning the wrong thing: the premium
+    // page had its OWN copy of the same test which disagreed about a null
+    // period end, and an assertion on this file's text could not see it.
+    // `stripeIsLive` is the single reading now and subscription-source.test.ts
+    // covers what it answers, including the case the two used to differ on.
+    expect(actions).toMatch(/stripeIsLive\(existing as StripeRow \| null, Date\.now\(\)\)/);
     expect(actions).toMatch(/premiumAlreadySubscribed/);
 
     // NOT is_premium(). That is true for a referral grant too, and somebody

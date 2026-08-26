@@ -10,7 +10,13 @@ import {
 } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
-import { isLive, liveSources, type EntitlementRow } from "@/lib/subscription-source";
+import {
+  isLive,
+  liveSources,
+  stripeIsLive,
+  type EntitlementRow,
+  type StripeRow,
+} from "@/lib/subscription-source";
 import { ManageBilling, PlanChooser } from "./plan-buttons";
 import { ManageStoreSubscription } from "./manage-store";
 import { redirect } from "next/navigation";
@@ -104,13 +110,9 @@ export default async function PremiumPage() {
    * asking whether a row exists, so a lapsed subscription does not offer a
    * billing portal to somebody who is premium from a referral grant instead.
    */
-  const stripeStatus = subscription?.status as string | undefined;
   const stripeEnd = subscription?.current_period_end as string | undefined;
-  const stripeIsLive =
-    (stripeStatus === "active" || stripeStatus === "trialing") &&
-    Boolean(stripeEnd) &&
-    Date.parse(stripeEnd!) > now;
-  const sources = liveSources(stripeIsLive, (entitlements ?? []) as EntitlementRow[], now);
+  const stripeLive = stripeIsLive(subscription as StripeRow | null, now);
+  const sources = liveSources(stripeLive, (entitlements ?? []) as EntitlementRow[], now);
   const storeSources = sources.filter((s) => s.source !== "stripe");
 
   // The store's expiry counts too, or a member who bought in the app is told
@@ -171,7 +173,7 @@ export default async function PremiumPage() {
             </p>
           ) : null}
 
-          {stripeIsLive ? (
+          {stripeLive ? (
             <>
               {sources.length > 1 ? (
                 <p className="mt-4 text-[11.7px] text-ink-3">{C.premiumFromStripe}</p>
@@ -188,7 +190,7 @@ export default async function PremiumPage() {
         /* userId for the appAccountToken that binds an Apple ID's
            subscription to this account; stripeIsLive so the shell refuses to
            sell a second subscription to somebody already being charged. */
-        <PlanChooser userId={auth.user.id} alreadyPayingStripe={stripeIsLive} />
+        <PlanChooser userId={auth.user.id} alreadyPayingStripe={stripeLive} />
       )}
 
       <section className="mt-14">

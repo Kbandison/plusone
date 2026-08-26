@@ -8,6 +8,7 @@ import {
   googleManageUrl,
   isLive,
   liveSources,
+  stripeIsLive,
   type EntitlementRow,
 } from "./subscription-source";
 
@@ -47,6 +48,52 @@ describe("whether a row is charging anybody", () => {
   it("does not count one whose term has run out", () => {
     expect(isLive(row({ expires_at: new Date(NOW - day).toISOString() }), NOW)).toBe(false);
     expect(isLive(row({ expires_at: null }), NOW)).toBe(false);
+  });
+});
+
+describe("whether Stripe is charging", () => {
+  const sub = (status: string | null, end: string | null) => ({
+    status,
+    current_period_end: end,
+  });
+  const future = new Date(NOW + 30 * day).toISOString();
+  const past = new Date(NOW - day).toISOString();
+
+  it("counts an active or trialing subscription with time left", () => {
+    expect(stripeIsLive(sub("active", future), NOW)).toBe(true);
+    expect(stripeIsLive(sub("trialing", future), NOW)).toBe(true);
+  });
+
+  it("stops at the period end", () => {
+    expect(stripeIsLive(sub("active", past), NOW)).toBe(false);
+  });
+
+  it("ignores a row that has stopped billing, however recent", () => {
+    // The regression 30f26a2 fixed: a subscriptions row outlives the billing by
+    // months, so `subscription ? ...` offered a billing portal to somebody
+    // premium from a referral grant for a subscription that had ended.
+    for (const status of ["canceled", "past_due", "incomplete", "unpaid", null]) {
+      expect(stripeIsLive(sub(status, future), NOW)).toBe(false);
+    }
+  });
+
+  it("has no subscription at all to be live", () => {
+    expect(stripeIsLive(null, NOW)).toBe(false);
+    expect(stripeIsLive(undefined, NOW)).toBe(false);
+  });
+
+  it("reads a null period end the way is_premium does", () => {
+    // THE case the two implementations disagreed on. The page read
+    // `Boolean(end) && ...` and the action read `!end || ...`, so one would
+    // have drawn a plan chooser while the other refused the purchase behind it.
+    //
+    // Unreachable while subscriptions_paid_status_has_an_end stands, and the
+    // surviving reading is the SQL gate's — which also fails safe if that
+    // constraint ever goes, because refusing a second subscription is the
+    // recoverable mistake and selling one to somebody already charged is not.
+    expect(stripeIsLive(sub("active", null), NOW)).toBe(true);
+    // And a status that grants nothing is still nothing, end or no end.
+    expect(stripeIsLive(sub("canceled", null), NOW)).toBe(false);
   });
 });
 
@@ -139,8 +186,19 @@ describe("the premium screen and the checkout door", () => {
     // `subscription ? <ManageBilling/>` was the old test, and a row exists long
     // after it stops billing — so a lapsed subscriber premium from a grant was
     // offered a portal for a subscription that had ended.
-    expect(page).toMatch(/stripeIsLive \? \(/);
+    expect(page).toMatch(/stripeLive \? \(/);
     expect(page).not.toMatch(/\{subscription \? <ManageBilling \/> : null\}/);
+  });
+
+  it("asks the one liveness function rather than inlining a second reading", () => {
+    // There were two, disagreeing on the null period end. The shell's purchase
+    // guard now takes this value as a prop, so a third reading would have been
+    // three places to keep in step.
+    expect(page).toMatch(/stripeIsLive\(subscription as StripeRow \| null, now\)/);
+    expect(actions).toMatch(/stripeIsLive\(existing as StripeRow \| null, Date\.now\(\)\)/);
+    for (const source of [page, actions]) {
+      expect(source).not.toMatch(/status === "trialing"/);
+    }
   });
 
   it("checks the store door in the action and not only in the page", () => {
