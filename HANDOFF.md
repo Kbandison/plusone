@@ -173,14 +173,14 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                     | since      |
-| ------- | ---------------------------------------- | ---------- |
-| _macOS_ | shells 12 — the keyboard vs the composer | 2026-08-26 |
-| _WSL_   | —                                        | —          |
+| session | item | since |
+| ------- | ---- | ----- |
+| _macOS_ | —    | —     |
+| _WSL_   | —    | —     |
 
 ## Sessions
 
-### 2026-08-26 · macOS · StoreKit and universal links, pushed through `bf01efd`
+### 2026-08-26 · macOS · StoreKit, universal links, the keyboard — through `69097b3`
 
 **Done and pushed.** The iOS shell has a StoreKit 2 plugin and the page has a
 wrapper for it (`native-iap.ts`). Reasoning is in the commit body and in
@@ -218,6 +218,38 @@ serving; the entitlement and a handler for it are in. Two things worth carrying:
   shape as push. It needs TestFlight, and iOS fetches the association file at
   INSTALL, so a build already on the iPad needs reinstalling rather than
   relaunching.
+
+**Universal links work on the iPad** — Kevin confirmed a link from Notes opens
+the app. It needed **build 1.0 (4)**, uploaded from here. The trap: an
+entitlement is read out of the app, so the build already on a device can never
+claim a domain however often it is reinstalled. It needs replacing, not
+reinstalling, and the first note written about this got that wrong.
+
+**`ExportOptions.plist` is in the repo now.** `apps/ios/README.md` has described
+it since the first TestFlight build and it only ever existed in someone's
+`/tmp`, so the documented archive command has been failing for anybody following
+it. `destination: upload` sends the build straight up on the Xcode Apple ID —
+no API key, no Transporter.
+
+**The keyboard is measured, and it is not what the list said.** The composer
+does NOT vanish behind the keyboard — iOS resizes the web view even with no
+plugin. The predicted bug is real though: the safe-area inset stays applied with
+the keyboard up, so the nav reserves 34px for a home indicator that is behind
+the keyboard. `@capacitor/keyboard` at `resize: native` fixes it.
+
+**One thing found and deliberately not fixed** — backlog shells 13. The web view
+never returns to full height after the keyboard closes (874 -> 765, and it stays
+765), which puts the nav off the bottom of the screen. It happens with and
+without the plugin. **Please do not build a workaround for it from the numbers
+alone**: this runtime is Xcode 27 beta 6 and the keyboard was dismissed
+programmatically. It wants a person and an iPad first.
+
+**How to script the shell, worth reusing.** Point `server.url` at a local page
+that measures what you want and renders it, then `simctl io screenshot`. Two
+things that cost time: measure **after layout settles**, because a reading
+during first paint reports a safe-area inset of nought; and pin the readout
+somewhere that stays visible — a panel at `top: 0` scrolls off the moment the
+keyboard opens, which is itself the thing under test.
 
 **Left off clean.** Gates all five green, shell config restored to
 `https://www.loveplusone.app` and reinstalled on the simulator, probe server and

@@ -1,5 +1,60 @@
 # Project Updates
 
+## 2026-08-26 — The keyboard, and a bug that was not the one on the list
+
+The keyboard against the chat composer has been on the verification list since
+the shell existed, with a prediction attached: that the safe-area inset would
+stay applied while the keyboard was up. Measured today, and the list was half
+right in a way worth recording, because both halves change what to do next.
+
+**The frightening one does not happen.** The composer is `position: fixed` above
+a fixed nav, and the obvious fear is that the keyboard covers the box you are
+typing in. It does not — iOS resizes the web view when the keyboard opens, with
+no plugin and nothing configured, and the composer stays visible and clear of
+it. That fear had been carried for two weeks and cost nothing to put down.
+
+**The predicted one is real and is fixed.** `env(safe-area-inset-bottom)` stays
+at 34 with the keyboard up, so the nav goes on reserving room for a home
+indicator that is behind the keyboard. `@capacitor/keyboard` at `resize: native`
+drops it to nought while the keyboard is up and restores it after. A plugin was
+added here only after core was shown not to do it, which is the same test that
+found the problem.
+
+**And a third, which is not fixed on purpose.** The web view never returns to
+full height after the keyboard closes: 874 to 765, and it stays at 765. Fixed
+positioning goes back to resolving against 874, so the bottom nav — the app's
+only navigation — ends up below what the member can see. It happens with and
+without the plugin.
+
+The reason it is written down rather than worked around is that every number
+comes from a beta simulator runtime, and the keyboard was dismissed by script
+rather than by a person. A workaround for that would touch the safe-area layout
+measured on the 25th, on the strength of a maybe. It is in the backlog with the
+numbers, the caveats, and the shape a fix would take if the iPad agrees.
+
+### Universal links, confirmed
+
+A tapped link opens the app rather than Safari — confirmed on the iPad the same
+day the entitlement landed.
+
+It took a new build to see it, and that is the part worth keeping. The first
+attempt opened the website, which read as a failure and was not one: an
+entitlement is read out of the app itself, so the build already installed could
+never claim a domain however many times it was reinstalled. Reinstalling does
+not fix a missing entitlement; only replacing the build does. The note written
+before the test said "reinstall" and was wrong.
+
+### A documented command that never worked
+
+`ExportOptions.plist` has been described in `apps/ios/README.md` since the first
+TestFlight build and was never in the repository — it existed in one session's
+`/tmp` and went away with it. Anybody following the documented archive
+instructions would have had them fail. It is committed now.
+
+There is a general shape to that: a file created outside the repo to make one
+command work is a file the next person does not have, and documentation that
+names it will read as correct right up until somebody tries it.
+
 ## 2026-08-26 — Half a purchase flow, and why it stops there
 
 The shell can now talk to StoreKit. It still cannot sell anything, and that is

@@ -85,11 +85,12 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     The apex is deliberately unclaimed — it answers 308 and iOS does not follow
     redirects when it fetches the file. Same trap as the TWA.
 
-    **The tap itself is unverified** and cannot be from a Simulator: simulator
-    builds are stripped of entitlements, so the domain is never claimed there.
-    It is in verification debt below. Note for whoever does it that iOS fetches
-    the association file at INSTALL, so a build installed before this change
-    needs a reinstall rather than a relaunch.
+    **Confirmed on hardware 2026-08-26**: Kevin tapped a link from Notes on the
+    iPad and it opened the app rather than Safari. It took build **1.0 (4)** to
+    do it — the entitlement is read out of the app, so the build that was on the
+    iPad could never have claimed anything however often it was reinstalled.
+    That is the trap worth keeping: a missing entitlement is not fixed by a
+    reinstall, only by a new build.
 
 11. **StoreKit — the native half is in; the purchase button is not.** Landed
     2026-08-26: `PlusOneStoreKitPlugin` in `apps/ios`, registered by
@@ -123,16 +124,41 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     fail silently, including a call to an unregistered plugin, which never
     settles rather than rejecting.
 
-12. **Verification debt.** What is left of it: a tapped universal link, which
-    needs a TestFlight build because a Simulator strips the entitlement that
-    claims the domain — tap a link to `https://www.loveplusone.app/app` from
-    Notes or Messages and it should open the app on that page rather than
-    Safari; the keyboard against the fixed
-    composer (`bottom-[var(--nav-h)]` — the classic WKWebView failure is the
-    inset staying applied when the keyboard is up), and the camera, which is the
-    liveness gate, needs real hardware, and therefore waits on item 8. Dusk, the
-    offline page and both bottom sheets were cleared on 2026-08-25; what Dusk
-    turned up is now item 1.
+12. **Verification debt.** What is left of it is **the camera** — the liveness
+    gate, which needs real hardware and now has some, so it is doable rather
+    than blocked.
+
+    Cleared 2026-08-26: the tapped universal link, confirmed by Kevin on the
+    iPad against build 1.0 (4) — it opens the app instead of Safari. And the
+    keyboard against the fixed composer, measured in the Simulator; what that
+    turned up is item 13 and the fix in `69097b3`. Dusk, the offline page and
+    both bottom sheets were cleared on 2026-08-25; what Dusk turned up is item 1.
+
+13. **The web view does not come back after the keyboard closes.** Found while
+    measuring item 12 and NOT fixed, because a workaround built on one beta
+    simulator would be worse than the bug.
+
+    `window.innerHeight` drops from 874 to 765 when the keyboard opens, which is
+    correct and is what keeps the composer visible. It stays at 765 after the
+    keyboard closes. Fixed positioning goes back to resolving against 874, so
+    the nav — the app's only navigation — is laid out below the bottom of what
+    the member can see, and the composer is clipped by about 30px. Present with
+    and without `@capacitor/keyboard`, so the plugin is not the cause and was
+    not the cure.
+
+    **Confirm it on the iPad before designing anything.** Two things could make
+    it an artifact: the runtime is Xcode 27 beta 6's, and the keyboard was
+    dismissed with a programmatic `blur()` rather than by a person. If it is
+    real, the shape of a fix is driving the composer and nav from
+    `visualViewport` rather than trusting `position: fixed` to be restored —
+    which touches layout that was carefully measured on the 25th, and is
+    therefore not a change to make on a maybe.
+
+    The probe that produced the numbers is worth rebuilding rather than
+    remembering: a copy of the chat screen's composer and nav, a readout pinned
+    just above the composer, and measurements taken **after layout settles** —
+    a reading during first paint reports a safe-area inset of nought and would
+    have been written up as a bug that is not there.
 
 ## Lane: server and schema (WSL session)
 
