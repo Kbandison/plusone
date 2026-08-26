@@ -1,5 +1,6 @@
 import "server-only";
 
+import { parseClientEnv } from "@plusone/config";
 import { notify } from "@plusone/logic";
 
 import { serviceClient } from "./cron";
@@ -67,7 +68,22 @@ export function emailNotifier(): notify.Notifier {
       const addressOf = new Map<string, string>();
       for (const row of (data ?? []) as Recipient[]) addressOf.set(row.user_id, row.email);
 
-      const appUrl = process.env["NEXT_PUBLIC_APP_URL"] ?? "";
+      /**
+       * Parsed rather than read, so a missing origin is loud.
+       *
+       * This was `?? ""`, which turns an unset variable into a RELATIVE link at
+       * the foot of an email — `/app`, which means nothing in an inbox and
+       * nothing a member can click. The schema types it as an origin and every
+       * other server caller goes through parseClientEnv; this was the one that
+       * did not, and it degraded silently in the direction nobody would see
+       * until a member complained about a dead link.
+       *
+       * 6c60f63 is why this is not hypothetical. NEXT_PUBLIC_APP_URL pointed at
+       * a host that answers 404 for long enough that email would have shipped a
+       * broken link in every notification — a wrong origin and a missing one
+       * fail the same way, and only one of them was going to be noticed.
+       */
+      const { NEXT_PUBLIC_APP_URL: appUrl } = parseClientEnv(process.env);
 
       const messages: { to: string; subject: string; text: string }[] = [];
       let unreachable = 0;
