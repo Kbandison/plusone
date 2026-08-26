@@ -57,10 +57,15 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    Simulator and nothing else — no device, no TestFlight. Item 2's device test
    and the camera check in item 11 both sit behind it. Needs the Team ID, Kevin
    lane.
-9. **No `PrivacyInfo.xcprivacy` for the App target.** Capacitor ships one for
-   its own frameworks; the app needs its own, declaring required-reason API use
-   and what it collects. Rejected at upload without it, and this app collects
-   the categories Apple looks hardest at.
+9. ~~**A privacy manifest for the App target**~~ — done 2026-08-26.
+   `PrivacyInfo.xcprivacy` declares eleven data types, tracking false, and no
+   required-reason APIs (the app target's own Swift is the untouched Capacitor
+   template and uses none; Capacitor's frameworks carry their own manifests,
+   both empty). Wired into the Resources build phase by hand and verified
+   present inside the built `.app` — Xcode does not add a file that merely
+   exists on disk, and a manifest outside the bundle is a file nobody reads.
+   Checked against `privacy-labels.ts` in both directions by a test.
+
 10. **Universal links.** Without them a tapped notification, or an emailed link,
     opens Safari — which has its own cookie jar, so it reads as being signed
     out. The Associated Domains entitlement is this lane; the

@@ -300,3 +300,29 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   created_at: "operational",
   updated_at: "operational",
 };
+
+/**
+ * Apple's literal constants for the manifest, one per declared category.
+ *
+ * Verified against Apple's own documentation JSON on 2026-08-26 rather than
+ * recalled — the list is not guessable. `NSPrivacyCollectedDataTypePhotosorVideos`
+ * really does spell "or" in lowercase, and a value Apple does not recognise is
+ * not a warning: `PrivacyInfo.xcprivacy` is read by App Store Connect at upload.
+ *
+ * Kept beside the declarations so the manifest cannot drift from them —
+ * privacy-labels.test.ts checks the shipped file against this map in both
+ * directions.
+ */
+export const MANIFEST_DATA_TYPE: Readonly<Record<AppleDataCategory, string>> = {
+  "Health & Fitness → Health": "NSPrivacyCollectedDataTypeHealth",
+  "Sensitive Info": "NSPrivacyCollectedDataTypeSensitiveInfo",
+  "Contact Info → Name": "NSPrivacyCollectedDataTypeName",
+  "Contact Info → Email Address": "NSPrivacyCollectedDataTypeEmailAddress",
+  "Contact Info → Phone Number": "NSPrivacyCollectedDataTypePhoneNumber",
+  "Location → Coarse Location": "NSPrivacyCollectedDataTypeCoarseLocation",
+  "User Content → Photos or Videos": "NSPrivacyCollectedDataTypePhotosorVideos",
+  "User Content → Audio Data": "NSPrivacyCollectedDataTypeAudioData",
+  "User Content → Other User Content": "NSPrivacyCollectedDataTypeOtherUserContent",
+  "Identifiers → User ID": "NSPrivacyCollectedDataTypeUserID",
+  Purchases: "NSPrivacyCollectedDataTypePurchaseHistory",
+};

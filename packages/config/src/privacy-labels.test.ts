@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  MANIFEST_DATA_TYPE,
   NOT_COLLECTED,
   PRIVACY_LABELS,
   PROFILE_COLUMN_CLASSIFICATION,
@@ -168,5 +169,72 @@ describe("the answers that a later change could quietly reverse", () => {
   it.each(PRIVACY_LABELS)("justifies $category", (label) => {
     expect(label.justifiedBy.length).toBeGreaterThan(0);
     expect(label.what.length).toBeGreaterThan(10);
+  });
+});
+
+describe("the iOS privacy manifest matches the declarations", () => {
+  /**
+   * `PrivacyInfo.xcprivacy` is a second copy of the same statement, in Apple's
+   * vocabulary, read by App Store Connect at upload. Two copies of one truth is
+   * exactly the arrangement that drifts, so this checks both directions rather
+   * than only that the manifest is non-empty.
+   */
+  const manifest = readFileSync(`${ROOT}apps/ios/ios/App/App/PrivacyInfo.xcprivacy`, "utf8");
+  const declared = [
+    ...manifest.matchAll(/<string>(NSPrivacyCollectedDataType[A-Za-z]+)<\/string>/g),
+  ]
+    .map((m) => m[1] as string)
+    .filter((v) => !v.startsWith("NSPrivacyCollectedDataTypePurpose"));
+
+  it.each(PRIVACY_LABELS)("declares $category in the manifest", (label) => {
+    const constant = MANIFEST_DATA_TYPE[label.category];
+    expect(constant, `${label.category} has no Apple constant mapped`).toBeTruthy();
+    expect(
+      declared,
+      `${constant} is declared in privacy-labels.ts but missing from the manifest`,
+    ).toContain(constant);
+  });
+
+  /** And nothing in the manifest that the declarations do not cover. */
+  it("declares nothing the labels do not", () => {
+    const known = new Set(Object.values(MANIFEST_DATA_TYPE));
+    for (const constant of declared) {
+      expect(
+        known.has(constant),
+        `the manifest declares ${constant}, which nothing here claims`,
+      ).toBe(true);
+    }
+  });
+
+  /**
+   * Tracking is the answer that decides whether the app needs an ATT prompt, and
+   * it is stated in two files. They cannot be allowed to disagree.
+   */
+  it("agrees with TRACKING about tracking", () => {
+    expect(manifest).toMatch(/<key>NSPrivacyTracking<\/key>\s*<false\/>/);
+    expect(TRACKING.used).toBe(false);
+  });
+
+  /** Everything is linked, nothing is for tracking, all of it is functionality. */
+  it("marks every entry linked, untracked, and app-functionality", () => {
+    const entries = manifest.split("<key>NSPrivacyCollectedDataType</key>").slice(1);
+    expect(entries).toHaveLength(PRIVACY_LABELS.length);
+    for (const entry of entries) {
+      expect(entry).toMatch(/<key>NSPrivacyCollectedDataTypeLinked<\/key>\s*<true\/>/);
+      expect(entry).toMatch(/<key>NSPrivacyCollectedDataTypeTracking<\/key>\s*<false\/>/);
+      expect(entry).toContain("NSPrivacyCollectedDataTypePurposeAppFunctionality");
+    }
+  });
+
+  /**
+   * A manifest that is not in the Resources build phase is not in the bundle,
+   * and a manifest that is not in the bundle is a file nobody reads. It had to
+   * be wired into project.pbxproj by hand; Xcode will not do it for a file that
+   * merely exists on disk.
+   */
+  it("is actually shipped in the app bundle", () => {
+    const pbxproj = readFileSync(`${ROOT}apps/ios/ios/App/App.xcodeproj/project.pbxproj`, "utf8");
+    expect(pbxproj).toMatch(/PrivacyInfo\.xcprivacy in Resources/);
+    expect(pbxproj).toMatch(/isa = PBXFileReference;[^}]*path = PrivacyInfo\.xcprivacy/);
   });
 });
