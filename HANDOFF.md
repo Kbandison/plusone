@@ -83,6 +83,23 @@ Keep it short. If a section has been true and unread for a month, delete it.
 - **A modern Xcode ships with no simulator to run.** `xcodebuild -downloadPlatform iOS`
   is a second, much larger download, and nothing warns you — `simctl list
 runtimes` just comes back empty.
+- **The WebView is not inspectable unless you build with `CAPACITOR_DEBUG=true`.**
+  Capacitor arrives as a prebuilt SPM xcframework, so its own `#if DEBUG` is
+  false however you build the app; it falls back to a `CAPACITOR_DEBUG` key in
+  Info.plist, which is `$(CAPACITOR_DEBUG)` and empty unless passed. Without it
+  `ios_webkit_debug_proxy` lists no pages at all on every socket, which reads as
+  the proxy being broken.
+- **There is a simpler way to script the shell than the proxy.** Point
+  `server.url` in `ios/App/App/capacitor.config.json` at a local page that runs
+  the checks and renders the answers, then `simctl io screenshot`. No inspector,
+  no Target-domain wrapping, and the result is a picture you can put in a commit.
+  Restore the config and reinstall afterwards. The proxy is still the only way
+  to drive a page you did not write.
+- **An unanswered system permission alert survives uninstall.** It is presented
+  by SpringBoard, so reinstalling the app re-presents it over whatever runs next
+  — including a bare page with no push code, which is exactly how it reads as a
+  regression that does not exist. `simctl shutdown` then `boot` clears it.
+
 - **`CAP_SERVER_URL` takes a path, not just an origin**, and `http://localhost`
   works (ATS exempts loopback). The reason the path matters is in the
   `allowNavigation` comment in `apps/ios/capacitor.config.ts`.
@@ -134,12 +151,42 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                   | since      |
-| ------- | -------------------------------------- | ---------- |
-| _macOS_ | shells 11 — the StoreKit purchase flow | 2026-08-26 |
-| _WSL_   | —                                      | —          |
+| session | item | since |
+| ------- | ---- | ----- |
+| _macOS_ | —    | —     |
+| _WSL_   | —    | —     |
 
 ## Sessions
+
+### 2026-08-26 · macOS · StoreKit, pushed through `85315e8`
+
+**Done and pushed.** The iOS shell has a StoreKit 2 plugin and the page has a
+wrapper for it (`native-iap.ts`). Reasoning is in the commit body and in
+`PROJECT_UPDATES.md`; what is worth carrying here is that all three things that
+went wrong were silent, and one of them is a Capacitor trap anybody adding a
+local plugin will hit:
+
+- **`registerPluginType` starts `if autoRegisterPlugins { return }`.** It is the
+  call every guide shows and auto-registration is the default, so it does
+  nothing, logs nothing, and returns. Use `registerPluginInstance`.
+- **`SceneDelegate` builds the root view controller directly**, and the template
+  also ships a `Main.storyboard` naming one. The line wins; the storyboard is
+  never read. An edit there looks correct and changes nothing.
+- **A call to an unregistered plugin never settles.** No rejection, no error —
+  the page just waits, which sends you looking at your own promise code.
+
+**Deliberately unwired.** No screen calls any of it. Nothing yet verifies a
+transaction or writes `iap_entitlements`, so a buy button today would take money
+and grant nothing. The seam is written up as **server lane 13** with the exact
+payload — it is a small piece and it is in your lane, and the moment it exists
+the UI half is quick.
+
+**Not verified, and cannot be from here:** an actual purchase. That needs a
+Sandbox tester on the iPad, which is a Kevin item now on his lane.
+
+**Left off clean.** Gates all five green, shell config restored to
+`https://www.loveplusone.app` and reinstalled on the simulator, probe server and
+proxy stopped.
 
 ### 2026-08-25 (later still) · macOS · status bar
 
@@ -158,31 +205,6 @@ all four combinations in the Simulator.
 
 **Left off clean.** Dev server stopped, proxy stopped, shell config restored and
 reinstalled on both simulators, simulator appearance back to light.
-
-### 2026-08-25 (later) · macOS · the safe-area check closed out
-
-**Done.** Both bottom sheets measured open in the shell, plus Dusk and the
-offline page. The tool that unstuck it is worth knowing about: `simctl` cannot
-inject a tap, but Capacitor sets `isInspectable` on DEBUG builds, so
-`ios-webkit-debug-proxy` can drive the WKWebView over WebKit's remote protocol
-and evaluate JavaScript in it. That is how anything in this shell gets scripted.
-
-Two things about it that cost time:
-
-- The simulator's inspector socket is under **`/private/var/tmp/com.apple.launchd.*/`**,
-  not `/private/tmp`, and there is one per runtime — most of them answer with an
-  empty page list. Find the live one by trying each.
-- WebKit does **not** accept bare `Runtime.evaluate`. Everything is wrapped in
-  the `Target` domain: `Target.setPauseOnStart`, wait for `Target.targetCreated`
-  to learn the id, then `Target.sendMessageToTarget`, and replies come back
-  inside `Target.dispatchMessageFromTarget`.
-- **Measure sheets after the animation settles.** A reading taken straight after
-  `showModal()` had the sheet 24px below the viewport and reported a false
-  failure; three seconds later it was flush and correct.
-
-**Left off clean.** Seeds removed, `check:seed` green, shell config restored to
-`https://www.loveplusone.app` and reinstalled on both simulators, proxy stopped,
-simulator appearance back to light.
 
 ### 2026-08-25 (later) · WSL · pushed through `e8eee7d`
 
@@ -212,41 +234,3 @@ anything renders, say so here and I will take it back.
 (email defaults, badge counting, `RESEND_FROM`), and server items 2–4, which
 genuinely wait on App Store Connect having products — building the entitlement
 columns before then is guessing at a schema.
-
-### 2026-08-25 · macOS · pushed through `d4f2a52`
-
-**Done and pushed.** The Capacitor iOS target exists and runs
-(`33e7888`), and the iPhone safe-area check that had been top of Held for Kevin
-since the 24th is finished (`d4f2a52`). Details in `PROJECT_UPDATES.md`; the
-short version is that the bottom edge was correct and measured on two devices,
-and the top edge was not — `/app`'s header was drawing the wordmark underneath
-the status bar clock in the shell, and only in the shell.
-
-**Left off clean.** No half-finished edits, no local commits, gates green,
-`check:seed` green. The simulators hold a build of the shipped config.
-
-**Not done, and not claimed:**
-
-- **The two bottom sheets** (`modal.tsx`, `route-modal.tsx`) were never
-  exercised. Both need a tap to open and `simctl` cannot inject one. If you find
-  a way to drive Simulator UI, that is the outstanding half of the safe-area
-  check.
-- **Android / TWA is unverified** for the header change in `d4f2a52`. It is
-  web-side, so it reaches the TWA. It should be inert there — Chrome in a TWA
-  reports a top inset of nought — but nobody has looked.
-
-**Traps paid for, so you do not have to:**
-
-- `auth.admin.listUsers()` failing with "Database error finding user" was
-  **never** a Supabase outage. `seed-test-members.mjs` was writing NULLs into
-  GoTrue's token columns and one such row breaks the call for every caller.
-  Fixed at the source in `d4f2a52`, and pinned by `seed-safety.test.ts`.
-- A seeded member could not sign in even with a complete profile: the onboarding
-  resolver reads `phone_confirmed_at` off `auth.users`, which the seeder never
-  set. Also fixed.
-- `check:seed` had been red with 24 members in production and nobody noticed,
-  because it is not one of the five CI gates and needs a credential CI does not
-  have. Worth running by hand now and then.
-
-**Three `@dev.invalid` members from `/dev/sign-in` are still in the database.**
-No gate covers them and they are harmless, but they are there.

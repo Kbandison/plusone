@@ -227,6 +227,15 @@ export const TABLE_CLASSIFICATION: Readonly<
     note: "A web push endpoint or a native device token.",
   },
   subscriptions: { feeds: ["Purchases"], note: "Subscription state." },
+  iap_entitlements: {
+    feeds: ["Purchases"],
+    // Same label as `subscriptions` and for the same reason: it records that a
+    // subscription was bought and when it ends. What differs is only who took
+    // the money. The store's transaction id is a handle for the purchase rather
+    // than for the person, and no Apple ID or Google account is stored — the
+    // binding to a member is our own user_id.
+    note: "A subscription bought through the App Store or Play.",
+  },
   premium_grants: { feeds: ["Purchases"], note: "Granted premium, including referral rewards." },
   referral_rewards: { feeds: ["Purchases"], note: "What a referral earned." },
   referrals: { feeds: ["Identifiers → User ID"], note: "Who invited whom." },

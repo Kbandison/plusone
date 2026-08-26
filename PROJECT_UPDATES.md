@@ -1,5 +1,68 @@
 # Project Updates
 
+## 2026-08-26 — Half a purchase flow, and why it stops there
+
+The shell can now talk to StoreKit. It still cannot sell anything, and that is
+the deliberate part.
+
+**Built in-house rather than bought.** There is no first-party or community
+Capacitor in-app-purchase plugin — the only maintained option is RevenueCat.
+Taking it would put a third party between a member and their purchase, which
+means naming a new processor in the privacy policy and in both stores' labels,
+and it would duplicate entitlement handling this app already does in its own
+database. The bridge is reachable from a remote page with nothing bundled, the
+same seam `SystemBars` and `PushNotifications` already use, so a dependency
+would have bought convenience and paid for it in disclosure.
+
+**The plugin grants nothing, on purpose.** It hands back Apple's signed JWS for
+each transaction and nothing else is load-bearing. A device saying "I bought
+this" is a claim — a jailbroken one makes the same claim for free — so the only
+thing that may create an entitlement is the server, checking that signature
+against Apple's root certificates. The readable fields beside it are for drawing
+a screen and for matching up a later call, and the write-up for the server half
+says so twice, because they are exactly the fields that look trustworthy.
+
+**Nothing finishes a transaction at the point of purchase.** StoreKit keeps
+redelivering a transaction until it is told the grant landed, which is the only
+mechanism standing between "the grant request failed" and money taken for
+nothing. Finishing on receipt is one plausible line that throws that away, so a
+test forbids it.
+
+### Why there is no buy button yet
+
+`iap_entitlements` exists as of this morning, but nothing verifies a transaction
+or writes to it. Wiring the button now would produce an app that takes money and
+grants nothing — worse than the dead end 3.1.1 already forced, not better. So
+the premium screen still renders nothing inside the shell, and the client half
+sits unwired behind a documented seam.
+
+That is the honest state and it is worth naming as a rule: a payment path is not
+shippable in halves. The half that charges is not the half that grants, and
+whichever one lands first must not be reachable.
+
+### Three silent failures, kept
+
+All three cost real time and none produced an error, a log line, or a rejected
+promise:
+
+- Capacitor's `registerPluginType` — the call every guide shows for a local
+  plugin — begins `if autoRegisterPlugins { return }`, and auto-registration is
+  the default. It returns having done nothing.
+- The iOS template ships both a `Main.storyboard` naming a root view controller
+  and a `SceneDelegate` that builds one directly. The line wins and the
+  storyboard is never read, so editing it looks right and does nothing.
+- Calling a plugin that is not registered does not reject. The promise never
+  settles, which sends you debugging your own code.
+
+Each is pinned by a test in `apps/ios/shell.test.ts`, because all three are
+invisible in a diff and each would be rediscovered from scratch.
+
+### Held for Kevin
+
+- **A Sandbox tester**, in App Store Connect under Users and Access. An actual
+  purchase has not been exercised and cannot be from a Simulator; everything up
+  to the payment sheet is verified, and the sheet itself is not.
+
 ## 2026-08-26 — The shell ships, once it can take money
 
 **Decision: submit the iOS shell, and submit it once StoreKit is in.** Kevin's

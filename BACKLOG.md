@@ -79,21 +79,30 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     opens Safari — which has its own cookie jar, so it reads as being signed
     out. The Associated Domains entitlement is this lane; the
     `apple-app-site-association` half is the server lane.
-11. **StoreKit, and it now gates the submission.** Nothing owned the native
-    purchase flow — the server lane has entitlements, webhooks, cancellation
-    routing and account binding, and none of that is a way for a member to
-    actually buy anything.
+11. **StoreKit — the native half is in; the purchase button is not.** Landed
+    2026-08-26: `PlusOneStoreKitPlugin` in `apps/ios`, registered by
+    `MainViewController`, wrapped for the page by `apps/web/src/lib/native-iap.ts`.
+    Verified in the Simulator against the real App Store Connect record —
+    products resolve live (`6months` → $69.99, matching `PLANS`), entitlements
+    and unfinished transactions resolve empty, a purchase with no product id
+    rejects.
 
-    Note what the shell currently does: `e8eee7d` hid the Stripe checkout inside
-    it, correctly, because offering it there is guideline 3.1.1. So **the paid
-    tier is presently unreachable in the app** — a dead end rather than a
-    choice, and its own 4.2 problem until this lands.
+    **What is deliberately NOT done: no screen calls any of it.** Pressing buy
+    today would take money and grant nothing, because nothing yet verifies a
+    transaction or writes `iap_entitlements`. That is the seam below, and the
+    UI waits on it — `plan-buttons.tsx` keeps rendering nothing in the shell
+    until then, which is the honest state rather than a half-wired one.
 
-    The products exist (`1month`, `3months`, `6months`, recorded on `PLANS` as
-    `appleProductId`). What is missing is a purchase flow reached through the
-    bridge the way SystemBars and PushNotifications are, and server-side
-    validation through the App Store Server API. Pairs with server lane 2–7,
-    which are unblocked.
+    Still owed here once the server side exists: the native branch in
+    `plan-buttons.tsx`, a submit-on-launch pass over
+    `nativeUnfinishedTransactions()` so a grant lost to a dead network is
+    recovered, a `restore purchases` control, and an actual purchase exercised
+    end to end — which needs a Sandbox tester on the iPad, not a Simulator.
+
+    Three traps are already paid for and pinned by `shell.test.ts`; the commit
+    body for `85315e8` has them in full. The short version is that all three
+    fail silently, including a call to an unregistered plugin, which never
+    settles rather than rejecting.
 
 12. **Verification debt.** What is left of it: the keyboard against the fixed
     composer (`bottom-[var(--nav-h)]` — the classic WKWebView failure is the
@@ -300,6 +309,13 @@ unblock other work.
     `6months` is fine and makes a log line unambiguous; a leading digit is
     accepted, and the console rejects a bad id immediately rather than later.
     They still get their own field either way.
+
+13. **A Sandbox tester**, in App Store Connect under Users and Access. It is the
+    only way to put a real purchase through: a Simulator can fetch products —
+    that much is verified — but the payment sheet needs a sandbox Apple ID, and
+    on the iPad it is signed in under Settings → App Store → Sandbox Account,
+    NOT by signing out of the real one. Use an address that is not already an
+    Apple ID. Blocks the last of shells 11.
 
 ---
 
