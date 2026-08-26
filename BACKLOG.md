@@ -113,11 +113,11 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    TWA pointed there fails verification and keeps its address bar, with nothing
    logged anywhere. Same origin trap that ejected the iOS shell into Safari.
 
-10. **`NEXT_PUBLIC_APP_URL` points at `app.loveplusone.app`, which answers 404.**
-    It is Stripe's return URL, the add-an-address email target, and what room
-    share links are built from. Bundled with it: whether the apex or `www` is
-    canonical — `NEXT_PUBLIC_SITE_URL` is the apex, which 308s, and the shell
-    loads `www` because of it.
+10. ~~**The canonical origin**~~ — settled 2026-08-25. **www**, and both
+    `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` now point at it in Vercel
+    and in `.env.example`. `app.loveplusone.app` was never attached to the
+    project and is out of the iOS allowlist too. Takes effect on the next
+    deploy — until then the live build still carries the old values.
 
 ## Lane: Kevin
 
@@ -148,8 +148,11 @@ unblock other work.
 6. **The app icon and launch image.** Both are placeholder geometry — Claude's,
    not a design. Replacing the SVG in `scripts/generate-icons.mjs` replaces
    every surface at once, web and iOS.
-7. **A Resend-verified sending domain**, then set `RESEND_FROM`. Until then
-   `emailNotifier` is never constructed and nothing reaches an inbox.
+7. ~~**A Resend-verified sending domain**~~ — done 2026-08-25.
+   `loveplusone.app` is verified and `RESEND_FROM` is set in Production to
+   `Plus One <support@loveplusone.app>` — an address that can actually receive,
+   since the domain carries Google Workspace MX. Email goes live on the next
+   deploy for anyone who has switched it on; no event defaults to it.
 8. **Whether any event should default to email.** The notifier is built and
    inert — every `NOTIFICATION_DEFAULTS` entry is `["in_app", "push"]`. A §8
    decision about a channel that persists and is searchable.

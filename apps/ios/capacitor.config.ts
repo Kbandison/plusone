@@ -89,16 +89,16 @@ const config: CapacitorConfig = {
      * no way back. `www` is therefore listed too, so the allowance survives
      * whatever `server.url` is set to.
      *
-     * `app.loveplusone.app` is where NEXT_PUBLIC_APP_URL points, which is what
-     * Stripe returns to, where the add-an-address email lands, and what a room
-     * share link is built from. It currently answers 404 — a web-side problem
-     * recorded in PROJECT_UPDATES, not one this file can fix — but the day it
-     * serves, a member must not be thrown out of the app to reach it.
+     * `app.loveplusone.app` used to be here, because NEXT_PUBLIC_APP_URL pointed
+     * at it. It is gone because that host is: it never served anything, and on
+     * 2026-08-25 both URL variables were pointed at www instead. An allowlist
+     * entry for a host that answers nothing is a claim that ages badly — put it
+     * back the day something is actually deployed there.
      *
      * Anything NOT on this list still opens in the system browser, which is
      * what should happen to a link out to somewhere this project does not run.
      */
-    allowNavigation: ["loveplusone.app", "www.loveplusone.app", "app.loveplusone.app"],
+    allowNavigation: ["loveplusone.app", "www.loveplusone.app"],
     /**
      * What the member sees when the site cannot be reached, instead of
      * WKWebView's own blank page with a webkit error string on it. The whole

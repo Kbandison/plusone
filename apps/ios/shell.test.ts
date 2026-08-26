@@ -64,9 +64,10 @@ describe("the origin the shell loads", () => {
     const hosts = /allowNavigation:\s*\[([^\]]*)\]/.exec(config)?.[1] ?? "";
     expect(hosts).toContain('"loveplusone.app"');
     expect(hosts).toContain('"www.loveplusone.app"');
-    // Where NEXT_PUBLIC_APP_URL points: Stripe's return, the add-an-address
-    // email, and room share links.
-    expect(hosts).toContain('"app.loveplusone.app"');
+    // app.loveplusone.app is deliberately absent from 2026-08-25: it never
+    // served anything, and both URL variables now point at www. Add it back
+    // only if something is actually deployed there.
+    expect(hosts).not.toContain('"app.loveplusone.app"');
   });
 
   /**

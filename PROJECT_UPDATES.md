@@ -1,5 +1,73 @@
 # Project Updates
 
+## 2026-08-25 — One origin, and the email that was about to ship dead links
+
+Email is on and the origin split is closed. The second was found by trying to do
+the first, which is the useful part of the story.
+
+**`RESEND_FROM` is set.** The domain was already verified — checked against
+Resend's own API rather than taken on trust — and the sender is
+`Plus One <support@loveplusone.app>`. Deliberately an address that can receive:
+`loveplusone.app` carries Google Workspace MX, so a member who replies to a
+notification reaches somebody instead of a bounce. `emailNotifier` is
+constructed on the next deploy; no event defaults to email, so nothing reaches
+an inbox that has not asked for it.
+
+**And it would have shipped dead links.** Every message `email.ts` builds ends
+with `${appUrl}${payload.path}`, and `NEXT_PUBLIC_APP_URL` was
+`https://app.loveplusone.app` — a host that resolves to Vercel with no
+deployment attached and answers **404**. Turning email on without noticing would
+have put a broken link at the foot of every notification, and the same value is
+Stripe's `success_url`, the add-an-address email target, and what a room share
+link is built from.
+
+### The origin, settled
+
+`www` is canonical. Both `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` now
+point at `https://www.loveplusone.app`, in Vercel and in `.env.example`.
+
+It is worth writing down what the split actually cost, because it read as
+cosmetic each time and was not:
+
+- The **iOS shell** ejected a member into Safari mid sign-in. Capacitor hands
+  any navigation outside `server.url`'s host to the system browser, and the apex
+  308s to www.
+- **assetlinks.json** would have failed verification silently. Chrome does not
+  follow redirects fetching it, so a TWA pointed at the apex keeps its address
+  bar forever with nothing logged.
+- **Stripe** would have returned a subscriber to a 404.
+- **Email** was about to do the same to every notification.
+
+Four failures, one cause, and three of them silent. The apex can still be made
+canonical later — it would have to SERVE rather than redirect, and the shell's
+`server.url` would move with it — and `.env.example` now says so.
+
+`app.loveplusone.app` is also out of the iOS `allowNavigation` list. It was
+there against the day it started serving; it never did, and an allowlist entry
+for a host that answers nothing is a claim that ages badly.
+
+### One thing to know about the Vercel CLI
+
+`vercel env add` defaults to secret visibility, and a `NEXT_PUBLIC_` variable
+cannot be secret on Production or Preview — it ends up in the client bundle by
+definition. The add failed, and because the remove had already succeeded, both
+variables were briefly absent. `--no-sensitive` is the flag. They are back, and
+now correctly marked Non-sensitive rather than Sensitive, which is what they
+always should have been: marking a value Sensitive when it ships to every
+browser buys nothing and is why `vercel env pull` could not fetch them onto this
+machine in the first place.
+
+The live site was never affected — environment values are baked at build time,
+so the running deployment kept working throughout and picks the new ones up on
+the next deploy.
+
+### Shells
+
+`apps/ios/capacitor.config.ts` changed, so **iOS is affected and unverified** —
+only an allowlist entry was removed, for a host that serves nothing, and the
+tests pin the two that remain. **Android/TWA** is unaffected; assetlinks already
+targets www.
+
 ## 2026-08-25 — The status bar follows the theme, and most of the band goes with it
 
 The grey band found earlier today is mostly gone, and the part that is left has
