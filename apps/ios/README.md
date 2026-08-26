@@ -82,6 +82,43 @@ needs that live in `apps/web` rather than here — the APNs notifier, the StoreK
 branch, `apple-app-site-association` — sit in the server lane instead, which is
 the point of splitting it by machine rather than by feature.
 
+## Shipping a build to TestFlight
+
+Three commands, once a device is registered. `pnpm sync` first if `apps/web` or
+the config changed.
+
+```bash
+cd apps/ios/ios/App
+xcodebuild archive -project App.xcodeproj -scheme App -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath /tmp/PlusOne.xcarchive \
+  -allowProvisioningUpdates
+
+# ExportOptions.plist: method app-store-connect, teamID JUR426AHDD,
+# signingStyle automatic, destination `upload` to send it straight up
+# (or `export` to get an .ipa for Transporter).
+xcodebuild -exportArchive -archivePath /tmp/PlusOne.xcarchive \
+  -exportOptionsPlist ExportOptions.plist -exportPath /tmp/out \
+  -allowProvisioningUpdates
+```
+
+`destination: upload` uploads using the Apple ID already signed into Xcode, so
+no App Store Connect API key and no Transporter is needed.
+
+The archive is signed with the **development** certificate and that is fine —
+`-exportArchive` re-signs with `Apple Distribution` on the way out. Check the
+result rather than assuming: `codesign -dv` on the unpacked `.ipa` should say
+`Apple Distribution: LuxWeb Studio LLC`, and the entitlement should read
+`aps-environment = production` to match `APNS_ENVIRONMENT` in Vercel.
+
+**A registered device gates all of this**, including an App Store archive that
+never touches the device. Xcode's automatic signing builds an _iOS App
+Development_ profile first whatever you are archiving for, and a development
+profile must contain at least one device. `xcodebuild` will use a registered
+device but will not register one — that is the Xcode GUI or
+developer.apple.com → Devices. And the device needs **Developer Mode** on
+(Settings → Privacy & Security), which only appears after a Mac running Xcode
+has connected to it.
+
 ## Not wired yet
 
 - **Native push.** `push_subscriptions.platform` already accepts `'ios'`, and
