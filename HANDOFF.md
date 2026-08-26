@@ -122,10 +122,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                       | since      |
-| ------- | -------------------------- | ---------- |
-| _macOS_ | —                          | —          |
-| _WSL_   | server 9 — the Android TWA | 2026-08-26 |
+| session | item | since |
+| ------- | ---- | ----- |
+| _macOS_ | —    | —     |
+| _WSL_   | —    | —     |
 
 ## Sessions
 
