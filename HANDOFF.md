@@ -52,13 +52,22 @@ Keep it short. If a section has been true and unread for a month, delete it.
   neither machine has an IPv6 route — ENETUNREACH on WSL, ENOTFOUND on macOS.
   The full note, including the username change that goes with it, is in
   `.env.example`. Nothing in `apps/web` reads this key; it is scripts only.
-- **Migrations are applied BY HAND, and `supabase db push` must not be used.**
-  `supabase_migrations.schema_migrations` holds 28 rows against 87 files —
-  everything after 2026-08-15 was applied outside the CLI — so push believes ~59
-  migrations are pending and would re-run them into `already exists`. Use
-  `node scripts/apply-migrations.mjs [--dry-run] <file>...`, which names files
-  rather than a range, runs each in its own transaction, and rolls back unless
-  every object the file declares resolves afterwards.
+- **Migrations are applied BY HAND, and `supabase db push` still must not be
+  used.** Use `node scripts/apply-migrations.mjs [--dry-run] <file>...` — named
+  files rather than a range, one transaction each, rolled back unless every
+  object the file declares resolves afterwards.
+
+  The ledger was backfilled on 2026-08-26 and now holds 73 of 89 rather than 28,
+  every one of them checked against the live schema by
+  `scripts/backfill-migration-ledger.mjs`. That does NOT make push safe. Fourteen
+  files leave no trace a schema can be asked — grants, revokes, data — so they
+  were deliberately left out, and push would replay them. Two of those are not
+  replay-safe: `20260815000900_slugs_are_urls` would re-add a constraint that
+  `slugs_are_not_urls` deliberately dropped, and
+  `20260817000600_a_voice_note_in_one_write` creates a policy without dropping it
+  first. `--include-unverifiable` will record them and is Kevin's call, not a
+  session's: recording a migration that never ran means push skips it forever.
+
 - **A NEW table arrives with `anon` and `authenticated` holding everything.**
   Supabase's default privileges grant all on new tables in `public`, and
   20260813000700's opening `revoke all ... from anon, authenticated` only

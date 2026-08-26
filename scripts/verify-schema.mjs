@@ -23,7 +23,7 @@
 
 import pg from "pg";
 
-import { declaredEverywhere } from "./declared-objects.mjs";
+import { declaredEverywhere, finalState } from "./declared-objects.mjs";
 
 const DB_URL = process.env.SUPABASE_DB_URL;
 if (!DB_URL) {
@@ -103,7 +103,7 @@ for (const kind of ["tables", "views", "functions"]) {
   check(
     missing.length === 0,
     missing.length === 0
-      ? `every declared ${kind.slice(0, -1)} exists (${declared[kind].size})`
+      ? `every declared ${kind.replace(/s$/, "")} exists (${declared[kind].size})`
       : `${missing.length} declared ${kind} absent — ` +
           missing.map(([name, file]) => `${name} (apply ${file})`).join(", "),
   );
@@ -254,6 +254,51 @@ try {
   check(d > 300 && d < 400, `distance_mi(San Francisco, Los Angeles) = ${d} mi`);
 } catch (error) {
   check(false, `PostGIS call failed: ${error.message}`);
+}
+
+// Columns, constraints, policies and indexes, which the pass above cannot see.
+// 20260826000300 adds one column and one constraint and creates no object at
+// all, so without this the gate reports a clean schema while that migration
+// sits unapplied — the same false reassurance that hid emails_for() for two
+// days, one level down.
+const declaredExtras = finalState();
+const liveExtras = {
+  constraints: new Set((await q(`select conname from pg_constraint`)).map((r) => r.conname)),
+  policies: new Set(
+    (await q(`select tablename, policyname from pg_policies where schemaname = 'public'`)).map(
+      (r) => `${r.tablename}.${r.policyname}`,
+    ),
+  ),
+  indexes: new Set(
+    (await q(`select indexname from pg_indexes where schemaname = 'public'`)).map(
+      (r) => r.indexname,
+    ),
+  ),
+  columns: new Set(
+    (
+      await q(
+        `select table_name, column_name from information_schema.columns where table_schema = 'public'`,
+      )
+    ).map((r) => `${r.table_name}.${r.column_name}`),
+  ),
+};
+// `.slice(0, -1)` gives "policie" and "indexe". A gate people read has to
+// read properly, or they start skimming it.
+const SINGULAR = {
+  constraints: "constraint",
+  policies: "policy",
+  indexes: "index",
+  columns: "column",
+};
+for (const kind of ["constraints", "policies", "indexes", "columns"]) {
+  const absent = [...declaredExtras[kind]].filter(([key]) => !liveExtras[kind].has(key));
+  check(
+    absent.length === 0,
+    absent.length === 0
+      ? `every declared ${SINGULAR[kind]} exists (${declaredExtras[kind].size})`
+      : `${absent.length} declared ${kind} absent — ` +
+          absent.map(([key, owner]) => `${key} (apply ${owner.file})`).join(", "),
+  );
 }
 
 console.log("\n── the grants a new table arrives with ──");

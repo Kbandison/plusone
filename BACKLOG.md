@@ -99,11 +99,18 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     and unfinished transactions resolve empty, a purchase with no product id
     rejects.
 
-    **What is deliberately NOT done: no screen calls any of it.** Pressing buy
-    today would take money and grant nothing, because nothing yet verifies a
-    transaction or writes `iap_entitlements`. That is the seam below, and the
-    UI waits on it — `plan-buttons.tsx` keeps rendering nothing in the shell
-    until then, which is the honest state rather than a half-wired one.
+    **The server side landed 2026-08-26** (`90dfa60`):
+    `submitAppStoreTransaction(jws)` in `settings/premium/iap-actions.ts`
+    verifies Apple's signature against a chain ending at the embedded Apple Root
+    CA - G3 and writes `iap_entitlements`. Return it `{ ok: true }` before
+    calling `finishNativeTransaction` and never before — an unfinished
+    transaction is what StoreKit redelivers when a grant does not land, and
+    `submitAppStoreTransactions(jwsList)` takes the launch pass over
+    `nativeUnfinishedTransactions()`.
+
+    **Still NOT done: no screen calls any of it**, which stays true until a
+    purchase has been exercised end to end. `plan-buttons.tsx` renders nothing in
+    the shell, which is the honest state rather than a half-wired one.
 
     Still owed here once the server side exists: the native branch in
     `plan-buttons.tsx`, a submit-on-launch pass over
