@@ -210,7 +210,8 @@ export default async function AppLayout({
 
       {/* Renders nothing. It marks the app's own icon on a home screen, which
           is the one signal that reaches a member who has installed the app and
-          declined notifications. A dot, never a count — see AppBadge. */}
+          declined notifications. A count since 2026-08-26, which is a §8
+          decision rather than a detail — see AppBadge. */}
       <AppBadge unread={unread} />
 
       {/* pt-6 above, so a page's heading is not sitting on the wordmark.

@@ -1,5 +1,61 @@
 # Project Updates
 
+## 2026-08-26 — The badge counts now
+
+§8 kept count granularity out of notifications, and the argument reached an app
+icon harder than it reached a lock screen: an icon sits on a home screen
+indefinitely, in front of whoever picks the phone up, and "7" on an app called
+⁺One is a different disclosure from "something". So the badge was a dot, and a
+test enforced it.
+
+**Kevin's call, and it is his to make.** The trade is real and worth stating
+once rather than arguing: a number tells anybody who sees that icon how much is
+waiting, and a mark never did. What is gained is that the signal means
+something — a member who has been away can tell three from thirty without
+opening anything, and on Android the old valueless flag was drawn as a constant
+"1" anyway, which said "something" in a way that looked like a count and was
+not.
+
+The middle option, if it is ever revisited, is a bucketed count: a true number
+up to a threshold and a flat "5+" above it, which keeps §8's floor while still
+saying more than a mark. It is one line in `app-badge.tsx` and the comment there
+says so, because a decision that can be walked back cheaply should say how.
+
+**Three surfaces, one of which is not a browser.** The web and the Android TWA
+use the Badging API. The iOS shell has no such thing — WKWebView ships no
+`setAppBadge` — so the count goes through the shell plugin, and a badge on an
+iPhone that came from the App Store exists only because of that branch. It is
+also silent by design where notification permission was declined: iOS grants
+badge authorization as part of push, there is no separate prompt, and the
+failure is a badge nobody sees rather than an error anybody reads.
+
+## 2026-08-26 — What the device said, twice, against the Simulator
+
+Two things were checked on real hardware today that a Simulator had already had
+an opinion about, and it was wrong both times — in opposite directions, which is
+the useful part.
+
+**A purchase works, and nothing was charged.** The App Store path is now proven
+end to end: Apple's sheet, the signed transaction, the server verifying it
+against Apple's root, the entitlement written, the transaction finished. That
+closes the last piece of the guideline 3.1.1 story — the paid tier was
+unreachable inside the app for two days, correctly, and it is reachable now
+through the only door Apple permits.
+
+**The keyboard bug does not exist.** Measured in the Simulator, the web view
+never returned to full height after the keyboard closed — 874 to 765, and it
+stayed 765, which put the bottom nav below the fold. It was written up, not
+fixed, and flagged as wanting a device before anyone built a workaround for it.
+On the iPad the nav is still there. So it was an artifact of a beta simulator
+runtime and a keyboard dismissed by script rather than by a person, and the
+right call was to leave it alone.
+
+Worth keeping as a pair. The Simulator said the purchase path could not be
+tested and it could not — that was true. The Simulator said the keyboard was
+broken and it was not. A tool that is authoritative about one thing is not
+authoritative about the next one, and the difference between those two cases was
+not visible from inside the tool.
+
 ## 2026-08-26 — The band was never the status bar
 
 The theme work started on the 25th is finished. What was left of it was a grey

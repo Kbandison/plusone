@@ -39,9 +39,13 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    place this app asks for notification permission. Asking on load spends the
    one prompt iOS ever shows before the member has expressed any interest.
 
-4. **The badge through the plugin.** Android draws `setAppBadge()` as a "1"
-   because a launcher badge is numeric; a native shell owns its own badge and
-   can show a true dot. See `app-badge.tsx` for why a dot and not a count.
+4. ~~**The badge through the plugin**~~ — done 2026-08-26, and it counts.
+   Kevin settled the §8 question (his item 10) in favour of a number, so
+   `PlusOneShell.setBadge` carries it into the iOS shell, where WKWebView has no
+   Badging API at all. The web and the TWA pass the same count to
+   `navigator.setAppBadge`. Reasoning and what it trades are in
+   `PROJECT_UPDATES.md`; the bucketed middle option is one line if it is ever
+   revisited.
 5. **Moved to the server lane.** The Android TWA was here because this lane is
    "Xcode, a Simulator, **or a Play Console**" — but nothing about it needs this
    Mac, and everything genuinely Mac-only is queued behind it. See server lane 10.
@@ -90,7 +94,7 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     That is the trap worth keeping: a missing entitlement is not fixed by a
     reinstall, only by a new build.
 
-11. **StoreKit — the native half is in; the purchase button is not.** Landed
+11. ~~**StoreKit**~~ — **done and proven on hardware 2026-08-26.** Landed
     2026-08-26: `PlusOneStoreKitPlugin` in `apps/ios`, registered by
     `MainViewController`, wrapped for the page by `apps/web/src/lib/native-iap.ts`.
     Verified in the Simulator against the real App Store Connect record —
@@ -146,8 +150,11 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     **The screen calls it as of `4d256ad`.** `native-purchase.tsx` sells the
     three plans through Apple, restores, and the recovery pass in
     `native-iap-recovery.tsx` collects renewals and any grant that did not land.
-    What is NOT verified is a purchase — that needs a Sandbox tester, which is
-    Kevin's item 13, and everything up to Apple's sheet is exercised.
+    **A purchase was put through on 2026-08-26 and it works — nothing charged.**
+    Apple's sheet, the signed transaction, the server verifying it against
+    Apple's root, the entitlement written, the transaction finished. The paid
+    tier is reachable in the shell through the only door Apple permits, which
+    was the last piece of the 3.1.1 story.
 
     Two things for whoever wires it. The **reverse double-subscription guard**
     lives here rather than in the server lane: somebody with a live Stripe
@@ -186,31 +193,16 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     turned up is item 13 and the fix in `69097b3`. Dusk, the offline page and
     both bottom sheets were cleared on 2026-08-25; what Dusk turned up is item 1.
 
-13. **The web view does not come back after the keyboard closes.** Found while
-    measuring item 12 and NOT fixed, because a workaround built on one beta
-    simulator would be worse than the bug.
+13. ~~**The web view does not come back after the keyboard closes**~~ — does
+    NOT reproduce on hardware, checked 2026-08-26. Kevin typed on the rooms page
+    on the iPad and the bottom nav was still there afterwards.
 
-    `window.innerHeight` drops from 874 to 765 when the keyboard opens, which is
-    correct and is what keeps the composer visible. It stays at 765 after the
-    keyboard closes. Fixed positioning goes back to resolving against 874, so
-    the nav — the app's only navigation — is laid out below the bottom of what
-    the member can see, and the composer is clipped by about 30px. Present with
-    and without `@capacitor/keyboard`, so the plugin is not the cause and was
-    not the cure.
-
-    **Confirm it on the iPad before designing anything.** Two things could make
-    it an artifact: the runtime is Xcode 27 beta 6's, and the keyboard was
-    dismissed with a programmatic `blur()` rather than by a person. If it is
-    real, the shape of a fix is driving the composer and nav from
-    `visualViewport` rather than trusting `position: fixed` to be restored —
-    which touches layout that was carefully measured on the 25th, and is
-    therefore not a change to make on a maybe.
-
-    The probe that produced the numbers is worth rebuilding rather than
-    remembering: a copy of the chat screen's composer and nav, a readout pinned
-    just above the composer, and measurements taken **after layout settles** —
-    a reading during first paint reports a safe-area inset of nought and would
-    have been written up as a bug that is not there.
+    So the Simulator measurement was an artifact of the Xcode 27 beta runtime
+    and a keyboard dismissed by script rather than by a person. Kept here rather
+    than deleted because the decision not to fix it is the part worth
+    remembering: it was written up with its numbers and its caveats and left
+    alone pending a device, and a workaround built on those numbers would have
+    touched safe-area layout to cure nothing.
 
 ## Lane: server and schema (WSL session)
 
@@ -442,9 +434,10 @@ unblock other work.
     Note for the next person: the enrolment form fails in Safari with a generic
     "unknown error" and goes through in Chrome.
 
-11. **Whether the badge should count rather than mark.** Also §8 — see
-    `app-badge.tsx`, which argues at length that an app icon sits in front of
-    whoever picks the phone up.
+11. ~~**Whether the badge should count rather than mark**~~ — decided
+    2026-08-26: **count**. Against the argument in `app-badge.tsx`, which is
+    left in place rather than deleted so the trade stays legible, and beside a
+    note saying the bucketed middle option is one line.
 12. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
     ~190 GB the disk image is holding. Tidying, not urgent.
 
@@ -466,12 +459,7 @@ unblock other work.
     accepted, and the console rejects a bad id immediately rather than later.
     They still get their own field either way.
 
-14. **A Sandbox tester**, in App Store Connect under Users and Access. It is the
-    only way to put a real purchase through: a Simulator can fetch products —
-    that much is verified — but the payment sheet needs a sandbox Apple ID, and
-    on the iPad it is signed in under Settings → App Store → Sandbox Account,
-    NOT by signing out of the real one. Use an address that is not already an
-    Apple ID. Blocks the last of shells 11.
+14. ~~**A Sandbox tester**~~ — done 2026-08-26, and a purchase went through with nothing charged. Unblocked the last of shells 11.
 
 15. **A Google Cloud service account for Play RTDN.** Server lane 4's remaining
     half — Play's Real-time Developer Notifications — needs one, and nobody had

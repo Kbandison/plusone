@@ -365,6 +365,22 @@ describe("the page decides whether the shell is light or dark", () => {
     expect(shellPlugin).toMatch(/window\.overrideUserInterfaceStyle = style/);
   });
 
+  /**
+   * The app icon's number, which only native can set.
+   *
+   * Zero clears rather than a separate call, because that is Apple's API and
+   * inventing a `clearBadge` beside it would be a second way to do one thing.
+   * The iOS 15 branch is not dead: the deployment target is 15.0 and
+   * `setBadgeCount` is 16+.
+   */
+  it("can set the app icon badge, which WKWebView cannot", () => {
+    expect(shellPlugin).toMatch(/name: "setBadge"/);
+    expect(shellPlugin).toMatch(/setBadgeCount\(count\)/);
+    expect(shellPlugin).toMatch(/applicationIconBadgeNumber = count/);
+    // Never negative — iOS refuses it and there is no sensible reading.
+    expect(shellPlugin).toMatch(/max\(0, call\.getInt\("count"\) \?\? 0\)/);
+  });
+
   /** Registered by instance, for the reason the StoreKit plugin records. */
   it("is registered, and compiled into the app", () => {
     expect(shellPlugins).toMatch(/registerPluginInstance\(PlusOneShellPlugin\(\)\)/);

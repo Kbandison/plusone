@@ -770,12 +770,37 @@ describe("the installed app", () => {
     expect(registrar).toMatch(/platform: "web"/);
   });
 
-  /** §8 rules out count granularity below five, and an icon sits on a home
-      screen indefinitely in front of whoever picks the phone up. */
-  it("marks the app icon without saying how many", () => {
+  /**
+   * Reversed on 2026-08-26, and the reversal is the point of this comment.
+   *
+   * This test used to assert the opposite: `setAppBadge()` with no argument,
+   * and explicitly NOT with a count. §8 keeps count granularity out of
+   * notifications and the argument reached an app icon harder than a lock
+   * screen — an icon sits on a home screen indefinitely, in front of whoever
+   * picks the phone up.
+   *
+   * Kevin decided the count, which is his call and is recorded in
+   * PROJECT_UPDATES.md with what it trades. Repinned rather than deleted so
+   * that going back is a decision too: what is asserted now is that the number
+   * is real, whole and never negative, because those are the ways a count goes
+   * wrong once you have one.
+   */
+  it("counts on the app icon, whole and never negative", () => {
     const badge = read("src/app/app/app-badge.tsx");
-    expect(badge).toMatch(/setAppBadge\?\.\(\)/);
-    expect(badge).not.toMatch(/setAppBadge\?\.\(unread\)/);
+    expect(badge).toMatch(/Math\.max\(0, Math\.trunc\(unread\)\)/);
+    expect(badge).toMatch(/setAppBadge\?\.\(shown\)/);
     expect(badge).toMatch(/clearAppBadge/);
+  });
+
+  /**
+   * WKWebView ships no `setAppBadge`, so the Badging API is inert inside the
+   * iOS shell and every badge on an App Store install comes through the plugin.
+   * Missing that branch is not an error anywhere — it is an app that silently
+   * never badges on the one platform where an icon is most looked at.
+   */
+  it("badges the iOS shell through native, since the web API is not there", () => {
+    const badge = read("src/app/app/app-badge.tsx");
+    expect(badge).toMatch(/inNativeShell\(\)/);
+    expect(badge).toMatch(/"PlusOneShell", "setBadge"/);
   });
 });

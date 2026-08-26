@@ -1,6 +1,7 @@
 import Capacitor
 import Foundation
 import UIKit
+import UserNotifications
 
 /**
  The one thing about the shell's chrome that no Capacitor API reaches.
@@ -27,7 +28,8 @@ public class PlusOneShellPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "PlusOneShellPlugin"
     public let jsName = "PlusOneShell"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "setInterfaceStyle", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setInterfaceStyle", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setBadge", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func setInterfaceStyle(_ call: CAPPluginCall) {
@@ -55,6 +57,40 @@ public class PlusOneShellPlugin: CAPPlugin, CAPBridgedPlugin {
                 controller.overrideUserInterfaceStyle = style
             }
             call.resolve(["style": requested])
+        }
+    }
+
+    /**
+     The number on the app icon.
+
+     WKWebView has no `setAppBadge`. The Badging API is a browser API and the
+     shell is not a browser, so the web path in `app-badge.tsx` is inert in here
+     and every installed-app badge on iOS has to come through native code —
+     which is the entire reason this method exists.
+
+     **iOS shows nothing at all unless badge authorization was granted.** It is
+     part of the notification permission, so a member who declined push has no
+     badge and there is no separate prompt to ask for one. That is silent by
+     design and correct: it fails closed, and the failure is a badge nobody
+     sees rather than an error anybody has to read.
+
+     Zero clears it. Apple's API says so — there is no separate clear call —
+     which is why the web side's two-call shape collapses into one here.
+     */
+    @objc func setBadge(_ call: CAPPluginCall) {
+        // Negative would be rejected by iOS and there is no sensible reading of
+        // it; a count that has gone wrong should clear rather than throw.
+        let count = max(0, call.getInt("count") ?? 0)
+
+        DispatchQueue.main.async {
+            if #available(iOS 16.0, *) {
+                UNUserNotificationCenter.current().setBadgeCount(count)
+            } else {
+                // Deprecated in 16 and the only option below it. The deployment
+                // target is 15, so this branch is not dead yet.
+                UIApplication.shared.applicationIconBadgeNumber = count
+            }
+            call.resolve(["count": count])
         }
     }
 }
