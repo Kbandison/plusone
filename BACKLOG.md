@@ -157,10 +157,13 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `inNativeShell()`. Small, and independent of items 2–4, so it does not wait
    on App Store Connect.
 9. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
-10. **The Android TWA**, moved here from the shells lane on 2026-08-25.
-    Bubblewrap or PWABuilder against the manifest — Java and the Android SDK,
-    neither of which wants a Mac. `assetlinks.json` is **done** and serving; the
-    fingerprint and package name are in it and pinned by a test.
+10. **The Android TWA** — **built 2026-08-26**, not yet uploaded.
+    `apps/android/app-release-bundle.aab`, Bubblewrap against the manifest,
+    signed with the upload key at `~/keys/plusone-upload.jks` (outside every
+    checkout; `*.jks` is ignored repo-wide). `assetlinks.json` is done and
+    serving. The fingerprint in it is Play's **app signing** key, not the upload
+    key, and the two disagreeing is the correct state — Google re-signs every
+    upload and the phone only ever sees theirs.
 
     Build it against **`www.loveplusone.app`**, not the apex. Chrome does not
     follow redirects when it fetches assetlinks, and the apex answers 308 — so a
@@ -172,6 +175,35 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     and in `.env.example`. `app.loveplusone.app` was never attached to the
     project and is out of the iOS allowlist too. Takes effect on the next
     deploy — until then the live build still carries the old values.
+
+12. **Play sells three subscriptions, not one with three base plans.** Found
+    2026-08-26, before any billing code was written, and it inverts the advice
+    that produced the current console setup — mine, and wrong.
+
+    A TWA cannot address a base plan. The Digital Goods API's `getDetails()`
+    takes subscription **product** ids; querying a base plan id returns an empty
+    list, and a `PaymentRequest` naming one comes back `RESULT_CANCELED`. Play
+    hands back whichever base plan is flagged _backwards compatible_ and there
+    is no way to ask for another. So one `premium` subscription carrying 1mo,
+    3mo and 6mo can only ever sell one of them on Android, and the other two are
+    invisible rather than broken — no error, no log, just a screen that offers
+    a single price.
+
+    Three separate subscription products, one base plan each, each flagged
+    backwards compatible. GoogleChromeLabs/bubblewrap#830 is open since Oct 2023
+    with no fix; the Chrome and ChromeOS billing guides never mention base plans
+    at all, and the DGA reference describes item ids as product ids throughout.
+
+    Two consequences to design around rather than discover:
+    - **No in-app tier change.** Cross-product upgrade needs the Billing
+      Library's `subscriptionUpdate`, which the DGA does not expose. Switching
+      tiers on Android is cancel-then-resubscribe. Worth saying out loud on the
+      premium screen rather than letting somebody find it.
+    - **Whatever ids Kevin creates are the ids forever.** A Play product id
+      cannot be reused after deletion, exactly like Apple's. Record them on
+      `PLANS` beside `appleProductId` — a _separate_ field, even if the strings
+      end up identical, because two stores that happen to agree today are still
+      two stores.
 
 ## Lane: Kevin
 
@@ -227,6 +259,21 @@ unblock other work.
     whoever picks the phone up.
 11. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
     ~190 GB the disk image is holding. Tidying, not urgent.
+
+12. **Rebuild the Play subscription as three products**, one base plan each,
+    each flagged **backwards compatible** — see server lane 12 for why a TWA
+    cannot reach the other base plans. `premium` with `premium1month`,
+    `premium3month` and `premium6month` inside it can only sell one price.
+
+    Do this before the base plans are activated. A draft base plan can be
+    deleted; an activated one holds its id inside that subscription forever, and
+    a deleted subscription id can never be reused — same rule as Apple's.
+
+    Whatever the three product ids end up as, send them over and they go on
+    `PLANS` beside `appleProductId`. Matching Apple's `1month` / `3months` /
+    `6months` is fine and makes a log line unambiguous; a leading digit is
+    accepted, and the console rejects a bad id immediately rather than later.
+    They still get their own field either way.
 
 ---
 
