@@ -128,6 +128,31 @@ const config: CapacitorConfig = {
      */
     backgroundColor: "#14110f",
   },
+  plugins: {
+    /**
+     * The keyboard, and why a plugin rather than nothing.
+     *
+     * Measured in the Simulator on 2026-08-26, against a faithful copy of the
+     * chat screen's fixed composer and nav. With no plugin at all iOS DOES
+     * resize the web view when the keyboard opens — the composer stays visible
+     * and 79px clear, which is the failure this was expected to have and does
+     * not. What it does not do is put it back. After the keyboard closed,
+     * `window.innerHeight` stayed at 765 against a screen of 874 and never
+     * recovered, so the bottom nav sat off the foot of the screen and the
+     * composer was clipped by it. The app's only navigation, gone, after one
+     * message.
+     *
+     * `native` is the plugin's default and is named here for the same reason
+     * `contentInset` is: it is the setting that decides whether the web view is
+     * restored, and a later change to it should be a decision. It resizes the
+     * view itself, which keeps `env(safe-area-inset-*)` and the measured
+     * `--nav-h` meaning what they mean — `body` and `ionic` resize the document
+     * instead and would put the safe-area work back in question.
+     */
+    Keyboard: {
+      resize: "native",
+    },
+  },
 };
 
 export default config;

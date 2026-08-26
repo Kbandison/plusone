@@ -91,6 +91,24 @@ describe("the safe area", () => {
    * It is also Capacitor's default, which is exactly why it is pinned: a
    * default that nobody wrote down is a default somebody changes.
    */
+  /**
+   * Measured in the Simulator against a copy of the chat screen, 2026-08-26.
+   *
+   * With no Keyboard plugin, `env(safe-area-inset-bottom)` stays at 34 while
+   * the keyboard is up — so the nav keeps reserving room for a home indicator
+   * that is behind the keyboard, and the composer floats 34px above it. That is
+   * the exact failure this was on the list to check for. With the plugin the
+   * inset drops to 0 while the keyboard is up and returns to 34 after.
+   *
+   * `native` resizes the web view itself, which keeps `env(safe-area-inset-*)`
+   * and the measured `--nav-h` meaning what they mean. `body` and `ionic`
+   * resize the document instead and would reopen every safe-area question
+   * settled on the 25th.
+   */
+  it("lets the keyboard put the safe-area inset away while it is up", () => {
+    expect(config).toMatch(/Keyboard:\s*\{\s*resize:\s*"native"/);
+  });
+
   it("does not let UIKit inset the webview as well as the CSS", () => {
     expect(config).toMatch(/contentInset:\s*"never"/);
   });

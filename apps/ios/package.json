@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The iOS shell. Capacitor over WKWebView \u2014 see AGENTS.md.",
+  "description": "The iOS shell. Capacitor over WKWebView — see AGENTS.md.",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@capacitor/core": "8.5.0",
     "@capacitor/ios": "8.5.0",
+    "@capacitor/keyboard": "8.0.5",
     "@capacitor/push-notifications": "8.1.2"
   }
 }
