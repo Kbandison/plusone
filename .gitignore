@@ -20,6 +20,21 @@ dist/
 # testing
 coverage/
 
+# signing keys — ANYWHERE in the tree, not just apps/android
+#
+# apps/android/.gitignore refuses these too, and that was not enough: a keystore
+# created at the repo root sat outside it, untracked but NOT ignored, one
+# `git add -A` from being pushed to a public remote.
+#
+# An upload key is not recoverable and is not rotatable without Google's help.
+# Whoever holds it can publish an update to this app, and an update to this app
+# reaches phones belonging to people whose presence here is the thing they most
+# need kept private.
+*.jks
+*.keystore
+*.p12
+*.p8
+
 # misc
 .DS_Store
 *.pem
