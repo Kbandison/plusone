@@ -60,11 +60,32 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    before.
 7. **A release Xcode.** `apps/ios` is driven by 27 beta 6 through
    `DEVELOPER_DIR`. Fine for the Simulator, not for a submission build.
-8. **Signing is unconfigured.** `CODE_SIGN_STYLE = Automatic` with **no
+8. **A registered device, which gates more than it looks like.** `DEVELOPMENT_TEAM`
+   is set, but Xcode's automatic signing insists on creating an **iOS App
+   Development** profile even when archiving for the App Store, and a
+   development profile must contain at least one device. With none registered,
+   `xcodebuild archive` fails — so there is no build, so there is no TestFlight,
+   so native push cannot be proven at all.
+
+   An earlier note here said App Store distribution needed no device. That was
+   wrong, tested 2026-08-26: forcing `CODE_SIGN_IDENTITY = "Apple Distribution"`
+   instead produces "App is automatically signed for development, but a
+   conflicting code signing identity has been manually specified", and reverting
+   to automatic goes back to asking for a device.
+
+   Plugging an iPhone or iPad into the Mac registers it. That single act
+   unblocks device builds, the archive, TestFlight, native push verification and
+   the camera check.
+
+   ~~Signing identity~~ — modernised at the same time: the Capacitor template
+   pinned the legacy `"iPhone Developer"`, which is what produced the confusing
+   "iOS App Development" wording. Both configurations now say
+   `"Apple Development"`, which is what automatic signing writes itself. `CODE_SIGN_STYLE = Automatic` with **no
    `DEVELOPMENT_TEAM`** in `project.pbxproj`, so the target builds for the
    Simulator and nothing else — no device, no TestFlight. Item 2's device test
    and the camera check in item 11 both sit behind it. Needs the Team ID, Kevin
    lane.
+
 9. ~~**A privacy manifest for the App target**~~ — done 2026-08-26.
    `PrivacyInfo.xcprivacy` declares eleven data types, tracking false, and no
    required-reason APIs (the app target's own Swift is the untouched Capacitor
