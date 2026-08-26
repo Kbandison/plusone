@@ -32,9 +32,17 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    nothing writes `plusone.theme` yet.
 
 2. **Native push on iOS.** A WebView has no `PushManager`, so the shell is
-   silent today. Needs `@capacitor/push-notifications`, an APNs key from the
-   Developer account, and the token registered through `registerPushDevice`
-   with `platform: 'ios'`. The column already accepts it.
+   silent today — the largest functional gap between it and the installed web
+   app, and the strongest available answer to the guideline 4.2 question.
+
+   **Unblocked 2026-08-26**: all five `APNS_*` values are in Vercel, `apnsNotifier`
+   exists (`91c721a`) and `registerPushDevice` already takes a native token
+   (`e4ebe23`). What is left is the native half — `@capacitor/push-notifications`,
+   registering for remote notifications, and posting the token with
+   `platform: 'ios'`. Note the Simulator can register and can receive a payload
+   through `simctl push`, but its token is not one real APNs will accept: proving
+   actual delivery needs a device or TestFlight.
+
 3. **The native branch in `push-toggle`.** It currently resolves to
    `unsupported` inside the shell, which is honest and temporary — the comment
    at the branch says where the native path plugs in, and that it wants its own
@@ -106,7 +114,8 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
 6. **Account binding.** A StoreKit entitlement belongs to an Apple ID, not a
    Plus One account. Bind `original_transaction_id` to `user_id` at purchase and
    refuse to re-bind, or one subscription unlocks several people.
-7. **The Stripe path must not be reachable inside the shell.**
+7. ~~**The Stripe path must not be reachable inside the shell**~~ — done by WSL
+   in `e8eee7d`. Left here for the record:
    `settings/premium/actions.ts` creates a Checkout session, and offering that
    for a subscription inside an iOS app is guideline 3.1.1 — a hard rejection,
    against a store-billing decision already made on the 24th. Branch it on
@@ -142,11 +151,14 @@ unblock other work.
 2. ~~**The signing key's SHA-256**~~ — supplied 2026-08-25 and serving. Note
    the Play record was recreated, so the first fingerprint is dead; the live one
    is in the route and pinned by a test that refuses the old one.
-3. **The Apple Developer Team ID.** One value, and every "needs a real device"
-   item on iOS is behind it: shells lane 8, the device half of native push, and
-   the camera check that gates joining at all.
-4. **App Store Connect**: the app record, subscription products, and privacy
-   labels. Unblocks server lane items 2–4. The label answers are worked out and
+3. ~~**The Apple Developer Team ID**~~ — `JUR426AHDD`, set 2026-08-25 through
+   Xcode's Signing tab, which is the right way round: writing the value by hand
+   does not create a provisioning profile and automatic signing does. Device
+   builds still need a registered device; App Store distribution does not.
+4. ~~**App Store Connect**~~ — app record, the three subscription products and
+   privacy labels all done 2026-08-26. The products cannot be submitted until
+   there is an app version with a build; Apple reviews subscriptions alongside a
+   version, never alone. Label answers live in `privacy-labels.ts`. Unblocks server lane items 2–4. The label answers are worked out and
    kept honest in `packages/config/src/privacy-labels.ts` — copy them from
    there rather than deciding again. One question in it is held for counsel:
    whether the liveness check counts as collecting biometric data when nothing
