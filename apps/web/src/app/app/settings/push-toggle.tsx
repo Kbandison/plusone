@@ -57,6 +57,10 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
   const [state, setState] = useState<State>("checking");
   const [error, setError] = useState<string | null>(null);
   const [tested, setTested] = useState(false);
+  // Evaluated once per render rather than per branch: inNativeShell() reads
+  // window, so it must not be called during the server render.
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(inNativeShell()), []);
   const [pending, start] = useTransition();
 
   useEffect(() => {
@@ -251,6 +255,18 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
     setError(null);
     start(async () => {
       try {
+        /**
+         * Web only, and guarded rather than assumed.
+         *
+         * This draws through the service worker, and a WebView has none —
+         * `navigator.serviceWorker` is undefined in the shell, so this threw
+         * "undefined is not an object" straight onto the settings screen the
+         * first time push worked there. The button is not rendered natively
+         * either; this is the second lock, because a render condition is easier
+         * to change by accident than a return.
+         */
+        if (inNativeShell()) return;
+
         const registration = await navigator.serviceWorker.ready;
         // The app name, exactly as a real one arrives. This is answering "what
         // will these look like", and a test wearing a different title than the
@@ -334,14 +350,22 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
             <p role="status" className="text-[12.2px] text-positive">
               {C.pushEnabled}
             </p>
-            <button
-              type="button"
-              onClick={test}
-              disabled={pending}
-              className={buttonClass("secondary")}
-            >
-              {C.pushTestLabel}
-            </button>
+            {/* Not offered in the shell. It answers "will this device draw a
+                notification at all", which the web needs because a service
+                worker can refuse silently — and which iOS has already answered
+                by granting the permission that got us here. There is no service
+                worker in a WebView to ask, and the question it would answer
+                next, whether delivery works, is only answered by a real push. */}
+            {native ? null : (
+              <button
+                type="button"
+                onClick={test}
+                disabled={pending}
+                className={buttonClass("secondary")}
+              >
+                {C.pushTestLabel}
+              </button>
+            )}
             <button
               type="button"
               onClick={disable}

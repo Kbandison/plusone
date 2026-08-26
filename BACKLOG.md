@@ -101,7 +101,19 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `platform`, and `push_subscriptions` already accepts `'ios'` and `'android'`
    with the web-push keys nullable. This is a new implementation behind an
    interface built for it — not a schema change.
-2. **`iap_entitlements`, and a third `exists` in `is_premium()`.** The gate
+2. **`pnpm push:test` cannot reach an iOS device.** It filters to
+   `platform === "web"` and sends through `web-push`, so the one operator tool
+   for proving the whole chain cannot exercise the transport that was just
+   built — an `ios` row is skipped silently.
+
+   Not a one-line fix: `apps/web/src/lib/apns.ts` opens with `import
+"server-only"`, which throws outside a React Server Component, so the script
+   cannot import `apnsNotifier` under tsx. The honest repair is to move the
+   JWT-and-HTTP/2 send into `packages/logic` as a pure function with the
+   transport injected, leaving `apns.ts` as the thin server-side wrapper it
+   should have been. That also makes it testable without a network.
+
+3. **`iap_entitlements`, and a third `exists` in `is_premium()`.** The gate
    already unions `subscriptions` with `premium_grants`, so a third source
    changes nothing downstream. **Unblocked 2026-08-26** — the products exist in
    App Store Connect and their real ids are recorded on `PLANS` as
@@ -110,36 +122,36 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    string manipulation finds nothing at purchase time. They still cannot be
    submitted for review until there is an app version with a build to attach
    them to — that is Apple's rule, not a setup problem.
-3. **Store webhooks.** App Store Server Notifications V2 and Play RTDN, each a
+4. **Store webhooks.** App Store Server Notifications V2 and Play RTDN, each a
    route handler mirroring the Stripe one, writing entitlements.
-4. **Cancellation routing.** Both stores require sending a subscriber to their
+5. **Cancellation routing.** Both stores require sending a subscriber to their
    own management screen, so the premium page has to know which source sold the
    subscription.
-5. **The double-subscription guard.** Somebody who bought on the web then
+6. **The double-subscription guard.** Somebody who bought on the web then
    installs the app and buys again. Gate the purchase UI on `is_premium()`
    before it renders.
-6. **Account binding.** A StoreKit entitlement belongs to an Apple ID, not a
+7. **Account binding.** A StoreKit entitlement belongs to an Apple ID, not a
    Plus One account. Bind `original_transaction_id` to `user_id` at purchase and
    refuse to re-bind, or one subscription unlocks several people.
-7. ~~**The Stripe path must not be reachable inside the shell**~~ — done by WSL
+8. ~~**The Stripe path must not be reachable inside the shell**~~ — done by WSL
    in `e8eee7d`. Left here for the record:
    `settings/premium/actions.ts` creates a Checkout session, and offering that
    for a subscription inside an iOS app is guideline 3.1.1 — a hard rejection,
    against a store-billing decision already made on the 24th. Branch it on
    `inNativeShell()`. Small, and independent of items 2–4, so it does not wait
    on App Store Connect.
-8. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
-9. **The Android TWA**, moved here from the shells lane on 2026-08-25.
-   Bubblewrap or PWABuilder against the manifest — Java and the Android SDK,
-   neither of which wants a Mac. `assetlinks.json` is **done** and serving; the
-   fingerprint and package name are in it and pinned by a test.
+9. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
+10. **The Android TWA**, moved here from the shells lane on 2026-08-25.
+    Bubblewrap or PWABuilder against the manifest — Java and the Android SDK,
+    neither of which wants a Mac. `assetlinks.json` is **done** and serving; the
+    fingerprint and package name are in it and pinned by a test.
 
-   Build it against **`www.loveplusone.app`**, not the apex. Chrome does not
-   follow redirects when it fetches assetlinks, and the apex answers 308 — so a
-   TWA pointed there fails verification and keeps its address bar, with nothing
-   logged anywhere. Same origin trap that ejected the iOS shell into Safari.
+    Build it against **`www.loveplusone.app`**, not the apex. Chrome does not
+    follow redirects when it fetches assetlinks, and the apex answers 308 — so a
+    TWA pointed there fails verification and keeps its address bar, with nothing
+    logged anywhere. Same origin trap that ejected the iOS shell into Safari.
 
-10. ~~**The canonical origin**~~ — settled 2026-08-25. **www**, and both
+11. ~~**The canonical origin**~~ — settled 2026-08-25. **www**, and both
     `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` now point at it in Vercel
     and in `.env.example`. `app.loveplusone.app` was never attached to the
     project and is out of the iOS allowlist too. Takes effect on the next
