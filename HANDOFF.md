@@ -52,6 +52,19 @@ Keep it short. If a section has been true and unread for a month, delete it.
   neither machine has an IPv6 route — ENETUNREACH on WSL, ENOTFOUND on macOS.
   The full note, including the username change that goes with it, is in
   `.env.example`. Nothing in `apps/web` reads this key; it is scripts only.
+- **Migrations are applied BY HAND, and `supabase db push` must not be used.**
+  `supabase_migrations.schema_migrations` holds 28 rows against 87 files —
+  everything after 2026-08-15 was applied outside the CLI — so push believes ~59
+  migrations are pending and would re-run them into `already exists`. Use
+  `node scripts/apply-migrations.mjs [--dry-run] <file>...`, which names files
+  rather than a range, runs each in its own transaction, and rolls back unless
+  every object the file declares resolves afterwards.
+- **A NEW table arrives with `anon` and `authenticated` holding everything.**
+  Supabase's default privileges grant all on new tables in `public`, and
+  20260813000700's opening `revoke all ... from anon, authenticated` only
+  covered what existed in August. Every migration that creates a table must
+  revoke for itself and then grant back what it means to expose. Two had missed
+  it; `check:db` now catches both roles.
 - **The scripts do not load `.env.local`.** They read `process.env`, so a
   `check:*` or `seed` run needs the value exported into the shell first.
 
@@ -188,6 +201,48 @@ Sandbox tester on the iPad, which is a Kevin item now on his lane.
 `https://www.loveplusone.app` and reinstalled on the simulator, probe server and
 proxy stopped.
 
+### 2026-08-26 · WSL · Play ids, entitlements, and a gate that was lying
+
+**Done and pushed, through `0ca2748`.** The Android AAB is built and Kevin has
+uploaded it. Play's three subscription drafts exist with the same ids as Apple —
+`1month`, `3months`, `6months` — recorded on `PLANS` as `playProductId`, its own
+field beside `appleProductId` even though every value matches, with a test that
+reads the source and refuses `playProductId: plan.appleProductId`.
+
+`iap_entitlements` is live and `is_premium()` has its third `exists`.
+`check:premium` covers it: revoked grants nothing with 30 days left on the
+clock, paused grants nothing, a granting row with no expiry is refused, and a
+second member cannot claim one — by insert or by update.
+
+**The find worth carrying: `check:db` was green and wrong.** It asserted
+hand-maintained COUNTS of live objects, so a migration that never got applied
+just made the real number smaller and somebody lowered the expectation to match.
+`emails_for()` had been missing from production since the 24th — every email
+delivery failing, unnoticed only because no event defaults to email. It now
+diffs declared-vs-live by name and says which file to apply.
+
+Two things that parser has to do, and I got both wrong first: subtract drops, or
+`shares_room`, `news_items` and the two news admin functions cry drift forever;
+and respect order WITHIN a file, because 20260818000100 drops
+`visible_profiles` and recreates it ten lines later.
+
+**Left off clean.** All 14 mechanical gates green, `check:launch` in full.
+Nothing half-finished, nothing claimed.
+
+**For Kevin, and only he can do it:** Supabase's **Site URL** is still
+`http://localhost:3000`, which is why an emailed sign-in link lands there. The
+app is fine — `/auth/callback` handles both link shapes. Dashboard →
+Authentication → URL Configuration: Site URL to `https://www.loveplusone.app`,
+and add `https://www.loveplusone.app/auth/callback` to Redirect URLs. That
+second half matters on its own: `settings/actions.ts` passes an explicit
+`emailRedirectTo`, and Supabase silently falls back to Site URL when the target
+is not allow-listed — so adding an email in Settings is broken the same way.
+
+**Not done, not claimed:** server 4–6 (store webhooks, cancellation routing,
+the double-subscription guard) are unblocked now that entitlements exist.
+Server 7 is half done — the schema refuses a re-bind; the webhook still has to
+not try.
+
 ### 2026-08-25 (later still) · macOS · status bar
 
 **Done.** The status bar text now follows the page theme rather than the system
@@ -205,32 +260,3 @@ all four combinations in the Simulator.
 
 **Left off clean.** Dev server stopped, proxy stopped, shell config restored and
 reinstalled on both simulators, simulator appearance back to light.
-
-### 2026-08-25 (later) · WSL · pushed through `e8eee7d`
-
-**Done and pushed.** The privacy-policy audit (five claims corrected, three
-guards, all pinned by tests) and every mechanical launch gate green against the
-live database — `pnpm check:launch` in full. Then two backlog items:
-
-- **`registerPushDevice` takes a native token** (`e4ebe23`). It hard-coded
-  `p_platform: "web"` and demanded both web keys, so an APNs or FCM token could
-  not be stored at all. The RPC and the table always allowed it. Verified in a
-  rolled-back transaction: an `'ios'` row with null keys is accepted, a `'web'`
-  row without them is still refused. **This is the seam under shells item 2** —
-  your client can call `registerPushDevice({ platform: "ios", token })` now.
-- **The shell no longer offers a Stripe checkout** (`e8eee7d`). Guideline 3.1.1,
-  a rejection rather than a warning. Prices hidden with the button, and
-  `ManageBilling` too, since changing a plan is a purchase.
-
-**Please verify when you next have a Simulator up:** the premium screen should
-show subscription status and **no** buy button, no prices, and no Manage
-billing. I cannot check it — `inNativeShell()` is false everywhere I can reach,
-so that guard is proven by unit test and reasoning, not by watching it hide. If
-anything renders, say so here and I will take it back.
-
-**Left off clean.** Nothing half-finished, gates green, `check:launch` green.
-
-**Not done, and not claimed:** the three §8 and store decisions that are Kevin's
-(email defaults, badge counting, `RESEND_FROM`), and server items 2–4, which
-genuinely wait on App Store Connect having products — building the entitlement
-columns before then is guessing at a schema.

@@ -138,7 +138,11 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `APNS_PRIVATE_KEY`, which is Sensitive on purpose. Take that one off the .p8
    file, newlines escaped as `\n`.
 
-3. **`iap_entitlements`, and a third `exists` in `is_premium()`.** The gate
+3. ~~**`iap_entitlements`, and a third `exists` in `is_premium()`**~~ — done
+   and applied 2026-08-26. Keyed on `store` + `transaction_id`, which is the
+   store's handle for the SUBSCRIPTION and never for a payment. `revoked`
+   grants nothing regardless of the date, which a clock comparison alone
+   gets wrong. Covered by `check:premium`. Originally: the gate
    already unions `subscriptions` with `premium_grants`, so a third source
    changes nothing downstream. **Unblocked 2026-08-26** — the products exist in
    App Store Connect and their real ids are recorded on `PLANS` as
@@ -155,9 +159,14 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
 6. **The double-subscription guard.** Somebody who bought on the web then
    installs the app and buys again. Gate the purchase UI on `is_premium()`
    before it renders.
-7. **Account binding.** A StoreKit entitlement belongs to an Apple ID, not a
-   Plus One account. Bind `original_transaction_id` to `user_id` at purchase and
-   refuse to re-bind, or one subscription unlocks several people.
+7. **Account binding — the schema half is done**, 2026-08-26. Unique
+   `(store, transaction_id)` refuses a second member claiming one
+   subscription, and a trigger refuses an UPDATE moving the owner, because
+   `on conflict do update set user_id = excluded.user_id` is the obvious
+   webhook upsert and would let a purchase hop to whoever presented it last.
+   What is left is the webhook not attempting it — the database will now
+   raise rather than comply, so this is a correctness bug waiting rather
+   than a security one.
 8. ~~**The Stripe path must not be reachable inside the shell**~~ — done by WSL
    in `e8eee7d`. Left here for the record:
    `settings/premium/actions.ts` creates a Checkout session, and offering that
@@ -269,30 +278,41 @@ unblock other work.
    regardless. Submitting before it would also trip 3.1.1, which is a far more
    certain rejection than 4.2 ever was.
 
-6. **The app icon and launch image.** Both are placeholder geometry — Claude's,
+6. **Supabase's Site URL is still `http://localhost:3000`.** An emailed
+   sign-in link therefore lands on localhost. The app is fine —
+   `/auth/callback` handles both link shapes. Dashboard → Authentication →
+   URL Configuration: Site URL to `https://www.loveplusone.app`, and add
+   `https://www.loveplusone.app/auth/callback` to Redirect URLs. The second
+   half matters on its own — `settings/actions.ts` passes an explicit
+   `emailRedirectTo`, and Supabase falls back to Site URL without a word
+   when the target is not allow-listed, so adding an email address in
+   Settings is broken the same way. Dashboard-only; there is no
+   `config.toml`, so no session can do this from the repo.
+
+7. **The app icon and launch image.** Both are placeholder geometry — Claude's,
    not a design. Replacing the SVG in `scripts/generate-icons.mjs` replaces
    every surface at once, web and iOS.
-7. ~~**A Resend-verified sending domain**~~ — done 2026-08-25.
+8. ~~**A Resend-verified sending domain**~~ — done 2026-08-25.
    `loveplusone.app` is verified and `RESEND_FROM` is set in Production to
    `Plus One <support@loveplusone.app>` — an address that can actually receive,
    since the domain carries Google Workspace MX. Email goes live on the next
    deploy for anyone who has switched it on; no event defaults to it.
-8. ~~**Whether any event should default to email**~~ — decided 2026-08-26:
+9. ~~**Whether any event should default to email**~~ — decided 2026-08-26:
    **none does.** Email stays opt-in per event. Recorded in `notifications.ts`
    with the reasoning and held by `notification-defaults.test.ts`, because
    adding `"email"` to a row is a one-word change nothing else would question.
-9. ~~**Small Business Program approval**~~ — applied 2026-08-26, processing
-   email received. The rate moves from 30% to 15% fifteen days after approval.
-   Note for the next person: the enrolment form fails in Safari with a generic
-   "unknown error" and goes through in Chrome.
+10. ~~**Small Business Program approval**~~ — applied 2026-08-26, processing
+    email received. The rate moves from 30% to 15% fifteen days after approval.
+    Note for the next person: the enrolment form fails in Safari with a generic
+    "unknown error" and goes through in Chrome.
 
-10. **Whether the badge should count rather than mark.** Also §8 — see
+11. **Whether the badge should count rather than mark.** Also §8 — see
     `app-badge.tsx`, which argues at length that an app icon sits in front of
     whoever picks the phone up.
-11. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
+12. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
     ~190 GB the disk image is holding. Tidying, not urgent.
 
-12. ~~**Rebuild the Play subscription as three products**~~ — done
+13. ~~**Rebuild the Play subscription as three products**~~ — done
     2026-08-26, as drafts, with the same ids as Apple. One base plan each,
     and each needs flagging **backwards compatible** before activation.
     Originally: three products, one base plan each,
