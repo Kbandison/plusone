@@ -25,6 +25,7 @@ const manifest = JSON.parse(
   host: string;
   startUrl: string;
   enableNotifications: boolean;
+  features: { playBilling?: { enabled?: boolean } };
   fingerprints: { name: string; value: string }[];
   signingKey: { path: string; alias: string };
 };
@@ -72,6 +73,24 @@ describe("notifications", () => {
     // nothing ever appears, which reads as a push bug rather than a manifest
     // one.
     expect(manifest.enableNotifications).toBe(true);
+  });
+});
+
+describe("Play Billing", () => {
+  it("is enabled, or Play will not let a subscription be created at all", () => {
+    // This is not only about selling. Play Console refuses to show the
+    // monetization screens until a build has been uploaded that DECLARES
+    // billing, so an app generated without this cannot have products defined
+    // against it — the console asks for a new upload and does not say why.
+    expect(manifest.features.playBilling?.enabled).toBe(true);
+  });
+
+  it("is what the billing decision requires on Android", () => {
+    // Store billing on both platforms, decided 2026-08-24. Play Billing is
+    // required for a subscription and the policy names dating in its own
+    // examples, so a TWA that reaches Stripe checkout is the prohibited case —
+    // and the Digital Goods API is how a TWA sells through Play instead.
+    expect(manifest.features.playBilling).toBeDefined();
   });
 });
 
