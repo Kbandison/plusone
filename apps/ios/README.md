@@ -59,7 +59,14 @@ checkout would overwrite work that is not recoverable from any config file:
 - **`ios/App/App/Info.plist`** — the camera and microphone purpose strings,
   without which iOS terminates the app the moment the liveness check asks for
   the camera; the portrait lock that matches `manifest.ts`; and `arm64` in place
-  of the template's `armv7`. Every one of those has a comment saying why.
+  of the template's `armv7`.
+
+  **Do not explain any of it in that file.** Those decisions were commented
+  there until 2026-08-25, when opening Xcode's Signing tab rewrote the plist and
+  stripped every comment — values intact, reasoning gone, no warning. The why
+  lives in `shell.test.ts`, which also pins the values, and which Xcode has no
+  reason to touch.
+
 - **`ios/App/App/Assets.xcassets`** — the app icon and launch image, written by
   `scripts/generate-icons.mjs` from the same mark as the web icons. Regenerate
   with `node scripts/generate-icons.mjs`; do not edit the PNGs.

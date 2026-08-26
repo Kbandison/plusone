@@ -115,6 +115,23 @@ describe("the safe area", () => {
     expect(manifest).toMatch(/orientation:\s*"portrait"/);
   });
 
+  /**
+   * arm64, not the template's armv7 — and this is the only place the reasoning
+   * now survives.
+   *
+   * Capacitor ships Apple's decade-old default. armv7 is 32-bit, no iOS 11
+   * device ran it, and the deployment target is 15.0, so the key was either
+   * ignored or describing a device that cannot install this.
+   *
+   * It was explained in a comment in Info.plist until 2026-08-25, when opening
+   * Xcode's Signing tab for the first time rewrote that file and stripped every
+   * comment out of it. The values survived; the why did not. Nothing explaining
+   * a decision should be written in that file again.
+   */
+  it("requires arm64 rather than the template's 32-bit armv7", () => {
+    expect(plistArray("UIRequiredDeviceCapabilities")).toEqual(["arm64"]);
+  });
+
   /** iPad is a separate surface with no notch to hide a layout behind. */
   it("leaves the iPad free to rotate", () => {
     expect(plistArray("UISupportedInterfaceOrientations~ipad")).toHaveLength(4);
