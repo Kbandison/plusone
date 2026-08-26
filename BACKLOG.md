@@ -101,17 +101,14 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `platform`, and `push_subscriptions` already accepts `'ios'` and `'android'`
    with the web-push keys nullable. This is a new implementation behind an
    interface built for it — not a schema change.
-2. **`pnpm push:test` cannot reach an iOS device.** It filters to
-   `platform === "web"` and sends through `web-push`, so the one operator tool
-   for proving the whole chain cannot exercise the transport that was just
-   built — an `ios` row is skipped silently.
+2. ~~**`pnpm push:test` cannot reach an iOS device**~~ — done 2026-08-26, and
+   it sends through the same wire the app uses rather than a second copy. The
+   split it needed is in `apps/web/src/lib/apns-transport.ts`.
 
-   Not a one-line fix: `apps/web/src/lib/apns.ts` opens with `import
-"server-only"`, which throws outside a React Server Component, so the script
-   cannot import `apnsNotifier` under tsx. The honest repair is to move the
-   JWT-and-HTTP/2 send into `packages/logic` as a pure function with the
-   transport injected, leaving `apns.ts` as the thin server-side wrapper it
-   should have been. That also makes it testable without a network.
+   To use it locally the four public `APNS_` values plus the .p8 have to be in
+   `.env.local`; `vercel env pull` brings three of them and refuses
+   `APNS_PRIVATE_KEY`, which is Sensitive on purpose. Take that one off the .p8
+   file, newlines escaped as `\n`.
 
 3. **`iap_entitlements`, and a third `exists` in `is_premium()`.** The gate
    already unions `subscriptions` with `premium_grants`, so a third source

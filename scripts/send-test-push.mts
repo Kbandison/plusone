@@ -30,6 +30,9 @@ import { NOTIFICATIONS, PUSH_APP_NAME, EMAIL_SUBJECT } from "@plusone/config";
 import { notify } from "@plusone/logic";
 import { createServiceSupabase } from "@plusone/db";
 
+// The same wire the app sends through, not a second copy. See the note below.
+import { apnsConfig, sendApnsAlerts } from "../apps/web/src/lib/apns-transport.ts";
+
 // .env.local is where the VAPID pair lives in development. Vercel supplies them
 // as real environment variables in a deployment, so this only fills the gaps.
 try {
@@ -53,8 +56,11 @@ if (!(event in NOTIFICATIONS)) {
   process.exit(1);
 }
 
-const { NEXT_PUBLIC_VAPID_PUBLIC_KEY: pub, VAPID_PRIVATE_KEY: priv, VAPID_SUBJECT: sub } =
-  process.env;
+const {
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: pub,
+  VAPID_PRIVATE_KEY: priv,
+  VAPID_SUBJECT: sub,
+} = process.env;
 if (!pub || !priv || !sub) {
   console.error("VAPID keys are not set — nothing to send with.");
   process.exit(1);
@@ -112,18 +118,79 @@ if (error) {
   process.exit(1);
 }
 
-// Filtered here rather than in the query, exactly as webPushNotifier does it:
-// the RPC returns every transport a member has, and web push can address one.
-const rows = ((data ?? []) as Device[]).filter(
-  (device) => device.platform === "web" && device.p256dh && device.auth,
-);
+// Split by transport, exactly as the real notifiers do it: the RPC returns
+// every device a member has, and each transport addresses only its own.
+const devices = (data ?? []) as Device[];
+const rows = devices.filter((device) => device.platform === "web" && device.p256dh && device.auth);
+const native = devices.filter((device) => device.platform === "ios");
 
-if (rows.length === 0) {
-  console.error("That member has no registered web device. Turn notifications on first.");
+if (rows.length === 0 && native.length === 0) {
+  console.error("That member has no registered device. Turn notifications on first.");
   process.exit(1);
 }
 
-console.log(`sending to ${rows.length} device(s)…`);
+console.log(`sending to ${rows.length} web and ${native.length} iOS device(s)…`);
+
+/**
+ * The iOS half, which this script could not do until 2026-08-26.
+ *
+ * It filtered to `platform === "web"` and skipped an `ios` row in silence — so
+ * the one tool for proving the chain end to end could not exercise the
+ * transport that had just been built, and the only way to see a real
+ * notification arrive was to wait for the 8pm Drop.
+ *
+ * It imports the same wire the app uses rather than a second copy of it. That
+ * needed apns.ts splitting: it opens with `import "server-only"`, which throws
+ * outside a React Server Component, so nothing under scripts/ could touch it.
+ * The wire moved to apns-transport.ts, which carries no such import.
+ */
+if (native.length > 0) {
+  const config = apnsConfig();
+  if (!config) {
+    console.error("  APNs is not configured — all four APNS_ values or none. Skipping iOS.");
+  } else {
+    const results = await sendApnsAlerts(
+      config,
+      native.map((device) => ({
+        deviceToken: device.endpoint,
+        alert: {
+          title: payload.title,
+          body: payload.body,
+          event: payload.event,
+          path: payload.path,
+          sound: payload.event === "drop_ready",
+        },
+      })),
+    );
+
+    for (const { deviceToken, status } of results) {
+      // Never the token itself, which is a device identifier (§9.6). The last
+      // six characters are enough to tell two devices apart in a console.
+      const tail = deviceToken.slice(-6);
+      if (status === 200) {
+        console.log(`  ok  200  apns …${tail}`);
+        continue;
+      }
+      console.error(`  FAIL ${status}  apns …${tail}`);
+      if (status === 400) {
+        console.error(
+          "       400 is almost always BadDeviceToken: the token was minted against the",
+        );
+        console.error(
+          "       other APNs host. A build run from Xcode is sandbox; TestFlight and the",
+        );
+        console.error("       App Store are production. Check APNS_ENVIRONMENT.");
+      }
+      if (status === 403) {
+        console.error("       403 is InvalidProviderToken — the .p8, the key id, or the team id.");
+      }
+      if (status === 410 || status === 400) {
+        await supabase.rpc("forget_push_device", { p_endpoint: deviceToken });
+        console.error("       token was dead and has been forgotten");
+      }
+    }
+  }
+}
 
 for (const row of rows) {
   try {
@@ -140,7 +207,9 @@ for (const row of rows) {
     console.log(`  ok  ${result.statusCode}  ${new URL(row.endpoint).host}`);
   } catch (cause) {
     const status = cause?.statusCode ?? "?";
-    console.error(`  FAIL ${status}  ${new URL(row.endpoint).host}  ${cause?.body ?? cause?.message ?? ""}`);
+    console.error(
+      `  FAIL ${status}  ${new URL(row.endpoint).host}  ${cause?.body ?? cause?.message ?? ""}`,
+    );
     if (status === 404 || status === 410) {
       // Same rule the real transport uses: these two mean gone forever.
       await supabase.rpc("forget_push_device", { p_endpoint: row.endpoint });
