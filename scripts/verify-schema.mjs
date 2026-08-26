@@ -46,7 +46,9 @@ if (!DB_URL) {
 // rooms is 7, not the 5 §5.2 names: Latest news is a room now (20260820000300)
 // and there are two of it, one per community, because rooms are scoped by
 // community and news is too. The five the spec names are still all there.
-const EXPECT = { tables: 31, views: 5, functions: 116, enums: 21, rooms: 7, config: 23 };
+const EXPECT = { tables: 32, views: 5, functions: 118, enums: 21, rooms: 7, config: 23 };
+// 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
+// emails_for() from 20260824000200, which had been sitting unapplied.
 const INVOKER_VIEWS = [];
 const DEFINER_VIEWS = ["visible_profile_photos", "visible_profiles", "preview_profiles"];
 const NO_UPDATE_PATH = ["connects", "chats"];
@@ -253,6 +255,34 @@ try {
 } catch (error) {
   check(false, `PostGIS call failed: ${error.message}`);
 }
+
+console.log("\n── the grants a new table arrives with ──");
+// Supabase ships `alter default privileges ... grant all on tables to anon,
+// authenticated`, so every new table arrives with the full set and has to
+// revoke for itself. 20260813000700's opening revoke covered what existed then
+// and nothing since.
+//
+// This checked anon only, and so under-reported the one time it fired:
+// iap_entitlements had granted the same seven privileges to AUTHENTICATED, and
+// the failure named neither that role nor preview_profile_photos, which has
+// carried them since 20260817000800 because its revoke says `from public, anon`
+// and omits authenticated.
+//
+// A member session legitimately holds SELECT, INSERT, UPDATE or DELETE on
+// plenty of tables, so those cannot be asserted away. TRUNCATE, REFERENCES and
+// TRIGGER are different: nothing a member does needs them, no migration grants
+// them, and their presence means default privileges were never revoked. That
+// makes them the tell, and the narrowest one available.
+const leaked = await q(`
+  select table_name, string_agg(privilege_type, '/' order by privilege_type) privs
+  from information_schema.role_table_grants
+  where grantee = 'authenticated' and table_schema = 'public'
+    and privilege_type in ('TRUNCATE', 'REFERENCES', 'TRIGGER')
+  group by table_name order by table_name`);
+check(
+  leaked.length === 0,
+  `authenticated holds no privilege only default grants confer${leaked.length ? ` — found ${leaked.map((g) => `${g.table_name} (${g.privs})`).join(", ")}` : ""}`,
+);
 
 console.log("\n── anon reaches no table directly ──");
 const anonGrants = await q(`
