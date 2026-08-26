@@ -23,14 +23,25 @@
 
 import pg from "pg";
 
+import { declaredEverywhere } from "./declared-objects.mjs";
+
 const DB_URL = process.env.SUPABASE_DB_URL;
 if (!DB_URL) {
   console.log("SUPABASE_DB_URL not set — skipping live schema verification.");
   process.exit(0);
 }
 
-// Expected counts. These are assertions about the migrations, so a drift here
-// means either the schema changed or this file did not keep up.
+// Expected counts, which catch an object that exists and should not.
+//
+// They do NOT catch the opposite, and it took a live defect to notice: these
+// are hand-maintained numbers describing the DATABASE, so a migration that was
+// never applied makes the real count smaller, somebody lowers the number to
+// match, and the gate stays green forever. 20260824000200 sat in the repo
+// unapplied for two days exactly that way, with emails_for() missing and the
+// email notifier failing every delivery in production.
+//
+// The `declared vs applied` section below is the half that catches it, and it
+// is derived from the migration files rather than written down here.
 //
 // rooms is 7, not the 5 §5.2 names: Latest news is a room now (20260820000300)
 // and there are two of it, one per community, because rooms are scoped by
@@ -62,6 +73,38 @@ const counts = await q(`
 for (const key of ["tables", "views", "functions", "enums"]) {
   const got = Number(counts[0][key]);
   check(got === EXPECT[key], `${EXPECT[key]} ${key} (got ${got})`);
+}
+
+console.log("\n── declared vs applied ──");
+// Every object the migrations leave behind, net of drops, against what is
+// actually there. This is the check that answers "has every migration been
+// applied", which a count cannot: a name is missing or it is not.
+const declared = declaredEverywhere();
+const liveNames = {
+  tables: new Set(
+    (await q(`select tablename from pg_tables where schemaname = 'public'`)).map(
+      (r) => r.tablename,
+    ),
+  ),
+  views: new Set(
+    (await q(`select viewname from pg_views where schemaname = 'public'`)).map((r) => r.viewname),
+  ),
+  functions: new Set(
+    (
+      await q(`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+               where n.nspname = 'public'`)
+    ).map((r) => r.proname),
+  ),
+};
+for (const kind of ["tables", "views", "functions"]) {
+  const missing = [...declared[kind]].filter(([name]) => !liveNames[kind].has(name));
+  check(
+    missing.length === 0,
+    missing.length === 0
+      ? `every declared ${kind.slice(0, -1)} exists (${declared[kind].size})`
+      : `${missing.length} declared ${kind} absent — ` +
+          missing.map(([name, file]) => `${name} (apply ${file})`).join(", "),
+  );
 }
 
 console.log("\n── row level security ──");
