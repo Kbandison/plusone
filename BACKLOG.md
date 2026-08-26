@@ -157,7 +157,7 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `inNativeShell()`. Small, and independent of items 2–4, so it does not wait
    on App Store Connect.
 9. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
-10. **The Android TWA** — **built 2026-08-26**, not yet uploaded.
+10. ~~**The Android TWA**~~ — built and **uploaded 2026-08-26**.
     `apps/android/app-release-bundle.aab`, Bubblewrap against the manifest,
     signed with the upload key at `~/keys/plusone-upload.jks` (outside every
     checkout; `*.jks` is ignored repo-wide). `assetlinks.json` is done and
@@ -176,7 +176,14 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     project and is out of the iOS allowlist too. Takes effect on the next
     deploy — until then the live build still carries the old values.
 
-12. **Play sells three subscriptions, not one with three base plans.** Found
+12. ~~**Play sells three subscriptions, not one with three base plans.**~~ —
+    settled and recorded 2026-08-26. The three drafts exist and their ids are
+    on `PLANS` as `playProductId`: `1month`, `3months`, `6months`, the same
+    strings as Apple's by Kevin's choice. **Still to confirm in the console:
+    each base plan must be flagged _backwards compatible_ or `getDetails()`
+    returns nothing for that product** — no error, an empty list. Kept below
+    because the reasoning is what stops somebody rebuilding it as one
+    subscription. Found
     2026-08-26, before any billing code was written, and it inverts the advice
     that produced the current console setup — mine, and wrong.
 
@@ -276,7 +283,10 @@ unblock other work.
 11. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
     ~190 GB the disk image is holding. Tidying, not urgent.
 
-12. **Rebuild the Play subscription as three products**, one base plan each,
+12. ~~**Rebuild the Play subscription as three products**~~ — done
+    2026-08-26, as drafts, with the same ids as Apple. One base plan each,
+    and each needs flagging **backwards compatible** before activation.
+    Originally: three products, one base plan each,
     each flagged **backwards compatible** — see server lane 12 for why a TWA
     cannot reach the other base plans. `premium` with `premium1month`,
     `premium3month` and `premium6month` inside it can only sell one price.
