@@ -1,0 +1,19 @@
+{
+  "name": "@plusone/android",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Android shell. A Trusted Web Activity \u2014 real Chrome, not a WebView. See AGENTS.md.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generate": "bubblewrap update --skipVersionUpgrade",
+    "aab": "bubblewrap build"
+  },
+  "devDependencies": {
+    "@bubblewrap/cli": "1.24.1",
+    "@types/node": "^20",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

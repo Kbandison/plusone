@@ -1,0 +1,39 @@
+{
+  "packageId": "app.loveplusone",
+  "host": "www.loveplusone.app",
+  "name": "Plus One",
+  "launcherName": "PlusOne",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#14110f",
+  "themeColorDark": "#14110f",
+  "navigationColor": "#14110f",
+  "navigationColorDark": "#14110f",
+  "navigationDividerColor": "#14110f",
+  "navigationDividerColorDark": "#14110f",
+  "backgroundColor": "#14110f",
+  "enableNotifications": true,
+  "startUrl": "/app",
+  "iconUrl": "https://www.loveplusone.app/icons/icon-512.png",
+  "maskableIconUrl": "https://www.loveplusone.app/icons/icon-maskable-512.png",
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://www.loveplusone.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://www.loveplusone.app/",
+  "minSdkVersion": 23,
+  "fingerprints": [
+    {
+      "name": "play-app-signing",
+      "value": "FA:97:45:49:F5:D5:EB:BD:96:22:71:65:91:CF:94:AA:11:01:1C:17:9E:7D:05:0D:05:52:5A:CD:55:62:F9:4B"
+    }
+  ],
+  "signingKey": { "path": "", "alias": "" }
+}

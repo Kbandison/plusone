@@ -9,3 +9,19 @@
 # apps/ios/capacitor.config.ts is NOT in here. It is hand-written and it is the
 # file that matters.
 apps/ios/ios/
+
+# Bubblewrap owns the generated Android project, for the same reason.
+#
+# `bubblewrap update` rewrites all of it from twa-manifest.json — the gradle
+# files, the manifest, the resources, the wrapper. web_app_manifest.json is a
+# verbatim copy of what the site serves, so formatting it makes the app's copy
+# differ from the original it is supposed to mirror.
+apps/android/app/
+apps/android/gradle/
+apps/android/gradlew*
+apps/android/*.gradle
+apps/android/gradle.properties
+apps/android/manifest-checksum.txt
+
+# apps/android/twa-manifest.json is NOT in here. It is hand-written, it is the
+# file every generated one above is derived from, and it is what the tests read.
