@@ -77,7 +77,13 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Everything except static assets. Without a matcher this runs on fonts and
   // images too, which is a database round trip per icon.
+  //
+  // `.well-known` is excluded for the same reason and one more: the files there
+  // are fetched by verifiers rather than by members — Chrome checking
+  // assetlinks.json before it will drop a TWA's address bar — so there is no
+  // session to refresh, and touching Supabase on their behalf is a round trip
+  // spent on a request that has no cookies at all.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2?)$).*)",
   ],
 };

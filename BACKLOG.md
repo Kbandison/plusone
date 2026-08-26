@@ -42,9 +42,10 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
 4. **The badge through the plugin.** Android draws `setAppBadge()` as a "1"
    because a launcher badge is numeric; a native shell owns its own badge and
    can show a true dot. See `app-badge.tsx` for why a dot and not a count.
-5. **Android TWA.** Bubblewrap or PWABuilder against the manifest, plus
-   `/.well-known/assetlinks.json` carrying the signing key's SHA-256. Blocked on
-   Kevin for the key. Nothing in `apps/web` changes.
+5. **Moved to the server lane.** The Android TWA was here because this lane is
+   "Xcode, a Simulator, **or a Play Console**" — but nothing about it needs this
+   Mac, and everything genuinely Mac-only is queued behind it. See server lane 10.
+
 6. **Wire `inTwa()`.** It exists, is tested, and is used nowhere — a TWA has no
    `window.Capacitor`, so `inNativeShell()` and `nativePlatform()` both answer
    no inside a shipped Play app. Wire it when there is a TWA to watch it in, not
@@ -102,11 +103,21 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `inNativeShell()`. Small, and independent of items 2–4, so it does not wait
    on App Store Connect.
 8. **`/.well-known/apple-app-site-association`**, the web half of shells item 10. A static route on the app's own domain.
-9. **`NEXT_PUBLIC_APP_URL` points at `app.loveplusone.app`, which answers 404.**
-   It is Stripe's return URL, the add-an-address email target, and what room
-   share links are built from. Bundled with it: whether the apex or `www` is
-   canonical — `NEXT_PUBLIC_SITE_URL` is the apex, which 308s, and the shell
-   loads `www` because of it.
+9. **The Android TWA**, moved here from the shells lane on 2026-08-25.
+   Bubblewrap or PWABuilder against the manifest — Java and the Android SDK,
+   neither of which wants a Mac. `assetlinks.json` is **done** and serving; the
+   fingerprint and package name are in it and pinned by a test.
+
+   Build it against **`www.loveplusone.app`**, not the apex. Chrome does not
+   follow redirects when it fetches assetlinks, and the apex answers 308 — so a
+   TWA pointed there fails verification and keeps its address bar, with nothing
+   logged anywhere. Same origin trap that ejected the iOS shell into Safari.
+
+10. **`NEXT_PUBLIC_APP_URL` points at `app.loveplusone.app`, which answers 404.**
+    It is Stripe's return URL, the add-an-address email target, and what room
+    share links are built from. Bundled with it: whether the apex or `www` is
+    canonical — `NEXT_PUBLIC_SITE_URL` is the apex, which 308s, and the shell
+    loads `www` because of it.
 
 ## Lane: Kevin
 
@@ -118,8 +129,9 @@ unblock other work.
    documents are marked DRAFT and the terms still say governed by "the law of
    the place we are established" with no jurisdiction named. Long pole — worth
    starting before it is the only thing left.
-2. **The signing key's SHA-256**, for `assetlinks.json`. Blocks the whole TWA
-   lane item 5.
+2. ~~**The signing key's SHA-256**~~ — supplied 2026-08-25 and serving. Note
+   the Play record was recreated, so the first fingerprint is dead; the live one
+   is in the route and pinned by a test that refuses the old one.
 3. **The Apple Developer Team ID.** One value, and every "needs a real device"
    item on iOS is behind it: shells lane 8, the device half of native push, and
    the camera check that gates joining at all.
