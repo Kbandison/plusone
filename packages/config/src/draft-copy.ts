@@ -1070,6 +1070,15 @@ export const DRAFT_COPY = {
     premiumActive: "Premium is active.",
     premiumUntil: (date: string) => `Active until ${date}.`,
     premiumFromGrant: "You have premium from invites you sent.",
+    /**
+     * Shown when a checkout is started by somebody who already subscribes.
+     *
+     * Deliberately says nothing about where to manage it. The billing portal is
+     * hidden inside the native shell — guideline 3.1.1, see plan-buttons.tsx —
+     * so a line pointing at it would point at something a member on a phone
+     * cannot reach.
+     */
+    premiumAlreadySubscribed: "You already have an active subscription.",
     manageBillingLabel: "Manage billing",
     choosePlanLabel: "Choose",
     perMonth: (cents: number) => `${(cents / 100).toFixed(2)} a month`,

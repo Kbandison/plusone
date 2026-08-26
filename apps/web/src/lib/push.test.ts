@@ -216,6 +216,28 @@ describe("the transport forgets only what is really gone", () => {
     expect(buttons).toMatch(/useState<boolean \| null>\(null\)/);
   });
 
+  /**
+   * Two Stripe subscriptions on one customer, both billing, with nothing in the
+   * app showing the second.
+   *
+   * The page hides the chooser from a premium member, and that is presentation.
+   * A form rendered before subscribing and submitted after, a second tab, or a
+   * direct POST all reach the action anyway — which is the door.
+   */
+  it("refuses a checkout from somebody who already subscribes", () => {
+    const actions = withoutComments(read("src/app/app/settings/premium/actions.ts"));
+    // The same liveness test is_premium uses on the same table, so a row it
+    // would count and a row this refuses on are the same rows.
+    expect(actions).toMatch(/status === "active" \|\| status === "trialing"/);
+    expect(actions).toMatch(/Date\.parse\(periodEnd\) > Date\.now\(\)/);
+    expect(actions).toMatch(/premiumAlreadySubscribed/);
+
+    // NOT is_premium(). That is true for a referral grant too, and somebody
+    // whose grant expires next week has every reason to subscribe now — gating
+    // on it would make them wait for their own reward to lapse first.
+    expect(actions).not.toMatch(/is_premium/);
+  });
+
   /** Absent keys are a legal state; a half pair is not. */
   it("includes each transport by its own configuration, not by NODE_ENV", () => {
     expect(notifier).toMatch(/process\.env\.VAPID_PRIVATE_KEY/);

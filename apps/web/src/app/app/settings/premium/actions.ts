@@ -2,11 +2,13 @@
 
 import { redirect } from "next/navigation";
 
-import { PLANS, parseClientEnv, type PlanId } from "@plusone/config";
+import { DRAFT_COPY, PLANS, parseClientEnv, type PlanId } from "@plusone/config";
 
 import { priceIdFor, stripe } from "@/lib/stripe";
 import { getServerSupabase } from "@/lib/supabase";
 import type { CheckoutState } from "./state";
+
+const C = DRAFT_COPY.app;
 
 /**
  * Starts a checkout.
@@ -33,9 +35,37 @@ export async function startCheckout(
   // cancels and returns is one customer in Stripe rather than three.
   const { data: existing } = await supabase
     .from("subscriptions")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, status, current_period_end")
     .eq("user_id", auth.user.id)
     .maybeSingle();
+
+  /**
+   * Refuse a second subscription on top of a live one.
+   *
+   * The page already hides the chooser from a premium member, and that is
+   * presentation — this is the door. A form rendered before subscribing and
+   * submitted after, a second tab, or a direct POST all reach here, and the
+   * result is two Stripe subscriptions on one customer, both billing, with
+   * nothing in the app showing the second.
+   *
+   * NOT `is_premium()`, deliberately, even though the backlog said so. That
+   * function is true for a referral grant as well, and somebody whose grant
+   * expires next week has every reason to subscribe now — refusing them would
+   * mean waiting for their own reward to lapse before they could pay. The
+   * question here is narrower than "are they premium": it is "are they already
+   * paying Stripe".
+   *
+   * The liveness test is the one is_premium uses on the same table, so a row it
+   * would count and a row this refuses on are the same rows.
+   */
+  const status = existing?.status as string | undefined;
+  const periodEnd = existing?.current_period_end as string | undefined;
+  if (
+    (status === "active" || status === "trialing") &&
+    (!periodEnd || Date.parse(periodEnd) > Date.now())
+  ) {
+    return { error: C.premiumAlreadySubscribed };
+  }
 
   let url: string | null = null;
   try {
