@@ -91,6 +91,19 @@ Keep it short. If a section has been true and unread for a month, delete it.
   symlink `pnpm dev` starts with no environment and every page throws. The
   README's quickstart still says to put it at the root — unresolved, and Kevin's
   call which location is canonical.
+- **This repo is inside iCloud Drive, and iCloud duplicates files in it.**
+  `~/Documents` is synced, and iCloud resolves a conflict by dropping a
+  byte-identical copy named `thing 2.ext` beside the original. They appear with
+  no warning and `git add -A` commits them — which is exactly how
+  `config 2.xml` sat in the tree for two days. `.gitignore` now carries
+  `* [2-9].*` so it cannot happen again, but the duplicates still appear on
+  disk, and a build that reads a whole directory will see them. **Worth asking
+  Kevin whether the project should move out of `~/Documents` altogether**; a
+  repo with a `node_modules` in it is not something iCloud should be syncing.
+- **`next dev` can fail with "Failed to open database / Loading persistence
+  directory failed".** Turbopack's persistent cache, corrupt. `rm -rf
+apps/web/.next` and start again. It is not a code error and the message does
+  not say which database it means.
 - **git pushes through `gh`, not the keychain.** Upgrading git broke the
   osxkeychain entry's trust and a push hung on an invisible GUI dialog.
   `gh auth setup-git` is configured; if a push ever hangs with no output, look
@@ -111,6 +124,13 @@ runtimes` just comes back empty.
   Info.plist, which is `$(CAPACITOR_DEBUG)` and empty unless passed. Without it
   `ios_webkit_debug_proxy` lists no pages at all on every socket, which reads as
   the proxy being broken.
+- **…and even with it, the proxy does not work on this runtime.** Version 1.9.2
+  lists an empty page array on every socket against the Xcode 27 beta simulator,
+  with the app running and `isInspectable` genuinely set. It worked on the 25th
+  on an older runtime. Treat driving the shell over WebKit's remote protocol as
+  unavailable until that is sorted — the screenshot technique below is what
+  works today, and it is why the premium screen could not be driven to a
+  signed-in state on 2026-08-26.
 - **There is a simpler way to script the shell than the proxy.** Point
   `server.url` in `ios/App/App/capacitor.config.json` at a local page that runs
   the checks and renders the answers, then `simctl io screenshot`. No inspector,
@@ -173,10 +193,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                   | since      |
-| ------- | -------------------------------------- | ---------- |
-| _macOS_ | shells 11 — wiring the purchase button | 2026-08-26 |
-| _WSL_   | —                                      | —          |
+| session | item | since |
+| ------- | ---- | ----- |
+| _macOS_ | —    | —     |
+| _WSL_   | —    | —     |
 
 ## Sessions
 

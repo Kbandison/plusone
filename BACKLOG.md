@@ -143,9 +143,11 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     without `appAccountToken` returns `"unbound"` forever, because nothing binds
     it — the only fix is to buy again with the token.
 
-    **Still NOT done: no screen calls any of it**, which stays true until a
-    purchase has been exercised end to end. `plan-buttons.tsx` renders nothing in
-    the shell, which is the honest state rather than a half-wired one.
+    **The screen calls it as of `4d256ad`.** `native-purchase.tsx` sells the
+    three plans through Apple, restores, and the recovery pass in
+    `native-iap-recovery.tsx` collects renewals and any grant that did not land.
+    What is NOT verified is a purchase — that needs a Sandbox tester, which is
+    Kevin's item 13, and everything up to Apple's sheet is exercised.
 
     Two things for whoever wires it. The **reverse double-subscription guard**
     lives here rather than in the server lane: somebody with a live Stripe
@@ -154,11 +156,20 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     unlike checkout and the billing portal — Apple requires an IAP subscription
     be managed through their own screen. Nobody has watched it render.
 
-    Still owed here once the server side exists: the native branch in
-    `plan-buttons.tsx`, a submit-on-launch pass over
-    `nativeUnfinishedTransactions()` so a grant lost to a dead network is
-    recovered, a `restore purchases` control, and an actual purchase exercised
-    end to end — which needs a Sandbox tester on the iPad, not a Simulator.
+    **`manage-store.tsx`, half checked.** The part that mattered most is
+    confirmed: an off-origin `target="_blank"` link is handed to the system and
+    does NOT navigate the web view, measured in the Simulator with the exact
+    anchor that component renders. What could not be checked is the component
+    rendering in place, because that needs a signed-in member with a live
+    `iap_entitlements` row and the shell could not be driven to a signed-in
+    state — see the proxy note in `HANDOFF.md`.
+
+    **Also unchecked, and it is a regression risk in deployed code**: `30f26a2`
+    changed Manage billing's condition from `subscription` to `stripeIsLive`. A
+    member with a live Stripe subscription should still see it on the web and
+    still not see it in the shell. The shell half is pinned by test; the web
+    half wants a member who is actually paying Stripe, and inventing one in the
+    production database to watch a button render is a worse idea than the bug.
 
     Three traps are already paid for and pinned by `shell.test.ts`; the commit
     body for `85315e8` has them in full. The short version is that all three
