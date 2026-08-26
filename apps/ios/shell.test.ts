@@ -234,9 +234,53 @@ describe("push can actually reach the app", () => {
   });
 });
 
+describe("the view controller stays a table of contents", () => {
+  const mainViewController = read("ios/App/App/MainViewController.swift");
+  const pbxproj = read("ios/App/App.xcodeproj/project.pbxproj");
+
+  /**
+   * `capacitorDidLoad()` is the only place native code gets a bridge before the
+   * page loads, so everything the shell adds has to be called from it. That
+   * makes it the natural place for everything to accumulate, and it had already
+   * started: plugin registration, a notification observer, an allowlist of
+   * hosts and a navigation rule, in one class, with the observer's lifetime
+   * mixed in among them.
+   *
+   * Split so each concern owns its file. What this pins is the shape rather
+   * than the contents — the controller names things and holds no logic of its
+   * own, so a fourth concern is a line here and a file beside it.
+   */
+  it("delegates rather than doing the work itself", () => {
+    expect(mainViewController).toMatch(/ShellPlugins\.register\(on: bridge\)/);
+    expect(mainViewController).toMatch(/UniversalLinkRouter\(host: self\)/);
+
+    // The two things it used to do inline, and must not do again.
+    expect(mainViewController).not.toMatch(/NotificationCenter/);
+    expect(mainViewController).not.toMatch(/registerPluginInstance/);
+  });
+
+  /**
+   * Xcode does not compile a file because it exists on disk — it compiles what
+   * is in the build phase. PrivacyInfo.xcprivacy was missing from the bundle
+   * for exactly this reason, and a plugin left out of Sources fails the way an
+   * unregistered one does: silence, and a promise that never settles.
+   */
+  it("compiles every file the shell adds", () => {
+    for (const file of [
+      "MainViewController",
+      "ShellPlugins",
+      "UniversalLinkRouter",
+      "StoreKitPlugin",
+      "ShellPlugin",
+    ]) {
+      expect(pbxproj).toMatch(new RegExp(`${file}\\.swift in Sources`));
+    }
+  });
+});
+
 describe("the shell can sell the premium tier", () => {
   const sceneDelegate = read("ios/App/App/SceneDelegate.swift");
-  const mainViewController = read("ios/App/App/MainViewController.swift");
+  const shellPlugins = read("ios/App/App/ShellPlugins.swift");
   const plugin = read("ios/App/App/StoreKitPlugin.swift");
 
   /**
@@ -262,9 +306,9 @@ describe("the shell can sell the premium tier", () => {
    * never settles: not a rejection, no timeout of its own, just silence.
    */
   it("registers by instance, because registering by type is a no-op", () => {
-    expect(mainViewController).toMatch(/registerPluginInstance\(PlusOneStoreKitPlugin\(\)\)/);
+    expect(shellPlugins).toMatch(/registerPluginInstance\(PlusOneStoreKitPlugin\(\)\)/);
     // The call, not the word — the comment above it names the trap on purpose.
-    expect(mainViewController).not.toMatch(/registerPluginType\(/);
+    expect(shellPlugins).not.toMatch(/registerPluginType\(/);
   });
 
   /** A source file that is not in the build phase is not in the app — the same
@@ -299,7 +343,7 @@ describe("the shell can sell the premium tier", () => {
 
 describe("the page decides whether the shell is light or dark", () => {
   const shellPlugin = read("ios/App/App/ShellPlugin.swift");
-  const mainViewController = read("ios/App/App/MainViewController.swift");
+  const shellPlugins = read("ios/App/App/ShellPlugins.swift");
 
   /**
    * iOS reads the SYSTEM appearance; this app reads the member's stored choice.
@@ -323,7 +367,7 @@ describe("the page decides whether the shell is light or dark", () => {
 
   /** Registered by instance, for the reason the StoreKit plugin records. */
   it("is registered, and compiled into the app", () => {
-    expect(mainViewController).toMatch(/registerPluginInstance\(PlusOneShellPlugin\(\)\)/);
+    expect(shellPlugins).toMatch(/registerPluginInstance\(PlusOneShellPlugin\(\)\)/);
     expect(read("ios/App/App.xcodeproj/project.pbxproj")).toMatch(/ShellPlugin\.swift in Sources/);
   });
 
@@ -336,7 +380,7 @@ describe("the page decides whether the shell is light or dark", () => {
 
 describe("a tapped link opens the app and not Safari", () => {
   const entitlements = read("ios/App/App/App.entitlements");
-  const mainViewController = read("ios/App/App/MainViewController.swift");
+  const router = read("ios/App/App/UniversalLinkRouter.swift");
 
   /**
    * Without the entitlement a notification tap or an emailed link opens Safari,
@@ -372,14 +416,14 @@ describe("a tapped link opens the app and not Safari", () => {
    * app and not the thing they tapped, with nothing to say why.
    */
   it("listens for the link and takes the web view to it", () => {
-    expect(mainViewController).toMatch(/capacitorSceneOpenUniversalLink/);
-    expect(mainViewController).toMatch(/webView\?\.load\(URLRequest\(url: url\)\)/);
+    expect(router).toMatch(/capacitorSceneOpenUniversalLink/);
+    expect(router).toMatch(/webView\?\.load\(URLRequest\(url: url\)\)/);
   });
 
   /** The window the member's session lives in does not follow a link anywhere
       else, whatever hands it over. */
   it("refuses a link to any other host", () => {
-    expect(mainViewController).toMatch(/claimedHosts\.contains\(host\)/);
+    expect(router).toMatch(/claimedHosts\.contains\(host\)/);
   });
 
   /**
