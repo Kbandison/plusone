@@ -252,6 +252,20 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    `https://www.loveplusone.app/api/app-store/notifications`. The "send test
    notification" button is the check, and `TEST` is deliberately accepted.
 
+   **This now has a live test attached and a deadline.** Kevin's real sandbox
+   purchase on 2026-08-26 wrote the first `iap_entitlements` row, and the row
+   expires roughly 24 HOURS after it was made — the sandbox compresses the term,
+   and the tester's renewal rate is an App Store Connect setting no session can
+   see. Whatever the rate, that row renews or expires within about a day, and
+   BOTH are notifications.
+
+   So: with the URL set, the row updates itself and the whole path is proven
+   including the half nobody has watched. Without it, the row goes stale, Kevin
+   silently stops being premium, and the renewal that should have restored him
+   never arrives. Nothing in the app will look broken — `is_premium()` will
+   simply start answering no. Check `updated_at <> created_at` on that row to
+   tell the two outcomes apart.
+
    **Play RTDN is still open and is blocked**, on something nobody has asked
    Kevin for yet: a Google Cloud service account with Pub/Sub, and Play Console
    pointed at a topic. RTDN carries only a purchase token, so unlike Apple's the
