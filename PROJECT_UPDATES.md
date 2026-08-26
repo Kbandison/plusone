@@ -1,5 +1,104 @@
 # Project Updates
 
+## 2026-08-26 — The shell can reach a phone, and every step of it was silent when it could not
+
+Push works. A notification sent from a laptop arrives on an iPad running the
+TestFlight build, and the same send reaches an Android over web push.
+Registration, token storage, the settings state and delivery are confirmed on
+hardware rather than argued from code.
+
+That matters beyond the feature. Until today the shell had **no notifications at
+all** — a WebView has no `PushManager`, so the transport the web app relies on
+simply does not exist inside it. It was not degraded there; it was silent. It is
+also the strongest available answer to the guideline 4.2 question about whether a
+WebView-only app is submittable: the shell now does something a website
+categorically cannot.
+
+### Four failures, and not one of them announced itself
+
+**The token had nowhere to go.** iOS hands the device token to the app delegate;
+`@capacitor/push-notifications` listens for a matching NotificationCenter post;
+the Capacitor template ships an `AppDelegate` implementing neither. So
+`register()` succeeded, iOS produced a token, and handed it to a method nobody
+had written. The `registration` event never fired and the settings screen said
+"that did not work". Everything upstream was already correct — an iOS Team Store
+profile granting `aps-environment production`, a matching entitlement, Apple
+Distribution signing, the plugin compiled in. Every check passed and the chain
+still ended in a missing method.
+
+It could only be found on hardware. The Simulator never gets far enough to
+produce a token, so every Simulator check before it passed for the wrong reason.
+
+**The app asked for permission on cold launch.** The first version requested on
+mount, and the Simulator showed exactly what that means: the iOS alert on top of
+Tonight's Drop, one second after opening, before the member had asked for
+anything. iOS shows that alert ONCE for the life of an install — a member who
+dismisses it by reflex can never be asked again from inside the app. The asking
+moved to the settings toggle, where the member went looking for it and where the
+web path has always asked. The load-time component now only refreshes a token
+that is already granted.
+
+**The success and an exception arrived together.** The moment push started
+working, "Show a test notification" threw `undefined is not an object` onto the
+same screen — it draws through a service worker and a WebView has none. Guarded
+twice and not offered in the shell: it answers "will this device draw a
+notification at all", which iOS had already answered by granting the permission
+that got us there.
+
+**The tool for testing push could not test push.** `pnpm push:test` filtered to
+`platform === "web"` and skipped an `ios` row in silence, so the only proof
+available was waiting for the 8pm Drop. Fixed at the cause rather than with a
+second sender: `apns.ts` opened with `import "server-only"`, which throws outside
+a React Server Component, so nothing under `scripts/` could import any of it. The
+wire — config, the ES256 provider token, the HTTP/2 send — is now
+`apns-transport.ts`, which knows nothing about databases or requests.
+`apnsNotifier` keeps what needs a server. One implementation, two callers, so the
+script exercises the path production uses.
+
+### Getting a build to a device at all
+
+TestFlight needed an upload, and the upload needed three things none of which the
+error text names:
+
+- An **App Store archive still requires a registered device**, because automatic
+  signing builds an iOS App Development profile first whatever you are archiving
+  for. This corrects what was said here twice.
+- **`xcodebuild` uses registered devices and never registers one.** Plugging the
+  iPad in and building for it says "isn't registered in your developer account"
+  and stops.
+- **Developer Mode does not appear in iOS Settings** until a Mac running Xcode
+  has connected to the device once. Before that every device command fails with
+  "Developer Mode is turned off", which reads like a setting somebody forgot
+  rather than one that was not there yet.
+
+Three builds went up. The commands are in `apps/ios/README.md`, including that
+`destination: upload` sends through the Apple ID already in Xcode — no API key,
+no Transporter.
+
+### One thing that is probably dead work
+
+`fcmNotifier()` has been in the server lane since the notify work landed. It is
+likely unnecessary: Android is a TWA, not a Capacitor app, and **a TWA registers
+an ordinary web push subscription** — `native-shell.ts` says so, and it is why
+`push_subscriptions.platform` stays `'web'` for one. Web push already reaches
+Android and was seen doing it today. FCM would only be needed if Android became a
+native shell, which the 2026-08-24 decision ruled out. Recorded rather than
+built.
+
+### And main was red for one commit
+
+`9ae1481` went out with a failing lint — not because the check was skipped, but
+because the commit was chained after it with `;` instead of `&&`, so the failure
+scrolled past. That is verbatim what CONTRIBUTING warns about, in the section
+that warns about it because it happened once before at `e6749ca`. Second time,
+same mechanism. Fixed in `71fc4f2`.
+
+### Shells
+
+Verified against **iOS / WKWebView** on an iPad Pro through TestFlight, and
+against **Android** over web push. The residual grey status-bar band from
+yesterday is unchanged and still needs `overrideUserInterfaceStyle`.
+
 ## 2026-08-25 — One origin, and the email that was about to ship dead links
 
 Email is on and the origin split is closed. The second was found by trying to do

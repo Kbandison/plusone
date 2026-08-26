@@ -31,22 +31,16 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    simply follows the system. Worth settling when the theme toggle ships, since
    nothing writes `plusone.theme` yet.
 
-2. **Native push on iOS.** A WebView has no `PushManager`, so the shell is
-   silent today — the largest functional gap between it and the installed web
-   app, and the strongest available answer to the guideline 4.2 question.
+2. ~~**Native push on iOS**~~ — done and verified on hardware 2026-08-26. A
+   notification sent from a laptop arrived on an iPad running the TestFlight
+   build; the same send reached an Android over web push. Registration, token
+   storage, the settings state and delivery are all confirmed.
 
-   **Unblocked 2026-08-26**: all five `APNS_*` values are in Vercel, `apnsNotifier`
-   exists (`91c721a`) and `registerPushDevice` already takes a native token
-   (`e4ebe23`). What is left is the native half — `@capacitor/push-notifications`,
-   registering for remote notifications, and posting the token with
-   `platform: 'ios'`. Note the Simulator can register and can receive a payload
-   through `simctl push`, but its token is not one real APNs will accept: proving
-   actual delivery needs a device or TestFlight.
+3. ~~**The native branch in `push-toggle`**~~ — done 2026-08-26. It reads
+   iOS's own permission state and offers on, off or blocked, and it is the only
+   place this app asks for notification permission. Asking on load spends the
+   one prompt iOS ever shows before the member has expressed any interest.
 
-3. **The native branch in `push-toggle`.** It currently resolves to
-   `unsupported` inside the shell, which is honest and temporary — the comment
-   at the branch says where the native path plugs in, and that it wants its own
-   state and its own line rather than borrowing `pushUnsupported`.
 4. **The badge through the plugin.** Android draws `setAppBadge()` as a "1"
    because a launcher badge is numeric; a native shell owns its own badge and
    can show a true dot. See `app-badge.tsx` for why a dot and not a count.
@@ -96,11 +90,18 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
 
 Needs no Apple or Google account, and touches nothing under `apps/ios`.
 
-1. **`apnsNotifier()` and `fcmNotifier()`.** `composeNotifiers()` already runs
-   several providers side by side, `push_devices_for` already returns
-   `platform`, and `push_subscriptions` already accepts `'ios'` and `'android'`
-   with the web-push keys nullable. This is a new implementation behind an
-   interface built for it — not a schema change.
+1. ~~**`apnsNotifier()`**~~ — done, and verified end to end on 2026-08-26.
+
+   **`fcmNotifier()` is probably dead work, and worth deciding before anyone
+   writes it.** Android is a Trusted Web Activity, not a Capacitor app, and a
+   TWA registers an ORDINARY WEB PUSH SUBSCRIPTION — `native-shell.ts` says so
+   in as many words, and it is why `push_subscriptions.platform` stays `'web'`
+   for one. Web push already reaches Android and was confirmed doing it today.
+   FCM would only be needed if Android ever became a native shell, which the
+   2026-08-24 decision explicitly ruled out. Leave it unbuilt unless that
+   changes; `platform` accepting `'android'` costs nothing and keeps the door
+   open.
+
 2. ~~**`pnpm push:test` cannot reach an iOS device**~~ — done 2026-08-26, and
    it sends through the same wire the app uses rather than a second copy. The
    split it needed is in `apps/web/src/lib/apns-transport.ts`.
