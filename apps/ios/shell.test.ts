@@ -279,6 +279,86 @@ describe("the shell can sell the premium tier", () => {
   });
 });
 
+describe("a tapped link opens the app and not Safari", () => {
+  const entitlements = read("ios/App/App/App.entitlements");
+  const mainViewController = read("ios/App/App/MainViewController.swift");
+
+  /**
+   * Without the entitlement a notification tap or an emailed link opens Safari,
+   * which has its own cookie jar — so a signed-in member lands on a sign-in
+   * page and the app they already have is not involved.
+   */
+  it("claims the domain the site is actually served from", () => {
+    expect(entitlements).toMatch(/<key>com\.apple\.developer\.associated-domains<\/key>/);
+    expect(entitlements).toMatch(/applinks:www\.loveplusone\.app/);
+  });
+
+  /**
+   * The apex is left out ON PURPOSE, and it looks like an omission.
+   *
+   * iOS does not follow redirects when it fetches an association file, and the
+   * apex answers 308 to www — measured, not assumed. Claiming it would mean iOS
+   * fetching a redirect, failing, and never claiming the domain, with nothing
+   * logged anywhere. It is the same trap that keeps the Android TWA pointed at
+   * www, and the same one that ejected the iOS shell into Safari.
+   *
+   * `MainViewController` accepts the apex if a link ever arrives from one,
+   * which costs nothing. Claiming it in the entitlement is what does not work.
+   */
+  it("does not claim the apex, which answers a redirect", () => {
+    expect(entitlements).not.toMatch(/applinks:loveplusone\.app/);
+  });
+
+  /**
+   * Capacitor posts a notification for a universal link and NOTHING in core
+   * listens — `@capacitor/app` is what normally does. Without a listener the
+   * app opens on whatever page it last had and the tapped link is simply lost,
+   * which is worse than the Safari behaviour this replaces: the member gets the
+   * app and not the thing they tapped, with nothing to say why.
+   */
+  it("listens for the link and takes the web view to it", () => {
+    expect(mainViewController).toMatch(/capacitorSceneOpenUniversalLink/);
+    expect(mainViewController).toMatch(/webView\?\.load\(URLRequest\(url: url\)\)/);
+  });
+
+  /** The window the member's session lives in does not follow a link anywhere
+      else, whatever hands it over. */
+  it("refuses a link to any other host", () => {
+    expect(mainViewController).toMatch(/claimedHosts\.contains\(host\)/);
+  });
+
+  /**
+   * The app id in the association file is `TEAMID.bundleid`, and the two halves
+   * live in files nothing keeps in step. Wrong, iOS declines the domain in
+   * silence — there is no error and no log, links simply keep opening a
+   * browser.
+   */
+  it("agrees with the Xcode project about which app it is", () => {
+    const aasa = readFileSync(
+      join(
+        HERE,
+        "..",
+        "web",
+        "src",
+        "app",
+        ".well-known",
+        "apple-app-site-association",
+        "route.ts",
+      ),
+      "utf8",
+    );
+    const bundle = /const BUNDLE_ID = "([^"]+)"/.exec(aasa)?.[1];
+    expect(bundle).toBe("app.loveplusone");
+    expect(pbxproj).toMatch(
+      new RegExp(`PRODUCT_BUNDLE_IDENTIFIER = ${bundle?.replace(/\./g, "\\.")};`),
+    );
+
+    // The same team id the APNs key is issued under; a mismatch here fails the
+    // same silent way.
+    expect(/const TEAM_ID = "([^"]+)"/.exec(aasa)?.[1]).toBe("JUR426AHDD");
+  });
+});
+
 describe("the identity the App Store record gets", () => {
   /**
    * A bundle id cannot be changed once a listing exists — only abandoned, along
