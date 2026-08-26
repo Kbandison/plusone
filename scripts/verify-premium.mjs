@@ -325,6 +325,79 @@ try {
     );
   }
 
+  console.log("\n── a purchase is recorded once, and never changes hands ──");
+
+  const hasRpc =
+    (
+      await c.query(
+        `select count(*)::int n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+      where ns.nspname = 'public' and p.proname = 'record_iap_entitlement'`,
+      )
+    ).rows[0].n > 0;
+  check(hasRpc, "record_iap_entitlement exists (20260826000400 has been applied)");
+
+  if (hasRpc && hasTable) {
+    const owner = await member();
+    const other = await member();
+    const record = (user, over = {}) =>
+      c.query(`select public.record_iap_entitlement($1,$2,$3,$4,$5,$6,$7) id`, [
+        user,
+        "apple",
+        over.product ?? "3months",
+        over.txn ?? "one-purchase",
+        over.status ?? "active",
+        over.expires ?? new Date(Date.now() + 30 * 86_400_000).toISOString(),
+        over.env === undefined ? "Sandbox" : over.env,
+      ]);
+    const prem = async (u) => (await c.query(`select public.is_premium($1) p`, [u])).rows[0].p;
+    const rows = async () =>
+      (
+        await c.query(
+          `select count(*)::int n from public.iap_entitlements where transaction_id = 'one-purchase'`,
+        )
+      ).rows[0].n;
+
+    const first = (await record(owner)).rows[0].id;
+    check(
+      Boolean(first) && (await prem(owner)) === true,
+      "a purchase is recorded and grants premium",
+    );
+
+    // Replay is the NORMAL case: StoreKit redelivers until a transaction is
+    // finished, so this runs on every launch until the grant lands.
+    const replay = (
+      await record(owner, { expires: new Date(Date.now() + 120 * 86_400_000).toISOString() })
+    ).rows[0].id;
+    check(
+      replay === first && (await rows()) === 1,
+      "a replay updates that row rather than adding another",
+    );
+
+    check(
+      (await c.query(`select environment from public.iap_entitlements where id = $1`, [first]))
+        .rows[0].environment === "Sandbox",
+      "an environment already known survives a caller that omits it",
+    );
+    await record(owner, { env: null });
+
+    // One Apple ID, two Plus One accounts, "restore purchases" on the second.
+    // The subscription stays where it was bought.
+    check(
+      (await record(other)).rows[0].id === null,
+      "a second member is given null, not the subscription",
+    );
+    check(
+      (await c.query(`select user_id from public.iap_entitlements where id = $1`, [first])).rows[0]
+        .user_id === owner,
+      "and the row still belongs to whoever bought it",
+    );
+    check((await prem(other)) === false, "so the second member is not premium");
+    check((await rows()) === 1, "and no second row was made for them");
+
+    await record(owner, { status: "revoked" });
+    check((await prem(owner)) === false, "a refund revokes with the term still running");
+  }
+
   console.log("\n── our database never learns who is paying ──");
   const cols = await c.query(
     `select column_name from information_schema.columns

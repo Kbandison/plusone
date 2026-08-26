@@ -92,39 +92,55 @@ export async function submitAppStoreTransaction(jws: string): Promise<IapResult>
   const now = Date.now();
   const status = entitlementStatusOf(transaction, now);
 
-  // Service role, because iap_entitlements grants members SELECT and nothing
-  // else — the same shape as subscriptions, which only the Stripe webhook
-  // writes. A member being able to write their own entitlement would make every
-  // check above decorative.
-  const { error } = await serviceClient()
-    .from("iap_entitlements")
-    .upsert(
-      {
-        user_id: auth.user.id,
-        store: "apple",
-        product_id: transaction.productId,
-        transaction_id: transaction.originalTransactionId,
-        status,
-        // From the signed payload, never from a clock. A replayed transaction
-        // must not be able to extend anybody's subscription, which is the same
-        // rule the Stripe webhook follows with current_period_end.
-        expires_at: transaction.expiresDate
-          ? new Date(transaction.expiresDate).toISOString()
-          : null,
-        environment: transaction.environment ?? null,
-      },
-      // NOT user_id. The trigger would refuse it anyway — that is the point of
-      // 20260826000100 — but writing it here would make the refusal a 500 on a
-      // purchase rather than a line that was never written.
-      { onConflict: "store,transaction_id" },
-    );
+  /**
+   * Through an RPC rather than an upsert, and the reason is exact.
+   *
+   * PostgREST builds `on conflict do update set` from every column in the
+   * payload, and the payload has to carry user_id because the INSERT needs it.
+   * So the obvious upsert proposes to rebind the row to whoever submitted it on
+   * every replay — and replay is the normal case here, because StoreKit
+   * redelivers until a transaction is finished. Nothing went wrong only because
+   * the value matched and the trigger from 20260826000100 would have refused it
+   * if it had not, which is a backstop doing a seatbelt's job.
+   *
+   * `record_iap_entitlement` names the columns it updates and user_id is not
+   * among them, so a replay moves the term and nothing else. A row already
+   * belonging to somebody else is left alone and comes back null.
+   *
+   * Service role, because the table grants members SELECT and nothing else —
+   * a member able to write their own entitlement would make every check above
+   * decorative.
+   */
+  const { data: recorded, error } = await serviceClient().rpc("record_iap_entitlement", {
+    p_user_id: auth.user.id,
+    p_store: "apple",
+    p_product_id: transaction.productId,
+    p_transaction_id: transaction.originalTransactionId,
+    p_status: status,
+    // From the signed payload, never from a clock. A replayed transaction must
+    // not be able to extend anybody's subscription, which is the same rule the
+    // Stripe webhook follows with current_period_end.
+    p_expires_at: transaction.expiresDate ? new Date(transaction.expiresDate).toISOString() : null,
+    p_environment: transaction.environment ?? null,
+  });
 
   if (error) {
-    // Includes the binding trigger firing, which means this store subscription
-    // already belongs to somebody else. Nothing to do about it here except be
-    // honest; re-binding is the failure it exists to prevent.
     console.error(JSON.stringify({ at: "iap.record", problem: error.message }));
     return { ok: false, reason: "failed" };
+  }
+
+  /**
+   * Null means the subscription is bound to another member.
+   *
+   * Not an error and not a grant. Somebody restoring a purchase on a second
+   * Plus One account gets here honestly — one Apple ID, two accounts — and the
+   * right answer is that the subscription stays where it was bought. Saying
+   * "not_yours" rather than "failed" is what lets the shell tell them that
+   * instead of offering to retry.
+   */
+  if (recorded === null) {
+    console.error(JSON.stringify({ at: "iap.record", problem: "bound to another member" }));
+    return { ok: false, reason: "not_yours" };
   }
 
   revalidatePath("/app/settings/premium");

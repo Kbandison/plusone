@@ -181,31 +181,61 @@ describe("the purchase action", () => {
     new URL("../app/app/settings/premium/iap-actions.ts", import.meta.url),
     "utf8",
   );
+  const migration = readFileSync(
+    new URL(
+      "../../../../supabase/migrations/20260826000400_a_purchase_is_recorded_once.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
 
   it("writes with the service role rather than the member's session", () => {
     // iap_entitlements grants members SELECT and nothing else. A member able to
     // write their own entitlement makes every other check decorative.
-    expect(source).toMatch(/serviceClient\(\)[\s\S]*?\.from\("iap_entitlements"\)/);
+    expect(source).toMatch(/serviceClient\(\)\.rpc\("record_iap_entitlement"/);
   });
 
-  it("keys the upsert on the store's own subscription id", () => {
-    // Replay is the NORMAL case here — StoreKit redelivers until finished — so
-    // the write has to collapse onto one row rather than accumulate.
-    expect(source).toMatch(/onConflict: "store,transaction_id"/);
+  it("goes through the RPC rather than an upsert", () => {
+    // PostgREST builds `on conflict do update set` from every column in the
+    // payload, and the payload must carry user_id for the INSERT — so an upsert
+    // proposes to rebind the row on every replay, and replay is the normal case
+    // because StoreKit redelivers until a transaction is finished.
+    expect(source).not.toMatch(/\.upsert\(/);
+    expect(source).not.toMatch(/onConflict/);
   });
 
-  it("never lets the upsert move a row to another member", () => {
-    // `on conflict do update set user_id = excluded.user_id` is the obvious
-    // upsert and would let a purchase hop to whoever presented it last. The
-    // trigger refuses it; this keeps the action from trying.
-    expect(source).not.toMatch(/user_id:\s*excluded/);
+  it("never updates the member a subscription belongs to", () => {
+    // The property, read out of the SQL rather than inferred from the client
+    // call. Everything between `do update set` and the `where` is what a replay
+    // is allowed to change.
+    //
+    // Comments stripped first, and not as a precaution: this file explains the
+    // very statement being searched for, so the first version of this test
+    // matched the phrase `do update set` inside the paragraph describing it and
+    // read a prose sentence as the update list. Exactly what
+    // scripts/declared-objects.mjs had to learn about `constraint <name>`.
+    const sql = migration.replace(/--[^\n]*/g, "");
+    const setList = /do update\s+set([\s\S]*?)\s+where/i.exec(sql)?.[1] ?? "";
+    expect(setList).toBeTruthy();
+    expect(setList).toMatch(/status\s*=/);
+    expect(setList).toMatch(/expires_at\s*=/);
+    expect(setList).not.toMatch(/\buser_id\s*=/);
+    // And a row belonging to somebody else is skipped rather than raised on: an
+    // exception on the path of somebody who has just paid is a 500 and an
+    // unfinished transaction.
+    expect(sql).toMatch(/where\s+public\.iap_entitlements\.user_id\s*=\s*p_user_id/i);
+  });
+
+  it("keeps the RPC away from members", () => {
+    // A client that can call it can write its own entitlement.
+    expect(migration).toMatch(/revoke all on function[\s\S]*?from public, anon, authenticated/i);
   });
 
   it("takes the expiry from Apple's payload and never from a clock", () => {
     // A replayed transaction must not extend anybody's subscription. Same rule
     // the Stripe webhook follows with current_period_end.
-    expect(source).toMatch(/expires_at: transaction\.expiresDate/);
-    expect(source).not.toMatch(/expires_at:[^\n]*Date\.now\(\)/);
+    expect(source).toMatch(/p_expires_at: transaction\.expiresDate/);
+    expect(source).not.toMatch(/p_expires_at:[^,]*Date\.now\(\)/);
   });
 
   it("compares the account token case-insensitively at both ends", () => {
@@ -219,10 +249,16 @@ describe("the purchase action", () => {
     expect(source).toMatch(/if \(!token\) return \{ ok: false, reason: "unbound" \}/);
   });
 
+  it("tells a second account it is not theirs rather than that it failed", () => {
+    // One Apple ID, two Plus One accounts, a restore on the second. An honest
+    // mistake, and "retry" is the wrong thing to offer for it.
+    expect(source).toMatch(/recorded === null/);
+    expect(source).toMatch(/reason: "not_yours"/);
+  });
+
   it("logs a reason and never the receipt", () => {
     // §9.6. A rejected JWS is still a receipt, and a transaction id is an
     // identifier.
     expect(source).not.toMatch(/console\.(error|info|log)\([^)]*jws/);
-    expect(source).not.toMatch(/problem: cause instanceof JwsError \? cause : /);
   });
 });

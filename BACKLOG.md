@@ -232,14 +232,23 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    with a live Stripe subscription must not be sold an App Store one. The guard
    belongs beside the buy button, which does not exist yet.
 
-7. **Account binding — the schema half is done**, 2026-08-26. Unique
-   `(store, transaction_id)` refuses a second member claiming one
-   subscription, and a trigger refuses an UPDATE moving the owner, because
-   `on conflict do update set user_id = excluded.user_id` is the obvious
-   webhook upsert and would let a purchase hop to whoever presented it last.
-   What is left is the webhook not attempting it — the database will now
-   raise rather than comply, so this is a correctness bug waiting rather
-   than a security one.
+7. ~~**Account binding**~~ — done 2026-08-26, both halves. Unique
+   `(store, transaction_id)` refuses a second row and a trigger refuses an
+   UPDATE that moves the owner; `record_iap_entitlement` (20260826000400) is the
+   only thing that writes, and its update list does not contain `user_id`.
+
+   The trigger had been doing real work rather than standing by, which was not
+   the intent: PostgREST's upsert builds `on conflict do update set` from EVERY
+   column in the payload, and the payload has to carry `user_id` for the INSERT
+   — so every replay was proposing a rebind, and replay is the normal case
+   because StoreKit redelivers until a transaction is finished. A comment in
+   `iap-actions.ts` said "NOT user_id", which was true of the conflict target
+   and false of the update set.
+
+   A subscription already bound elsewhere now comes back null rather than
+   raising, so a restore on a second Plus One account is told it is not theirs
+   instead of getting a 500 and an unfinished transaction.
+
 8. ~~**The Stripe path must not be reachable inside the shell**~~ — done by WSL
    in `e8eee7d`. Left here for the record:
    `settings/premium/actions.ts` creates a Checkout session, and offering that
