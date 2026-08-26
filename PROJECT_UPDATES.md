@@ -1,5 +1,38 @@
 # Project Updates
 
+## 2026-08-26 — The band was never the status bar
+
+The theme work started on the 25th is finished. What was left of it was a grey
+scrim over the top 62pt of the page, in one combination: a dark phone with Linen
+chosen. The fix shipped that day — telling the native status bar which theme the
+page was wearing — resolved cleanly, visibly changed the clock, and left the
+band exactly where it was.
+
+It left it because the band is not the status bar. It is UIKit reconciling a
+light page with a dark system through the view controller's
+`overrideUserInterfaceStyle`, which follows the system appearance until
+something sets it. No Capacitor API exposes it, so there is now a second small
+local plugin in `apps/ios` that does nothing else.
+
+Worth keeping as a shape rather than a fact: a fix that resolves, changes
+something visible, and leaves the reported symptom in place is evidence that the
+diagnosis was wrong, not that the fix was too weak. The temptation on the 25th
+was to look for a stronger way to set the status bar style. There wasn't one,
+because the status bar was already correct.
+
+Measured rather than eyeballed, sampling the page's own ground down the top of
+the screen. Dark phone with Linen: rgb(139,134,128) at the top against Linen's
+true rgb(239,233,223) before; 239,233,223 at every row after. And the mirror
+checked deliberately — light phone with Dusk — because pinning an interface
+style is exactly the kind of fix that trades one band for the other. There is no
+band either way.
+
+**Still latent.** `plusone.theme` is read by the theme script and written by
+nothing, so a member cannot yet reach the state this fixes; it was reproduced by
+setting the key by hand. That is the point of doing it now — the theme toggle
+ships into something already correct, rather than into a bug report about a grey
+band nobody can describe.
+
 ## 2026-08-26 — The keyboard, and a bug that was not the one on the list
 
 The keyboard against the chat composer has been on the verification list since

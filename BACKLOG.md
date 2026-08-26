@@ -17,19 +17,17 @@ each session is standing. This is what is left.
 
 Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
 
-1. **A grey band under the status bar, in one combination.** Mostly fixed on
-   2026-08-25: the status bar TEXT now follows the page theme, via
-   `status-bar-style.tsx` calling the bridge's built-in `SystemBars`. All four
-   combinations of system appearance and chosen theme now get legible text.
-   What is left is cosmetic and narrower — with the system dark and Linen
-   chosen, iOS still lays a grey gradient over the top 62pt of the page (drift
-   dropped from 301 to 100, measured). That scrim is not the status bar style;
-   setting the style resolves and demonstrably changes the text while the band
-   stays. It comes from the view controller's `overrideUserInterfaceStyle`
-   following the SYSTEM appearance, which no Capacitor API exposes — it would
-   need a small custom native tweak, or the decision that in the shell the theme
-   simply follows the system. Worth settling when the theme toggle ships, since
-   nothing writes `plusone.theme` yet.
+1. ~~**A grey band under the status bar**~~ — done 2026-08-26, and it needed
+   the native tweak this entry guessed at rather than the decision to follow the
+   system. `PlusOneShell` in `apps/ios` sets `overrideUserInterfaceStyle` on the
+   window; `status-bar-style.tsx` calls it beside `SystemBars` off the same
+   `data-theme`. Measured both ways: dark phone with Linen went from a drift of
+   100 to about 1, and the mirror — light phone with Dusk — has no band either,
+   which is the thing a pinned style could easily have traded for.
+
+   Still latent, as it always was: nothing writes `plusone.theme`, so the two
+   can only disagree if the key is set by hand. Fixed now so the toggle ships
+   into something already correct.
 
 2. ~~**Native push on iOS**~~ — done and verified on hardware 2026-08-26. A
    notification sent from a laptop arrived on an iPad running the TestFlight

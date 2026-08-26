@@ -173,14 +173,14 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                | since      |
-| ------- | ----------------------------------- | ---------- |
-| _macOS_ | shells 1 — the grey status-bar band | 2026-08-26 |
-| _WSL_   | —                                   | —          |
+| session | item | since |
+| ------- | ---- | ----- |
+| _macOS_ | —    | —     |
+| _WSL_   | —    | —     |
 
 ## Sessions
 
-### 2026-08-26 · macOS · StoreKit, universal links, the keyboard — through `69097b3`
+### 2026-08-26 · macOS · StoreKit, links, keyboard, the band — through `221daa3`
 
 **Done and pushed.** The iOS shell has a StoreKit 2 plugin and the page has a
 wrapper for it (`native-iap.ts`). Reasoning is in the commit body and in
@@ -243,6 +243,17 @@ never returns to full height after the keyboard closes (874 -> 765, and it stays
 without the plugin. **Please do not build a workaround for it from the numbers
 alone**: this runtime is Xcode 27 beta 6 and the keyboard was dismissed
 programmatically. It wants a person and an iPad first.
+
+**The grey band is gone**, and the seam that did it is worth knowing about.
+`overrideUserInterfaceStyle` is what draws it and no Capacitor API exposes it,
+so there is now a second local plugin — `PlusOneShell` — beside the StoreKit
+one. **`MainViewController` is where anything native gets registered**, and
+registering is two lines; that is the whole cost of reaching UIKit from the page
+now, for the badge or anything else.
+
+**Sampling pixels out of a screenshot, since there is no PIL on this machine:**
+`sips -s format bmp` and read the rows. `scratchpad/sample.py` does it and took
+five minutes to write; it turned "the band looks gone" into a drift of 100 to 1.
 
 **How to script the shell, worth reusing.** Point `server.url` at a local page
 that measures what you want and renders it, then `simctl io screenshot`. Two
