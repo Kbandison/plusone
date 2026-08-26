@@ -92,15 +92,17 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
 
 1. ~~**`apnsNotifier()`**~~ — done, and verified end to end on 2026-08-26.
 
-   **`fcmNotifier()` is probably dead work, and worth deciding before anyone
-   writes it.** Android is a Trusted Web Activity, not a Capacitor app, and a
-   TWA registers an ORDINARY WEB PUSH SUBSCRIPTION — `native-shell.ts` says so
-   in as many words, and it is why `push_subscriptions.platform` stays `'web'`
-   for one. Web push already reaches Android and was confirmed doing it today.
-   FCM would only be needed if Android ever became a native shell, which the
-   2026-08-24 decision explicitly ruled out. Leave it unbuilt unless that
-   changes; `platform` accepting `'android'` costs nothing and keeps the door
-   open.
+   **`fcmNotifier()` stays on the list. Kevin's call, 2026-08-26**, against a
+   recommendation to drop it: he may still convert Android to Capacitor, and
+   that is the one change that makes FCM necessary.
+
+   Not needed today, and worth knowing why before anyone builds it: Android is
+   a TWA, a TWA registers an ORDINARY WEB PUSH SUBSCRIPTION — `native-shell.ts`
+   says so, and it is why `push_subscriptions.platform` stays `'web'` for one —
+   and web push was seen reaching an Android on 2026-08-26. So this is work that
+   buys nothing until the shell changes, and everything the moment it does. The
+   column already accepts `'android'`; nothing is blocked by leaving it unwritten
+   until then.
 
 2. ~~**`pnpm push:test` cannot reach an iOS device**~~ — done 2026-08-26, and
    it sends through the same wire the app uses rather than a second copy. The
