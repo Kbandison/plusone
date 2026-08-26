@@ -208,12 +208,25 @@ describe("the transport forgets only what is really gone", () => {
   it("offers no Stripe purchase inside the native shell", () => {
     const buttons = withoutComments(read("src/app/app/settings/premium/plan-buttons.tsx"));
     expect(buttons).toMatch(/inNativeShell/);
-    // Both of them: the chooser starts a subscription, and the portal can
-    // change a plan, which is also a purchase.
-    expect(buttons.match(/if \(offers !== true\) return null;/g) ?? []).toHaveLength(2);
+
+    /**
+     * Repinned when StoreKit landed. This used to assert the same early return
+     * twice, because the shell rendered NOTHING and both components said so the
+     * same way. The shell now sells through Apple, so the two differ: the
+     * chooser hands off to `NativePlanChooser`, and the portal still has no
+     * native equivalent and still draws nothing.
+     *
+     * What is being pinned has not changed — no Stripe purchase, and no price
+     * beside it, reachable from inside the shell.
+     */
+    expect(buttons).toMatch(/if \(surface === "native"\)/);
+    expect(buttons).toMatch(/<NativePlanChooser/);
+    expect(buttons.match(/if \(surface !== "web"\) return null;/g) ?? []).toHaveLength(1);
+
     // Nothing renders until the environment is known. Starting visible and
     // hiding on hydration draws a Subscribe button in the shell for a frame.
-    expect(buttons).toMatch(/useState<boolean \| null>\(null\)/);
+    expect(buttons).toMatch(/useState<Surface>\(null\)/);
+    expect(buttons).toMatch(/if \(surface === null\) return null;/);
   });
 
   /**

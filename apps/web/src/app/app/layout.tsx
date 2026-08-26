@@ -12,6 +12,7 @@ import { AppBadge } from "./app-badge";
 import { LiveRefresh } from "./live-refresh";
 import { NavLinks } from "./nav-links";
 import { PublishHeight } from "./publish-height";
+import { NativeIapRecovery } from "./native-iap-recovery";
 import { NativePush } from "./native-push";
 import { ServiceWorker } from "./service-worker";
 import { Timezone } from "./timezone";
@@ -278,6 +279,9 @@ export default async function AppLayout({
           shell — this asks iOS for a device token instead. Each returns
           immediately on the surface the other one serves. */}
       <NativePush />
+      {/* Collects a purchase whose grant did not land, and every renewal, both
+          of which arrive with no screen involved. Renders nothing. */}
+      <NativeIapRecovery />
 
       {/* Nothing again. Every profile in the database said 'UTC' because
           nothing had ever written the column — so every timestamp in the app

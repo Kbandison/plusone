@@ -1120,6 +1120,70 @@ export const DRAFT_COPY = {
      */
     premiumTwoSubscriptions:
       "You have more than one active subscription. Each has to be cancelled where it was bought.",
+    /**
+     * Buying inside the app, where Apple runs the sheet and we run nothing.
+     *
+     * Prices are never ours here. `displayPrice` comes back from StoreKit in
+     * the member's own storefront currency, and `PLANS[].priceCents` is what
+     * Stripe charges in USD on the web — the two agree today and are not the
+     * same number, and App Store pricing moves per region without anyone here
+     * touching it. A screen that promises one figure and debits another is the
+     * failure these strings are shaped around.
+     */
+    premiumStoreLoading: "Loading plans…",
+    /**
+     * Not "something went wrong". The App Store being unreachable is ordinary —
+     * aeroplane mode, a dead tunnel, an Apple outage — and it is fixed by
+     * waiting rather than by the member doing anything differently.
+     */
+    premiumStoreUnavailable: "The App Store is not reachable right now. Try again in a moment.",
+    /**
+     * A purchase belongs to an Apple ID, so a reinstall, a new phone or a
+     * second device arrives with nothing showing. Restoring is not an error
+     * path; it is the normal way somebody who already pays gets their access
+     * back, and it has to be visible before they conclude they were charged for
+     * nothing.
+     */
+    premiumRestoreLabel: "Restore purchases",
+    premiumRestoreNone: "Nothing to restore on this Apple ID.",
+    /**
+     * Ask to Buy, or a card that needs the bank's approval. The purchase is
+     * real and unfinished, and it may complete minutes or days later — so this
+     * must not read as a failure, and must not tell them to try again, which
+     * would start a second one.
+     */
+    premiumPurchasePending: "Waiting for approval. Premium unlocks as soon as it comes through.",
+    /**
+     * The nothing-was-charged half is the point. Apple's own sheet has already
+     * said whatever it says; what a member cannot tell from it is whether money
+     * moved, and that is the question they will act on.
+     */
+    premiumPurchaseFailed: "That did not go through, and nothing has been charged.",
+    /**
+     * One Apple ID, two Plus One accounts. It happens honestly — a shared
+     * family device, or somebody who made a second account — and the
+     * subscription stays with the account that bought it. Telling them to
+     * retry would be a lie; there is nothing here that trying again fixes.
+     */
+    premiumPurchaseNotYours:
+      "This subscription is already on another Plus One account. Sign in to that account to use it.",
+    /**
+     * A verified purchase carrying no `appAccountToken`, so there is nothing
+     * naming the member it belongs to. Refusing is deliberate — guessing
+     * "probably whoever is signed in" is how one subscription unlocks several
+     * people — but from the member's side it is genuinely not their fault and
+     * not something they can resolve alone.
+     */
+    premiumPurchaseUnbound:
+      "This purchase could not be matched to your account. Contact support and we will sort it out.",
+    /**
+     * The reverse of `premiumAlreadyStoreSubscribed`: they pay Stripe already
+     * and are looking at an App Store price. Two live subscriptions is a real
+     * outcome and both charge, so the sentence has to arrive before the sheet
+     * does.
+     */
+    premiumAlreadyOnWeb:
+      "You already subscribe on the web. Manage it there rather than buying again.",
     choosePlanLabel: "Choose",
     perMonth: (cents: number) => `${(cents / 100).toFixed(2)} a month`,
     photoBlurredNote: "Blurred until you connect",

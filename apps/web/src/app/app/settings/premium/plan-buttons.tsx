@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState } from "react";
 import { DRAFT_COPY, PLANS, formatPriceCents } from "@plusone/config";
 
 import { openBillingPortal, startCheckout } from "./actions";
+import { NativePlanChooser } from "./native-purchase";
 import { CHECKOUT_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
 import { inNativeShell } from "@/lib/native-shell";
@@ -26,25 +27,47 @@ const C = DRAFT_COPY.app;
  * offered. The web pays one frame of blank on a settings sub-page for that, and
  * install-app.tsx resolves the same question the same way.
  *
- * Temporary, and the shape of what replaces it matters: this hides the web
- * purchase, it does not add the native one. When StoreKit lands, the shell
- * renders IAP here instead of nothing — see BACKLOG server lane items 2 to 4.
+ * No longer temporary, and no longer nothing: the shell renders
+ * `NativePlanChooser` here instead, which sells the same three plans through
+ * Apple. What this hook decides is which of the two, and the `null` state is
+ * still load-bearing for the reason above — a Subscribe button drawn for one
+ * frame inside the shell is the exact thing 3.1.1 forbids.
  */
-function useOffersPurchase(): boolean | null {
-  const [offers, setOffers] = useState<boolean | null>(null);
+type Surface = "web" | "native" | null;
+
+function useSurface(): Surface {
+  const [surface, setSurface] = useState<Surface>(null);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor, which does not exist during a server render
-  useEffect(() => setOffers(!inNativeShell()), []);
-  return offers;
+  useEffect(() => setSurface(inNativeShell() ? "native" : "web"), []);
+  return surface;
 }
 
-export function PlanChooser() {
+export function PlanChooser({
+  userId,
+  alreadyPayingStripe,
+}: {
+  userId: string;
+  alreadyPayingStripe: boolean;
+}) {
   const [state, act, pending] = useActionState(startCheckout, CHECKOUT_INITIAL);
-  const offers = useOffersPurchase();
+  const surface = useSurface();
 
-  // No prices either, not only no button. "Premium is $X" with no way to buy it
-  // is still a call to action for buying it somewhere else, which is the half
-  // of 3.1.3(f) that is easy to miss.
-  if (offers !== true) return null;
+  // Hooks first, branch after. Nothing below may return before useActionState
+  // has run, whichever surface this turns out to be.
+  if (surface === null) return null;
+
+  /**
+   * Inside the shell, Apple sells it.
+   *
+   * `alreadyPayingStripe` is passed rather than worked out here. The page has
+   * already computed it, and the liveness test — status before date, because a
+   * revoked entitlement keeps its expiry — has been got wrong twice in two days
+   * by being rewritten. There is one implementation, in `subscription-source`,
+   * and this is not a third.
+   */
+  if (surface === "native") {
+    return <NativePlanChooser userId={userId} alreadyPayingStripe={alreadyPayingStripe} />;
+  }
 
   return (
     <form action={act} className="mt-8 flex flex-col gap-4">
@@ -100,7 +123,7 @@ export function PlanChooser() {
 
 export function ManageBilling() {
   const [state, act, pending] = useActionState(openBillingPortal, CHECKOUT_INITIAL);
-  const offers = useOffersPurchase();
+  const surface = useSurface();
 
   // Hidden in the shell too, and this one is worth arguing. The portal manages
   // a subscription rather than starting one — but it can also change a plan,
@@ -108,7 +131,7 @@ export function ManageBilling() {
   // through the system. A member who bought on the web loses the portal inside
   // the app until store billing exists. That is a real cost and the smaller
   // one.
-  if (offers !== true) return null;
+  if (surface !== "web") return null;
 
   return (
     <form action={act} className="mt-6">

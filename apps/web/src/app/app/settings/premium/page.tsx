@@ -185,7 +185,10 @@ export default async function PremiumPage() {
           ))}
         </section>
       ) : (
-        <PlanChooser />
+        /* userId for the appAccountToken that binds an Apple ID's
+           subscription to this account; stripeIsLive so the shell refuses to
+           sell a second subscription to somebody already being charged. */
+        <PlanChooser userId={auth.user.id} alreadyPayingStripe={stripeIsLive} />
       )}
 
       <section className="mt-14">
