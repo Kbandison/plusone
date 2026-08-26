@@ -284,12 +284,47 @@ describe("the transport forgets only what is really gone", () => {
  * ask.
  */
 describe("permission is asked for where somebody went looking for it", () => {
-  it("never prompts on load", () => {
+  /**
+   * Repinned 2026-08-26. This matched `function enable()[\s\S]{0,400}requestPermission`
+   * — a character count standing in for "inside enable()" — and the native
+   * branch, which asks iOS, pushed the browser's ask past 400 characters. The
+   * count was never the point. Both asks are now looked for by name, in the
+   * function they belong to, and neither depends on how long it is.
+   *
+   * There are two prompts to keep honest now, and only one of them existed when
+   * this test was written: a WebView has no PushManager, so the shell asks
+   * through the Capacitor plugin instead. iOS shows its alert ONCE for the life
+   * of an install, which makes prompting on load worse there than anywhere —
+   * a member who dismisses it by reflex can never be asked again from inside
+   * the app.
+   */
+  it("never prompts on load, on either surface", () => {
     const effect = toggle.slice(toggle.indexOf("useEffect("));
-    expect(effect.slice(0, effect.indexOf("}, [vapidPublicKey])"))).not.toMatch(
-      /requestPermission/,
-    );
-    expect(toggle).toMatch(/function enable\(\)[\s\S]{0,400}requestPermission/);
+    const onMount = effect.slice(0, effect.indexOf("}, [vapidPublicKey])"));
+    expect(onMount).not.toMatch(/requestPermission/);
+    expect(onMount).not.toMatch(/requestNativePush/);
+    // Reading what iOS already decided is not asking, and is what lets the
+    // screen show the true state without spending the one prompt.
+    expect(onMount).toMatch(/nativePushPermission/);
+
+    const enable = toggle.slice(toggle.indexOf("function enable()"));
+    const body = enable.slice(0, enable.indexOf("\n  function "));
+    expect(body).toMatch(/requestNativePush/);
+    expect(body).toMatch(/Notification\.requestPermission/);
+  });
+
+  /**
+   * The shell must not report "not available here" once it is. That string was
+   * honest while native push did not exist and becomes a lie the moment it
+   * does — and it is the sentence a member reads before giving up on
+   * notifications entirely.
+   */
+  it("no longer tells the shell push is unavailable", () => {
+    const effect = toggle.slice(toggle.indexOf("useEffect("));
+    const onMount = effect.slice(0, effect.indexOf("}, [vapidPublicKey])"));
+    const shellBranch = onMount.slice(onMount.indexOf("if (inNativeShell())"));
+    expect(shellBranch).toMatch(/setState\("on"\)/);
+    expect(shellBranch).toMatch(/setState\("blocked"\)/);
   });
 
   /** What will appear on a locked phone, before the button that causes it. */

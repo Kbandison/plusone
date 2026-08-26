@@ -12,6 +12,7 @@ import { AppBadge } from "./app-badge";
 import { LiveRefresh } from "./live-refresh";
 import { NavLinks } from "./nav-links";
 import { PublishHeight } from "./publish-height";
+import { NativePush } from "./native-push";
 import { ServiceWorker } from "./service-worker";
 import { Timezone } from "./timezone";
 
@@ -271,6 +272,12 @@ export default async function AppLayout({
       {/* Renders nothing either. It puts the worker on the device that makes
           push and the installed shell possible — see service-worker.tsx. */}
       <ServiceWorker />
+
+      {/* Nothing again, and the other half of the same job. A WebView has no
+          PushManager, so the worker above reaches nobody inside the native
+          shell — this asks iOS for a device token instead. Each returns
+          immediately on the surface the other one serves. */}
+      <NativePush />
 
       {/* Nothing again. Every profile in the database said 'UTC' because
           nothing had ever written the column — so every timestamp in the app

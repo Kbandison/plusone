@@ -6,7 +6,8 @@ import { DRAFT_COPY, PUSH_APP_NAME } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
 import { registerPushDevice, unregisterPushDevice } from "@/app/app/push-actions";
-import { inNativeShell, isAppleMobile } from "@/lib/native-shell";
+import { inNativeShell, isAppleMobile, nativePlatform } from "@/lib/native-shell";
+import { nativePushPermission, registerForNativeToken, requestNativePush } from "@/lib/native-push";
 
 const C = DRAFT_COPY.app;
 
@@ -101,7 +102,25 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
        * only one of them is worth a member reading twice.
        */
       if (inNativeShell()) {
-        setState("unsupported");
+        /**
+         * The native branch the comment above waited for.
+         *
+         * iOS is the source of truth here, the same way the browser is for the
+         * web path below — `checkPermissions` answers without asking the member
+         * anything, so this can run on every visit to the screen.
+         *
+         * "granted" is reported as ON rather than looked up in the database.
+         * The device knows; `push_subscriptions` grants members no select, and
+         * NativePush re-registers on every app load, so a granted permission and
+         * a stored token are the same state in practice.
+         */
+        void (async () => {
+          const permission = await nativePushPermission();
+          if (permission === "granted") setState("on");
+          else if (permission === "denied") setState("blocked");
+          else if (permission === null) setState("unsupported");
+          else setState("off");
+        })();
         return;
       }
 
@@ -131,6 +150,48 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
     setError(null);
     start(async () => {
       try {
+        /**
+         * The native path, and the only place this app asks iOS for permission.
+         *
+         * iOS shows that alert once for the life of an install, so it is spent
+         * here — on a member who has come to the settings screen and pressed a
+         * switch — rather than on a cold launch, which is what it did until the
+         * Simulator showed the prompt landing on top of Tonight's Drop.
+         */
+        if (inNativeShell()) {
+          const platform = nativePlatform();
+          if (platform !== "ios" && platform !== "android") {
+            setState("unsupported");
+            return;
+          }
+
+          const permission = await requestNativePush();
+          if (permission !== "granted") {
+            setState(permission === "denied" ? "blocked" : "off");
+            return;
+          }
+
+          // No token means APNs did not answer — offline, or refusing. Left OFF
+          // rather than ON, because a switch that says on while nothing can
+          // reach the device is the failure this whole screen exists to avoid.
+          const token = await registerForNativeToken();
+          if (!token) {
+            setState("off");
+            setError(C.pushFailed);
+            return;
+          }
+
+          const result = await registerPushDevice({ platform, token });
+          if (!result.ok) {
+            setState("off");
+            setError(C.pushFailed);
+            return;
+          }
+
+          setState("on");
+          return;
+        }
+
         const permission = await Notification.requestPermission();
         if (permission !== "granted") {
           setState(permission === "denied" ? "blocked" : "off");
@@ -213,6 +274,23 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
   function disable() {
     setError(null);
     start(async () => {
+      /**
+       * Nothing to unsubscribe from natively: iOS owns the permission, and it
+       * is revoked in Settings rather than here. What this can do is forget the
+       * token, which is what actually stops a send reaching the device.
+       *
+       * The permission stays granted, so the switch comes back ON next time the
+       * screen reads it. That is honest — the member has not withdrawn
+       * anything, and telling them otherwise would be the lie in the other
+       * direction.
+       */
+      if (inNativeShell()) {
+        const token = await registerForNativeToken();
+        if (token) await unregisterPushDevice(token);
+        setState("off");
+        return;
+      }
+
       try {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
