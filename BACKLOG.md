@@ -473,6 +473,17 @@ unblock other work.
     NOT by signing out of the real one. Use an address that is not already an
     Apple ID. Blocks the last of shells 11.
 
+15. **A Google Cloud service account for Play RTDN.** Server lane 4's remaining
+    half — Play's Real-time Developer Notifications — needs one, and nobody had
+    asked for it, so WSL's lane is empty waiting on a thing that was not on any
+    list. In Google Cloud console: a service account with the Pub/Sub Subscriber
+    role, its JSON key, and the Play Console pointed at a Pub/Sub topic.
+
+    Not urgent in the way the Apple side is: the App Store half of the webhook
+    work is unblocked and Android cannot sell anything until the three Play
+    products are rebuilt (item 12 above). Worth doing in the same sitting as
+    that, since both are Play Console work.
+
 ---
 
 ## Done, so nobody re-opens it

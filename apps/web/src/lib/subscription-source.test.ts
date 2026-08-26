@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -214,5 +215,72 @@ describe("the premium screen and the checkout door", () => {
     // their own screen, so hiding it would leave no way to cancel from the app
     // it was bought in.
     expect(manage).not.toMatch(/inNativeShell|useOffersPurchase/);
+  });
+});
+
+/**
+ * The test that could actually have caught two disagreeing readings.
+ *
+ * `2ab1de0` found `page.tsx` and `actions.ts` answering "is Stripe charging"
+ * differently for a null period end — one screen apart, opposite answers, and
+ * on their way to a third once the shell's purchase guard started reading the
+ * page's value. A test was already guarding this and could not have seen it: it
+ * pinned the shape of the expression in `actions.ts`, which says everything
+ * about that line and nothing about whether a rival exists somewhere else.
+ *
+ * That is the blind spot in every source-reading assertion in this repository,
+ * and there are a lot of them. They pin the shape of a line; they cannot pin
+ * the ABSENCE of a second implementation, because they only ever open the file
+ * they were pointed at.
+ *
+ * So this one is pointed at all of them. The tell of a rival liveness rule is
+ * naming the Stripe statuses, because that is the half nobody gets to avoid —
+ * a second reading of the dates alone is a bug, but a second reading that
+ * decides which statuses count is THE bug, and it has to say `trialing` out
+ * loud to do it.
+ */
+const SOURCE_ROOT = join(import.meta.dirname, "..");
+
+/**
+ * Where the rule is allowed to live. Being on this list is a claim that
+ * somebody looked, in the style `copy-is-wired.test.ts` uses for the same
+ * reason: an exception nobody has to justify stops being an exception.
+ */
+const MAY_DECIDE_LIVENESS = ["lib/subscription-source.ts", "lib/subscription-source.test.ts"];
+
+function sourceFiles(dir: string, acc: string[] = []): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".next") continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) sourceFiles(path, acc);
+    else if (/\.tsx?$/.test(entry.name)) acc.push(path);
+  }
+  return acc;
+}
+
+describe("there is one implementation of whether Stripe is charging", () => {
+  it("is the only place that decides which statuses count", () => {
+    const offenders = sourceFiles(SOURCE_ROOT)
+      .filter((path) => !MAY_DECIDE_LIVENESS.some((allowed) => path.endsWith(allowed)))
+      .filter((path) => /["']trialing["']/.test(readFileSync(path, "utf8")))
+      .map((path) => path.slice(SOURCE_ROOT.length + 1));
+
+    // Named rather than counted, so a failure says which file to go and read.
+    expect(offenders).toEqual([]);
+  });
+
+  /**
+   * The two readings that disagreed, kept as cases rather than as a memory.
+   *
+   * A row with no period end is unreachable while
+   * `subscriptions_paid_status_has_an_end` stands — which is exactly why this
+   * went unnoticed, and exactly why it needs pinning: the constraint is what
+   * makes it harmless, and a constraint is a thing somebody can drop.
+   */
+  it("treats a paid row with no end date as still charging", () => {
+    const now = Date.parse("2026-08-26T00:00:00Z");
+    expect(stripeIsLive({ status: "active", current_period_end: null }, now)).toBe(true);
+    expect(stripeIsLive({ status: "trialing", current_period_end: null }, now)).toBe(true);
+    expect(stripeIsLive({ status: "canceled", current_period_end: null }, now)).toBe(false);
   });
 });
