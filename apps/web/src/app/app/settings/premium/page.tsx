@@ -10,7 +10,9 @@ import {
 } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { isLive, liveSources, type EntitlementRow } from "@/lib/subscription-source";
 import { ManageBilling, PlanChooser } from "./plan-buttons";
+import { ManageStoreSubscription } from "./manage-store";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.premiumHeading };
@@ -22,32 +24,50 @@ export default async function PremiumPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/sign-in");
 
-  const [{ data: subscription }, { data: grants }, { data: isPremium, error: premiumError }] =
-    await Promise.all([
-      supabase
-        .from("subscriptions")
-        // `plan`, which the webhook has been writing since the beginning and
-        // nothing has ever read. It is the answer to the one question a paying
-        // member opens this screen with.
-        .select("plan, status, current_period_end")
-        .eq("user_id", auth.user.id)
-        .maybeSingle(),
-      supabase
-        .from("premium_grants")
-        .select("expires_at")
-        .eq("user_id", auth.user.id)
-        .order("expires_at", { ascending: false })
-        .limit(1),
-      // The same rule the walls use — a second opinion about who is premium is how
-      // a paying member gets told they are not.
-      //
-      // The self-relative form, because is_premium(uuid) is revoked from
-      // authenticated (20260814001000, closing a uuid-probe leak). Calling it here
-      // returned "permission denied", supabase-js resolves rather than rejects, the
-      // error was discarded, and null read as "not premium" — so every paying
-      // member was shown the plan chooser.
-      supabase.rpc("i_am_premium"),
-    ]);
+  const [
+    { data: subscription },
+    { data: grants },
+    { data: entitlements },
+    { data: isPremium, error: premiumError },
+  ] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      // `plan`, which the webhook has been writing since the beginning and
+      // nothing has ever read. It is the answer to the one question a paying
+      // member opens this screen with.
+      .select("plan, status, current_period_end")
+      .eq("user_id", auth.user.id)
+      .maybeSingle(),
+    supabase
+      .from("premium_grants")
+      .select("expires_at")
+      .eq("user_id", auth.user.id)
+      .order("expires_at", { ascending: false })
+      .limit(1),
+    /**
+     * What a store is charging them, which nothing on this page could see.
+     *
+     * `is_premium()` has counted iap_entitlements since 20260826000100, so a
+     * member who bought through the App Store already reads as premium here —
+     * and the page then showed them "Premium is active", no plan, no date and
+     * nothing to manage, because every other query on it is about Stripe.
+     * Read under their own session: the table grants members SELECT on their
+     * own rows and nothing else.
+     */
+    supabase
+      .from("iap_entitlements")
+      .select("store, product_id, status, expires_at")
+      .eq("user_id", auth.user.id),
+    // The same rule the walls use — a second opinion about who is premium is how
+    // a paying member gets told they are not.
+    //
+    // The self-relative form, because is_premium(uuid) is revoked from
+    // authenticated (20260814001000, closing a uuid-probe leak). Calling it here
+    // returned "permission denied", supabase-js resolves rather than rejects, the
+    // error was discarded, and null read as "not premium" — so every paying
+    // member was shown the plan chooser.
+    supabase.rpc("i_am_premium"),
+  ]);
 
   // Not discarded. This page deciding wrongly is a member being asked to pay
   // twice, which should be loud rather than silent.
@@ -76,7 +96,36 @@ export default async function PremiumPage() {
   // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
   const grantUntil = grants?.[0]?.expires_at as string | undefined;
-  const until = [subscription?.current_period_end as string | undefined, grantUntil]
+
+  /**
+   * Which sources are charging right now, and where each is cancelled.
+   *
+   * The Stripe arm repeats the liveness test `startCheckout` makes rather than
+   * asking whether a row exists, so a lapsed subscription does not offer a
+   * billing portal to somebody who is premium from a referral grant instead.
+   */
+  const stripeStatus = subscription?.status as string | undefined;
+  const stripeEnd = subscription?.current_period_end as string | undefined;
+  const stripeIsLive =
+    (stripeStatus === "active" || stripeStatus === "trialing") &&
+    Boolean(stripeEnd) &&
+    Date.parse(stripeEnd!) > now;
+  const sources = liveSources(stripeIsLive, (entitlements ?? []) as EntitlementRow[], now);
+  const storeSources = sources.filter((s) => s.source !== "stripe");
+
+  // The store's expiry counts too, or a member who bought in the app is told
+  // "Premium is active" with no date while the row beside it holds one.
+  //
+  // Through `isLive` rather than off the date, because a REVOKED row keeps its
+  // expiry — a refund takes access now and leaves weeks on the clock. Reading
+  // the date alone would print that date to somebody who has just been refunded.
+  const storeUntil = ((entitlements ?? []) as EntitlementRow[])
+    .filter((row) => isLive(row, now))
+    .map((row) => row.expires_at)
+    .filter((d): d is string => Boolean(d))
+    .sort()
+    .at(-1);
+  const until = [stripeEnd, grantUntil, storeUntil]
     .filter((d): d is string => Boolean(d) && Date.parse(d as string) > now)
     .sort()
     .at(-1);
@@ -110,10 +159,30 @@ export default async function PremiumPage() {
           <p className={subscription ? "mt-4 text-[13px]" : "text-[13px]"}>
             {until ? C.premiumUntil(new Date(until).toLocaleDateString()) : C.premiumActive}
           </p>
-          {!subscription && grantUntil ? (
+          {sources.length === 0 && grantUntil ? (
             <p className="mt-2 text-[11.7px] text-ink-3">{C.premiumFromGrant}</p>
           ) : null}
-          {subscription ? <ManageBilling /> : null}
+
+          {/* Two at once should not happen and does — web first, then the app.
+              Both charge, and each has to be cancelled where it was bought. */}
+          {sources.length > 1 ? (
+            <p role="status" className="mt-4 text-[11.7px] text-critical">
+              {C.premiumTwoSubscriptions}
+            </p>
+          ) : null}
+
+          {stripeIsLive ? (
+            <>
+              {sources.length > 1 ? (
+                <p className="mt-4 text-[11.7px] text-ink-3">{C.premiumFromStripe}</p>
+              ) : null}
+              <ManageBilling />
+            </>
+          ) : null}
+
+          {storeSources.map((s) => (
+            <ManageStoreSubscription key={s.source} source={s.source} url={s.manageUrl!} />
+          ))}
         </section>
       ) : (
         <PlanChooser />

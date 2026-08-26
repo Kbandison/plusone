@@ -1079,7 +1079,47 @@ export const DRAFT_COPY = {
      * cannot reach.
      */
     premiumAlreadySubscribed: "You already have an active subscription.",
+    /**
+     * The same refusal, for somebody already being charged by a store.
+     *
+     * This one DOES say where, unlike the line above, and the reason the two
+     * differ is what each member can act on. The billing portal is hidden
+     * inside the shell, so pointing at it would point at something they cannot
+     * reach; a store's own subscription screen is reachable from everywhere and
+     * is the only place that subscription can be changed.
+     */
+    premiumAlreadyStoreSubscribed: (store: string) =>
+      `You already subscribe through ${store}. Manage it there.`,
     manageBillingLabel: "Manage billing",
+    /**
+     * Where a store subscription is managed, and the wording is deliberate.
+     *
+     * "Manage" rather than "Cancel": the same screen changes a plan, turns
+     * auto-renew off, or does nothing, and a button that says Cancel is a
+     * button people do not press when they only wanted to look.
+     */
+    premiumManageAppleLabel: "Manage in the App Store",
+    premiumManageGoogleLabel: "Manage on Google Play",
+    /**
+     * Said out loud on the screen, because a member cannot otherwise tell.
+     *
+     * A subscription bought in the app and one bought on the web look identical
+     * from inside the app, and only one of them can be cancelled here. Somebody
+     * who does not know which they have will look in the wrong place first.
+     */
+    premiumFromApple: "Bought through the App Store.",
+    premiumFromGoogle: "Bought through Google Play.",
+    premiumFromStripe: "Bought on the web.",
+    /**
+     * Two live subscriptions at once, which should not happen and does.
+     *
+     * Somebody subscribes on the web, installs the app, and buys again through
+     * a store. Both charge. Saying so plainly is the whole point — the failure
+     * this guards against is a screen that shows one of them and quietly lets
+     * the other keep billing.
+     */
+    premiumTwoSubscriptions:
+      "You have more than one active subscription. Each has to be cancelled where it was bought.",
     choosePlanLabel: "Choose",
     perMonth: (cents: number) => `${(cents / 100).toFixed(2)} a month`,
     photoBlurredNote: "Blurred until you connect",

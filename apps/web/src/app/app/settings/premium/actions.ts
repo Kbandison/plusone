@@ -6,6 +6,7 @@ import { DRAFT_COPY, PLANS, parseClientEnv, type PlanId } from "@plusone/config"
 
 import { priceIdFor, stripe } from "@/lib/stripe";
 import { getServerSupabase } from "@/lib/supabase";
+import { alreadyPayingAStore, type EntitlementRow } from "@/lib/subscription-source";
 import type { CheckoutState } from "./state";
 
 const C = DRAFT_COPY.app;
@@ -65,6 +66,34 @@ export async function startCheckout(
     (!periodEnd || Date.parse(periodEnd) > Date.now())
   ) {
     return { error: C.premiumAlreadySubscribed };
+  }
+
+  /**
+   * And the same door for a store subscription, which is the likelier one.
+   *
+   * The order somebody actually does this in: subscribe on the web, install the
+   * app, buy again through the App Store because the app never mentioned the
+   * first one. This is the reverse trip — an App Store subscriber opening the
+   * web app — and without it Stripe starts a second charge on somebody Apple is
+   * already billing, with nothing in either place showing the other.
+   *
+   * The premium page hides the chooser from anybody premium, and that is
+   * presentation. This is the door: a form rendered before subscribing and
+   * submitted after, a second tab, or a direct POST all arrive here.
+   *
+   * Still NOT `is_premium()`, for the reason the Stripe check above gives — a
+   * referral grant is no reason to refuse somebody a subscription. The question
+   * is whether a store is charging them, and a grant never is.
+   */
+  const { data: entitlements } = await supabase
+    .from("iap_entitlements")
+    .select("store, product_id, status, expires_at")
+    .eq("user_id", auth.user.id);
+
+  const paying = (entitlements ?? []) as EntitlementRow[];
+  if (alreadyPayingAStore(paying, Date.now())) {
+    const store = paying.some((row) => row.store === "apple") ? "the App Store" : "Google Play";
+    return { error: C.premiumAlreadyStoreSubscribed(store) };
   }
 
   let url: string | null = null;

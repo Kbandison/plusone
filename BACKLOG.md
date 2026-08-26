@@ -214,12 +214,24 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    after there is an Android purchase to notify about, which needs the Play
    billing flow that server 12 records the shape of.
 
-5. **Cancellation routing.** Both stores require sending a subscriber to their
-   own management screen, so the premium page has to know which source sold the
-   subscription.
-6. **The double-subscription guard.** Somebody who bought on the web then
-   installs the app and buys again. Gate the purchase UI on `is_premium()`
-   before it renders.
+5. ~~**Cancellation routing**~~ — done 2026-08-26. The premium page reads
+   `iap_entitlements` and routes each live source to where it can actually be
+   cancelled: Stripe to the portal, Apple to `apps.apple.com/account/subscriptions`
+   (which opens Settings on an iPhone), Play to its own screen with `sku` and
+   `package`, without which it lands on every subscription the member has across
+   every app. The store link is deliberately NOT hidden in the shell, unlike the
+   portal — Apple requires an IAP subscription be managed through their screen.
+6. ~~**The double-subscription guard**~~ — done 2026-08-26, in the action rather
+   than only in the page, since a form rendered before subscribing and submitted
+   after reaches `startCheckout` whatever the page drew. Still not keyed on
+   `is_premium()`: a referral grant is no reason to refuse somebody a
+   subscription. If two are ever live at once the page says so and offers both,
+   rather than picking one and letting the other keep billing quietly.
+
+   **What is left of it is the reverse trip and it needs shells 11:** somebody
+   with a live Stripe subscription must not be sold an App Store one. The guard
+   belongs beside the buy button, which does not exist yet.
+
 7. **Account binding — the schema half is done**, 2026-08-26. Unique
    `(store, transaction_id)` refuses a second member claiming one
    subscription, and a trigger refuses an UPDATE moving the owner, because
