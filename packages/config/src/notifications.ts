@@ -208,8 +208,23 @@ export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
  * the one most likely to arrive in bursts; buzzing a phone for each is the
  * engagement loop §3.3 bans, and a member who wants it can turn it on.
  *
- * ALL of this is Claude's judgement, not Kevin's decision. The events are his;
- * which channel each one takes by default is not.
+ * NO EVENT DEFAULTS TO EMAIL, and that is now Kevin's decision rather than an
+ * unfinished state. Confirmed 2026-08-26, once the sending domain was verified
+ * and `RESEND_FROM` was set — the moment email became possible was the moment
+ * the question had to be answered rather than deferred.
+ *
+ * The reasoning it settles: email persists and is searchable in a way a push
+ * that is dismissed is not, and an inbox is read over shoulders, forwarded, and
+ * synced to machines a member does not control. §8 keeps a condition word off a
+ * lock screen; the same argument applies with more force to something that sits
+ * in a mailbox for years. A member who wants it can switch it on per event, and
+ * the Email column has been on the settings screen the whole time.
+ *
+ * `notification-defaults.test.ts` holds the line, because the failure here is
+ * somebody adding an event and copying the wrong row.
+ *
+ * The rest of this is Claude's judgement, not Kevin's decision. The events are
+ * his; which of in_app and push each one takes by default is not.
  */
 export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly NotificationChannel[]> = {
   drop_ready: ["in_app", "push"],
@@ -231,7 +246,24 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly Notificat
    */
   mention_received: ["in_app", "push"],
   verification_decided: ["in_app", "push"],
-  premium_expiring: ["in_app", "email"],
+  /**
+   * Push rather than email, changed 2026-08-26 to match Kevin's decision that no
+   * event defaults to email.
+   *
+   * It was `["in_app", "email"]` — the only entry in this table that used email,
+   * and the only one with no comment saying why, while every other deliberate
+   * choice here has one. The record had been asserting the opposite for days
+   * ("every entry is still in_app, push"), so nobody knew it was there.
+   *
+   * The argument FOR email on this one is real and worth writing down, because
+   * it may well be revisited: a lapsing subscription is a billing notice, email
+   * is the conventional channel for one, and persisting is a feature rather than
+   * a risk when somebody needs to find it later. It is also the least sensitive
+   * event in the table — "your subscription is ending" says nothing about who
+   * the member is. If that argument wins, this is the entry to change, and the
+   * test that guards it names itself.
+   */
+  premium_expiring: ["in_app", "push"],
   nearby_joins: ["in_app"],
   referral_converted: ["in_app"],
 };

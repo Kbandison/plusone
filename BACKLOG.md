@@ -175,20 +175,14 @@ unblock other work.
    `Plus One <support@loveplusone.app>` — an address that can actually receive,
    since the domain carries Google Workspace MX. Email goes live on the next
    deploy for anyone who has switched it on; no event defaults to it.
-8. **Whether any event should default to email.** The notifier is built and
-   inert — every `NOTIFICATION_DEFAULTS` entry is `["in_app", "push"]`. A §8
-   decision about a channel that persists and is searchable.
-9. **Small Business Program approval.** Separate from the $99 membership, and
-   **not a section of App Store Connect** — it is a standalone signed-in page at
-   `developer.apple.com/app-store/small-business-program/enroll/`. Looking for a
-   "Business" menu item is how an hour goes missing; there isn't one.
-
-   Apple asks three things and no more: be the Account Holder, have accepted the
-   latest Paid Apps agreement (Schedule 2, done 2026-08-25), and list any
-   Associated Developer Accounts. Tax and banking are **not** prerequisites,
-   whatever a search result says. The rate moves from 30% to 15% **15 days after
-   approval** — this said "the following month" until 2026-08-25, which came
-   from nowhere Apple documents.
+8. ~~**Whether any event should default to email**~~ — decided 2026-08-26:
+   **none does.** Email stays opt-in per event. Recorded in `notifications.ts`
+   with the reasoning and held by `notification-defaults.test.ts`, because
+   adding `"email"` to a row is a one-word change nothing else would question.
+9. ~~**Small Business Program approval**~~ — applied 2026-08-26, processing
+   email received. The rate moves from 30% to 15% fifteen days after approval.
+   Note for the next person: the enrolment form fails in Safari with a generic
+   "unknown error" and goes through in Chrome.
 
 10. **Whether the badge should count rather than mark.** Also §8 — see
     `app-badge.tsx`, which argues at length that an app icon sits in front of
