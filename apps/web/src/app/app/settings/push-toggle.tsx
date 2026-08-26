@@ -57,9 +57,14 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
   const [state, setState] = useState<State>("checking");
   const [error, setError] = useState<string | null>(null);
   const [tested, setTested] = useState(false);
-  // Evaluated once per render rather than per branch: inNativeShell() reads
-  // window, so it must not be called during the server render.
+  // Which surface this is, read after mount rather than during render.
+  //
+  // inNativeShell() reads window.Capacitor, which does not exist on the server —
+  // so a useState initializer would return false there and true on hydration,
+  // and the mismatch is a hydration error rather than a wrong button. The same
+  // reasoning, and the same disable, as install-app.tsx.
   const [native, setNative] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor, which does not exist during a server render
   useEffect(() => setNative(inNativeShell()), []);
   const [pending, start] = useTransition();
 
