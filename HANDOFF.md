@@ -295,47 +295,59 @@ keyboard opens, which is itself the thing under test.
 `https://www.loveplusone.app` and reinstalled on the simulator, probe server and
 proxy stopped.
 
-### 2026-08-26 · WSL · Play ids, entitlements, and a gate that was lying
+### 2026-08-26 · WSL · the whole purchase path, server side — through `54a6bbc`
 
-**Done and pushed, through `0ca2748`.** The Android AAB is built and Kevin has
-uploaded it. Play's three subscription drafts exist with the same ids as Apple —
-`1month`, `3months`, `6months` — recorded on `PLANS` as `playProductId`, its own
-field beside `appleProductId` even though every value matches, with a test that
-reads the source and refuses `playProductId: plan.appleProductId`.
+**Done and pushed.** Server lane 3 through 7 are closed and Apple's half of the
+webhooks with them. `iap_entitlements` and a third `exists` in `is_premium()`;
+JWS verification against an embedded Apple Root CA - G3; the purchase action;
+App Store Server Notifications; cancellation routing by source; the
+double-subscription guard; account binding. Play ids are on `PLANS` as
+`playProductId`. Details are in `git log` and `PROJECT_UPDATES.md`.
 
-`iap_entitlements` is live and `is_premium()` has its third `exists`.
-`check:premium` covers it: revoked grants nothing with 30 days left on the
-clock, paused grants nothing, a granting row with no expiry is refused, and a
-second member cannot claim one — by insert or by update.
+**What is worth carrying, and none of it is in the diffs:**
 
-**The find worth carrying: `check:db` was green and wrong.** It asserted
-hand-maintained COUNTS of live objects, so a migration that never got applied
-just made the real number smaller and somebody lowered the expectation to match.
-`emails_for()` had been missing from production since the 24th — every email
-delivery failing, unnoticed only because no event defaults to email. It now
-diffs declared-vs-live by name and says which file to apply.
+- **`check:db` was green and wrong for two days.** It asserted hand-maintained
+  COUNTS of live objects, so a migration that was never applied made the real
+  number smaller and somebody lowered the expectation to match. `emails_for()`
+  was missing from production the whole time and every email delivery was
+  failing. It diffs declared-against-live by name now, and names the file to
+  apply. If you write a gate, make sure it is calibrated against the SOURCE and
+  not against the thing it is checking.
 
-Two things that parser has to do, and I got both wrong first: subtract drops, or
-`shares_room`, `news_items` and the two news admin functions cry drift forever;
-and respect order WITHIN a file, because 20260818000100 drops
-`visible_profiles` and recreates it ten lines later.
+- **A source-reading test cannot see a rival implementation.** It pins the shape
+  of a line in the file it was pointed at. Two readings of "is Stripe charging"
+  sat one screen apart disagreeing about a null period end, with a test guarding
+  one of them. There are a lot of these tests in this repo and that is their
+  blind spot; three properties are now swept across the whole tree instead, and
+  `lib/source-scan.ts` is the one walker they share.
 
-**Left off clean.** All 14 mechanical gates green, `check:launch` in full.
-Nothing half-finished, nothing claimed.
+- **Make a guard fail before trusting it.** macOS's discipline, and it caught a
+  useless one of mine — I mutated a file into something that would not compile,
+  so vitest reported "no tests" rather than a failure and I nearly counted that
+  as proof.
 
-**For Kevin, and only he can do it:** Supabase's **Site URL** is still
-`http://localhost:3000`, which is why an emailed sign-in link lands there. The
-app is fine — `/auth/callback` handles both link shapes. Dashboard →
-Authentication → URL Configuration: Site URL to `https://www.loveplusone.app`,
-and add `https://www.loveplusone.app/auth/callback` to Redirect URLs. That
-second half matters on its own: `settings/actions.ts` passes an explicit
-`emailRedirectTo`, and Supabase silently falls back to Site URL when the target
-is not allow-listed — so adding an email in Settings is broken the same way.
+- **Apply and record are two steps and nothing joins them.** Applying a
+  migration by hand does not touch the ledger, so it drifts the opposite way
+  from the dangerous direction — applied but unrecorded — and the symptom is
+  being told to apply what is already there. Re-run
+  `backfill-migration-ledger.mjs` after applying anything; the dry run is
+  read-only.
 
-**Not done, not claimed:** server 4–6 (store webhooks, cancellation routing,
-the double-subscription guard) are unblocked now that entitlements exist.
-Server 7 is half done — the schema refuses a re-bind; the webhook still has to
-not try.
+- **A claim about live infrastructure goes stale between sessions.** I reported
+  two migrations pending; they were, when I looked; Kevin applied them; macOS
+  found them present an hour later. Both readings were true when taken. By the
+  time a claim lands, one that was true when made is indistinguishable from one
+  that never was — so check it against the infrastructure before it reaches
+  Kevin, and not because the other session is careless.
+
+**Left off clean.** All 14 mechanical gates green, `check:launch` in full, tree
+clean, nothing claimed. The ledger reports MISSING: 0 for the first time.
+
+**Not done, and not claimed:** Play RTDN, the remaining half of server 4. It
+needs a Google Cloud service account with Pub/Sub, which is Kevin item 15 —
+macOS put it there after I spent three messages reporting an empty lane while
+blocked on something that was on no list. Worth the habit: write the blocker
+down before reporting the block.
 
 ### 2026-08-25 (later still) · macOS · status bar
 
