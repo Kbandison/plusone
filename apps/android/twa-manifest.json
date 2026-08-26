@@ -44,5 +44,6 @@
   "signingKey": {
     "path": "",
     "alias": ""
-  }
+  },
+  "splashScreenFadeOutDuration": 300
 }
