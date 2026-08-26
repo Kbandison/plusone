@@ -79,7 +79,23 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     opens Safari — which has its own cookie jar, so it reads as being signed
     out. The Associated Domains entitlement is this lane; the
     `apple-app-site-association` half is the server lane.
-11. **Verification debt.** What is left of it: the keyboard against the fixed
+11. **StoreKit, and it now gates the submission.** Nothing owned the native
+    purchase flow — the server lane has entitlements, webhooks, cancellation
+    routing and account binding, and none of that is a way for a member to
+    actually buy anything.
+
+    Note what the shell currently does: `e8eee7d` hid the Stripe checkout inside
+    it, correctly, because offering it there is guideline 3.1.1. So **the paid
+    tier is presently unreachable in the app** — a dead end rather than a
+    choice, and its own 4.2 problem until this lands.
+
+    The products exist (`1month`, `3months`, `6months`, recorded on `PLANS` as
+    `appleProductId`). What is missing is a purchase flow reached through the
+    bridge the way SystemBars and PushNotifications are, and server-side
+    validation through the App Store Server API. Pairs with server lane 2–7,
+    which are unblocked.
+
+12. **Verification debt.** What is left of it: the keyboard against the fixed
     composer (`bottom-[var(--nav-h)]` — the classic WKWebView failure is the
     inset staying applied when the keyboard is up), and the camera, which is the
     liveness gate, needs real hardware, and therefore waits on item 8. Dusk, the
@@ -182,10 +198,13 @@ unblock other work.
    there rather than deciding again. One question in it is held for counsel:
    whether the liveness check counts as collecting biometric data when nothing
    is retained.
-5. **Whether a remote-URL shell is submittable** (guideline 4.2, minimum
-   functionality). Capacitor's own declarations call `server.url` "not intended
-   for use in production". The answer is mostly a function of how much native
-   capability it has by then, which is what the push and StoreKit work buys.
+5. ~~**Whether a remote-URL shell is submittable**~~ — decided 2026-08-26:
+   **yes, and we submit once StoreKit is in.** Not a gamble on 4.2 so much as a
+   recognition that store billing is required for these subscriptions anyway —
+   so the work that makes the strongest 4.2 case is work that has to happen
+   regardless. Submitting before it would also trip 3.1.1, which is a far more
+   certain rejection than 4.2 ever was.
+
 6. **The app icon and launch image.** Both are placeholder geometry — Claude's,
    not a design. Replacing the SVG in `scripts/generate-icons.mjs` replaces
    every surface at once, web and iOS.

@@ -1,5 +1,42 @@
 # Project Updates
 
+## 2026-08-26 — The shell ships, once it can take money
+
+**Decision: submit the iOS shell, and submit it once StoreKit is in.** Kevin's
+call, and it settles the guideline 4.2 question that has been open since the
+target was scaffolded.
+
+The worry was real and is written down in `capacitor.config.ts`: the shell loads
+the live site into a WKWebView and bundles nothing but an offline page, and
+Capacitor's own declarations call `server.url` "not intended for use in
+production" — a caution aimed squarely at 4.2, minimum functionality. There was
+never an alternative. `apps/web` is server-rendered with server actions and a
+cookie-bound session, and none of that survives being served off a filesystem.
+
+What settles it is that the answer to 4.2 and the work that has to happen anyway
+turn out to be the same work. Store billing is required for these subscriptions
+— that was decided on 2026-08-24 at 15% — so StoreKit is not a concession to
+App Review, it is the only lawful way to sell. And an app with in-app purchase,
+native APNs push (verified today), and a camera permission gating its own
+onboarding is not the repackaged website 4.2 exists to catch.
+
+Timing matters in the other direction too: submitting BEFORE StoreKit would trip
+**3.1.1**, which is a far more certain rejection than 4.2 ever was. WSL already
+hid the Stripe checkout inside the shell for exactly that reason.
+
+Which exposes something nobody owned. The server lane has entitlements,
+webhooks, cancellation routing and account binding; none of those is a way for a
+member to buy anything. There was no StoreKit purchase flow on any list, and it
+is now the item that gates shipping. It also means **the paid tier is currently
+unreachable inside the shell** — correct for 3.1.1, and a dead end until this
+lands.
+
+Also recorded: `fcmNotifier()` stays. It was recommended for deletion this
+morning on the grounds that a TWA registers an ordinary web push subscription
+and Android is a TWA. Kevin's answer is that converting Android to Capacitor is
+still on the table, which is exactly the change that would make FCM necessary.
+Kept as a decision, with the reasoning that made it look droppable beside it.
+
 ## 2026-08-26 — The shell can reach a phone, and every step of it was silent when it could not
 
 Push works. A notification sent from a laptop arrives on an iPad running the
