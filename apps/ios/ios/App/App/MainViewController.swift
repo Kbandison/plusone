@@ -25,7 +25,7 @@ class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         ShellPlugins.register(on: bridge)
 
-        universalLinks = UniversalLinkRouter(host: self)
+        universalLinks = UniversalLinkRouter(controller: self)
         universalLinks?.start()
     }
 }

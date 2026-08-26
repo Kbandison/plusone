@@ -23,11 +23,11 @@ import WebKit
  does.
  */
 final class UniversalLinkRouter {
-    private weak var host: CAPBridgeViewController?
+    private weak var controller: CAPBridgeViewController?
     private var observer: NSObjectProtocol?
 
-    init(host: CAPBridgeViewController) {
-        self.host = host
+    init(controller: CAPBridgeViewController) {
+        self.controller = controller
     }
 
     deinit {
@@ -70,6 +70,6 @@ final class UniversalLinkRouter {
         // following the link does; asking the router to move instead would be
         // faster and would depend on the page already being loaded, which on a
         // cold launch is the one thing that is not true.
-        self.host?.webView?.load(URLRequest(url: url))
+        controller?.webView?.load(URLRequest(url: url))
     }
 }

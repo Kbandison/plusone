@@ -71,6 +71,28 @@ checkout would overwrite work that is not recoverable from any config file:
   `scripts/generate-icons.mjs` from the same mark as the web icons. Regenerate
   with `node scripts/generate-icons.mjs`; do not edit the PNGs.
 
+- **Five Swift files, and two of the template's.** `MainViewController.swift` is
+  the composition root — `SceneDelegate.swift` builds it instead of
+  `CAPBridgeViewController`, and that one line is what makes any of the rest
+  reachable. `ShellPlugins.swift` registers the local plugins,
+  `StoreKitPlugin.swift` and `ShellPlugin.swift` are those plugins, and
+  `UniversalLinkRouter.swift` takes a tapped link to the page it names.
+  `AppDelegate.swift` carries the two methods that hand the APNs token to the
+  push plugin, which the template ships without.
+
+  All of it is invisible in a diff of the config, and none of it is recoverable
+  from one. `shell.test.ts` pins each piece against the failure it prevents —
+  every one of which is silent.
+
+- **`ios/App/App/App.entitlements`** — `aps-environment` and the associated
+  domain the app claims. Wired in by `CODE_SIGN_ENTITLEMENTS` in both build
+  configurations, and pinned.
+
+- **`ios/App/App/PrivacyInfo.xcprivacy`** — the App Store privacy manifest,
+  added to the Resources build phase by hand. Xcode does not bundle a file
+  merely because it is on disk, and a manifest outside the bundle is a file
+  nobody reads.
+
 Everything else in `ios/` is Capacitor's, and `ios/.gitignore` already excludes
 what is generated per-build. `.prettierignore` keeps the formatter out of the
 whole directory, for the reason written down in it.
@@ -93,11 +115,12 @@ xcodebuild archive -project App.xcodeproj -scheme App -configuration Release \
   -destination 'generic/platform=iOS' -archivePath /tmp/PlusOne.xcarchive \
   -allowProvisioningUpdates
 
-# ExportOptions.plist: method app-store-connect, teamID JUR426AHDD,
-# signingStyle automatic, destination `upload` to send it straight up
-# (or `export` to get an .ipa for Transporter).
+# ExportOptions.plist is committed at apps/ios/ExportOptions.plist:
+# method app-store-connect, teamID JUR426AHDD, signingStyle automatic,
+# destination `upload` to send it straight up. Change destination to
+# `export` to get an .ipa for Transporter instead.
 xcodebuild -exportArchive -archivePath /tmp/PlusOne.xcarchive \
-  -exportOptionsPlist ExportOptions.plist -exportPath /tmp/out \
+  -exportOptionsPlist ../../ExportOptions.plist -exportPath /tmp/out \
   -allowProvisioningUpdates
 ```
 
@@ -121,9 +144,21 @@ has connected to it.
 
 ## Not wired yet
 
-- **Native push.** `push_subscriptions.platform` already accepts `'ios'`, and
-  `nativePlatform()` in `apps/web/src/lib/native-shell.ts` already returns it —
-  the web half has been waiting for this shell since it was written. Nothing
-  registers with APNs, so the shell today gets web push or nothing.
-- **Store billing.** 15% via StoreKit, per the 2026-08-24 decision. No StoreKit
-  code exists.
+- **The purchase button.** `StoreKitPlugin.swift` and
+  `apps/web/src/lib/native-iap.ts` exist and are verified against the real App
+  Store Connect record — products resolve, entitlements and unfinished
+  transactions answer, a purchase with no product id rejects. **No screen calls
+  any of it**, deliberately: nothing yet verifies a signed transaction or writes
+  `iap_entitlements`, so a button today would take money and grant nothing. See
+  `BACKLOG.md` server lane 13 for the payload the server half receives, and
+  shells 11 for what is owed here once it exists.
+
+  Until then the premium screen renders nothing inside the shell, which is
+  guideline 3.1.1 being obeyed rather than a bug.
+
+- **A Sandbox tester**, which is what stands between the above and an actual
+  purchase being exercised. It cannot be done from a Simulator.
+
+Native push is done and verified on hardware (2026-08-26), as are universal
+links (build 1.0 (4)) and the status-bar theme. What is left of the shell is in
+`BACKLOG.md` under **Lane: shells**.

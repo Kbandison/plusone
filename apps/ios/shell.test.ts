@@ -252,7 +252,7 @@ describe("the view controller stays a table of contents", () => {
    */
   it("delegates rather than doing the work itself", () => {
     expect(mainViewController).toMatch(/ShellPlugins\.register\(on: bridge\)/);
-    expect(mainViewController).toMatch(/UniversalLinkRouter\(host: self\)/);
+    expect(mainViewController).toMatch(/UniversalLinkRouter\(controller: self\)/);
 
     // The two things it used to do inline, and must not do again.
     expect(mainViewController).not.toMatch(/NotificationCenter/);
