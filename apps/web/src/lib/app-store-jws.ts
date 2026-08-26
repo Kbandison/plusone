@@ -107,34 +107,40 @@ export class JwsError extends Error {}
 
 const b64url = (segment: string): Buffer => Buffer.from(segment, "base64url");
 
+export interface VerifyOptions {
+  now?: number;
+  bundleId?: string;
+  /**
+   * The anchor. Defaults to Apple's and every caller in this app leaves it
+   * alone — it is a parameter because the happy path is otherwise untestable:
+   * a chain ending at Apple's root can only be produced by Apple, so proving
+   * that a GOOD signature is accepted needs a chain we made. The property that
+   * matters is that the default is Apple's, and `app-store-jws.test.ts` asserts
+   * exactly that by fingerprint, so a test root cannot quietly become the real
+   * one.
+   */
+  rootPem?: string;
+}
+
 /**
- * Verified against the chain, then against ourselves.
+ * The signature and the chain, and nothing about what the payload MEANS.
+ *
+ * Split out because Apple signs more than one shape with the same chain: a
+ * transaction, a renewal info, and the envelope a server notification arrives
+ * in — which carries its own signed transaction inside it, so this runs twice
+ * on one delivery. Only the cryptography is shared; each caller checks its own
+ * fields, because "is this signed by Apple" and "is this about us" are
+ * different questions and answering them in one function is how the second one
+ * gets skipped for a payload shape that has no bundleId at the top level.
  *
  * `now` is injectable so the tests can stand at a moment when a certificate is
  * valid — a fixture generated today would otherwise start failing the day its
  * leaf expires, which is a test that breaks on a calendar rather than on a bug.
  */
-export function verifyAppStoreJws(
+export function verifyAppleJws<T>(
   jws: string,
-  {
-    now = Date.now(),
-    bundleId = BUNDLE_ID,
-    rootPem = APPLE_ROOT_CA_G3,
-  }: {
-    now?: number;
-    bundleId?: string;
-    /**
-     * The anchor. Defaults to Apple's and every caller in this app leaves it
-     * alone — it is a parameter because the happy path is otherwise untestable:
-     * a chain ending at Apple's root can only be produced by Apple, so proving
-     * that a GOOD signature is accepted needs a chain we made. The property
-     * that matters is that the default is Apple's, and `app-store-jws.test.ts`
-     * asserts exactly that by fingerprint, so a test root cannot quietly become
-     * the real one.
-     */
-    rootPem?: string;
-  } = {},
-): AppStoreTransaction {
+  { now = Date.now(), rootPem = APPLE_ROOT_CA_G3 }: VerifyOptions = {},
+): T {
   const parts = jws.split(".");
   if (parts.length !== 3) throw new JwsError("not a compact JWS");
   const [rawHeader, rawPayload, rawSignature] = parts as [string, string, string];
@@ -205,16 +211,27 @@ export function verifyAppStoreJws(
     throw new JwsError("signature does not verify");
   }
 
-  let payload: AppStoreTransaction;
   try {
-    payload = JSON.parse(b64url(rawPayload).toString("utf8")) as AppStoreTransaction;
+    return JSON.parse(b64url(rawPayload).toString("utf8")) as T;
   } catch {
     throw new JwsError("unreadable payload");
   }
+}
 
-  // A validly signed transaction for a DIFFERENT app is still validly signed.
-  // Apple's root anchors every app on the store, so without this a transaction
-  // bought in somebody else's app would grant premium here.
+/**
+ * A signed transaction, verified and then checked for being ours.
+ *
+ * The second half is not a formality. Apple's root anchors every app on the
+ * store, so a transaction bought in somebody else's app is every bit as validly
+ * signed as one bought in this one — without the bundleId check it would grant
+ * premium here.
+ */
+export function verifyAppStoreJws(
+  jws: string,
+  { bundleId = BUNDLE_ID, ...rest }: VerifyOptions = {},
+): AppStoreTransaction {
+  const payload = verifyAppleJws<AppStoreTransaction>(jws, rest);
+
   if (payload.bundleId !== bundleId) {
     throw new JwsError(`transaction is for ${String(payload.bundleId)}`);
   }

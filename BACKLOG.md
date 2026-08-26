@@ -200,8 +200,22 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    string manipulation finds nothing at purchase time. They still cannot be
    submitted for review until there is an app version with a build to attach
    them to — that is Apple's rule, not a setup problem.
-4. **Store webhooks.** App Store Server Notifications V2 and Play RTDN, each a
-   route handler mirroring the Stripe one, writing entitlements.
+4. **Store webhooks — Apple's half is done**, 2026-08-26.
+   `/api/app-store/notifications` verifies the envelope and the transaction
+   nested inside it, and updates `iap_entitlements`. **Kevin has to point Apple
+   at it**: App Store Connect → the app → General → App Information → App Store
+   Server Notifications, Production and Sandbox URLs entered separately, both
+   `https://www.loveplusone.app/api/app-store/notifications`. The "send test
+   notification" button is the check, and `TEST` is deliberately accepted.
+
+   **Play RTDN is still open and is blocked**, on something nobody has asked
+   Kevin for yet: a Google Cloud service account with Pub/Sub, and Play Console
+   pointed at a topic. RTDN carries only a purchase token, so unlike Apple's the
+   payload is not self-describing — it has to be exchanged with the Play
+   Developer API, which is what the service account is for. Worth doing only
+   after there is an Android purchase to notify about, which needs the Play
+   billing flow that server 12 records the shape of.
+
 5. **Cancellation routing.** Both stores require sending a subscriber to their
    own management screen, so the premium page has to know which source sold the
    subscription.

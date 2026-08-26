@@ -242,6 +242,72 @@ try {
     algNone: `${b64url(JSON.stringify({ alg: "none", x5c: CHAIN }))}.${b64url(JSON.stringify(base))}.`,
   };
 
+  // ── server notifications ──────────────────────────────────────────────────
+  //
+  // Apple POSTs an envelope JWS whose payload carries ANOTHER JWS. Both chain
+  // to the same root, so both are signed here, and the tests can then check
+  // that a genuine envelope around a forged transaction is still refused.
+  const envelope = (type, over = {}, tx = base) =>
+    sign("leaf.key", head(CHAIN), {
+      notificationType: type,
+      notificationUUID: `uuid-${type}`,
+      ...over,
+      data: {
+        bundleId: "app.loveplusone",
+        environment: "Sandbox",
+        signedTransactionInfo: sign("leaf.key", head(CHAIN), tx),
+        ...(over.data ?? {}),
+      },
+    });
+
+  fixture.notifications = {
+    didRenew: envelope("DID_RENEW"),
+    subscribed: envelope("SUBSCRIBED"),
+    // The renewal payment failed and Apple is retrying. The transaction still
+    // carries the OLD, PASSED expiry — reading it alone locks somebody out.
+    gracePeriod: envelope(
+      "DID_FAIL_TO_RENEW",
+      { subtype: "GRACE_PERIOD" },
+      {
+        ...base,
+        expiresDate: NOW - 3_600_000,
+      },
+    ),
+    failedNoGrace: envelope("DID_FAIL_TO_RENEW", {}, { ...base, expiresDate: NOW - 3_600_000 }),
+    gracePeriodExpired: envelope(
+      "GRACE_PERIOD_EXPIRED",
+      {},
+      { ...base, expiresDate: NOW - 3_600_000 },
+    ),
+    expired: envelope("EXPIRED", {}, { ...base, expiresDate: NOW - 86_400_000 }),
+    // A refund with WEEKS still on the clock. The case a date comparison alone
+    // gets wrong.
+    refund: envelope("REFUND", {}, { ...base, expiresDate: NOW + 60 * 86_400_000 }),
+    revoke: envelope("REVOKE", {}, { ...base, expiresDate: NOW + 60 * 86_400_000 }),
+    // Auto-renew switched off. They keep what they paid for.
+    renewalStatusChanged: envelope("DID_CHANGE_RENEWAL_STATUS", { subtype: "AUTO_RENEW_DISABLED" }),
+    priceIncrease: envelope("PRICE_INCREASE"),
+    // App Store Connect's own button. No data at all.
+    test: sign("leaf.key", head(CHAIN), {
+      notificationType: "TEST",
+      notificationUUID: "uuid-test",
+    }),
+    otherBundle: envelope("DID_RENEW", { data: { bundleId: "com.someone.else" } }),
+    // Genuine envelope, forged transaction inside it.
+    forgedInner: sign("leaf.key", head(CHAIN), {
+      notificationType: "DID_RENEW",
+      data: {
+        bundleId: "app.loveplusone",
+        environment: "Sandbox",
+        signedTransactionInfo: sign(
+          "evil-leaf.key",
+          head([der("evil-leaf.pem"), der("evil-root.pem")]),
+          base,
+        ),
+      },
+    }),
+  };
+
   writeFileSync(OUT, `${JSON.stringify(fixture, null, 2)}\n`);
   console.log(`wrote ${path.relative(ROOT, OUT)}`);
 } finally {
