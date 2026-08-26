@@ -102,6 +102,13 @@ runtimes` just comes back empty.
   on 2026-08-22, with corrupted journals and no Linux OOM entries, because the
   kill came from outside Linux. Do not raise those numbers casually, and prefer
   a targeted `vitest` run to `pnpm test` when only one file is in question.
+- **Bubblewrap needs the LEGACY Android SDK layout, and lies about why.** Its
+  error says the SDK path should "contain the folder `build`". It does not check
+  for that. `AndroidSdkTools.validatePath` checks for `<sdk>/tools` or
+  `<sdk>/bin`, and a modern SDK has `cmdline-tools/latest/bin` and neither — so
+  a complete, working install fails with a message pointing somewhere else
+  entirely. Fixed here with `ln -s cmdline-tools/latest ~/Android/Sdk/tools`.
+  It also pins **build-tools 36.1.0** specifically, not "any 36".
 - **The disk image does not shrink.** `ext4.vhdx` is ~314 GB against 122 GB
   actually used. `fstrim` reclaimed 3.7 GB of that — WSL 2.3.26 does not honour
   guest discards properly. `wsl --update`, then re-run `--set-sparse true` and
