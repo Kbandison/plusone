@@ -107,9 +107,37 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     `submitAppStoreTransactions(jwsList)` takes the launch pass over
     `nativeUnfinishedTransactions()`.
 
+    **The signature to call**, so it does not have to be asked for again:
+
+    ```ts
+    // apps/web/src/app/app/settings/premium/iap-actions.ts   ("use server")
+    submitAppStoreTransaction(jws: string): Promise<IapResult>
+    submitAppStoreTransactions(jwsList: string[]): Promise<IapResult[]>
+
+    type IapResult =
+      | { ok: true; premium: boolean }
+      | { ok: false; reason: "unverified" | "not_yours" | "unbound" | "failed" }
+    ```
+
+    Send only `transaction.jws`; nothing else is read. **`ok: true` means finish
+    the transaction whatever `premium` says** — a genuine but spent one returns
+    `premium: false` and still has to be finished, or StoreKit offers it
+    forever. `premium` decides what to draw, not whether to finish.
+    `"not_yours"` is a second Plus One account restoring one Apple ID's
+    purchase: do not retry and do not finish. `"unverified"` and `"failed"` must
+    not finish either — redelivery is the recovery, and
+    `submitAppStoreTransactions` is the launch pass.
+
     **Still NOT done: no screen calls any of it**, which stays true until a
     purchase has been exercised end to end. `plan-buttons.tsx` renders nothing in
     the shell, which is the honest state rather than a half-wired one.
+
+    Two things for whoever wires it. The **reverse double-subscription guard**
+    lives here rather than in the server lane: somebody with a live Stripe
+    subscription must not be sold an App Store one, and the check belongs beside
+    the button. And **`manage-store.tsx` is meant to be visible in the shell**,
+    unlike checkout and the billing portal — Apple requires an IAP subscription
+    be managed through their own screen. Nobody has watched it render.
 
     Still owed here once the server side exists: the native branch in
     `plan-buttons.tsx`, a submit-on-launch pass over
