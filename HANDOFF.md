@@ -247,9 +247,10 @@ programmatically. It wants a person and an iPad first.
 **The grey band is gone**, and the seam that did it is worth knowing about.
 `overrideUserInterfaceStyle` is what draws it and no Capacitor API exposes it,
 so there is now a second local plugin — `PlusOneShell` — beside the StoreKit
-one. **`MainViewController` is where anything native gets registered**, and
-registering is two lines; that is the whole cost of reaching UIKit from the page
-now, for the badge or anything else.
+one. **`ShellPlugins.swift` is where anything native gets registered** — one
+line per plugin, and `MainViewController` was split down to a table of contents
+in `39db9a8`. That is the whole cost of reaching UIKit from the page now, for
+the badge or anything else.
 
 **Sampling pixels out of a screenshot, since there is no PIL on this machine:**
 `sips -s format bmp` and read the rows. `scratchpad/sample.py` does it and took
