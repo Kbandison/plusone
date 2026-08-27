@@ -486,6 +486,32 @@ unblock other work.
     products are rebuilt (item 12 above). Worth doing in the same sitting as
     that, since both are Play Console work.
 
+    **No separate Google account.** The LuxWeb account that owns the Play
+    Console is the one to use — a "service account" is a robot identity inside a
+    Google Cloud PROJECT, not a person's login. An existing project is fine;
+    Google's own doc says so.
+
+    **TWO service accounts are involved and they point in opposite directions.**
+    This is the part the first version of this item missed, and missing it fails
+    silently — the topic exists, the subscription exists, and nothing is ever
+    published to it:
+
+    - `google-play-developer-notifications@system.gserviceaccount.com` needs
+      **Pub/Sub Publisher** on the topic. That is GOOGLE writing in. You do not
+      create it; you grant to it.
+    - The service account you create needs **Pub/Sub Subscriber** to read out,
+      plus Play Developer API access to exchange a purchase token for the
+      subscription state RTDN does not carry.
+
+    The topic name goes in Play Console → the app → **Monetize → Monetization
+    setup** → Real-time developer notifications, in the full form
+    `projects/{project_id}/topics/{topic_name}`.
+
+    **One choice is stickier than it looks.** RTDN may use a different project
+    per app, but the Play Developer API must use the SAME project across every
+    app on the developer account. If LuxWeb will ever ship a second app, that
+    project is being chosen once for all of them.
+
 ---
 
 ## Done, so nobody re-opens it
