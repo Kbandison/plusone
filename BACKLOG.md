@@ -325,10 +325,28 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     key, and the two disagreeing is the correct state — Google re-signs every
     upload and the phone only ever sees theirs.
 
+    **Verified on a device 2026-08-27** — installed from the internal testing
+    track, no address bar. That took one more fix than expected and it is the
+    kind worth keeping.
+
     Build it against **`www.loveplusone.app`**, not the apex. Chrome does not
     follow redirects when it fetches assetlinks, and the apex answers 308 — so a
     TWA pointed there fails verification and keeps its address bar, with nothing
     logged anywhere. Same origin trap that ejected the iOS shell into Safari.
+
+    **And `assetlinks.json` needs THREE fingerprints, not one.** This app is
+    enrolled in quantum-ready hybrid signing, so Play signs with a classical key
+    for pre-Android 17 devices and a new classical + ML-DSA-65 pair for Android
+    17 and later — three distinct keys, all of which must be listed. The file
+    carried only the post-quantum one for two days and a real phone showed the
+    address bar, because it verified with a key that was not in the list. The
+    reasoning and all three values are in the route's docblock; the test pins
+    three and refuses both the upload key and the discarded record's.
+
+    A certificate fingerprint IS the SHA-256 of its DER encoding, so the values
+    were computed from Play's exported .der files with `sha256sum` and
+    cross-checked with openssl rather than transcribed — worth knowing because
+    openssl cannot parse ML-DSA-65 on every build and the raw hash always can.
 
 11. ~~**The canonical origin**~~ — settled 2026-08-25. **www**, and both
     `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` now point at it in Vercel
