@@ -529,7 +529,24 @@ unblock other work.
     org policy stays ON, there is no secret in Vercel, and nothing to rotate or
     leak. Vercel documents the GCP path at /docs/oidc/gcp.
 
-    **Two steps in it fail silently, and one is wrong in Vercel's own guide:**
+    **A SECOND Secure by Default policy blocks the publisher grant.** Adding
+    `google-play-developer-notifications@system.gserviceaccount.com` to the topic
+    fails with `constraints/iam.allowedPolicyMemberDomains` — Domain Restricted
+    Sharing, which by default permits only your own Workspace domain as an IAM
+    principal, and Google's account is on `system.gserviceaccount.com`. Google's
+    own Play docs anticipate this and its resource-manager docs list that exact
+    service account as a worked example of an exception.
+
+    The documented ways out, needing `roles/orgpolicy.policyAdmin`:
+    set the constraint to not-enforced on the project, add the binding, restore
+    enforcement — DRS is checked when a policy is WRITTEN, so the binding
+    survives; or allow the principal permanently through the managed constraint
+    `iam.managed.allowedPolicyMembers`, whose `allowedMemberSubjects` takes
+    individual accounts where the legacy domain constraint takes only domains.
+    **Policy changes take up to 15 minutes**, so an immediate retry proves
+    nothing.
+
+    **Two more steps fail silently, and one is wrong in Vercel's own guide:**
 
     - Vercel's walkthrough says to paste the pool principal into the **Service
       account users** field of the create-service-account wizard. That grants
