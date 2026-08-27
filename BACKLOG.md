@@ -520,6 +520,31 @@ unblock other work.
     Google Cloud PROJECT, not a person's login. An existing project is fine;
     Google's own doc says so.
 
+    **NO DOWNLOADED KEY. Kevin's call 2026-08-26**, and it is the better one.
+    Google now blocks key creation by default on new organisations
+    (`iam.managed.disableServiceAccountKeyCreation`, part of Secure by Default),
+    and rather than turn that off we federate: Vercel issues an OIDC token, GCP
+    trusts it through Workload Identity Federation, and the function
+    impersonates the service account with no long-lived credential anywhere. The
+    org policy stays ON, there is no secret in Vercel, and nothing to rotate or
+    leak. Vercel documents the GCP path at /docs/oidc/gcp.
+
+    **Two steps in it fail silently, and one is wrong in Vercel's own guide:**
+
+    - Vercel's walkthrough says to paste the pool principal into the **Service
+      account users** field of the create-service-account wizard. That grants
+      `roles/iam.serviceAccountUser`, which does NOT permit
+      `generateAccessToken`. Impersonation needs
+      **`roles/iam.workloadIdentityUser`** on the service account. Granted the
+      wrong one, everything looks configured and token exchange 403s.
+    - **`iamcredentials.googleapis.com` must be enabled** on the project or
+      `generateAccessToken` fails with an auth error that does not mention the
+      API.
+
+    Five identifiers go into Vercel as ORDINARY env vars — project id, project
+    number, service account email, pool id, provider id. None is a secret, which
+    is the whole point.
+
     **TWO service accounts are involved and they point in opposite directions.**
     This is the part the first version of this item missed, and missing it fails
     silently — the topic exists, the subscription exists, and nothing is ever
