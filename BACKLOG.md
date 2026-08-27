@@ -482,10 +482,9 @@ unblock other work.
     each, ids matching Apple's: `1month`, `3months`, `6months`. Confirmed by
     Kevin.
 
-    **One thing to re-check, and it is not the same check as before.** Kevin
-    confirmed "backwards compatible" on the base plans that existed under the
-    OLD single subscription. The rebuild made new base plans, and the flag does
-    not follow — so it has to be confirmed again on these three. Without it
+    **Backwards compatible on all three, re-confirmed 2026-08-26** after the
+    rebuild — which was a separate check from the earlier one, because the
+    rebuild made new base plans and the flag does not follow. Without it
     `getDetails()` returns an EMPTY LIST for that product rather than an error,
     which reads as a pricing screen that simply has nothing on it.
     Originally: three products, one base plan each,
