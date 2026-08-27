@@ -388,6 +388,28 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
       end up identical, because two stores that happen to agree today are still
       two stores.
 
+13. **The Play purchase flow, which is on no list until now.** Server 12 records
+    WHY three products and 10 records the TWA that would run them, but nothing
+    said who builds the buying. It is web-side — a TWA runs `apps/web` in real
+    Chrome — so it is this lane, not the shells one.
+
+    **Blocked on Kevin 15, the same service account as RTDN**, and the reason is
+    worth stating because it differs from Apple's: a Play purchase hands back an
+    opaque `purchaseToken`, not a signed statement. There is nothing to verify
+    offline. It has to be exchanged with the Play Developer API, which is what
+    the service account is for. So unlike `submitAppStoreTransaction`, the
+    server half cannot be written first and cannot be written at all yet.
+
+    What it will be, once unblocked: `getDigitalGoodsService`,
+    `getDetails([...playProductId])` for live per-storefront prices, a
+    `PaymentRequest` against `https://play.google.com/billing`, and a server
+    action mirroring the Apple one — verify, then write `iap_entitlements` with
+    `store: 'google'` through `record_iap_entitlement`, which already takes it.
+
+    Do NOT ship the client half alone. macOS made the same call on iOS and was
+    right: a button that takes money and grants nothing is worse than a paid
+    tier that is unreachable.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
@@ -456,8 +478,16 @@ unblock other work.
     ~190 GB the disk image is holding. Tidying, not urgent.
 
 13. ~~**Rebuild the Play subscription as three products**~~ — done
-    2026-08-26, as drafts, with the same ids as Apple. One base plan each,
-    and each needs flagging **backwards compatible** before activation.
+    2026-08-26. Three separate subscriptions in Play Console, one base plan
+    each, ids matching Apple's: `1month`, `3months`, `6months`. Confirmed by
+    Kevin.
+
+    **One thing to re-check, and it is not the same check as before.** Kevin
+    confirmed "backwards compatible" on the base plans that existed under the
+    OLD single subscription. The rebuild made new base plans, and the flag does
+    not follow — so it has to be confirmed again on these three. Without it
+    `getDetails()` returns an EMPTY LIST for that product rather than an error,
+    which reads as a pricing screen that simply has nothing on it.
     Originally: three products, one base plan each,
     each flagged **backwards compatible** — see server lane 12 for why a TWA
     cannot reach the other base plans. `premium` with `premium1month`,
