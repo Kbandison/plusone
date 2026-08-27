@@ -266,9 +266,25 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    simply start answering no. Check `updated_at <> created_at` on that row to
    tell the two outcomes apart.
 
-   **Play RTDN is still open and is blocked**, on something nobody has asked
-   Kevin for yet: a Google Cloud service account with Pub/Sub, and Play Console
-   pointed at a topic. RTDN carries only a purchase token, so unlike Apple's the
+   **Play RTDN is done too**, 2026-08-27. `/api/play/notifications` takes a
+   Pub/Sub PUSH, verifies the caller's OIDC token against the same service
+   account everything else uses, and re-checks every purchase token with the
+   Developer API rather than believing the payload — because Google says the
+   notification "tells you only that the purchase state changed", not what it
+   changed to. `notificationType` is therefore never mapped onto a status. The
+   exception is a voided purchase, recorded as `revoked` without a lookup, since
+   that is the one case the notification knows more than the lookup does.
+
+   **Kevin has to switch the subscription from pull to push**: Pub/Sub →
+   Subscriptions → `play-rtdn-sub` → Edit → Delivery type **Push**, endpoint
+   `https://www.loveplusone.app/api/play/notifications`, and **enable
+   authentication** with the `plusone-play@…` service account. Leave the audience
+   blank — Pub/Sub then signs for the endpoint URL, which is what the route
+   expects. The test notification already queued will be delivered the moment
+   that is done, which is the check.
+
+   Originally blocked on: a Google Cloud service account with Pub/Sub, and Play
+   Console pointed at a topic. RTDN carries only a purchase token, so unlike Apple's the
    payload is not self-describing — it has to be exchanged with the Play
    Developer API, which is what the service account is for. Worth doing only
    after there is an Android purchase to notify about, which needs the Play
