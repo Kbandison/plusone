@@ -314,6 +314,13 @@ describe("there is one implementation of which statuses grant", () => {
     // the pattern was inconvenient.
     "lib/app-store-notifications.ts",
     "lib/app-store-notifications.test.ts",
+    // The same case for the other store, added when this guard caught it and
+    // made somebody justify it — which is the guard working rather than being
+    // in the way. `playStatusOf` maps Play's seven subscription states onto our
+    // four; `statusGrants` still decides what those four buy, and nothing here
+    // asks that question.
+    "lib/play-billing.ts",
+    "lib/play-billing.test.ts",
   ];
 
   it("is the only place that decides which entitlement statuses count", () => {

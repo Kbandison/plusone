@@ -628,6 +628,14 @@ unblock other work.
     setup** → Real-time developer notifications, in the full form
     `projects/{project_id}/topics/{topic_name}`.
 
+    **AND THE CLOUD PROJECT MUST BE LINKED TO THE PLAY CONSOLE.** Play Console →
+    **Setup → API access** → Linked Google Cloud Project. Inviting the service
+    account under Users and permissions is NOT enough on its own: without the
+    link the Developer API answers **401 "The current user has insufficient
+    permissions to perform the requested operation"**, which reads as a bad
+    credential rather than a missing association. Confirmed live on 2026-08-27 —
+    impersonation worked, the Pub/Sub side worked, and only this call failed.
+
     **One choice is stickier than it looks.** RTDN may use a different project
     per app, but the Play Developer API must use the SAME project across every
     app on the developer account. If LuxWeb will ever ship a second app, that
