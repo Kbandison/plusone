@@ -628,6 +628,16 @@ unblock other work.
     setup** → Real-time developer notifications, in the full form
     `projects/{project_id}/topics/{topic_name}`.
 
+    **RESOLVED 2026-08-27 — the whole chain is proven.** Impersonation, Pub/Sub
+    read, app access and financial access all confirmed live. The tell that it
+    works: `purchases.subscriptionsv2` with a deliberately fake token answers
+    **400 "Invalid Value"**, meaning Play accepted the caller and rejected the
+    token. While the permission was missing the same call answered 401.
+
+    It took several minutes to propagate after the grant, and a retry is the
+    only way to tell that from a misconfiguration — nothing in the console says
+    a change is still settling.
+
     **A 401 here is the PERMISSIONS, not the project link.** I first recorded
     that the Cloud project must be linked at Setup → API access. That is wrong
     and Google's own getting-started page says so in as many words: "You no
