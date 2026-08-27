@@ -291,6 +291,39 @@ during first paint reports a safe-area inset of nought; and pin the readout
 somewhere that stays visible — a panel at `top: 0` scrolls off the moment the
 keyboard opens, which is itself the thing under test.
 
+**ONE THING IS WAITING ON A CLOCK — check it even if nobody asks.**
+
+Kevin's sandbox entitlement expires **2026-08-27 ~22:20 UTC** (24 hours, because
+sandbox compresses a 3-month term). At that moment Apple either renews it or
+expires it, and **either one is an App Store Server Notification** — which is
+the only half of the payment path nobody has watched work.
+
+He set the Sandbox notification URL on the 26th. Nothing has confirmed it: App
+Store Connect no longer exposes a "send test notification" button, the iPad's
+Sandbox Account screen could not be found on iPadOS 26, and the App Store Server
+API route to trigger one needs a key we deliberately do not have.
+
+So the renewal IS the test. What to look at:
+
+```sql
+select status, expires_at, created_at, updated_at, (updated_at <> created_at) as applied
+from public.iap_entitlements order by created_at desc limit 1;
+```
+
+- **`applied` true, expiry moved** — the webhook works. Say so and close it.
+- **`applied` false, but `appstore.notify` in Vercel logs** — Apple delivered and
+  our handler did not apply it. A real bug, and the logs name the type.
+- **`applied` false, no logs at all** — the URL never took, or went in the
+  Production box rather than Sandbox. One field to re-check.
+
+Vercel logs: project `plusone-web`, search `app-store`. Note that two 400s and a
+405 around 22:38 UTC on the 26th are a probe of mine, not Apple.
+
+If it turns out notifications are not arriving, `getNotificationHistory` on the
+App Store Server API is the right diagnostic — it distinguishes "Apple tried and
+failed" from "Apple never tried" — and that is the one thing that would justify
+creating the key.
+
 **Left off clean.** Gates all five green, shell config restored to
 `https://www.loveplusone.app` and reinstalled on the simulator, probe server and
 proxy stopped.
