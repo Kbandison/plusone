@@ -588,7 +588,17 @@ unblock other work.
       create it; you grant to it.
     - The service account you create needs **Pub/Sub Subscriber** to read out,
       plus Play Developer API access to exchange a purchase token for the
-      subscription state RTDN does not carry.
+      subscription state RTDN does not carry. That access is granted by
+      INVITING the service account's email under Play Console → Users and
+      permissions. Grant it at APP level, not account level — the labels differ
+      between the two tabs and only the app tab keeps it to this one app:
+
+      ```
+      App permissions      View financial data
+                           Manage orders and subscriptions
+      Account permissions  View financial data, orders, and cancellation data
+                           survey responses          ← one label, not two
+      ```
 
     The topic name goes in Play Console → the app → **Monetize → Monetization
     setup** → Real-time developer notifications, in the full form
