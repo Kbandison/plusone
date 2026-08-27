@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { serviceClient } from "@/lib/cron";
-import { PlayVerifyError, verifyPlayPurchase } from "@/lib/play-billing";
+import { PlayVerifyError, acknowledgePlayPurchase, verifyPlayPurchase } from "@/lib/play-billing";
 import { statusGrants } from "@/lib/subscription-source";
 import { getServerSupabase } from "@/lib/supabase";
 import type { IapResult } from "./iap-actions";
@@ -18,18 +18,22 @@ import type { IapResult } from "./iap-actions";
  * offline, where a Play `purchaseToken` is opaque and has to be presented to
  * Google before it means anything.
  *
- * ── acknowledgement is Play's version of finishing ──────────────────────────
+ * ── acknowledgement is Play's version of finishing, and it is ours to do ────
  *
- * Google REFUNDS a subscription that is not acknowledged within three days.
- * That is stricter than StoreKit, which merely redelivers forever, and it is
- * the reason this returns before anything acknowledges: the client acknowledges
- * on `ok: true` and never before, so a grant that did not land becomes a refund
- * rather than money taken for nothing.
+ * Google REFUNDS a subscription that is not acknowledged within 72 hours. Not
+ * flagged, not retried: the money goes back and the member silently loses what
+ * they bought. Nothing on Apple's side behaves like it.
  *
- * The acknowledgement itself belongs to whoever calls this — the Digital Goods
- * API exposes `consume()` on the client, and Play treats a subscription
- * acknowledged there as acknowledged. Doing it here would need a second
- * Developer API call and would acknowledge purchases we had failed to record.
+ * This file first said acknowledgement belonged to the client through the
+ * Digital Goods API's `consume()`. That was wrong — ChromeOS's billing guide is
+ * explicit that it happens server-side through the Developer API, and
+ * `consume()` exists only for one-time products somebody needs to buy again.
+ * Left as written, every Android purchase would have refunded itself three days
+ * later, with nothing anywhere reporting it.
+ *
+ * So it happens here, AFTER the entitlement is recorded and never before — the
+ * same ordering rule as StoreKit's `finish`. Acknowledging first would tell
+ * Google we had honoured something we had not yet written down.
  */
 
 export async function submitPlayPurchase(purchaseToken: string): Promise<IapResult> {
@@ -100,6 +104,28 @@ export async function submitPlayPurchase(purchaseToken: string): Promise<IapResu
   if (recorded === null) {
     console.error(JSON.stringify({ at: "play.record", problem: "bound to another member" }));
     return { ok: false, reason: "not_yours" };
+  }
+
+  /**
+   * Only now, and never before the row exists.
+   *
+   * A failure here is deliberately NOT fatal to the result: the member has paid
+   * and been granted, and turning that into an error would send a client into a
+   * retry loop over a subscription that already works. It is logged loudly
+   * because the consequence is a refund in 72 hours, and the next verification
+   * reads `acknowledged` back so a sweep can find anything that slipped.
+   */
+  if (!purchase.acknowledged) {
+    try {
+      await acknowledgePlayPurchase(purchaseToken, purchase.productId);
+    } catch (cause) {
+      console.error(
+        JSON.stringify({
+          at: "play.acknowledge",
+          problem: cause instanceof PlayVerifyError ? cause.message : "unknown",
+        }),
+      );
+    }
   }
 
   revalidatePath("/app/settings/premium");

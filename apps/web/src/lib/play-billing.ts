@@ -43,6 +43,7 @@ interface SubscriptionPurchaseV2 {
   }[];
   readonly linkedPurchaseToken?: string;
   readonly testPurchase?: Record<string, unknown>;
+  readonly acknowledgementState?: string;
   readonly externalAccountIdentifiers?: {
     readonly obfuscatedExternalAccountId?: string;
   };
@@ -65,6 +66,8 @@ export interface PlayPurchase {
   /** Set by the client at purchase, when the client sets it. See the action. */
   readonly accountId: string | null;
   readonly isTest: boolean;
+  /** False means Google refunds it within 72 hours. See `acknowledgePlayPurchase`. */
+  readonly acknowledged: boolean;
 }
 
 export class PlayVerifyError extends Error {}
@@ -154,5 +157,54 @@ export async function verifyPlayPurchase(
     // whole Android path has to be exercisable before it is exercised for real,
     // and `environment` is the column that says which a row came from.
     isTest: Boolean(purchase.testPurchase),
+    acknowledged: purchase.acknowledgementState === "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED",
   };
+}
+
+/**
+ * Tells Google we have honoured the purchase, which is not optional.
+ *
+ * **A subscription that is not acknowledged within 72 hours is REFUNDED.** Not
+ * flagged, not retried — the money goes back and the member silently loses what
+ * they bought. It is the harshest deadline in either store's billing, and there
+ * is nothing on Apple's side that behaves like it: StoreKit merely redelivers
+ * an unfinished transaction forever.
+ *
+ * I first wrote in `play-actions.ts` that this belonged to the client through
+ * the Digital Goods API's `consume()`. That is wrong, and ChromeOS's own
+ * billing guide is explicit: acknowledgement happens server-side through the
+ * Developer API, and `consume()` exists only for one-time products somebody
+ * needs to buy again. Believing otherwise would have shipped an Android tier
+ * where every purchase quietly refunded itself three days later.
+ *
+ * Called only after the entitlement is safely recorded, for the same reason
+ * StoreKit's `finish` is: acknowledging first would tell Google we honoured
+ * something we had not yet written down.
+ */
+export async function acknowledgePlayPurchase(
+  purchaseToken: string,
+  productId: string,
+  { packageName = BUNDLE_ID }: { packageName?: string } = {},
+): Promise<void> {
+  const token = await googleAccessToken();
+  if (!token) throw new PlayVerifyError("google auth unavailable");
+
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/` +
+    `${encodeURIComponent(packageName)}/purchases/subscriptions/` +
+    `${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: "{}",
+  });
+
+  // Google documents no behaviour for acknowledging twice, and replay is the
+  // normal case here — so a refusal is reported by status and swallowed rather
+  // than failing a purchase that has already been granted. The state is read
+  // back on the next verification either way.
+  if (!response.ok) {
+    throw new PlayVerifyError(`acknowledge refused (${response.status})`);
+  }
 }

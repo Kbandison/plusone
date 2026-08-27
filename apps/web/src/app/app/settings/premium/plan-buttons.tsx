@@ -6,9 +6,10 @@ import { DRAFT_COPY, PLANS, formatPriceCents } from "@plusone/config";
 
 import { openBillingPortal, startCheckout } from "./actions";
 import { NativePlanChooser } from "./native-purchase";
+import { PlayPlanChooser } from "./play-purchase";
 import { CHECKOUT_INITIAL } from "./state";
 import { buttonClass } from "@/app/ui";
-import { inNativeShell } from "@/lib/native-shell";
+import { inNativeShell, inTwa } from "@/lib/native-shell";
 
 const C = DRAFT_COPY.app;
 
@@ -33,12 +34,30 @@ const C = DRAFT_COPY.app;
  * still load-bearing for the reason above — a Subscribe button drawn for one
  * frame inside the shell is the exact thing 3.1.1 forbids.
  */
-type Surface = "web" | "native" | null;
+type Surface = "web" | "native" | "twa" | null;
 
+/**
+ * Three surfaces now, and the third is the one nothing could detect until
+ * `inTwa()` was wired here.
+ *
+ * A TWA is REAL CHROME. It has no `window.Capacitor`, so `inNativeShell()`
+ * answers no inside a shipped Play app and every branch that trusted it was
+ * treating Android as the web — which, before there was anything to sell
+ * through Play, was harmless and correct. It stops being either the moment a
+ * Stripe checkout is drawn inside an app distributed on Play, which is Play's
+ * own billing policy and Apple's 3.1.1 in different words.
+ *
+ * `inTwa()` reads `document.referrer` for an `android-app://` scheme, which
+ * only exists on the launch navigation — it caches, and the reason is in
+ * native-shell.ts. Checked second because a Capacitor Android build would
+ * satisfy both, and there the native path is the right one.
+ */
 function useSurface(): Surface {
   const [surface, setSurface] = useState<Surface>(null);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor, which does not exist during a server render
-  useEffect(() => setSurface(inNativeShell() ? "native" : "web"), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor and document.referrer, neither of which exists during a server render
+    setSurface(inNativeShell() ? "native" : inTwa() ? "twa" : "web");
+  }, []);
   return surface;
 }
 
@@ -67,6 +86,20 @@ export function PlanChooser({
    */
   if (surface === "native") {
     return <NativePlanChooser userId={userId} alreadyPayingStripe={alreadyPayingStripe} />;
+  }
+
+  /**
+   * And inside the TWA, Play sells it.
+   *
+   * No `userId`: Apple's `appAccountToken` travels inside the signed
+   * transaction and names the member, and the Digital Goods API has no
+   * equivalent a TWA can set. What binds a Play subscription is that
+   * `submitPlayPurchase` runs authenticated and `record_iap_entitlement`
+   * refuses to move a binding once made — first-come rather than
+   * stated-at-purchase, and the strongest thing available here.
+   */
+  if (surface === "twa") {
+    return <PlayPlanChooser alreadyPayingStripe={alreadyPayingStripe} />;
   }
 
   return (

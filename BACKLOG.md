@@ -50,10 +50,12 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    "Xcode, a Simulator, **or a Play Console**" — but nothing about it needs this
    Mac, and everything genuinely Mac-only is queued behind it. See server lane 10.
 
-6. **Wire `inTwa()`.** It exists, is tested, and is used nowhere — a TWA has no
-   `window.Capacitor`, so `inNativeShell()` and `nativePlatform()` both answer
-   no inside a shipped Play app. Wire it when there is a TWA to watch it in, not
-   before.
+6. ~~**Wire `inTwa()`**~~ — done 2026-08-27, when there was finally a TWA to
+   watch it in. `plan-buttons.tsx` has three surfaces now, and the Android one
+   could not be detected any other way: a TWA is real Chrome with no
+   `window.Capacitor`, so every branch that trusted `inNativeShell()` was
+   treating it as the web. Harmless until there was something to sell through
+   Play, and Play's billing policy the moment there was.
 7. **A release Xcode.** `apps/ios` is driven by 27 beta 6 through
    `DEVELOPER_DIR`. Fine for the Simulator, not for a submission build.
 8. ~~**A registered device, and the first TestFlight build**~~ — done
