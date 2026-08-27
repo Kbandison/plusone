@@ -35,6 +35,27 @@ coverage/
 *.p12
 *.p8
 
+# service-account keys, which arrive as .json and would otherwise be committed
+#
+# The block above catches every extension a signing key uses. A Google Cloud
+# service-account key uses none of them — it downloads as ordinary JSON, named
+# after the project, and `git add -A` takes it. Checked before Kevin downloaded
+# one: `service-account.json` and `plusone-abc123.json` were both stageable.
+#
+# `*.json` cannot be ignored wholesale here — package.json, tsconfig.json and a
+# test fixture all live in the tree — so these are the shapes one arrives in,
+# plus a directory to put it in if it must be in the checkout at all.
+#
+# It should not be. The upload keystore lives at ~/keys/ outside every checkout
+# for the same reason, and this key is worth as much: the Play Developer API
+# grants it "manage orders and subscriptions" on real money.
+secrets/
+service-account*.json
+*-service-account.json
+*credentials*.json
+*-key.json
+gcp-*.json
+
 # misc
 .DS_Store
 *.pem
