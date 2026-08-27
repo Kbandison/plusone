@@ -474,10 +474,34 @@ unblock other work.
     2026-08-26: **count**. Against the argument in `app-badge.tsx`, which is
     left in place rather than deleted so the trade stays legible, and beside a
     note saying the bucketed middle option is one line.
-12. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
+12. **Play's release checklist, which was on no list.** Found 2026-08-27 from a
+    screenshot: Monetize with Play says "Finish setting up your app on the
+    Dashboard", because the app's setup tasks are not done. None of them is
+    tracked anywhere, and together they are the difference between an internal
+    testing build and anything a member can install.
+
+    What Play wants: store listing, content rating questionnaire, target
+    audience and content, data safety, app access, and a privacy policy URL.
+    The last one is already serving.
+
+    Two of them are not form-filling and should not be discovered late:
+
+    - **Data safety is Apple's privacy labels in another shape.** The facts are
+      already worked out in `packages/config/src/privacy-labels.ts` — its
+      docblock says "App Store AND Play" and `TABLE_CLASSIFICATION`,
+      `NOT_COLLECTED` and `TRACKING` are store-neutral. Only the type names are
+      Apple's. So this is mapping, not deciding, and the two answers must not
+      drift: a test already keeps the Apple side honest against the schema.
+    - **App access is a real problem for this app in particular.** A reviewer
+      has to get in, and getting in means a phone OTP they cannot receive and a
+      liveness check they cannot pass. Both stores ask. Nothing anywhere records
+      how that is answered, and it is the kind of thing that returns a rejection
+      a week after submission rather than blocking one.
+
+13. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
     ~190 GB the disk image is holding. Tidying, not urgent.
 
-13. ~~**Rebuild the Play subscription as three products**~~ — done
+14. ~~**Rebuild the Play subscription as three products**~~ — done
     2026-08-26. Three separate subscriptions in Play Console, one base plan
     each, ids matching Apple's: `1month`, `3months`, `6months`. Confirmed by
     Kevin.
@@ -502,9 +526,9 @@ unblock other work.
     accepted, and the console rejects a bad id immediately rather than later.
     They still get their own field either way.
 
-14. ~~**A Sandbox tester**~~ — done 2026-08-26, and a purchase went through with nothing charged. Unblocked the last of shells 11.
+15. ~~**A Sandbox tester**~~ — done 2026-08-26, and a purchase went through with nothing charged. Unblocked the last of shells 11.
 
-15. **A Google Cloud service account for Play RTDN.** Server lane 4's remaining
+16. **A Google Cloud service account for Play RTDN.** Server lane 4's remaining
     half — Play's Real-time Developer Notifications — needs one, and nobody had
     asked for it, so WSL's lane is empty waiting on a thing that was not on any
     list. In Google Cloud console: a service account with the Pub/Sub Subscriber
