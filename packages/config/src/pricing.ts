@@ -43,12 +43,18 @@ export interface Plan {
    * The Play subscription product ID. Its own field, and deliberately not the
    * same field as `appleProductId` even though every value currently matches.
    *
-   * They match because Kevin chose to make them match, which is worth having —
-   * one string per tier means a log line naming `3months` is unambiguous. It is
-   * a convenience, not a fact about the world: they are two consoles, each with
-   * its own permanent namespace, and either can be forced to change without the
-   * other moving. Collapsing them into one `storeProductId` would read as
-   * removing duplication and would actually be removing the seam.
+   * They were briefly identical, because Kevin said he would rename Play's to
+   * match Apple's and I wrote that down as though it had happened. It had not.
+   * Play's real ids are `premium1month`, `premium3months` and `premium6months`,
+   * read out of the Play Developer API on 2026-08-27 — the console is the
+   * source of truth and this is a copy of it, and for a day this was a copy of
+   * an intention instead.
+   *
+   * Which is the argument for the separate field, made by events: had the two
+   * been collapsed into one `storeProductId` on the strength of their matching,
+   * correcting Play would have silently broken Apple, whose ids are real and
+   * unchanged. Two consoles, two permanent namespaces, and agreeing today is
+   * not the same as being the same thing.
    *
    * This is the SUBSCRIPTION product id, not a base plan id. A TWA cannot
    * address a base plan at all: `getDetails()` takes product ids, a base plan id
@@ -71,7 +77,7 @@ export const PLANS: readonly Plan[] = [
     highlighted: false,
     envPriceIdKey: "STRIPE_PRICE_PREMIUM_1MO",
     appleProductId: "1month",
-    playProductId: "1month",
+    playProductId: "premium1month",
   },
   {
     id: "premium_3mo",
@@ -81,7 +87,7 @@ export const PLANS: readonly Plan[] = [
     highlighted: true,
     envPriceIdKey: "STRIPE_PRICE_PREMIUM_3MO",
     appleProductId: "3months",
-    playProductId: "3months",
+    playProductId: "premium3months",
   },
   {
     id: "premium_6mo",
@@ -91,7 +97,7 @@ export const PLANS: readonly Plan[] = [
     highlighted: false,
     envPriceIdKey: "STRIPE_PRICE_PREMIUM_6MO",
     appleProductId: "6months",
-    playProductId: "6months",
+    playProductId: "premium6months",
   },
 ] as const;
 

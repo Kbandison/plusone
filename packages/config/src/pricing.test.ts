@@ -44,27 +44,41 @@ describe("Apple product IDs", () => {
 /**
  * The Play product IDs, pinned the same way and for the same reason.
  *
- * Every value here is identical to its `appleProductId`, and that is a choice
- * rather than a rule — one string per tier makes a log line unambiguous. The
- * tests below exist because an identical pair looks exactly like duplication:
- * the tempting edit is to delete one field and read both stores off the other,
- * which removes a seam rather than a repetition.
+ * These used to say they were identical to `appleProductId` and that the
+ * identity was a deliberate convenience. Both halves were wrong: Kevin said he
+ * would rename Play's to match and I recorded it as done, and Play's real ids
+ * turned out to be `premium1month`, `premium3months` and `premium6months` —
+ * read out of the Play Developer API on 2026-08-27, once there was a credential
+ * to read it with.
+ *
+ * So the argument for two fields is no longer hypothetical. Had they been
+ * collapsed into one `storeProductId` while they appeared to match, correcting
+ * Play would have silently broken Apple, whose ids are real and unchanged. The
+ * failure would have been the quiet kind too: `getDetails()` returns an EMPTY
+ * LIST for an id Play does not know, so the pricing screen simply has nothing
+ * on it and nothing anywhere says why.
  */
 describe("Play product IDs", () => {
   const expected: Record<string, string> = {
-    premium_1mo: "1month",
-    premium_3mo: "3months",
-    premium_6mo: "6months",
+    premium_1mo: "premium1month",
+    premium_3mo: "premium3months",
+    premium_6mo: "premium6months",
   };
 
   it.each(PLANS)("$id maps to the subscription that exists", (plan) => {
     expect(plan.playProductId).toBe(expected[plan.id]);
   });
 
-  /** Same trap as Apple's: `premium_1mo` is not a product anywhere. */
+  /**
+   * NOT derivable from the plan id, still — but the check has to change shape,
+   * because Play's real ids do begin with "premium". `premium_1mo` is the plan
+   * id and `premium1month` is the product; an underscore apart, and neither is
+   * reachable from the other by any rule worth writing.
+   */
   it("is not derived from the plan id", () => {
     for (const plan of PLANS) {
-      expect(plan.playProductId).not.toContain("premium");
+      expect(plan.playProductId).not.toBe(plan.id);
+      expect(plan.playProductId).not.toContain("_");
     }
   });
 
