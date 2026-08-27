@@ -628,13 +628,27 @@ unblock other work.
     setup** → Real-time developer notifications, in the full form
     `projects/{project_id}/topics/{topic_name}`.
 
-    **AND THE CLOUD PROJECT MUST BE LINKED TO THE PLAY CONSOLE.** Play Console →
-    **Setup → API access** → Linked Google Cloud Project. Inviting the service
-    account under Users and permissions is NOT enough on its own: without the
-    link the Developer API answers **401 "The current user has insufficient
-    permissions to perform the requested operation"**, which reads as a bad
-    credential rather than a missing association. Confirmed live on 2026-08-27 —
-    impersonation worked, the Pub/Sub side worked, and only this call failed.
+    **A 401 here is the PERMISSIONS, not the project link.** I first recorded
+    that the Cloud project must be linked at Setup → API access. That is wrong
+    and Google's own getting-started page says so in as many words: "You no
+    longer need to link your developer account to a Google Cloud Project in
+    order to access the Google Play Developer API."
+
+    What the 401 actually means is narrower, and two probes separate it. Calling
+    `purchases.subscriptionsv2` with a deliberately fake token returned **401
+    "The current user has insufficient permissions"**, while `inappproducts` on
+    the same app returned **403 "Please migrate to the new publishing API"** — a
+    different refusal entirely, and one that could only come from a caller Play
+    already recognises as having access to this app. So authentication works,
+    the app association works, and what is missing is the FINANCIAL permission:
+
+    Play Console → Users and permissions → the service account →
+    App permissions for Plus One → View financial data
+    → Manage orders and subscriptions
+
+    Worth keeping because the message names none of that: "insufficient
+    permissions" reads as a broken credential and sends you to the wrong
+    console.
 
     **One choice is stickier than it looks.** RTDN may use a different project
     per app, but the Play Developer API must use the SAME project across every
