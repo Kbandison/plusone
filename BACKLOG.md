@@ -246,51 +246,36 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    string manipulation finds nothing at purchase time. They still cannot be
    submitted for review until there is an app version with a build to attach
    them to — that is Apple's rule, not a setup problem.
-4. **Store webhooks — Apple's half is done**, 2026-08-26.
-   `/api/app-store/notifications` verifies the envelope and the transaction
-   nested inside it, and updates `iap_entitlements`. **Kevin has to point Apple
-   at it**: App Store Connect → the app → General → App Information → App Store
-   Server Notifications, Production and Sandbox URLs entered separately, both
-   `https://www.loveplusone.app/api/app-store/notifications`. The "send test
-   notification" button is the check, and `TEST` is deliberately accepted.
+4. ~~**Store webhooks — Apple's half**~~ — **proven on real Apple traffic
+   2026-08-27.** Kevin's sandbox subscription renewed and the notification
+   arrived, verified and applied:
 
-   **This now has a live test attached and a deadline.** Kevin's real sandbox
-   purchase on 2026-08-26 wrote the first `iap_entitlements` row, and the row
-   expires roughly 24 HOURS after it was made — the sandbox compresses the term,
-   and the tester's renewal rate is an App Store Connect setting no session can
-   see. Whatever the rate, that row renews or expires within about a day, and
-   BOTH are notifications.
+   ```
+   22:19:44  POST /api/app-store/notifications  200
+             {"at":"appstore.notify","type":"DID_RENEW","status":"active","rows":1}
+   row       updated_at 22:19:45.063Z, one second later
+             expires_at 2026-08-27T22:20:28Z -> 2026-08-28T22:20:28Z
+   ```
 
-   So: with the URL set, the row updates itself and the whole path is proven
-   including the half nobody has watched. Without it, the row goes stale, Kevin
-   silently stops being premium, and the renewal that should have restored him
-   never arrives. Nothing in the app will look broken — `is_premium()` will
-   simply start answering no. Check `updated_at <> created_at` on that row to
-   tell the two outcomes apart.
+   Both halves were needed to attribute it. The row moving is NOT proof on its
+   own: `NativeIapRecovery` listens to StoreKit's update stream, so a renewal
+   reaching a device with the app open would have written the same row through
+   `record_iap_entitlement`. The log line is what says the webhook did it.
 
-   **Play RTDN is done too**, 2026-08-27. `/api/play/notifications` takes a
-   Pub/Sub PUSH, verifies the caller's OIDC token against the same service
-   account everything else uses, and re-checks every purchase token with the
-   Developer API rather than believing the payload — because Google says the
-   notification "tells you only that the purchase state changed", not what it
-   changed to. `notificationType` is therefore never mapped onto a status. The
-   exception is a voided purchase, recorded as `revoked` without a lookup, since
-   that is the one case the notification knows more than the lookup does.
+   Nothing was staged. A real purchase, a real Apple renewal, a real signature
+   checked against the embedded root, and one row updated — which is the whole
+   Apple payment path end to end, and the last part of it nobody had watched.
 
-   **Kevin has to switch the subscription from pull to push**: Pub/Sub →
-   Subscriptions → `play-rtdn-sub` → Edit → Delivery type **Push**, endpoint
-   `https://www.loveplusone.app/api/play/notifications`, and **enable
-   authentication** with the `plusone-play@…` service account. Leave the audience
-   blank — Pub/Sub then signs for the endpoint URL, which is what the route
-   expects. The test notification already queued will be delivered the moment
-   that is done, which is the check.
+   **Play RTDN is the remaining half**, blocked on Kevin item 14's Google Cloud
+   service account.
 
-   Originally blocked on: a Google Cloud service account with Pub/Sub, and Play
-   Console pointed at a topic. RTDN carries only a purchase token, so unlike Apple's the
-   payload is not self-describing — it has to be exchanged with the Play
-   Developer API, which is what the service account is for. Worth doing only
-   after there is an Android purchase to notify about, which needs the Play
-   billing flow that server 12 records the shape of.
+   Two things the sandbox will do on its own, worth knowing before they look
+   like bugs. It renews every ~24h at this tester's rate, so the row keeps
+   moving without anybody touching it. And sandbox auto-renews **six times and
+   then stops** — so around 2026-09-01 that subscription EXPIRES, which sends
+   `EXPIRED` and exercises the other branch of `statusFromNotification` for
+   free. If somebody notices Kevin has stopped being premium that day, this is
+   why, and it is the system working.
 
 5. ~~**Cancellation routing**~~ — done 2026-08-26. The premium page reads
    `iap_entitlements` and routes each live source to where it can actually be

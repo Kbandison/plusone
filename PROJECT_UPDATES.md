@@ -1,5 +1,51 @@
 # Project Updates
 
+## 2026-08-27 — The renewal arrived, and it was Apple that moved the row
+
+The Apple payment path is proven end to end. Yesterday's purchase was the first
+half; today the subscription renewed on its own and the notification landed,
+verified and applied, with nobody staging anything.
+
+```
+22:19:44  POST /api/app-store/notifications  200
+          {"at":"appstore.notify","type":"DID_RENEW","status":"active","rows":1}
+row       updated_at 22:19:45.063Z
+          expires_at 2026-08-27T22:20:28Z -> 2026-08-28T22:20:28Z
+```
+
+**Both halves were needed to say who did it**, and that is the part worth
+keeping. The row moving is not evidence of a working webhook: the shell listens
+to StoreKit's own update stream, so a renewal reaching a device with the app
+open would have written the same row by a completely different route. Two
+independent recovery paths is a good property and it makes attribution harder,
+not easier — the log line is what distinguishes them, and without it the
+conclusion "the webhook works" would have been a guess that happened to be
+right.
+
+That is a general shape. Redundancy that protects a member also hides which
+mechanism actually fired, so a system with two paths to the same outcome needs a
+way to tell them apart or it cannot be debugged by looking at its results.
+
+### What this closes
+
+The paid tier was unreachable inside the iOS app for two days — correctly, on
+guideline 3.1.1 — and is now reachable through the only door Apple permits, with
+every step verified against real Apple traffic rather than a fixture: the
+purchase sheet, the signed transaction, the signature checked offline against an
+embedded root, the entitlement written, the transaction finished, and now the
+renewal keeping it current without anyone opening the app.
+
+What remains of store billing is Google's half, which is blocked on a service
+account, and the Play products being rebuilt as three.
+
+### One thing that will look like a bug and is not
+
+The sandbox renews every ~24 hours and auto-renews **six times before stopping**.
+So around 1 September that subscription expires, Kevin stops being premium, and
+an `EXPIRED` notification exercises the other branch of the status mapping for
+free. It is written into `BACKLOG.md` beside the item, because the failure mode
+of not writing it down is somebody debugging a working system.
+
 ## 2026-08-26 — The badge counts now
 
 §8 kept count granularity out of notifications, and the argument reached an app
