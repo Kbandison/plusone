@@ -545,6 +545,22 @@ unblock other work.
     number, service account email, pool id, provider id. None is a secret, which
     is the whole point.
 
+    **The Vercel toggle is on the PROJECT, not the team**: project → Settings →
+    Security → "Secure backend access with OIDC federation" → Team or Global →
+    Save. Team mode is the stricter one and scopes the issuer to the slug.
+
+    The values this account actually needs, read off `vercel project inspect`
+    rather than guessed — the slug is not the display name:
+
+    ```
+    team slug        kevin-bandisons-projects
+    vercel project   plusone-web
+    issuer (Team)    https://oidc.vercel.com/kevin-bandisons-projects
+    audience         https://vercel.com/kevin-bandisons-projects
+    principal subject
+      owner:kevin-bandisons-projects:project:plusone-web:environment:production
+    ```
+
     **TWO service accounts are involved and they point in opposite directions.**
     This is the part the first version of this item missed, and missing it fails
     silently — the topic exists, the subscription exists, and nothing is ever
