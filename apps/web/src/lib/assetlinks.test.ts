@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const route = readFileSync(join(HERE, "../app/.well-known/assetlinks.json/route.ts"), "utf8");
 
-const fingerprint = /SHA256_CERT_FINGERPRINT\s*=\s*\n?\s*"([0-9A-F:]+)"/.exec(route)?.[1] ?? "";
+const fingerprints = [...route.matchAll(/"((?:[0-9A-F]{2}:){31}[0-9A-F]{2})"/g)].map((m) => m[1]!);
 
 describe("assetlinks.json", () => {
   /**
@@ -25,8 +25,28 @@ describe("assetlinks.json", () => {
    * every tool that reads this, and a truncated paste is the failure that looks
    * most like a working value.
    */
-  it("carries a well-formed SHA-256", () => {
-    expect(fingerprint).toMatch(/^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/);
+  it("carries a well-formed SHA-256 for every key", () => {
+    expect(fingerprints.length).toBeGreaterThan(0);
+    for (const f of fingerprints) expect(f).toMatch(/^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/);
+  });
+
+  /**
+   * THREE, because this app is enrolled in quantum-ready hybrid signing.
+   *
+   * Google's own wording: it "generates a new classical key for the hybrid
+   * signature that is different to the classical key it uses for pre-Android 17
+   * devices, resulting in your app using three distinct keys", and "you must
+   * copy the fingerprints for three keys and register each of them".
+   *
+   * This file carried only the post-quantum one for two days, and the symptom
+   * was a real phone showing a browser address bar — it verifies with the
+   * classical key for its Android version, found no match, and fell back
+   * silently. One fingerprint here is not a smaller version of correct; it is
+   * broken for every device outside one band.
+   */
+  it("carries all three keys, not just one", () => {
+    expect(fingerprints).toHaveLength(3);
+    expect(new Set(fingerprints).size).toBe(3);
   });
 
   /**
@@ -35,7 +55,18 @@ describe("assetlinks.json", () => {
    * ever reappears, something restored an old file.
    */
   it("is not the fingerprint from the discarded Play record", () => {
-    expect(fingerprint.startsWith("FB:82:E0")).toBe(false);
+    for (const f of fingerprints) expect(f.startsWith("FB:82:E0")).toBe(false);
+  });
+
+  /**
+   * And not the UPLOAD key, which is the classic wrong answer.
+   *
+   * Google re-signs every upload, so the upload key is never what a phone sees.
+   * It is on the same App integrity page, one line away, and putting it here
+   * fails exactly as silently as everything else on this route.
+   */
+  it("is not the upload key", () => {
+    for (const f of fingerprints) expect(f.startsWith("61:57:3B")).toBe(false);
   });
 
   /**
