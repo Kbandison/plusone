@@ -132,32 +132,40 @@ or selfie is needed. Creating a NEW account does require a one-time
 identity check, which is why the test account is provided.
 ```
 
-**Hosted Supabase does support this** — confirmed in the dashboard 2026-08-27.
-Authentication → Sign In / Providers → Phone → **"Test phone numbers and OTPs"**,
-a comma-separated list of `<phone number>=<otp>` pairs, with a date field beside
-it after which they stop working.
+**Hosted Supabase supports this, and the path is VERIFIED end to end** —
+2026-08-27, against the live project rather than reasoned about. Authentication →
+Sign In / Providers → Phone → **"Test phone numbers and OTPs"**, a
+comma-separated list of `<phone number>=<otp>` pairs, with a date field beside it
+after which they stop working.
 
-Three things about it, and the first one fails silently:
+Proof, straight against the auth API: requesting a code for the test number
+answers `{"message_id":"test-otp"}` — Supabase saying outright that it sent no
+SMS — and verifying the fixed code returns a session with
+`phone_confirmed_at` set. That is the reviewer's whole journey, minus the
+screens.
 
-- **The number must carry its country code.** `normalizePhone` in
-  `packages/logic/src/verification/otp.ts` enforces `/^\+[1-9]\d{1,14}$/` and
-  deliberately refuses to invent one — "guessing one sends someone's code to a
-  stranger" — so the app can only ever present `+1XXXXXXXXXX`. A ten-digit entry
-  in this field matches nothing, and the failure looks exactly like a wrong code
-  rather than aconfiguration mistake. Supabase's own example shows the shape:
-  `18005550123=789012`.
+Three things learned doing it:
+
+- **Name the button in the instructions.** The account must be signed IN to, not
+  created — "Get started" and "Sign in" are different doors and only one of them
+  works once the account exists. This exact confusion cost a round trip here,
+  and a reviewer who takes the wrong one sees an error and files a rejection
+  rather than asking.
 - **Set the expiry past any plausible review.** A first submission of a dating
   app that handles health data is not a same-week review. If the pair expires
   mid-review the reviewer is locked out, and that returns as a rejection rather
   than a question.
-- **Prefer a reserved number and a non-obvious code.** `555-0100`–`555-0199` is
-  the fictional range and cannot belong to anybody, which is why Supabase's
-  example uses one. A real number plus `123456` is a guessable door into a live
-  account, and the account it opens is a real member with real rows.
+- **Use a reserved number.** `555-0100`–`555-0199` cannot belong to anybody,
+  which is why Supabase's own example uses one. A real number here is a
+  guessable door into an account with real rows in it — and worse, taking it
+  back OUT of the list makes it a live number again, at which point a sign-in
+  attempt sends a real SMS to whoever owns it.
 
-Test it before submitting rather than after: sign in on a device with the test
-number and confirm the fixed code is accepted. It costs a minute and it is the
-only thing that proves the format matched.
+An earlier version of this section claimed the field needs the country code and
+that a ten-digit entry matches nothing. **That was wrong** — it was inferred from
+a probe that caught the setting mid-edit. Supabase matches the app's `+1…` E.164
+form against what is stored without help. Left recorded because the reasoning
+looked sound and was not.
 
 ### Content rating
 
