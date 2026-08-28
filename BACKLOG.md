@@ -424,7 +424,46 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
       end up identical, because two stores that happen to agree today are still
       two stores.
 
-13. **The Play purchase flow, which is on no list until now.** Server 12 records
+13. **`clientAppUnavailable` — Play billing does not reach the TWA.** Found
+    2026-08-27 with the on-page diagnostic, after three rounds of guessing that
+    a merged error message made unavoidable. What the app actually reports:
+
+    ```
+    getDigitalGoodsService present: true
+    referrer: android-app://app.loveplusone/
+    service resolved: yes
+    getDetails THREW: OperationError: clientAppUnavailable
+    ```
+
+    So everything upstream is healthy — it IS the installed app, Chrome exposes
+    the API, and the service resolves. Chrome cannot reach the billing bridge in
+    our app, and that is a Chrome-side error rather than one Play Billing
+    raised.
+
+    **The build is not the problem, checked rather than assumed.**
+    `DelegationService` registers `DigitalGoodsRequestHandler`; it is
+    `android:enabled` and `android:exported` through `@bool/enableNotification`,
+    which gradle sets true from `enableNotifications: true`;
+    `com.android.vending.BILLING`, `PaymentService` and `ProxyBillingActivity`
+    are all in the bundle; `androidbrowserhelper:billing:1.2.0`. And the store
+    side is right — all three base plans ACTIVE with `legacyCompatible: true`,
+    read off the Developer API.
+
+    **It is a known upstream bug with no fix.** GoogleChrome/android-browser-helper#431
+    and GoogleChromeLabs/bubblewrap#640 both report exactly this on Android 13+
+    (API 33 and above), with the Delegation Service failing to run where it
+    works on Android 11. Both are open, neither has a maintainer answer, and the
+    reporter of #431 had already tried clearing Play Store cache, changing
+    targetSdk, and re-checking permissions.
+
+    Worth trying before assuming that is us, cheapest first: open the Play Store
+    app once and let it settle the licence for a freshly installed app; confirm
+    licence testing lists the actual email rather than an unresolved group; and
+    reinstall. If none of it moves, this is upstream and the honest options are
+    to wait, or to ship Android without an in-app purchase path until it is
+    fixed — which is a product decision rather than a technical one.
+
+14. **The Play purchase flow, which is on no list until now.** Server 12 records
     WHY three products and 10 records the TWA that would run them, but nothing
     said who builds the buying. It is web-side — a TWA runs `apps/web` in real
     Chrome — so it is this lane, not the shells one.
