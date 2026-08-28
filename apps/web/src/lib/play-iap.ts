@@ -175,9 +175,11 @@ export async function purchasePlayProduct(
  * rejects, and a `getDetails` that throws, and those have completely different
  * causes. This walks the same steps and says which one stopped.
  *
- * Behind `?debug=play` and shown to nobody otherwise. It reports the shape of a
- * failure, never a purchase — the ids it prints are our own product ids, which
- * are in the client bundle already.
+ * Runs on the failure path and nowhere else — a TWA has no address bar, so the
+ * `?debug=play` this first hid behind was unreachable from inside the app it
+ * was meant to diagnose. It reports the shape of a failure, never a purchase:
+ * the ids it prints are our own product ids, already in the client bundle, and
+ * no purchase token is ever put on screen (§9.6).
  */
 export async function playDiagnostics(productIds: string[]): Promise<string[]> {
   const lines: string[] = [];
@@ -187,6 +189,18 @@ export async function playDiagnostics(productIds: string[]): Promise<string[]> {
       "function";
   lines.push(`getDigitalGoodsService present: ${has}`);
   lines.push(`referrer: ${typeof document === "undefined" ? "-" : document.referrer || "(empty)"}`);
+  /**
+   * WHICH browser is providing the TWA, and which version of it.
+   *
+   * Not cosmetic. A TWA is run by whichever installed browser claims the
+   * relationship, and that is not always Chrome — on a Samsung phone it is
+   * routinely Samsung Internet, which is Chromium-based and may expose
+   * `getDigitalGoodsService` while having no working Play bridge behind it.
+   * Every upstream report of `clientAppUnavailable` names Chrome 114, so the
+   * version alone separates "the known 2023 bug" from something else wearing
+   * its error message.
+   */
+  lines.push(`ua: ${typeof navigator === "undefined" ? "-" : navigator.userAgent}`);
   if (!has) return lines;
 
   let svc: DigitalGoodsService;
@@ -212,6 +226,25 @@ export async function playDiagnostics(productIds: string[]): Promise<string[]> {
   } catch (cause) {
     lines.push(
       `getDetails THREW: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}`,
+    );
+  }
+
+  /**
+   * The same bridge, asked a different question.
+   *
+   * `getDetails` reaches Play through the app's DelegationService; so does
+   * `listPurchases`, and they fail together when that connection is the
+   * problem. Asking both is what tells a broken BRIDGE apart from a broken
+   * PRODUCT LOOKUP — one failing while the other answers would mean the
+   * connection is fine and only the catalogue query is not, which is a much
+   * smaller fault than the one the upstream reports describe.
+   */
+  try {
+    const owned = await svc.listPurchases();
+    lines.push(`listPurchases returned ${owned.length}`);
+  } catch (cause) {
+    lines.push(
+      `listPurchases THREW: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}`,
     );
   }
   return lines;
