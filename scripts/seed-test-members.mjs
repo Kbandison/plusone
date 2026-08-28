@@ -276,9 +276,33 @@ try {
     const phone = `+1555${id.replace(/\D/g, "").padEnd(7, "0").slice(0, 7)}`;
     const community = i % 4 === 3 ? "hiv" : "hsv";
     const gender = pick(GENDERS, i);
-    // Everybody wants somebody: a seed seeking nothing matches everyone, which
-    // would make the mutual filter look broken rather than permissive.
-    const seeking = [pick(GENDERS, i + 1), pick(GENDERS, i + 2)];
+    /**
+     * Seeking cycles SLOWER than gender, and that is the whole point.
+     *
+     * It was `[pick(GENDERS, i + 1), pick(GENDERS, i + 2)]` — the two genders
+     * after this seed's own. Both cycle at the same rate as `gender`, so the
+     * two are locked together and every seed wants the same relative
+     * neighbours. Against a member who is a woman seeking women and men that
+     * produced FOUR failures and no matches:
+     *
+     *   woman      seeks man, non_binary   — does not want her
+     *   man        seeks non_binary, other — does not want her
+     *   non_binary seeks other, woman      — wants her; she does not want them
+     *   other      seeks woman, man        — wants her; she does not want them
+     *
+     * Browse and the Drop came back empty while the filter worked perfectly —
+     * exactly the failure the age comment below describes, one field over. A
+     * seed that cannot match the person it was seeded for does not do the one
+     * job it has, and it is worse for a beta tester than no seed at all,
+     * because it looks like an empty app rather than an unfinished one.
+     *
+     * Dividing by the gender count makes seeking hold still for a full cycle of
+     * genders, so every (gender, sought) pairing appears across the population
+     * and nobody can fall through. It also means the FIRST few seeds all seek
+     * the first genders, which is what makes a small SEED_COUNT still work.
+     */
+    const wanted = Math.floor(i / GENDERS.length);
+    const seeking = [pick(GENDERS, wanted), pick(GENDERS, wanted + 1)];
     /**
      * Every gender spans the same range of ages.
      *

@@ -84,17 +84,39 @@ Plus One is 18+.
 | Feature graphic   | 1024×500  | `feature-graphic.png`         |
 | Phone screenshots | 1080×1920 | `01-…` to `06-…`, six of them |
 
-**The screenshots are composed, not captured, and that was forced.** Production
-is nearly empty so every screen photographs as an empty state — Tonight reads
-"Nothing tonight" — and the screens that are NOT empty show real members of an
-app for people with HIV and HSV, which cannot go on a public store page at any
-quality setting. So they use the app's real chrome, palette and typefaces with
-its real copy imported from `@plusone/config`, and no invented people appear
-anywhere.
+**The screenshots are real captures of the real app**, which is what Play asks
+for: they "demonstrate the actual in-app experience" and are "captured directly
+from the real app", with a tagline taking no more than 20% of the image. The
+caption band here is 13%.
+
+An earlier version of this set was six purely typographic panels with no UI at
+all. That was a rejection risk dressed as a design decision, and it is recorded
+because the reasoning felt sound: production is empty and real members cannot be
+shown, so composing seemed like the only option. It was not — seeding was.
+
+Getting a capture worth taking needed two fixes, both on 2026-08-28:
+
+- **Production is empty**, so every screen photographs as an empty state. Fixed
+  by seeding: `SEED_NEAR=<phone> pnpm seed`, then `seed:talk` and `seed:rooms`.
+  Note `SEED_NEAR` — the default drops members in Manhattan, and a seed outside
+  the member's radius is the same as no seed.
+- **The seeds could not match the member they were seeded for.** `gender` and
+  `seeking` cycled in lockstep, so every seed failed in one direction or the
+  other and Browse came back empty while the filter worked perfectly. Fixed in
+  `seed-test-members.mjs`.
+
+And the constraint that rules out the shortcut: the screens that are NOT empty
+in a real account show real members of an app for people with HIV and HSV, and
+those cannot go on a public store page at any quality setting. Seeded members
+are the only honest source.
+
+`captures/` holds the raw device PNGs and is committed, because they are inputs
+the script cannot reproduce — a listing asset that needs a phone in your hand to
+rebuild wants its source in the repository.
 
 **1080×1920 is not a preference.** Play requires an aspect ratio between 16:9
-and 9:16 inclusive, and Kevin's phone is 1440×3120 — 9:19.5, taller than the
-limit — so a real device capture from it is rejected before anybody looks at it.
+and 9:16 inclusive, and the device is 1440×3120 — 9:19.5, taller than the limit
+— so an unedited capture is rejected before anybody looks at it.
 
 The icon is `⁺1` as of 2026-08-28 and is no longer placeholder geometry;
 `scripts/generate-icons.mjs` regenerates every surface at once, and
