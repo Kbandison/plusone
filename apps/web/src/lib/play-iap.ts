@@ -230,6 +230,40 @@ export async function playDiagnostics(productIds: string[]): Promise<string[]> {
   }
 
   /**
+   * A CONTROL, which is the one thing the failure above cannot supply.
+   *
+   * The three ids in `PLANS` are confirmed against the console and are right,
+   * so an empty answer for them is not a spelling mistake. What it cannot
+   * distinguish is a catalogue this device cannot see AT ALL from three
+   * products that are individually not sellable — and those want opposite
+   * fixes.
+   *
+   * `plusonepremium` is the discarded first attempt. It still exists and still
+   * carries three active base plans from the original setup, so it is the only
+   * product in this account known to have been configured the old, working
+   * way. If Play returns it while returning none of ours, the bridge, the
+   * licence and catalogue access are all fine and the fault is confined to how
+   * the three new base plans are configured. If Play returns nothing at all,
+   * it is none of those things.
+   *
+   * The plural variants cost nothing and close off the last of the spelling
+   * doubt. Diagnostic only: nothing here reaches `PLANS`, no purchase can come
+   * of it, and a product id is not a secret — ours ship in the client bundle.
+   * Delete once Android has been bought from once.
+   */
+  const CANDIDATES = ["plusonepremium", "premium1months", "premium3month", "premium6month"];
+  try {
+    const known = await svc.getDetails(CANDIDATES);
+    lines.push(
+      known.length === 0
+        ? `Play knows NONE of ${CANDIDATES.length} candidate ids`
+        : `Play knows: ${known.map((k) => k.itemId).join(", ")}`,
+    );
+  } catch (cause) {
+    lines.push(`candidate probe THREW: ${cause instanceof Error ? cause.name : String(cause)}`);
+  }
+
+  /**
    * The same bridge, asked a different question.
    *
    * `getDetails` reaches Play through the app's DelegationService; so does

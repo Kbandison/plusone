@@ -194,8 +194,11 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
     );
   }
 
+  // Wraps rather than scrolls. This is read on a phone, and a `pre` that scrolls
+  // sideways shows one slice at a time — three screenshots of the same panel
+  // arrived showing three different halves of the output.
   const debugPanel = diagnostics ? (
-    <pre className="mt-4 overflow-x-auto rounded-lg border border-line-2 p-3 text-[10px] leading-[1.5] text-ink-3">
+    <pre className="mt-4 rounded-lg border border-line-2 p-3 text-[10px] leading-[1.5] break-all whitespace-pre-wrap text-ink-3">
       {diagnostics.join("\n")}
     </pre>
   ) : null;
