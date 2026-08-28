@@ -23,6 +23,7 @@
 import { randomUUID } from "node:crypto";
 
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import pg from "pg";
 import sharp from "sharp";
@@ -160,7 +161,34 @@ export function traitVectorFor(answers) {
  * bucket. Three variants, matching what processPhoto writes on a real upload —
  * a card with no blurred counterpart is a photo with no private fallback.
  */
-async function drawPhoto(initial, hue) {
+/**
+ * Real images, when there are any to use.
+ *
+ * `SEED_PHOTOS=<dir>` points at a folder of pictures and they are used in
+ * rotation instead of the drawn monograms. The monograms are honest and they
+ * photograph like a demo, which matters because these seeds are what a store
+ * listing and a beta tester both see.
+ *
+ * The rule the monograms exist to protect still stands and is the caller's to
+ * keep: NEVER point this at a photograph of a real person. Stock licences
+ * almost universally forbid "sensitive use" — imagery implying a health
+ * condition — which is exactly what a profile in this app implies, so ordinary
+ * stock is not merely risky here, it is a licence breach. Generated or
+ * commissioned imagery only.
+ */
+const PHOTO_DIR = process.env.SEED_PHOTOS ?? "";
+const PHOTO_FILES = PHOTO_DIR
+  ? (await import("node:fs"))
+      .readdirSync(PHOTO_DIR)
+      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
+      .sort()
+  : [];
+if (PHOTO_DIR && PHOTO_FILES.length === 0) {
+  console.error(`SEED_PHOTOS=${PHOTO_DIR} contains no jpg/png/webp files.`);
+  process.exit(1);
+}
+
+async function drawPhoto(initial, hue, index = 0) {
   const svg = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900">
        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -172,7 +200,16 @@ async function drawPhoto(initial, hue) {
              fill="rgba(255,255,255,0.9)" text-anchor="middle">${initial}</text>
      </svg>`,
   );
-  const base = sharp(svg);
+  // A supplied photo wins; the drawn monogram is the fallback. Cropped square
+  // first so every variant below sees the same frame the real uploader writes.
+  const base =
+    PHOTO_FILES.length > 0
+      ? sharp(join(PHOTO_DIR, PHOTO_FILES[index % PHOTO_FILES.length])).resize({
+          width: 900,
+          height: 900,
+          fit: "cover",
+        })
+      : sharp(svg);
   return {
     full: await base
       .clone()
@@ -414,7 +451,7 @@ try {
     // have something to render.
     for (const slot of [0, 1]) {
       const photoId = randomUUID();
-      const variants = await drawPhoto(pick(NAMES, i)[0], (i * 47 + slot * 25) % 360);
+      const variants = await drawPhoto(pick(NAMES, i)[0], (i * 47 + slot * 25) % 360, i * 2 + slot);
       const paths = {
         storage_path: `${id}/${photoId}.webp`,
         card_path: `${id}/${photoId}-card.webp`,
