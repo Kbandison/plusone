@@ -469,20 +469,45 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     the console 2026-08-27, all three: base plan Active, **Backwards
     compatible**, 174 countries. The configuration is correct.
 
-    What is left is that all three read **last updated Aug 28, 2026** — changed
-    within hours of being asked for. `plusonepremium` is old and resolves; the
-    three new ones are hours old and do not. That is a propagation or a
-    device-cache story rather than a configuration one, and it is the only
-    difference left standing between the product that works and the three that
-    do not.
+    All three read **last updated Aug 28, 2026** — changed within hours of being
+    asked for, where `plusonepremium` is old. So the remaining difference is
+    age, not configuration: propagation, or a stale catalogue on the device.
 
-    Worth one caution against over-trusting that: `basePlans.activate` takes a
-    `latencyTolerance` which "defaults to latency-sensitive", so activation is
-    meant to take the FAST path. A long propagation delay is therefore not
-    something to lean on. **The decision rule: clear the Google Play Store's
-    cache on the device and relaunch; if the ids are still missing a day later,
-    propagation is disproved** and this goes back to being unexplained — at
-    which point `adb logcat` is the next instrument, not another console change.
+    ── and then the bridge broke again, which is the real finding ──────────────
+
+    **`clientAppUnavailable` IS TRANSIENT, AND IT CAN BE REPRODUCED ON DEMAND.**
+    Clearing the Google Play Store's cache — suggested here to refresh the
+    catalogue — brought the error straight back, now on every call:
+
+    ```
+    service resolved: yes
+    getDetails THREW: OperationError: clientAppUnavailable
+    candidate probe THREW: OperationError
+    listPurchases THREW: OperationError: clientAppUnavailable
+    ```
+
+    Same APK, same account, same page, minutes apart, both readings. That
+    settles several things at once:
+
+    - **It was never our build.** No manifest, library or store setting changed
+      between a working read and a broken one. The APK-level checks below were
+      already saying this; this proves it.
+    - **The bridge depends on Google Play Store app state**, not on the TWA and
+      not on our DelegationService. Wiping that state breaks it; the service
+      still _resolves_, so what fails is behind Play, past the bind.
+    - **We have a reproduction, and the three upstream issues do not.** All of
+      them describe it as permanent on a device and none can trigger it. "Clear
+      Play Store cache" is a step several reporters tried as a FIX — which,
+      given this, may be how some of them acquired it. Worth reporting upstream.
+
+    So the recovery is to let Play Store rebuild what was cleared: open the Play
+    Store app, let it finish loading, then relaunch Plus One. Expect the
+    catalogue question to still be open underneath — the three ids were missing
+    even while the bridge worked.
+
+    **Do not treat a single reading as the state of this.** It flipped twice in
+    an hour. Anything claimed about it needs the diagnostic re-read at the time
+    of claiming, and a fix is only a fix if it survives a Play Store restart.
 
     ***
 
