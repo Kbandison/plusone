@@ -246,7 +246,7 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    string manipulation finds nothing at purchase time. They still cannot be
    submitted for review until there is an app version with a build to attach
    them to — that is Apple's rule, not a setup problem.
-4. ~~**Store webhooks — Apple's half**~~ — **proven on real Apple traffic
+4. ~~**Store webhooks — both stores**~~ — **proven on real Apple traffic
    2026-08-27.** Kevin's sandbox subscription renewed and the notification
    arrived, verified and applied:
 
@@ -266,8 +266,23 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
    checked against the embedded root, and one row updated — which is the whole
    Apple payment path end to end, and the last part of it nobody had watched.
 
-   **Play RTDN is the remaining half**, blocked on Kevin item 14's Google Cloud
-   service account.
+   **Play RTDN is done and proven too**, 2026-08-27, a few hours after this. The
+   service account it was blocked on exists now and federates rather than
+   holding a key. The queued test notification was delivered by push and
+   answered 200:
+
+   ```
+   00:00:54  POST /api/play/notifications  200
+             {"at":"play.notify","kind":"test"}
+   ```
+
+   One line, and it exercises the whole chain: Play publishing to the topic, the
+   publisher grant that permits it, the push subscription, Google's OIDC token
+   passing `verifyPushCaller`, the envelope decoding, and the acknowledgement. A
+   401 in the same log four minutes later is a probe of mine, not Google.
+
+   So BOTH stores' webhooks are now proven on real traffic — which was the half
+   of the payment path nobody had watched on either side this morning.
 
    Two things the sandbox will do on its own, worth knowing before they look
    like bugs. It renews every ~24h at this tester's rate, so the row keeps
