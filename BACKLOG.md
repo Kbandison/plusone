@@ -505,9 +505,57 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     catalogue question to still be open underneath — the three ids were missing
     even while the bridge worked.
 
-    **Do not treat a single reading as the state of this.** It flipped twice in
-    an hour. Anything claimed about it needs the diagnostic re-read at the time
-    of claiming, and a fix is only a fix if it survives a Play Store restart.
+    **Do not treat a single reading as the state of this.** It flipped three
+    times in an hour. Anything claimed about it needs the diagnostic re-read at
+    the time of claiming, and a fix is only a fix if it survives a Play Store
+    restart.
+
+    ── what `adb logcat` said, 2026-08-27 ──────────────────────────────────────
+
+    Wireless debugging over the LAN from WSL, no cable: `adb pair` against the
+    code the phone shows, then `adb connect`. The pairing dialog is one-shot and
+    its port differs from the connect port — both change every time it is
+    opened, so the code has to be sent and used within the minute. The device is
+    a **Galaxy S26 Ultra, Android 16 (SDK 36), Chrome 151, Play Store 52.8.58**.
+
+    Launch the page directly with
+    `adb shell am start -a android.intent.action.VIEW -d <url>` — assetlinks is
+    verified, so it opens in the TWA rather than a browser, and it beats asking
+    somebody to tap through. `adb exec-out screencap -p` reads the screen.
+
+    What one launch produced, and it settles four things:
+
+    ```
+    TWAProviderPicker: Found TWA provider, finishing search: com.android.chrome
+    TWAConnectionPool: Found app.loveplusone.DelegationService to handle request
+    LicenseClient: License check succeeded.
+    TwaBilling.DG: Calling getDetails for premium1month, premium3months, premium6months
+    TwaBilling.DG: Connected to Play Billing library.
+    TwaBilling.DG: GetDetails returned: 0
+    TwaBilling.DG: ListPurchases returned: 0
+    Finsky: Billing preferred account via installer for app.loveplusone: [<hash>]
+    ```
+
+    - **The provider is Chrome**, named outright. The Samsung Internet theory is
+      dead, on this device.
+    - **Our DelegationService is found and used.** Play Billing _connects_. So
+      the bridge works, again — and `clientAppUnavailable` is confirmed
+      transient rather than a property of this build or this phone.
+    - **`GetDetails` answered 0 in 23ms with no network request.** Connected at
+      `.646`, returned at `.669`. That is a local cache lookup against an empty
+      cache, not a query that failed — which is a different problem from the one
+      the console screens can show, and it is why nothing in Play Console looks
+      wrong.
+    - **Play binds billing to ONE account, chosen from installer data**, and
+      this device has **17 Google accounts on it**. If the account Play picked
+      is not the one opted into internal testing and named in licence testing,
+      the catalogue is legitimately empty for it. That is the first thing to
+      check and it is not visible from the app, the console, or the logs — the
+      log prints an obfuscated id, not an address.
+
+    The reinstall at 22:06 is what re-derived that binding, and it happened
+    between the last working read and these. Worth knowing before reinstalling
+    again to "fix" it.
 
     ***
 
