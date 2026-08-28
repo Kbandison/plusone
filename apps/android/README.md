@@ -132,17 +132,32 @@ or selfie is needed. Creating a NEW account does require a one-time
 identity check, which is why the test account is provided.
 ```
 
-**The unresolved part.** That relies on a fixed OTP for one number. Supabase
-Auth has the mechanism — `SMS_TEST_OTP`, which maps a number to a fixed code and
-skips SMS delivery entirely, with `SMS_TEST_OTP_VALID_UNTIL` to expire it — but
-it is documented under **self-hosting**, and the hosted Phone Login page does not
-mention it. So **check the Dashboard before relying on it**: Authentication →
-Sign In / Providers → Phone is where it would live. It was not verified from
-here, and today already produced two console paths that turned out not to exist.
+**Hosted Supabase does support this** — confirmed in the dashboard 2026-08-27.
+Authentication → Sign In / Providers → Phone → **"Test phone numbers and OTPs"**,
+a comma-separated list of `<phone number>=<otp>` pairs, with a date field beside
+it after which they stop working.
 
-If hosted does not expose it, this is a genuine blocker worth solving before
-submission rather than at it — both stores ask the same question, and the answer
-cannot be "email us and we'll read you a code".
+Three things about it, and the first one fails silently:
+
+- **The number must carry its country code.** `normalizePhone` in
+  `packages/logic/src/verification/otp.ts` enforces `/^\+[1-9]\d{1,14}$/` and
+  deliberately refuses to invent one — "guessing one sends someone's code to a
+  stranger" — so the app can only ever present `+1XXXXXXXXXX`. A ten-digit entry
+  in this field matches nothing, and the failure looks exactly like a wrong code
+  rather than aconfiguration mistake. Supabase's own example shows the shape:
+  `18005550123=789012`.
+- **Set the expiry past any plausible review.** A first submission of a dating
+  app that handles health data is not a same-week review. If the pair expires
+  mid-review the reviewer is locked out, and that returns as a rejection rather
+  than a question.
+- **Prefer a reserved number and a non-obvious code.** `555-0100`–`555-0199` is
+  the fictional range and cannot belong to anybody, which is why Supabase's
+  example uses one. A real number plus `123456` is a guessable door into a live
+  account, and the account it opens is a real member with real rows.
+
+Test it before submitting rather than after: sign in on a device with the test
+number and confirm the fixed code is accepted. It costs a minute and it is the
+only thing that proves the format matched.
 
 ### Content rating
 
