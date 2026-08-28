@@ -79,16 +79,23 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   /**
-   * Only with `?debug=play` in the url, and only because a TWA has no console
-   * anybody can reach without a USB cable. Removed once Android has been
-   * bought from once.
+   * Runs when there is nothing to sell, and never otherwise.
+   *
+   * This was behind `?debug=play` for about ten minutes, which was useless: a
+   * TWA has no address bar, so there is no way to reach a query parameter from
+   * inside the app it is meant to diagnose. Asking somebody to visit a URL in a
+   * thing whose whole purpose is having no URL bar.
+   *
+   * So it runs on the failure path itself — which is the only time anybody
+   * wants it, and a path a member should never reach. It reports the shape of a
+   * failure and no purchase. Comes out once Android has been bought from once.
    */
   const [diagnostics, setDiagnostics] = useState<string[] | null>(null);
+  const broken = products === null || (products !== "loading" && products.length === 0);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (new URLSearchParams(window.location.search).get("debug") !== "play") return;
+    if (!broken || diagnostics) return;
     void playDiagnostics(PLANS.map((plan) => plan.playProductId)).then(setDiagnostics);
-  }, []);
+  }, [broken, diagnostics]);
 
   useEffect(() => {
     let live = true;
