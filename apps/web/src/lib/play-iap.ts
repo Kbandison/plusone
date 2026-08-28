@@ -164,3 +164,55 @@ export async function purchasePlayProduct(
     return { status: "cancelled" };
   }
 }
+
+/**
+ * What actually went wrong, in words, for a screen nobody can attach a debugger
+ * to.
+ *
+ * A TWA runs in Chrome on a phone, and the only ways to see a console are USB
+ * remote debugging or nothing. So three rounds of this were spent guessing:
+ * `playProducts()` answers null for a service that is absent, a service that
+ * rejects, and a `getDetails` that throws, and those have completely different
+ * causes. This walks the same steps and says which one stopped.
+ *
+ * Behind `?debug=play` and shown to nobody otherwise. It reports the shape of a
+ * failure, never a purchase — the ids it prints are our own product ids, which
+ * are in the client bundle already.
+ */
+export async function playDiagnostics(productIds: string[]): Promise<string[]> {
+  const lines: string[] = [];
+  const has =
+    typeof window !== "undefined" &&
+    typeof (window as Window & { getDigitalGoodsService?: unknown }).getDigitalGoodsService ===
+      "function";
+  lines.push(`getDigitalGoodsService present: ${has}`);
+  lines.push(`referrer: ${typeof document === "undefined" ? "-" : document.referrer || "(empty)"}`);
+  if (!has) return lines;
+
+  let svc: DigitalGoodsService;
+  try {
+    svc = await (service() as Promise<DigitalGoodsService>);
+    lines.push("service resolved: yes");
+  } catch (cause) {
+    lines.push(
+      `service REJECTED: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}`,
+    );
+    return lines;
+  }
+
+  try {
+    const items = await svc.getDetails(productIds);
+    lines.push(`getDetails returned ${items.length} of ${productIds.length} asked for`);
+    for (const item of items)
+      lines.push(`  ${item.itemId} ${item.price?.value} ${item.price?.currency}`);
+    if (items.length === 0)
+      lines.push(
+        "  (empty list — Play does not know these ids, or the base plan is not backwards compatible)",
+      );
+  } catch (cause) {
+    lines.push(
+      `getDetails THREW: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}`,
+    );
+  }
+  return lines;
+}

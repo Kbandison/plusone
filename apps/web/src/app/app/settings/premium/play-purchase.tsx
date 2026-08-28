@@ -7,6 +7,7 @@ import { DRAFT_COPY, PLANS } from "@plusone/config";
 
 import {
   playBillingAvailable,
+  playDiagnostics,
   playProducts,
   playPurchases,
   purchasePlayProduct,
@@ -77,6 +78,17 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
   const [products, setProducts] = useState<PlayItemDetails[] | null | "loading">("loading");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
+  /**
+   * Only with `?debug=play` in the url, and only because a TWA has no console
+   * anybody can reach without a USB cable. Removed once Android has been
+   * bought from once.
+   */
+  const [diagnostics, setDiagnostics] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("debug") !== "play") return;
+    void playDiagnostics(PLANS.map((plan) => plan.playProductId)).then(setDiagnostics);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -175,6 +187,12 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
     );
   }
 
+  const debugPanel = diagnostics ? (
+    <pre className="mt-4 overflow-x-auto rounded-lg border border-line-2 p-3 text-[10px] leading-[1.5] text-ink-3">
+      {diagnostics.join("\n")}
+    </pre>
+  ) : null;
+
   if (products === "loading") {
     return (
       <p className="mt-8 text-[12.6px] text-ink-3" role="status">
@@ -204,6 +222,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
           {noService ? C.premiumPlayNotInApp : C.premiumPlayUnavailable}
         </p>
         {noService ? null : <RestoreButton busy={busy === "restore"} onRestore={restore} />}
+        {debugPanel}
       </div>
     );
   }
@@ -231,6 +250,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
           {C.premiumPlayUnavailable}
         </p>
         <RestoreButton busy={busy === "restore"} onRestore={restore} />
+        {debugPanel}
       </div>
     );
   }
@@ -281,6 +301,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
 
       <RestoreButton busy={busy === "restore"} onRestore={restore} />
       <NoticeLine notice={notice} />
+      {debugPanel}
     </div>
   );
 }
