@@ -738,19 +738,38 @@ unblock other work.
     audience and content, data safety, app access, and a privacy policy URL.
     The last one is already serving.
 
-    Two of them are not form-filling and should not be discovered late:
+    **Prepared 2026-08-27 — `apps/android/README.md` is the copy-paste pack.**
+    Store listing (name, short and full description, both within Play's limits
+    and checked rather than estimated), content rating, target audience, the
+    health-apps declaration, ads, and app access are all written out to be
+    pasted rather than decided again.
 
-    - **Data safety is Apple's privacy labels in another shape.** The facts are
-      already worked out in `packages/config/src/privacy-labels.ts` — its
-      docblock says "App Store AND Play" and `TABLE_CLASSIFICATION`,
-      `NOT_COLLECTED` and `TRACKING` are store-neutral. Only the type names are
-      Apple's. So this is mapping, not deciding, and the two answers must not
-      drift: a test already keeps the Apple side honest against the schema.
-    - **App access is a real problem for this app in particular.** A reviewer
-      has to get in, and getting in means a phone OTP they cannot receive and a
-      liveness check they cannot pass. Both stores ask. Nothing anywhere records
-      how that is answered, and it is the kind of thing that returns a rejection
-      a week after submission rather than blocking one.
+    The two that were never form-filling:
+
+    - **Data safety is done as code.** `packages/config/src/play-data-safety.ts`
+      maps every answer from the facts `privacy-labels.ts` already settled, and
+      `play-data-safety.test.ts` fails when the two stop agreeing — so the chain
+      runs from a new column, through the Apple labels, to both stores. It found
+      one thing worth having: **Play has a "processed ephemerally" answer that
+      Apple's form does not**, which fits the liveness selfie exactly. So the
+      Play side declares it and the Apple side keeps its held-for-counsel note,
+      and that is two forms with different resolution rather than a
+      contradiction.
+    - **App access is still the real problem, and it is now specific.** The
+      liveness check turns out NOT to be the barrier — a reviewer account Kevin
+      has already taken through onboarding is past it permanently. What is left
+      is the sign-in OTP. Supabase Auth has the mechanism (`SMS_TEST_OTP`, a
+      number mapped to a fixed code with SMS skipped, and
+      `SMS_TEST_OTP_VALID_UNTIL` to expire it) but it is documented under
+      SELF-HOSTING and the hosted Phone Login page does not mention it.
+      **Deliberately not asserted as a dashboard path** — check Authentication →
+      Sign In / Providers → Phone. If hosted does not expose it, this blocks
+      submission on both stores rather than delaying a listing, and it wants
+      solving before somebody is waiting on a review.
+
+    Still missing and not code: the feature graphic and screenshots, and the
+    icon is still item 7's placeholder. Screenshots are cheap now — `adb` is set
+    up, so `adb exec-out screencap -p` takes them off the real device.
 
 13. **`wsl --update`**, then re-run `--set-sparse true` and `fstrim`. Reclaims
     ~190 GB the disk image is holding. Tidying, not urgent.
