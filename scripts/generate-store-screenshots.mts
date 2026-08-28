@@ -274,6 +274,48 @@ for (const panel of PANELS) {
   console.log(`  ${panel.file}  ${WIDTH}×${HEIGHT}  ${shot.length} bytes`);
 }
 
+/**
+ * The feature graphic — 1024×500, and Play will not publish a listing without
+ * one.
+ *
+ * It is NOT a screenshot and should not be treated as one: Play crops and
+ * overlays it, and on some surfaces draws the app title across it, so anything
+ * important must stay away from the edges and there is no point putting body
+ * copy in it. Wordmark and one line.
+ */
+const FEATURE = { width: 1024, height: 500 };
+
+await page.setViewportSize(FEATURE);
+await page.setContent(
+  `<!doctype html><html><head><meta charset="utf-8"><style>
+    @font-face { font-family: "Instrument Serif"; src: url(data:font/ttf;base64,${FONTS.instrument}) format("truetype"); font-weight: 400; font-display: block; }
+    @font-face { font-family: "Satoshi"; src: url(data:font/woff2;base64,${FONTS.satoshi400}) format("woff2"); font-weight: 400; font-display: block; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: ${FEATURE.width}px; height: ${FEATURE.height}px; }
+    body {
+      background: ${T.ground}; color: ${T.ink};
+      font-family: "Satoshi", sans-serif; -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 26px; text-align: center;
+      /* Play overlays and crops the edges; keep everything well inside. */
+      padding: 0 140px;
+    }
+    .wordmark { font-family: "Instrument Serif", serif; font-size: 96px; line-height: 1; letter-spacing: -0.02em; }
+    .wordmark .plus { font-size: 0.90em; vertical-align: 0.30em; color: ${T.accent}; }
+    p { font-size: 30px; line-height: 1.4; color: ${T.ink2}; max-width: 700px; }
+  </style></head><body>
+    <span class="wordmark"><span class="plus">+</span>One</span>
+    <p>${escape(COPY.marketing.hero)}</p>
+  </body></html>`,
+  { waitUntil: "load" },
+);
+await page.evaluate(() => document.fonts.ready);
+const feature = await page.screenshot({ type: "png" });
+writeFileSync(join(OUT, "feature-graphic.png"), feature);
+console.log(`  feature-graphic.png  ${FEATURE.width}×${FEATURE.height}  ${feature.length} bytes`);
+
 await browser.close();
-console.log(`\n  ${PANELS.length} screenshots in apps/android/store-screenshots/`);
+console.log(
+  `\n  ${PANELS.length} screenshots + the feature graphic in apps/android/store-screenshots/`,
+);
 console.log("  Play accepts 2–8 per listing; the same set works for App Store Connect.");
