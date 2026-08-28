@@ -262,6 +262,33 @@ debugging stays on. The on-page diagnostic panel is deployed and **must come out
 once Android has been bought from once** — it renders only on the failure path
 and shows no purchase, but it is not something a member should ever meet.
 
+### 2026-08-27 · macOS · the renewal landed; the lane is empty but not finished
+
+**Apple's payment path is closed.** The renewal notification arrived and applied
+— `DID_RENEW`, 200, row moved a day forward. What made it conclusive is worth
+carrying: the ROW MOVING IS NOT PROOF the webhook did it, because
+`NativeIapRecovery` writes the same row from StoreKit's update stream when the
+app is open. Two recovery paths is good for a member and bad for a diagnosis.
+The Vercel log line is the only thing that separates them.
+
+**One thing I got wrong and corrected**: I marked the badge done without
+recording that it has never been seen on a device. Chat is not a record. It is
+in BACKLOG item 12 now with the other three.
+
+**FOUR iOS THINGS ARE UNSEEN AND ONE BUILD CLOSES THEM.** Build 1.0 (4) on
+Kevin's iPad was archived at 12:56 on the 26th, before the badge, `PlusOneShell`
+and `@capacitor/keyboard` existed — verified against the archive's binary, not
+assumed. So the badge count, the status-bar band, the keyboard inset and the
+camera are all waiting on one TestFlight upload. **Anything Kevin reports about
+the keyboard or the status bar on that build is describing superseded code**,
+which is the trap worth knowing before somebody debugs it.
+
+I have not made that build: an upload is Kevin's to authorise and he has not
+been asked yet.
+
+**Left off clean.** Five gates green on `bfc5062` plus my own, tree clean,
+nothing claimed, simulator on the shipped config.
+
 ### 2026-08-26 · macOS · StoreKit, links, keyboard, the band — through `221daa3`
 
 **Done and pushed.** The iOS shell has a StoreKit 2 plugin and the page has a
@@ -348,57 +375,3 @@ keyboard opens, which is itself the thing under test.
 **Left off clean.** Gates all five green, shell config restored to
 `https://www.loveplusone.app` and reinstalled on the simulator, probe server and
 proxy stopped.
-
-### 2026-08-26 · WSL · the whole purchase path, server side — through `54a6bbc`
-
-**Done and pushed.** Server lane 3 through 7 are closed and Apple's half of the
-webhooks with them. `iap_entitlements` and a third `exists` in `is_premium()`;
-JWS verification against an embedded Apple Root CA - G3; the purchase action;
-App Store Server Notifications; cancellation routing by source; the
-double-subscription guard; account binding. Play ids are on `PLANS` as
-`playProductId`. Details are in `git log` and `PROJECT_UPDATES.md`.
-
-**What is worth carrying, and none of it is in the diffs:**
-
-- **`check:db` was green and wrong for two days.** It asserted hand-maintained
-  COUNTS of live objects, so a migration that was never applied made the real
-  number smaller and somebody lowered the expectation to match. `emails_for()`
-  was missing from production the whole time and every email delivery was
-  failing. It diffs declared-against-live by name now, and names the file to
-  apply. If you write a gate, make sure it is calibrated against the SOURCE and
-  not against the thing it is checking.
-
-- **A source-reading test cannot see a rival implementation.** It pins the shape
-  of a line in the file it was pointed at. Two readings of "is Stripe charging"
-  sat one screen apart disagreeing about a null period end, with a test guarding
-  one of them. There are a lot of these tests in this repo and that is their
-  blind spot; three properties are now swept across the whole tree instead, and
-  `lib/source-scan.ts` is the one walker they share.
-
-- **Make a guard fail before trusting it.** macOS's discipline, and it caught a
-  useless one of mine — I mutated a file into something that would not compile,
-  so vitest reported "no tests" rather than a failure and I nearly counted that
-  as proof.
-
-- **Apply and record are two steps and nothing joins them.** Applying a
-  migration by hand does not touch the ledger, so it drifts the opposite way
-  from the dangerous direction — applied but unrecorded — and the symptom is
-  being told to apply what is already there. Re-run
-  `backfill-migration-ledger.mjs` after applying anything; the dry run is
-  read-only.
-
-- **A claim about live infrastructure goes stale between sessions.** I reported
-  two migrations pending; they were, when I looked; Kevin applied them; macOS
-  found them present an hour later. Both readings were true when taken. By the
-  time a claim lands, one that was true when made is indistinguishable from one
-  that never was — so check it against the infrastructure before it reaches
-  Kevin, and not because the other session is careless.
-
-**Left off clean.** All 14 mechanical gates green, `check:launch` in full, tree
-clean, nothing claimed. The ledger reports MISSING: 0 for the first time.
-
-**Not done, and not claimed:** Play RTDN, the remaining half of server 4. It
-needs a Google Cloud service account with Pub/Sub, which is Kevin item 15 —
-macOS put it there after I spent three messages reporting an empty lane while
-blocked on something that was on no list. Worth the habit: write the blocker
-down before reporting the block.

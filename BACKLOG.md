@@ -46,6 +46,12 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    `navigator.setAppBadge`. Reasoning and what it trades are in
    `PROJECT_UPDATES.md`; the bucketed middle option is one line if it is ever
    revisited.
+
+   **Not once seen on a device.** iOS grants badge authorization as part of the
+   notification permission, so this cannot be checked in a Simulator and the
+   build on Kevin's iPad — 1.0 (4) — predates the plugin method entirely. See
+   item 12: it is one of four iOS things now waiting on the same new build.
+
 5. **Moved to the server lane.** The Android TWA was here because this lane is
    "Xcode, a Simulator, **or a Play Console**" — but nothing about it needs this
    Mac, and everything genuinely Mac-only is queued behind it. See server lane 10.
@@ -185,9 +191,26 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     fail silently, including a call to an unregistered plugin, which never
     settles rather than rejecting.
 
-12. **Verification debt.** What is left of it is **the camera** — the liveness
-    gate, which needs real hardware and now has some, so it is doable rather
-    than blocked.
+12. **Verification debt — four things, and one build unblocks all of them.**
+
+    Build 1.0 (4) is what is on Kevin's iPad and it was archived on 2026-08-26
+    at 12:56, which is BEFORE three of these landed. Checked against the
+    archive's binary rather than assumed: it contains `PlusOneStoreKit` and
+    nothing added after it. So:
+
+    - **The badge count** (item 4). Needs notification permission, so a
+      Simulator cannot show it. The plugin method is not in 1.0 (4) at all.
+    - **The status bar band** (item 1). `PlusOneShell` is not in 1.0 (4). What
+      Kevin sees there today is the old behaviour, not a regression.
+    - **The keyboard safe-area inset** (`69097b3`). `@capacitor/keyboard` is not
+      in 1.0 (4) either.
+    - **The camera**, the liveness gate, which has always needed hardware.
+
+    None of them is broken as far as anyone knows; all four are simply unseen.
+    A new TestFlight build carries the first three and makes the fourth
+    reachable in the same sitting, which is the cheapest way to close the lot —
+    and until it exists, anything Kevin reports about the keyboard or the status
+    bar on that build is describing code that was superseded two days ago.
 
     Cleared 2026-08-26: the tapped universal link, confirmed by Kevin on the
     iPad against build 1.0 (4) — it opens the app instead of Safari. And the
