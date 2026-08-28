@@ -440,28 +440,52 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     our app, and that is a Chrome-side error rather than one Play Billing
     raised.
 
-    **The build is not the problem, checked rather than assumed.**
-    `DelegationService` registers `DigitalGoodsRequestHandler`; it is
-    `android:enabled` and `android:exported` through `@bool/enableNotification`,
-    which gradle sets true from `enableNotifications: true`;
-    `com.android.vending.BILLING`, `PaymentService` and `ProxyBillingActivity`
-    are all in the bundle; `androidbrowserhelper:billing:1.2.0`. And the store
-    side is right — all three base plans ACTIVE with `legacyCompatible: true`,
-    read off the Developer API.
+    **The build is not the problem, read out of the BUILT APK rather than the
+    source** — the artifact is what was installed, and a generated manifest is
+    exactly the thing worth not taking on trust. `aapt2 dump` on
+    `app-release-signed.apk`: `DelegationService` carries `android:enabled` and
+    `android:exported` as references to `@bool/enableNotification`, and that
+    bool resolves to **true** in the packaged resource table. That matters
+    because a false `enableNotification` is bubblewrap#640's actual cause, and
+    it is emphatically not ours. Also present: `com.android.vending.BILLING`,
+    `PaymentActivity` bound to `org.chromium.intent.action.PAY` with
+    `default_payment_method_name = https://play.google.com/billing`,
+    `PaymentService` on `IS_READY_TO_PAY`, and
+    `com.google.android.play.billingclient.version = 8.3.0`. The store side is
+    right too — all three base plans ACTIVE with `legacyCompatible: true`, read
+    off the Developer API.
 
-    **It is a known upstream bug with no fix.** GoogleChrome/android-browser-helper#431
-    and GoogleChromeLabs/bubblewrap#640 both report exactly this on Android 13+
+    **It is a known upstream bug with no fix.** android-browser-helper#431,
+    bubblewrap#640 and bubblewrap#805 all report exactly this on Android 13+
     (API 33 and above), with the Delegation Service failing to run where it
-    works on Android 11. Both are open, neither has a maintainer answer, and the
-    reporter of #431 had already tried clearing Play Store cache, changing
-    targetSdk, and re-checking permissions.
+    works on Android 11 — #805 has it working on a Galaxy A03s (Android 11) and
+    failing on a Galaxy S22 Ultra (Android 13) with the same Chrome build, which
+    is as close to a controlled comparison as the reports get. All three are
+    open, none has a maintainer answer, and between them the reporters had
+    already tried clearing Play Store cache, raising targetSdk 33 → 34, and
+    re-checking permissions. Kevin tried the licence-and-reinstall round on
+    2026-08-27 and none of it moved.
 
-    Worth trying before assuming that is us, cheapest first: open the Play Store
-    app once and let it settle the licence for a freshly installed app; confirm
-    licence testing lists the actual email rather than an unresolved group; and
-    reinstall. If none of it moves, this is upstream and the honest options are
-    to wait, or to ship Android without an in-app purchase path until it is
-    fixed — which is a product decision rather than a technical one.
+    **One thing on our side is genuinely stale, and it is not a diagnosis.**
+    `androidbrowserhelper` is pinned at **2.6.2** against a current **2.7.3**,
+    while the `billing` artifact is at 1.2.0, the newest — and 2.7.0's notes
+    read "Upgrade play billing library to v8.3.0 **and fix listener
+    compatibility**". So the two halves are from different eras, with the newer
+    billing client and the core from before the compatibility fix. Nothing in
+    any release note mentions `clientAppUnavailable` or the delegation bind, so
+    this is a plausible pairing problem rather than a known fix. It costs a
+    rebuild, a versionCode bump and a reinstall to find out.
+
+    **What would actually settle it is `adb logcat`.** Chrome logs why the bind
+    to `DelegationService` failed, and nothing on the page can see that — every
+    round so far has been inferred from a DOMException with no detail. `adb` is
+    installed on WSL and Android's wireless debugging reaches it over the LAN,
+    so this needs no cable and no Windows-side USB passthrough. Do that before
+    spending another build.
+
+    Failing all of it, the honest options are to wait, or to ship Android
+    without an in-app purchase path until it is fixed — a product decision
+    rather than a technical one, and Kevin's.
 
 14. **The Play purchase flow, which is on no list until now.** Server 12 records
     WHY three products and 10 records the TWA that would run them, but nothing
