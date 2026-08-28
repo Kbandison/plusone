@@ -28,6 +28,8 @@ mkdirSync(OUT, { recursive: true });
 /** Dusk's ground and accent — see packages/ui-tokens/tokens.css. */
 const GROUND = "#14110f";
 const ACCENT = "#d69a4e";
+/** Dusk's ink, for the one — the plus is the only accent-coloured part. */
+const INK = "#ede7de";
 
 /**
  * @param size    pixels
@@ -62,20 +64,92 @@ function badgeSvg(size) {
 </svg>`);
 }
 
-function svg(size, maskable) {
-  // The safe fraction of the width the mark may occupy.
-  const scale = maskable ? 0.42 : 0.58;
-  const arm = size * scale;
-  const thickness = arm * 0.26;
-  const c = size / 2;
+/**
+ * The numeral one, as an outline rather than as text.
+ *
+ * Lifted from Instrument Serif — the face the wordmark is set in, so the icon
+ * and the logo are visibly the same family — with fontTools, and pasted here as
+ * path data on purpose. An SVG `<text>` element would make this icon depend on
+ * a font being installed on whoever runs the script: sharp rasterises through
+ * librsvg, which resolves families through fontconfig, and Instrument Serif is
+ * a webfont that is on nobody's system. It would not fail. It would quietly
+ * draw a different "1" on a different machine, which is the worst outcome
+ * available for a build artifact.
+ *
+ * Coordinates are font units: 1000 to the em, y UP from the baseline, bounding
+ * box x 5..239 and y 0..735. Regenerate with:
+ *   TTFont(InstrumentSerif-Regular.ttf) -> SVGPathPen on glyph "one"
+ */
+const ONE_PATH =
+  "M20 0Q5 0 5 11Q5 22 18 23L57 27Q78 29 85.5 37.0Q93 45 93 66V660Q93 677 83.5 682.5Q74 688 59 686L23 682Q5 681 5 695Q5 706 21 709Q74 718 99.0 726.5Q124 735 136 735Q157 735 157 713V66Q157 45 164.5 37.0Q172 29 193 27L226 23Q239 22 239 11Q239 0 224 0Z";
+const ONE_UPM = 1000;
+const ONE_BBOX = { x0: 5, y0: 0, x1: 239, y1: 735 };
+
+/**
+ * The mark: a one with the plus on its LEADING shoulder — ⁺1, matching the way
+ * the wordmark reads ⁺One. An icon and a logo that disagree about the order of
+ * their own name is a thing people notice without being able to say why.
+ *
+ * Proportions are Kevin's, chosen by eye at true launcher sizes on 2026-08-28:
+ * mark 0.44, stroke weight 0.14. Both are deliberately thinner and smaller than
+ * the bare plus this replaces.
+ *
+ * @param size   canvas pixels
+ * @param mark   how much of the canvas the composition may occupy
+ * @param weight plus stroke, as a fraction of its own arm
+ */
+function markGroup(size, mark, weight) {
+  const cap = size * (mark + 0.3); // the "1"'s font size
+  const scale = cap / ONE_UPM;
+  const arm = size * mark * 0.42;
+  const thickness = arm * weight * 1.5;
   const radius = thickness / 2;
+
+  // Where each piece sits before the whole thing is centred.
+  const plusX = size * 0.3;
+  const plusY = size * 0.3;
+  const oneX = size * 0.56;
+  const oneY = size / 2;
+
+  /**
+   * Centre the COMPOSITION, not the "1".
+   *
+   * Placing the one at 0.56 and the plus at 0.30 leaves the right third of the
+   * square empty, which reads as a mark that has slipped left — invisible in a
+   * comparison strip and obvious on a home screen next to other icons. So the
+   * combined bounding box is measured and the whole group nudged to centre it.
+   */
+  const oneHalfW = ((ONE_BBOX.x1 - ONE_BBOX.x0) * scale) / 2;
+  const left = Math.min(plusX - arm / 2, oneX - oneHalfW);
+  const right = Math.max(plusX + arm / 2, oneX + oneHalfW);
+  const dx = size / 2 - (left + right) / 2;
+
+  // Font units are y-up; SVG is y-down, hence the negative scale.
+  const cx = (ONE_BBOX.x0 + ONE_BBOX.x1) / 2;
+  const cy = (ONE_BBOX.y0 + ONE_BBOX.y1) / 2;
+
+  return `<g transform="translate(${dx.toFixed(2)} 0)">
+    <path d="${ONE_PATH}" fill="${INK}"
+      transform="translate(${oneX.toFixed(2)} ${oneY.toFixed(2)}) scale(${scale.toFixed(5)} ${(-scale).toFixed(5)}) translate(${-cx} ${-cy})"/>
+    <g fill="${ACCENT}">
+      <rect x="${(plusX - arm / 2).toFixed(2)}" y="${(plusY - thickness / 2).toFixed(2)}" width="${arm.toFixed(2)}" height="${thickness.toFixed(2)}" rx="${radius.toFixed(2)}"/>
+      <rect x="${(plusX - thickness / 2).toFixed(2)}" y="${(plusY - arm / 2).toFixed(2)}" width="${thickness.toFixed(2)}" height="${arm.toFixed(2)}" rx="${radius.toFixed(2)}"/>
+    </g>
+  </g>`;
+}
+
+function svg(size, maskable) {
+  /**
+   * Android crops a maskable icon to the launcher's shape, guaranteeing only
+   * the centre 80% circle. The old bare plus used 0.42 where the standard icon
+   * used 0.58; this keeps that same ratio against Kevin's 0.44 rather than
+   * inventing a second number to maintain.
+   */
+  const mark = maskable ? 0.44 * (0.42 / 0.58) : 0.44;
 
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="${GROUND}"/>
-  <g fill="${ACCENT}">
-    <rect x="${c - arm / 2}" y="${c - thickness / 2}" width="${arm}" height="${thickness}" rx="${radius}"/>
-    <rect x="${c - thickness / 2}" y="${c - arm / 2}" width="${thickness}" height="${arm}" rx="${radius}"/>
-  </g>
+  ${markGroup(size, mark, 0.14)}
 </svg>`);
 }
 
@@ -84,17 +158,9 @@ function svg(size, maskable) {
  * the foot of this file for where 0.11 comes from.
  */
 function splashSvg(size) {
-  const arm = size * 0.11;
-  const thickness = arm * 0.26;
-  const c = size / 2;
-  const radius = thickness / 2;
-
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="${GROUND}"/>
-  <g fill="${ACCENT}">
-    <rect x="${c - arm / 2}" y="${c - thickness / 2}" width="${arm}" height="${thickness}" rx="${radius}"/>
-    <rect x="${c - thickness / 2}" y="${c - arm / 2}" width="${thickness}" height="${arm}" rx="${radius}"/>
-  </g>
+  ${markGroup(size, 0.11, 0.14)}
 </svg>`);
 }
 
