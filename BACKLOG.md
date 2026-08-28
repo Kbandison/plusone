@@ -452,18 +452,37 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     base plan each, exactly what `PLANS` carries. An hour was spent doubting the
     plurals for nothing.
 
-    **The likely cause is already written down twice.** A base plan not flagged
-    BACKWARDS COMPATIBLE returns an EMPTY LIST rather than an error — server
-    lane 12 and Kevin 14 both say so, and both warn the flag does not follow a
-    newly activated base plan. Three were activated after the last time it was
-    verified set. That is the first thing to check.
+    **The control answered, and it narrows this a long way.** The diagnostic also
+    asks for `plusonepremium`, the discarded first attempt, and Play returns it:
 
-    A control is deployed to tell that from a catalogue this device cannot see
-    at all: the diagnostic also asks for `plusonepremium`, the discarded first
-    attempt, which still holds three active base plans from the original setup.
-    Play returning it while returning none of ours confines the fault to the new
-    base plans. Play returning nothing at all rules that out. The two want
-    opposite fixes.
+    ```
+    Play knows: plusonepremium
+    ```
+
+    So Play answers this device, for this app, on this account — and does not
+    know the three current ids. Everything shared by all four products is
+    therefore fine: the bridge, the licence, catalogue access, the account. The
+    fault is confined to the three new subscriptions.
+
+    **And it is NOT the backwards-compatible flag**, which was the standing
+    hypothesis and the one this repo warns about in two other places. Read off
+    the console 2026-08-27, all three: base plan Active, **Backwards
+    compatible**, 174 countries. The configuration is correct.
+
+    What is left is that all three read **last updated Aug 28, 2026** — changed
+    within hours of being asked for. `plusonepremium` is old and resolves; the
+    three new ones are hours old and do not. That is a propagation or a
+    device-cache story rather than a configuration one, and it is the only
+    difference left standing between the product that works and the three that
+    do not.
+
+    Worth one caution against over-trusting that: `basePlans.activate` takes a
+    `latencyTolerance` which "defaults to latency-sensitive", so activation is
+    meant to take the FAST path. A long propagation delay is therefore not
+    something to lean on. **The decision rule: clear the Google Play Store's
+    cache on the device and relaunch; if the ids are still missing a day later,
+    propagation is disproved** and this goes back to being unexplained — at
+    which point `adb logcat` is the next instrument, not another console change.
 
     ***
 
