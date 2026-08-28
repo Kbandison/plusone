@@ -47,11 +47,34 @@ describe("one definition per primitive", () => {
     expect(offenders.map((f) => f.replace(APP, "app"))).toEqual([]);
   });
 
+  /**
+   * Keyed on the mark's SHAPE, not on the class it happens to use.
+   *
+   * This looked for `align-super` until 2026-08-28, when the wordmark stopped
+   * using it — at which point the guard would have kept passing while guarding
+   * nothing, because no file contains the string any more. A guard that goes
+   * quiet when the thing it watches changes is worse than no guard: it reports
+   * success for a check it is no longer performing.
+   *
+   * So it matches the plus-then-One construction itself, which is what a
+   * hand-drawn copy would have to reproduce whatever classes it chose.
+   */
+  const HAND_DRAWN_WORDMARK = />\+<\/span>\s*One/;
+
   it("no file draws the wordmark by hand", () => {
     const offenders = files
       .filter((f) => !f.endsWith("ui.tsx"))
-      .filter((f) => read(f).includes("align-super"));
+      .filter((f) => HAND_DRAWN_WORDMARK.test(read(f)));
     expect(offenders.map((f) => f.replace(APP, "app"))).toEqual([]);
+  });
+
+  it("...and that guard still recognises the real one", () => {
+    // The half the previous version was missing. If this fails, the pattern
+    // above has drifted off the wordmark and the check above is vacuous —
+    // exactly the state it sat in the moment the classes changed.
+    const ui = files.find((f) => f.endsWith("ui.tsx"));
+    expect(ui, "ui.tsx is not in the scanned set").toBeDefined();
+    expect(HAND_DRAWN_WORDMARK.test(read(ui as string))).toBe(true);
   });
 });
 

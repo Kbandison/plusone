@@ -108,10 +108,23 @@ export function Card({
 }
 
 /**
- * The wordmark: a small superscript plus set tight against a large One (§3.1).
+ * The wordmark: a raised plus set tight against a large One (§3.1).
  *
  * Four hand-written copies drifted in size and colour. `asLink` is the default
  * because every place it appears outside the masthead should return home.
+ *
+ * ── the plus is 0.90em, and that is deliberate ──────────────────────────────
+ *
+ * §3.1 asks for a "small superscript plus", and this is not small — it was
+ * 0.42em until Kevin sized it by eye against the real faces on 2026-08-28. The
+ * rest of that sentence is why: the mark should be "a typographic detail on
+ * first glance, an identity marker on second look", and at 0.42em it managed
+ * the first and never the second.
+ *
+ * `align-super` went with it. That is a fixed browser offset, so a plus this
+ * size stops clearing the cap height cleanly and collides with the O; the rise
+ * is stated explicitly instead. Note it resolves against this span's OWN font
+ * size, so 0.30em here is 0.27em of the One.
  */
 export function Wordmark({
   className = "text-[21.1px]",
@@ -122,7 +135,7 @@ export function Wordmark({
 }) {
   const mark = (
     <span className={`font-display leading-none tracking-[-0.02em] ${className}`}>
-      <span className="align-super text-[0.42em] text-accent">+</span>One
+      <span className="align-[0.30em] text-[0.90em] text-accent">+</span>One
     </span>
   );
 
