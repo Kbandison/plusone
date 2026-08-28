@@ -1138,6 +1138,24 @@ export const DRAFT_COPY = {
      */
     premiumStoreUnavailable: "The App Store is not reachable right now. Try again in a moment.",
     /**
+     * The same sentence for the other store, and it has to be its own string.
+     *
+     * The Android chooser reused the Apple one for a day, so a Play member was
+     * told "The App Store is not reachable" on a phone that has no App Store —
+     * which reads as the app being confused about what it is running on, and is
+     * exactly the impression a payment screen must not give.
+     */
+    premiumPlayUnavailable: "Google Play is not reachable right now. Try again in a moment.",
+    /**
+     * Distinct from the line above, because the two are different problems and
+     * only one of them is worth waiting out.
+     *
+     * Play billing missing entirely means this is not the installed app — a
+     * browser tab on the same site, most often. "Try again" is wrong advice
+     * there: trying again in the same tab will never work.
+     */
+    premiumPlayNotInApp: "Buying is only available in the Plus One app from Google Play.",
+    /**
      * A purchase belongs to an Apple ID, so a reinstall, a new phone or a
      * second device arrives with nothing showing. Restoring is not an error
      * path; it is the normal way somebody who already pays gets their access

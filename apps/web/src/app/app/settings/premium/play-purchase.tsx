@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DRAFT_COPY, PLANS } from "@plusone/config";
 
 import {
+  playBillingAvailable,
   playProducts,
   playPurchases,
   purchasePlayProduct,
@@ -115,7 +116,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
       try {
         const outcome = await purchasePlayProduct(playProductId);
         if (!outcome || outcome.status === "unavailable") {
-          setNotice({ tone: "error", text: C.premiumStoreUnavailable });
+          setNotice({ tone: "error", text: C.premiumPlayUnavailable });
           return;
         }
         // Cancelled is not a failure and gets no message. Somebody who changed
@@ -143,7 +144,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
     try {
       const owned = await playPurchases();
       if (owned === null) {
-        setNotice({ tone: "error", text: C.premiumStoreUnavailable });
+        setNotice({ tone: "error", text: C.premiumPlayUnavailable });
         return;
       }
       if (owned.length === 0) {
@@ -182,15 +183,27 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
     );
   }
 
-  // Null is Chrome outside a TWA, or Play billing being unreachable. Both are
-  // "not now" rather than "never".
+  /**
+   * Two different failures, told apart rather than merged.
+   *
+   * No billing service AT ALL means this is not the installed app — an ordinary
+   * Chrome tab on the same site is the common case, and `getDigitalGoodsService`
+   * simply does not exist there. "Try again in a moment" is the wrong advice:
+   * trying again in that tab will never work.
+   *
+   * A service that exists and answered nothing is the other one, and it is
+   * worth waiting out. Merging them cost a debugging session — one message for
+   * both says nothing about which, and the Apple wording on an Android phone
+   * made it read as the app not knowing what it was running on.
+   */
   if (products === null) {
+    const noService = !playBillingAvailable();
     return (
       <div className="mt-8">
         <p role="alert" className="text-[12.6px] text-critical">
-          {C.premiumStoreUnavailable}
+          {noService ? C.premiumPlayNotInApp : C.premiumPlayUnavailable}
         </p>
-        <RestoreButton busy={busy === "restore"} onRestore={restore} />
+        {noService ? null : <RestoreButton busy={busy === "restore"} onRestore={restore} />}
       </div>
     );
   }
@@ -215,7 +228,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
     return (
       <div className="mt-8">
         <p role="alert" className="text-[12.6px] text-critical">
-          {C.premiumStoreUnavailable}
+          {C.premiumPlayUnavailable}
         </p>
         <RestoreButton busy={busy === "restore"} onRestore={restore} />
       </div>
