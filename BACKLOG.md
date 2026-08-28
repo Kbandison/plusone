@@ -424,21 +424,51 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
       end up identical, because two stores that happen to agree today are still
       two stores.
 
-13. **`clientAppUnavailable` — Play billing does not reach the TWA.** Found
-    2026-08-27 with the on-page diagnostic, after three rounds of guessing that
-    a merged error message made unavoidable. What the app actually reports:
+13. **Play returns an empty catalogue. The bridge itself is fixed.**
+
+    **`clientAppUnavailable` is GONE, 2026-08-27.** It is kept below because
+    the elimination work is worth not repeating, but it is no longer the
+    problem. What the app reports now:
 
     ```
     getDigitalGoodsService present: true
     referrer: android-app://app.loveplusone/
+    ua: ... Android 10; K ... Chrome/151.0.0.0 Mobile Safari/537.36
     service resolved: yes
-    getDetails THREW: OperationError: clientAppUnavailable
+    getDetails returned 0 of 3 asked for
+    listPurchases returned 0
     ```
 
-    So everything upstream is healthy — it IS the installed app, Chrome exposes
-    the API, and the service resolves. Chrome cannot reach the billing bridge in
-    our app, and that is a Chrome-side error rather than one Play Billing
-    raised.
+    **`listPurchases` did not throw**, and that is the whole finding. It crosses
+    the same DelegationService bridge as `getDetails`, so one of them answering
+    proves the bind Chrome could not make now works. What cleared it is not
+    known — a licence settling, a reinstall, or Play catching up — which is
+    unsatisfying and worth saying rather than inventing a cause for. Asking both
+    calls is what made it legible; a single throwing call had looked identical
+    for three days.
+
+    **The ids are right, so this is not spelling.** Read off the console
+    2026-08-27: `premium1month`, `premium3months`, `premium6months`, one active
+    base plan each, exactly what `PLANS` carries. An hour was spent doubting the
+    plurals for nothing.
+
+    **The likely cause is already written down twice.** A base plan not flagged
+    BACKWARDS COMPATIBLE returns an EMPTY LIST rather than an error — server
+    lane 12 and Kevin 14 both say so, and both warn the flag does not follow a
+    newly activated base plan. Three were activated after the last time it was
+    verified set. That is the first thing to check.
+
+    A control is deployed to tell that from a catalogue this device cannot see
+    at all: the diagnostic also asks for `plusonepremium`, the discarded first
+    attempt, which still holds three active base plans from the original setup.
+    Play returning it while returning none of ours confines the fault to the new
+    base plans. Play returning nothing at all rules that out. The two want
+    opposite fixes.
+
+    ***
+
+    Kept from when this was `clientAppUnavailable`, since none of it needs
+    redoing:
 
     **The build is not the problem, read out of the BUILT APK rather than the
     source** — the artifact is what was installed, and a generated manifest is
