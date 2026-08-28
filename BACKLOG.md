@@ -557,6 +557,39 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     between the last working read and these. Worth knowing before reinstalling
     again to "fix" it.
 
+    **The account is RIGHT, and the obfuscated id can be checked rather than
+    guessed at.** Finsky's hash is plain
+    `base64url(sha256(<account email>))` with the padding stripped — computed
+    against the tester address it matches exactly. So Play is billing the sole
+    account on the internal testing list, and the seventeen-accounts theory is
+    dead. Keep the technique: it turns an opaque log line into a yes/no in one
+    command, and it is the only way to answer this question without reading
+    somebody's account list.
+
+    ── so everything under our control is verified, and it still returns 0 ─────
+
+    Confirmed correct, each read from the thing itself rather than from
+    configuration: the build (APK manifest and resource table), the product ids
+    (console), base plans Active and Backwards compatible (console), the TWA
+    provider (logcat names Chrome), the DelegationService bind (logcat), Play
+    Billing connecting (logcat), the licence check (logcat), and the billing
+    account (hash match). Play answers 0 anyway, from a local cache, without
+    asking the network.
+
+    Also ruled out: **review status is not it.** The console banner says setup
+    is incomplete and the app is unreviewed, which looks like a cause and is
+    not — Play's own help says an in-app product "will be available for purchase
+    as long as it's active, even if its app is unpublished".
+
+    What remains is Play's own catalogue cache, which was deliberately wiped
+    from here at about 22:00 and has not refilled. That is not something we can
+    force. **Leave it overnight and re-read before doing anything else** — the
+    diagnostic is deployed and `adb` is set up, so it is one command. If the ids
+    resolve in the morning the cache was the whole story; if they still do not,
+    the next lever is finishing Play's app setup (Kevin 12), not because it is
+    known to matter but because it is the last variable left and it is required
+    before launch regardless.
+
     ***
 
     Kept from when this was `clientAppUnavailable`, since none of it needs

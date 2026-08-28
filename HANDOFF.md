@@ -181,6 +181,20 @@ runtimes` just comes back empty.
   on 2026-08-22, with corrupted journals and no Linux OOM entries, because the
   kill came from outside Linux. Do not raise those numbers casually, and prefer
   a targeted `vitest` run to `pnpm test` when only one file is in question.
+- **`adb` reaches an Android phone from WSL over the LAN, no cable.** Android's
+  wireless debugging is enough; WSL's NAT routes outbound to the LAN fine, and
+  nothing is needed on the Windows side. Two traps, both costing a round trip:
+  the **pairing port is not the connect port** and both change every time the
+  dialog is opened, and the pairing dialog **expires in under a minute** — so
+  the code has to be sent and used immediately. `adb pair <ip>:<pairport>
+<code>` then `adb connect <ip>:<connectport>`.
+
+  What it buys, beyond logs: launch any page straight into the TWA with
+  `adb shell am start -a android.intent.action.VIEW -d <url>` (assetlinks is
+  verified, so it opens in the app, not a browser), and read the screen with
+  `adb exec-out screencap -p`. That is the Android equivalent of the
+  `simctl io screenshot` technique the iOS lane uses.
+
 - **Bubblewrap needs the LEGACY Android SDK layout, and lies about why.** Its
   error says the SDK path should "contain the folder `build`". It does not check
   for that. `AndroidSdkTools.validatePath` checks for `<sdk>/tools` or
@@ -207,6 +221,46 @@ line per session; clear it when you finish or abandon the item.
 | _WSL_   | —    | —     |
 
 ## Sessions
+
+### 2026-08-27 · WSL · the Android buy button, and what logcat settled
+
+**Not fixed, and the reason is worth the length.** Play returns an empty
+catalogue to the TWA, so there is no buy button on Android. Everything under our
+control is now verified correct and it still returns 0. Full detail is backlog
+server 13; what belongs here is the shape of the day.
+
+**`clientAppUnavailable` is TRANSIENT.** It flipped three times in an hour on
+one device, with nothing changing between readings. Two consequences: the
+upstream issues that call it a permanent property of a device are describing
+something else, and **no single reading of this is its state** — I told Kevin
+the blocker was fixed on one reading and it came back twenty minutes later.
+
+**Clearing the Play Store cache reproduces it on demand.** That is a
+reproduction none of the three upstream issues has, and it is worth reporting.
+It is also how I broke a working state: "clear Play Store cache" appears in
+those threads as a remedy people tried, and on this evidence it may be how some
+of them acquired the problem. It has not refilled since.
+
+**Ask both `getDetails` AND `listPurchases`.** They cross the same bridge, so
+one answering while the other throws separates a broken CONNECTION from a broken
+LOOKUP. Three days of readings looked identical until the diagnostic asked both.
+
+**Finsky's obfuscated account id is `base64url(sha256(email))`**, padding
+stripped. Play logs which account it bills an app against and prints only that
+hash; computing it against the tester address settled in one command what would
+otherwise have meant reading somebody's list of seventeen Google accounts.
+
+**Read the artifact, not the config.** `DelegationService`'s `android:enabled`
+is a resource REFERENCE in the generated manifest, and the value that matters is
+in the packaged resource table — `aapt2 dump resources` on the signed APK. A
+false one there is the most-cited cause of this error; ours is true.
+
+**Left off clean.** typecheck, lint and format green; the play, shell and
+subscription suites pass. Nothing claimed. `adb` is paired to Kevin's phone and
+can be reconnected with `adb connect 192.168.50.94:44687` while wireless
+debugging stays on. The on-page diagnostic panel is deployed and **must come out
+once Android has been bought from once** — it renders only on the failure path
+and shows no purchase, but it is not something a member should ever meet.
 
 ### 2026-08-26 · macOS · StoreKit, links, keyboard, the band — through `221daa3`
 
@@ -348,21 +402,3 @@ needs a Google Cloud service account with Pub/Sub, which is Kevin item 15 —
 macOS put it there after I spent three messages reporting an empty lane while
 blocked on something that was on no list. Worth the habit: write the blocker
 down before reporting the block.
-
-### 2026-08-25 (later still) · macOS · status bar
-
-**Done.** The status bar text now follows the page theme rather than the system
-appearance — `status-bar-style.tsx`, mounted at the root layout. Verified across
-all four combinations in the Simulator.
-
-**Two things worth carrying:**
-
-- `SystemBars` is built into `@capacitor/ios`. `@capacitor/status-bar` drives
-  the identical `bridge.statusBarStyle`; it was added, found redundant and
-  removed. Check core before adding a Capacitor plugin.
-- **The bridge exposes `Capacitor.nativePromise(plugin, method, options)` to a
-  remote page.** Nothing needs bundling into `apps/web` to call native. That is
-  the seam for every remaining plugin item — badge, push, whatever else.
-
-**Left off clean.** Dev server stopped, proxy stopped, shell config restored and
-reinstalled on both simulators, simulator appearance back to light.
