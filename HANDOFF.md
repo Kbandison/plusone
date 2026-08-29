@@ -292,7 +292,7 @@ line per session; clear it when you finish or abandon the item.
 | session | item                                                            | since      |
 | ------- | --------------------------------------------------------------- | ---------- |
 | _macOS_ | server 18b (fine-grained photo privacy) — 18c done in `7e4c93b` | 2026-08-29 |
-| _WSL_   | — (16, 17, 19 done; 18a/18d next, not yet claimed)              | —          |
+| _WSL_   | server 18a (incognito browse — rebuilds `visible_profiles`)                     | 2026-08-29 |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
 only**, said 2026-08-29, because this is one body of work he wants done in
