@@ -1000,6 +1000,37 @@ export const DRAFT_COPY = {
     filterGroupBackground: "Background",
     filterGroupBelief: "Faith and politics",
     /**
+     * Incognito (server 18a) — the second of the five things PREMIUM_INCLUDES
+     * promised on two public pages and did not have.
+     *
+     * The copy says what it does and does not oversell it: this is not
+     * invisibility, and a member who reads it as invisibility will be surprised
+     * by the person they already talk to still seeing them. Support-only mode
+     * is the free, total version and is named here so nobody pays for something
+     * they could have had — §3.3 exists to stop exactly that sale.
+     */
+    incognitoHeading: "Incognito",
+    incognitoOffNote:
+      "You appear in the Drop and in Browse as normal. Turn incognito on and only people you have already connected with can see you \u2014 you can still browse, connect and talk exactly as now.",
+    incognitoOnNote:
+      "Incognito is on. Only people you have already connected with, and anyone you have reached out to, can see you. You are not in anybody else's Drop or Browse.",
+    incognitoTurnOn: "Turn incognito on",
+    incognitoTurnOff: "Turn incognito off",
+    incognitoNeedsPremium: "Incognito is part of Premium.",
+    /**
+     * The state that needed its own sentence: on, and premium has lapsed.
+     *
+     * They stay hidden — a lapse must never make somebody more visible — and
+     * they can still leave whenever they want. Said out loud because a member
+     * who cannot see why the switch still works would reasonably assume it is
+     * about to stop.
+     */
+    incognitoLapsedNote:
+      "Your subscription has ended and you are still hidden. It stays that way until you turn it off, which you can do at any time.",
+    incognitoFreeAlternative:
+      "Support-only mode takes you off every dating surface entirely, and it is free.",
+    incognitoFailed: "That did not save. Try again.",
+    /**
      * Server 19 — what a filter costs, before an empty grid says it.
      *
      * The stat at the top of the page is a fact about the AREA and deliberately

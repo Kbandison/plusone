@@ -25,6 +25,14 @@
  */
 const SAFE_PREFIXES: readonly string[] = [
   "a plan needs a date",
+  // Incognito (server 18a). A fact about the member's own subscription, which
+  // they can act on, and it answers nothing about anybody else — so it is safe
+  // to show and there is nothing useful to say in its place.
+  //
+  // Only the ON direction can raise it: set_incognito() never gates turning
+  // incognito off, because a member whose premium lapsed while hidden must not
+  // be trapped invisible behind a paywall.
+  "incognito requires premium",
   // Slow mode. Tells the member exactly how long is left, which is the whole
   // point of raising it rather than silently dropping the post.
   "slow mode: wait ",

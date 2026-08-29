@@ -56,6 +56,12 @@ if (!DB_URL) {
 //                                           diet_kind, pets_kind,
 //                                           education_level, work_field,
 //                                           language_tag.
+//   functions 120 -> 123                    20260829000400, server 18a: incognito
+//                                           adds sees_incognito() and
+//                                           set_incognito(), and the view rebuild
+//                                           recreates drop_candidates. macOS's
+//                                           18b function is counted in their own
+//                                           move of this line.
 //   enums 27 -> 29                          20260829000200, religion_kind and
 //                                           politics_kind. 20260829000300 added
 //                                           weight_kg, which is a column on an
@@ -65,7 +71,13 @@ if (!DB_URL) {
 // sessions applied four migrations to one schema on the same afternoon, and the
 // only account of it that cannot be stale is the one the database gives.
 // functions 120 -> 121: 20260829002000, enforce_photo_privacy_is_premium (server 18b).
-const EXPECT = { tables: 33, views: 5, functions: 121, enums: 29, rooms: 7, config: 23 };
+// functions 121 -> 123: 20260829000400, sees_incognito and set_incognito (server 18a).
+//                       drop_candidates is recreated by that view rebuild, not added.
+//
+// Both sessions applied to one schema within minutes here, so 123 is read off
+// the live database rather than reached by adding the two deltas — which is
+// also how the collision on this line was noticed rather than averaged.
+const EXPECT = { tables: 33, views: 5, functions: 123, enums: 29, rooms: 7, config: 23 };
 // 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
 // emails_for() from 20260824000200, which had been sitting unapplied.
 //

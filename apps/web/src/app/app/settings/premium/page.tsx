@@ -19,6 +19,7 @@ import {
 } from "@/lib/subscription-source";
 import { ManageBilling, PlanChooser } from "./plan-buttons";
 import { ManageStoreSubscription } from "./manage-store";
+import { IncognitoToggle } from "./incognito-toggle";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.premiumHeading };
@@ -35,6 +36,7 @@ export default async function PremiumPage() {
     { data: grants },
     { data: entitlements },
     { data: isPremium, error: premiumError },
+    { data: ownProfile },
   ] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -73,7 +75,17 @@ export default async function PremiumPage() {
     // error was discarded, and null read as "not premium" — so every paying
     // member was shown the plan chooser.
     supabase.rpc("i_am_premium"),
+    /**
+     * Read separately and allowed to fail, for the reason c96122a records:
+     * migrations here are applied by hand, so this deploys before the column
+     * exists. PostgREST fails the WHOLE request on an unknown column, and
+     * folding `incognito` into another select here would blank whatever that
+     * select feeds rather than defaulting one switch to off.
+     */
+    supabase.from("profiles").select("incognito").eq("id", auth.user.id).maybeSingle(),
   ]);
+
+  const incognito = (ownProfile?.incognito as boolean | null) ?? false;
 
   // Not discarded. This page deciding wrongly is a member being asked to pay
   // twice, which should be loud rather than silent.
@@ -192,6 +204,26 @@ export default async function PremiumPage() {
            sell a second subscription to somebody already being charged. */
         <PlanChooser userId={auth.user.id} alreadyPayingStripe={stripeLive} />
       )}
+
+      {/* Incognito lives here rather than on Safety, and the placement is a
+          decision rather than convenience.
+
+          A privacy control behind a paywall on a SAFETY screen reads as "pay to
+          be safe", which is the discomfort §3.3 exists to refuse. It is not
+          that here, because the free tier already has the total version:
+          support-only mode removes a member from every dating surface, costs
+          nothing, and is named in the copy below so nobody buys what they
+          already have. Incognito is the middle setting — stay reachable by the
+          people you have connected with, disappear from everyone else — and
+          that is arrangement rather than safety.
+
+          Same line macOS and Kevin drew for per-photo privacy: the protection
+          is free, the arrangement is paid. */}
+      <section className="mt-14">
+        <h2 className="text-[0.972rem]">{C.incognitoHeading}</h2>
+        <IncognitoToggle on={incognito} isPremium={Boolean(isPremium)} />
+        <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">{C.incognitoFreeAlternative}</p>
+      </section>
 
       <section className="mt-14">
         <h2 className="text-[0.972rem]">{C.premiumIncludesHeading}</h2>
