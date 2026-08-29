@@ -291,7 +291,7 @@ line per session; clear it when you finish or abandon the item.
 
 | session | item                                                                    | since      |
 | ------- | ----------------------------------------------------------------------- | ---------- |
-| _macOS_ | server 18c (who's active near you), then 18b once 17 lands              | 2026-08-29 |
+| _macOS_ | server 18b (fine-grained photo privacy) — 18c done in `7e4c93b`         | 2026-08-29 |
 | _WSL_   | server 17 (schema + editor done; display/filters HELD on the migration) | 2026-08-29 |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
@@ -305,6 +305,40 @@ whichever lands second replays against a shape it did not write. 16 does not
 touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
+
+### 2026-08-29 · macOS · the premium alert, and the gap between two green gates
+
+**Server 18c is done, applied and pushed** — `7e4c93b`, ledger recorded, and
+`check:db` green. Detail is in the backlog entry. Three things belong here
+instead, because they are about how this repo behaves rather than about the
+feature.
+
+**A migration and the code that reads it cannot ship together, and nothing in
+the build can see that.** `check:sql` validates the migration, typecheck
+validates the TypeScript, and the gap between two green gates is exactly where
+this lives. WSL put a live break on the profile page this way an hour before I
+finished: PostgREST does not fail narrowly on an unknown column, it fails the
+WHOLE request, so one unshipped column returned `data: null` and blanked every
+field on the page. Write every read for BOTH deploy orders — mine asks for
+`activity_alerts` in its own request so a missing table cannot take the other
+forty-two switches down with it, and the cron separates 42883 from a real error
+and names the migration in its response.
+
+**`EXPECT` in `verify-schema.mjs` is a hardcoded count and goes red the moment
+anything is applied.** Not a warning so much as a thing to know before it looks
+like breakage: tables, views, functions, enums. Move it WITH the deltas
+attributed — a bump until green would have hidden that six enums arrived from a
+migration another session believed it had not applied.
+
+**A peer session's account of production goes stale while you work.** WSL told
+me their migration was applied nowhere; it was true when written, and by the
+time I read the schema it was applied and in the ledger. I found out from an
+enum count, not from a message. Read the database, not the last thing anybody
+said about it.
+
+**Left off:** tree clean, five gates green, nothing in flight. 18b claimed and
+not started. The Play catalogue is UNREAD since the 27th — the phone is not
+reachable from WSL and needs Kevin to re-enable wireless debugging.
 
 ### 2026-08-29 · WSL · deeper filters, and a deploy order nobody controls
 
@@ -387,117 +421,3 @@ can be reconnected with `adb connect 192.168.50.94:44687` while wireless
 debugging stays on. The on-page diagnostic panel is deployed and **must come out
 once Android has been bought from once** — it renders only on the failure path
 and shows no purchase, but it is not something a member should ever meet.
-
-### 2026-08-27 · macOS · the renewal landed; the lane is empty but not finished
-
-**Apple's payment path is closed.** The renewal notification arrived and applied
-— `DID_RENEW`, 200, row moved a day forward. What made it conclusive is worth
-carrying: the ROW MOVING IS NOT PROOF the webhook did it, because
-`NativeIapRecovery` writes the same row from StoreKit's update stream when the
-app is open. Two recovery paths is good for a member and bad for a diagnosis.
-The Vercel log line is the only thing that separates them.
-
-**One thing I got wrong and corrected**: I marked the badge done without
-recording that it has never been seen on a device. Chat is not a record. It is
-in BACKLOG item 12 now with the other three.
-
-**FOUR iOS THINGS ARE UNSEEN AND ONE BUILD CLOSES THEM.** Build 1.0 (4) on
-Kevin's iPad was archived at 12:56 on the 26th, before the badge, `PlusOneShell`
-and `@capacitor/keyboard` existed — verified against the archive's binary, not
-assumed. So the badge count, the status-bar band, the keyboard inset and the
-camera are all waiting on one TestFlight upload. **Anything Kevin reports about
-the keyboard or the status bar on that build is describing superseded code**,
-which is the trap worth knowing before somebody debugs it.
-
-I have not made that build: an upload is Kevin's to authorise and he has not
-been asked yet.
-
-**Left off clean.** Five gates green on `bfc5062` plus my own, tree clean,
-nothing claimed, simulator on the shipped config.
-
-### 2026-08-26 · macOS · StoreKit, links, keyboard, the band — through `221daa3`
-
-**Done and pushed.** The iOS shell has a StoreKit 2 plugin and the page has a
-wrapper for it (`native-iap.ts`). Reasoning is in the commit body and in
-`PROJECT_UPDATES.md`; what is worth carrying here is that all three things that
-went wrong were silent, and one of them is a Capacitor trap anybody adding a
-local plugin will hit:
-
-- **`registerPluginType` starts `if autoRegisterPlugins { return }`.** It is the
-  call every guide shows and auto-registration is the default, so it does
-  nothing, logs nothing, and returns. Use `registerPluginInstance`.
-- **`SceneDelegate` builds the root view controller directly**, and the template
-  also ships a `Main.storyboard` naming one. The line wins; the storyboard is
-  never read. An edit there looks correct and changes nothing.
-- **A call to an unregistered plugin never settles.** No rejection, no error —
-  the page just waits, which sends you looking at your own promise code.
-
-**Deliberately unwired.** No screen calls any of it. Nothing yet verifies a
-transaction or writes `iap_entitlements`, so a buy button today would take money
-and grant nothing. The seam is written up as **server lane 13** with the exact
-payload — it is a small piece and it is in your lane, and the moment it exists
-the UI half is quick.
-
-**Not verified, and cannot be from here:** an actual purchase. That needs a
-Sandbox tester on the iPad, which is a Kevin item now on his lane.
-
-**Universal links, both halves now done.** Your association file was already
-serving; the entitlement and a handler for it are in. Two things worth carrying:
-
-- **Capacitor posts a notification for a tapped link that nothing in core
-  listens to.** `@capacitor/app` is what normally does. Without a listener the
-  app opens on whatever page it last had and the link is lost — worse than the
-  Safari behaviour, because there is nothing to say a link was involved.
-- **Simulator builds are stripped of entitlements** — the `.xcent` is an empty
-  dict — so a domain can never be claimed there and a tap cannot be tested. Same
-  shape as push. It needs TestFlight, and iOS fetches the association file at
-  INSTALL, so a build already on the iPad needs reinstalling rather than
-  relaunching.
-
-**Universal links work on the iPad** — Kevin confirmed a link from Notes opens
-the app. It needed **build 1.0 (4)**, uploaded from here. The trap: an
-entitlement is read out of the app, so the build already on a device can never
-claim a domain however often it is reinstalled. It needs replacing, not
-reinstalling, and the first note written about this got that wrong.
-
-**`ExportOptions.plist` is in the repo now.** `apps/ios/README.md` has described
-it since the first TestFlight build and it only ever existed in someone's
-`/tmp`, so the documented archive command has been failing for anybody following
-it. `destination: upload` sends the build straight up on the Xcode Apple ID —
-no API key, no Transporter.
-
-**The keyboard is measured, and it is not what the list said.** The composer
-does NOT vanish behind the keyboard — iOS resizes the web view even with no
-plugin. The predicted bug is real though: the safe-area inset stays applied with
-the keyboard up, so the nav reserves 34px for a home indicator that is behind
-the keyboard. `@capacitor/keyboard` at `resize: native` fixes it.
-
-**One thing found and deliberately not fixed** — backlog shells 13. The web view
-never returns to full height after the keyboard closes (874 -> 765, and it stays
-765), which puts the nav off the bottom of the screen. It happens with and
-without the plugin. **Please do not build a workaround for it from the numbers
-alone**: this runtime is Xcode 27 beta 6 and the keyboard was dismissed
-programmatically. It wants a person and an iPad first.
-
-**The grey band is gone**, and the seam that did it is worth knowing about.
-`overrideUserInterfaceStyle` is what draws it and no Capacitor API exposes it,
-so there is now a second local plugin — `PlusOneShell` — beside the StoreKit
-one. **`ShellPlugins.swift` is where anything native gets registered** — one
-line per plugin, and `MainViewController` was split down to a table of contents
-in `39db9a8`. That is the whole cost of reaching UIKit from the page now, for
-the badge or anything else.
-
-**Sampling pixels out of a screenshot, since there is no PIL on this machine:**
-`sips -s format bmp` and read the rows. `scratchpad/sample.py` does it and took
-five minutes to write; it turned "the band looks gone" into a drift of 100 to 1.
-
-**How to script the shell, worth reusing.** Point `server.url` at a local page
-that measures what you want and renders it, then `simctl io screenshot`. Two
-things that cost time: measure **after layout settles**, because a reading
-during first paint reports a safe-area inset of nought; and pin the readout
-somewhere that stays visible — a panel at `top: 0` scrolls off the moment the
-keyboard opens, which is itself the thing under test.
-
-**Left off clean.** Gates all five green, shell config restored to
-`https://www.loveplusone.app` and reinstalled on the simulator, probe server and
-proxy stopped.

@@ -853,9 +853,35 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
       — **the string appears nowhere else in the repo.** Needs a column and a
       `visible_profiles` predicate, which is the second rebuild the HANDOFF note
       is about.
-    - "Who's active near you" — the activity stat is on Browse, free, for
-      everyone. Either build a premium surface or this line is describing the
-      free tier.
+    - ~~"Who's active near you"~~ — **done 2026-08-29 in `7e4c93b`, and applied.**
+      Not the surface this entry imagined, and the reason is worth keeping.
+
+      By the time it was built, item 16 had shipped a FREE day/week/month
+      activity ladder on Browse, so a premium list of active people would have
+      been `/app/browse?activity=day` behind a paywall. And the obvious build
+      was banned twice besides: §8 forbids identity and forbids count
+      granularity below five, and `claim_nearby_joins` names this exact
+      sentence — "come back, there are new people" — as the §3.3 engagement
+      loop.
+
+      So it is an alert the MEMBER builds: `activity_alerts`, a radius off
+      `RADIUS.alertLadderMi`, off until they create it, in-app until they ask
+      for push. §3.3 bans the app nudging a member; it does not ban a member
+      asking to be told, and that distinction is the whole argument for it
+      being on a tier whose line is reach and control. If it is ever revisited,
+      that is the sentence to argue with.
+
+      Pinned by `activity-alert.test.ts`, because each of these fails silently:
+      `notified_at` is withheld from the member's update grant so nobody can
+      clear their own cooldown, the count decides whether to send and never
+      what it says, the floor is `NEARBY_JOIN_MIN_COUNT` shared rather than a
+      second five, premium is checked when the alert FIRES so a lapse stops it
+      without deleting the radius, and `notifier()` is built before the
+      self-consuming claim.
+
+      **Unseen in either shell.** It is `apps/web`, so it reaches the TWA and
+      WKWebView both, and neither has looked at it.
+
     - "Fine-grained photo privacy controls" — `photo_privacy` is a two-value
       enum, free, and "fine-grained" is doing a lot of work.
 
@@ -1151,6 +1177,28 @@ unblock other work.
     per app, but the Play Developer API must use the SAME project across every
     app on the developer account. If LuxWeb will ever ship a second app, that
     project is being chosen once for all of them.
+
+17. **The Play catalogue cannot be re-read, and the instruction to re-read it is
+    the top of server 13.** Found 2026-08-29.
+
+    Server 13 ends by saying to leave the catalogue overnight and re-read the
+    diagnostic before doing anything else. Nobody can: the phone is not
+    reachable from WSL. `adb connect 192.168.50.94:44687` gives "No route to
+    host" and `adb devices` is empty, which means wireless debugging has been
+    switched off — Android does not keep it on across reboots.
+
+    It needs you with the phone in hand, and it is a two-minute job that
+    unblocks a diagnosis nobody else can make. Developer options → Wireless
+    debugging → on, then **Pair device with pairing code**, and send both
+    numbers over. Two traps already paid for: the **pairing port is not the
+    connect port**, and both change every time the dialog is opened; and the
+    dialog **expires in under a minute**, so the code has to be used
+    immediately.
+
+    Worth doing before anything else on Android. Everything under our control
+    has been verified correct and Play still returns an empty catalogue, so the
+    next reading is the only new information available — and the last one is
+    from the 27th.
 
 ---
 
