@@ -69,39 +69,42 @@ ls -1 ios/App/App/capacitor.config.json ios/App/App/config.xml
 # laptop is a build that shows an error page to a reviewer.
 grep -o '"url": "[^"]*"' ios/App/App/capacitor.config.json
 
-# ── the build number, and why it is set HERE ────────────────────────────────
+# ── the build number ───────────────────────────────────────────────────────
 #
-# First attempt put this in ci_pre_xcodebuild.sh, which is where Apple's error
-# message points. The archive still failed with "The bundle version must be
-# higher than the previously uploaded version" — the script was present,
-# executable and committed five minutes before the build, so the likeliest
-# reading is that pre-xcodebuild runs after Xcode has already read the project
-# and the edit lands too late to matter.
+# Two attempts failed before this one and both failed the same way: silently.
 #
-# Post-clone runs before anything has looked at the project at all, and this
-# hook is PROVEN to run: the build cannot compile without the files cap sync
-# writes above, and it compiled.
+# The first put the substitution in ci_pre_xcodebuild.sh, which likely runs
+# after Xcode has read the project. The second moved it here but guarded it on
+# CI_BUILD_NUMBER — a variable Apple documents and which this script never
+# verified. If it is unset in this hook, the guard takes the else branch, prints
+# a cheerful line, and the archive ships the committed version. Which is exactly
+# the error that came back: "The bundle version must be higher than the
+# previously uploaded version."
 #
-# CI_BUILD_NUMBER is Xcode Cloud's own counter and starts at 1. Builds 1 to 6
-# were uploaded from a laptop before Xcode Cloud existed, so the raw counter
-# would collide immediately. The offset clears them and keeps the two sequences
-# readable apart: under 100 was built on somebody's machine, over 100 by Apple.
+# So this depends on nothing unproven. CI_PRIMARY_REPOSITORY_PATH is known to
+# exist here, because the cap sync above cds into it and works.
+#
+# The number is the UTC minute. It is always larger than the last one, needs no
+# counter, no environment variable and no git history — a shallow clone cannot
+# break it the way a commit count could. Builds 1 to 6 came off a laptop; every
+# Xcode Cloud build is a twelve-digit date, so the two are never confusable and
+# the number says when it was made.
 
-if [ -n "$CI_BUILD_NUMBER" ]; then
-  BUILD_NUMBER=$((CI_BUILD_NUMBER + 100))
-  PROJECT="$CI_PRIMARY_REPOSITORY_PATH/apps/ios/ios/App/App.xcodeproj/project.pbxproj"
+BUILD_NUMBER=$(date -u +%Y%m%d%H%M)
+PROJECT="$CI_PRIMARY_REPOSITORY_PATH/apps/ios/ios/App/App.xcodeproj/project.pbxproj"
 
-  echo "--- CI_BUILD_NUMBER=$CI_BUILD_NUMBER, setting CURRENT_PROJECT_VERSION=$BUILD_NUMBER ---"
-  sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" "$PROJECT"
+echo "--- CI_BUILD_NUMBER is '${CI_BUILD_NUMBER:-<unset>}' (recorded, not relied on) ---"
+echo "--- setting CURRENT_PROJECT_VERSION to $BUILD_NUMBER ---"
+sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" "$PROJECT"
 
-  # Read back rather than trust it. A sed that matches nothing exits 0 and
-  # changes nothing, which ships the committed number and fails at upload with
-  # no sign of why. Both configurations, or Debug and Release disagree about
-  # what build this is.
-  echo "--- what the project says now ---"
-  grep -n "CURRENT_PROJECT_VERSION" "$PROJECT"
-  FOUND=$(grep -c "CURRENT_PROJECT_VERSION = $BUILD_NUMBER;" "$PROJECT")
-  [ "$FOUND" -ge 2 ] || { echo "expected 2 configurations, changed $FOUND"; exit 1; }
-else
-  echo "No CI_BUILD_NUMBER — not Xcode Cloud. Leaving the version alone."
+echo "--- what the project says now ---"
+grep -n "CURRENT_PROJECT_VERSION" "$PROJECT"
+
+# Fail here rather than at upload. Both configurations, or Debug and Release
+# disagree about what build this is.
+FOUND=$(grep -c "CURRENT_PROJECT_VERSION = $BUILD_NUMBER;" "$PROJECT")
+if [ "$FOUND" -lt 2 ]; then
+  echo "expected 2 configurations to change, changed $FOUND — stopping here"
+  exit 1
 fi
+echo "--- build number set to $BUILD_NUMBER in $FOUND configurations ---"
