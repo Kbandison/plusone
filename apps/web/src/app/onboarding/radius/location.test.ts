@@ -60,7 +60,10 @@ describe("a member gets a location to be measured from", () => {
   });
 
   it("falls back to the coarse position from the request", () => {
-    expect(form).toMatch(/resolve\(approximate \?\? null\)/);
+    // Repinned 2026-08-29: the resolve is now behind `done()`, which exists so
+    // a settle can happen from either the platform's callbacks or our own
+    // timer without racing. Same fallback, one more way to reach it.
+    expect(form).toMatch(/done\(approximate \?\? null\)/);
     expect(read("../../../lib/dial-code.ts")).toMatch(/x-vercel-ip-latitude/);
   });
 
@@ -128,5 +131,58 @@ describe("a country is not a location", () => {
     expect(form).toMatch(/outcome === "unknown"/);
     expect(DRAFT_COPY.radius.locationUnknown).toMatch(/could not/i);
     expect(DRAFT_COPY.radius.locationUnknown).toMatch(/allow/i);
+  });
+});
+
+describe("the last step of onboarding cannot become a dead button", () => {
+  /**
+   * Found on hardware 2026-08-29 and reproduced in the Simulator.
+   *
+   * In WKWebView `getCurrentPosition` called NEITHER callback — not success,
+   * not error — and the `timeout: 8000` option was ignored, because iOS never
+   * starts a request for a permission the app has not declared. `Info.plist`
+   * was missing `NSLocationWhenInUseUsageDescription`.
+   *
+   * The consequence was the worst shape a bug can take. `locate()`'s promise
+   * never settled, so the form action was never dispatched, so Finish did
+   * nothing — no error, no pending state, no clue — on the LAST step of
+   * onboarding. Nobody could finish signing up in the iOS app, and the only
+   * report anyone could make was "the button is broken".
+   */
+  it("resolves on its own timer, not the platform's", () => {
+    // The platform option stays: a browser that honours it should answer first.
+    expect(form).toMatch(/timeout: 8000/);
+    // And a timer that does not depend on it honouring anything.
+    expect(form).toMatch(/setTimeout\(giveUp, 12000\)/);
+    expect(form).toMatch(/if \(settled\) return;/);
+  });
+
+  /**
+   * `pending` from useActionState only begins at DISPATCH, which happens after
+   * the location resolves — so for the whole time the permission dialogue is
+   * up the button had no pending state at all. Fixed forever, that is still a
+   * control that does nothing when pressed.
+   */
+  it("says something while the device is being asked", () => {
+    expect(form).toMatch(/setLocating\(true\)/);
+    expect(form).toMatch(/disabled=\{pending \|\| locating\}/);
+    expect(form).toMatch(/\{locating \? C\.locating : C\.continueLabel\}/);
+  });
+
+  /** In a finally, or a throw leaves the button disabled for good — the same
+      dead control by another route. */
+  it("re-enables the button even if locating throws", () => {
+    expect(form).toMatch(/finally \{/);
+    expect(form.slice(form.indexOf("finally {"))).toMatch(/setLocating\(false\)/);
+  });
+
+  /**
+   * iOS will not ask without a purpose string, and says nothing about
+   * refusing. The privacy labels already declare Coarse Location, so the app
+   * was asking for a permission it had never told iOS it wanted.
+   */
+  it("declares why it wants a location, so iOS will ask at all", () => {
+    const plist = read("../../../../../ios/ios/App/App/Info.plist");
+    expect(plist).toMatch(/<key>NSLocationWhenInUseUsageDescription<\/key>/);
   });
 });

@@ -28,6 +28,8 @@
 	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>For the check that confirms you are a real person, and for any photo you take in the app.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>To find people near you. Your position is rounded before it is stored, and nobody is ever shown your coordinates.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>For voice messages you record in a chat.</string>
 	<key>UIApplicationSceneManifest</key>

@@ -46,6 +46,16 @@ export function RadiusForm({
     form.current?.requestSubmit();
   };
   const [outcome, setOutcome] = useState<"asking" | "approximate" | "unknown" | null>(null);
+  /**
+   * True while the device is being asked.
+   *
+   * `pending` from useActionState only starts once the action is DISPATCHED,
+   * and dispatch happens after the location is resolved — so for the whole
+   * time the permission dialogue is up, the form had no pending state and the
+   * button was a control that did nothing when pressed. That is what the bug
+   * looked like from the outside even before it was one.
+   */
+  const [locating, setLocating] = useState(false);
 
   /**
    * Where the member is, asked for at the moment it means something.
@@ -67,15 +77,47 @@ export function RadiusForm({
     }
 
     return new Promise((resolve) => {
+      /**
+       * Our own timer, because the platform's `timeout` is not a promise.
+       *
+       * In WKWebView — the iOS shell — `getCurrentPosition` can call NEITHER
+       * callback, ever. Not success, not error, and the 8000 below is ignored
+       * because the request never starts: iOS will not ask for a permission the
+       * app has not declared, and it says nothing about refusing. Measured in
+       * the Simulator on 2026-08-29, and the app's Info.plist was missing
+       * NSLocationWhenInUseUsageDescription at the time.
+       *
+       * That string is added now, so this should not happen. This timer stays
+       * anyway, because the failure it prevents is the worst shape a bug can
+       * take: this promise never settling means the form action is never
+       * dispatched, so Finish does nothing at all — no error, no pending state,
+       * no clue — on the last step of onboarding. A member cannot finish
+       * signing up and has nothing to report but "the button is broken".
+       *
+       * A comment two lines above this used to say "Never blocks". It did.
+       */
+      let settled = false;
+      const done = (where: { lat: number; lon: number } | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(fallback);
+        resolve(where);
+      };
+      const giveUp = () => {
+        // Told apart on purpose: "we used your rough area" and "we have no
+        // idea where you are" have completely different consequences, and
+        // only the second one leaves the app empty.
+        setOutcome(approximate ? "approximate" : "unknown");
+        done(approximate ?? null);
+      };
+
+      // Longer than the platform's own timeout, so a browser that honours
+      // its contract still gets to answer first and this never pre-empts it.
+      const fallback = setTimeout(giveUp, 12000);
+
       navigator.geolocation.getCurrentPosition(
-        (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
-        () => {
-          // Told apart on purpose: "we used your rough area" and "we have no
-          // idea where you are" have completely different consequences, and
-          // only the second one leaves the app empty.
-          setOutcome(approximate ? "approximate" : "unknown");
-          resolve(approximate ?? null);
-        },
+        (position) => done({ lat: position.coords.latitude, lon: position.coords.longitude }),
+        giveUp,
         // Low accuracy on purpose: the answer is rounded to about a kilometre
         // the moment it lands, so asking for a GPS fix would spend a member's
         // battery and seconds to produce digits that are then thrown away.
@@ -99,10 +141,18 @@ export function RadiusForm({
         settings
           ? action
           : async (formData) => {
-              const where = await locate();
-              if (where) {
-                formData.set("lat", String(where.lat));
-                formData.set("lon", String(where.lon));
+              setLocating(true);
+              try {
+                const where = await locate();
+                if (where) {
+                  formData.set("lat", String(where.lat));
+                  formData.set("lon", String(where.lon));
+                }
+              } finally {
+                // In a finally, so a throw from the geolocation stack cannot
+                // leave the button permanently disabled — which would be the
+                // same dead control by another route.
+                setLocating(false);
               }
               action(formData);
             }
@@ -168,10 +218,10 @@ export function RadiusForm({
         <StepActions step="radius">
           <button
             type="submit"
-            disabled={pending}
+            disabled={pending || locating}
             className={buttonClass("primary", "w-full sm:w-auto sm:min-w-[153.9px] sm:self-start")}
           >
-            {C.continueLabel}
+            {locating ? C.locating : C.continueLabel}
           </button>
         </StepActions>
       ) : touched ? (

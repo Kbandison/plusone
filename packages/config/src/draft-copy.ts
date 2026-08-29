@@ -534,6 +534,17 @@ export const DRAFT_COPY = {
 
   radius: {
     heading: "How far you will go",
+    /**
+     * Shown while the device is being asked where it is, which is a wait with
+     * a permission dialogue sitting on top of it.
+     *
+     * Without it the button is disabled and silent for as long as the member
+     * takes to answer that dialogue — and on 2026-08-29 it was silent
+     * FOREVER, because iOS never answered a request the app had not declared a
+     * purpose string for. The dialogue is fixed; a button that says nothing
+     * while it waits is still how that bug looked.
+     */
+    locating: "Finding you…",
     intro:
       "We look for people within this distance first. If there are not many nearby, we widen the search for that night and tell you we did.",
     label: "Search radius",
