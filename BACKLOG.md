@@ -830,7 +830,16 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     summary reads "More filters · 1 filter on" with Kids showing "No kids".
     So the failure worth worrying about — a member following a filtered link,
     seeing a short page, and never learning the reason is folded one tap above
-    them — does not happen on iOS. Still unchecked in the TWA.
+    them — does not happen on iOS. The TWA half was checked separately on a
+    Galaxy S26 Ultra and behaves the same.
+
+    **That verification now describes a PREMIUM member only**, and 18d is why.
+    Every filter behind the fold is paid, so for a free member they are dropped
+    at parse time, the advanced count is always 0, and the fold arrives CLOSED
+    however the URL is written. Which is correct — nothing is applied, so
+    nothing is hidden — but it means `?kids=none` no longer opens the fold for
+    the majority of members, and a check that says "verified" without saying for
+    whom would be believed. Caught by macOS while photographing 18d.
 
     **Age here is NOT the age wall.** `matched_profiles` enforces a mutual range
     — both sides have to want each other's age or the row does not exist. A

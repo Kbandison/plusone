@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
-import { buttonClass } from "@/app/ui";
+import { buttonClass, FIELD_DISABLED } from "@/app/ui";
 import { withStoredValue } from "@/lib/ladder";
 import {
   ACTIVITY_WINDOWS,
@@ -20,8 +20,7 @@ import {
 
 const C = DRAFT_COPY.app;
 
-const FIELD =
-  "rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent";
+const FIELD = `rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent ${FIELD_DISABLED}`;
 const LABEL = "flex flex-col gap-2 text-[11px] text-ink-2";
 
 /** The folded groups, in order, with the heading each gets. */
@@ -198,7 +197,7 @@ export function BrowseFilters({
               value="1"
               defaultChecked={state.writtenOnly}
               onChange={apply}
-              className="size-[14.6px] accent-accent"
+              className={`size-[14.6px] accent-accent ${FIELD_DISABLED}`}
             />
             {C.filterWritten}
           </label>

@@ -85,6 +85,7 @@ describe("controls meet the accessibility floors", () => {
    * were at 15px, so focusing them jumped the page.
    */
   let checked = 0;
+  const unresolved: string[] = [];
 
   it("no focusable field is under 16px", () => {
     const offenders: string[] = [];
@@ -105,30 +106,43 @@ describe("controls meet the accessibility floors", () => {
 
       // Class strings extracted to a const are part of the tag too.
       //
-      // The scan reads a literal `text-[Npx]` from between the angle brackets,
-      // so `className={FIELD}` is invisible to it — no match, no offender, no
-      // coverage, silently. `browse-filters.tsx` hoisted its field classes to a
-      // constant when it grew to nineteen controls and took six selects out of
-      // this gate's sight by doing it, which is the wrong direction for a
-      // refactor to move a safety check.
+      // The scan reads a literal `text-[Npx]` from between a control's angle
+      // brackets, so `className={FIELD}` is invisible to it. `browse-filters.tsx`
+      // hoisted its field classes to a constant when it grew to nineteen
+      // controls and took six selects out of this gate's sight doing it.
       //
-      // Only same-file, single-line string consts, which is what this pattern
-      // is in practice. A className built at runtime still slips through, and
-      // that is worth knowing rather than pretending otherwise: this gate reads
-      // source, and the only complete check is measuring a rendered control.
+      // Resolving BOTH quoted and template constants, and substituting nested
+      // `${OTHER}` references, because the first version of this fix handled
+      // only `const X = "..."` — and the very next commit turned FIELD into a
+      // template literal to add disabled styling, silently dropping the same
+      // five selects back out of coverage. A floor on the total did not catch
+      // it: other files made up the number. Hence `unresolved` below, which
+      // fails on a control this scan cannot read AT ALL rather than on a total.
       const consts = new Map<string, string>();
-      for (const match of source.matchAll(/const (\w+)\s*=\s*"([^"]*)"/g)) {
+      for (const match of source.matchAll(/const (\w+)\s*=\s*["`]([^"`]*)["`]/g)) {
         consts.set(match[1] as string, match[2] as string);
       }
+      // One pass of nesting is all this codebase has; more would need a loop.
+      const expand = (value: string) =>
+        value.replace(/\$\{(\w+)\}/g, (whole, name: string) => consts.get(name) ?? whole);
+      for (const [name, value] of consts) consts.set(name, expand(value));
 
       for (const match of source.matchAll(/<(input|textarea|select)\b[\s\S]{0,700}?\/?>/g)) {
-        const tag = (match[0] as string).replace(
-          /className=\{(\w+)\}/g,
-          (whole, name: string) => consts.get(name) ?? whole,
-        );
+        const tag = (match[0] as string)
+          .replace(
+            /className=\{`([^`]*)`\}/g,
+            (_whole, inner: string) => `className="${expand(inner)}"`,
+          )
+          .replace(/className=\{(\w+)\}/g, (whole, name: string) =>
+            consts.has(name) ? `className="${consts.get(name)}"` : whole,
+          );
         const size = /text-\[(\d+(?:\.\d+)?)px\]/.exec(tag);
         if (size && Number(size[1]) < 16) offenders.push(f.replace(APP, "app"));
         if (size) checked += 1;
+        // A className this scan could not read is a control it is not checking.
+        // Checkboxes and radios legitimately carry no text size; an unresolved
+        // IDENTIFIER is different — it means the size may be there and unseen.
+        if (!size && /className=\{\w+\}/.test(tag)) unresolved.push(f.replace(APP, "app"));
       }
     }
     expect(offenders).toEqual([]);
@@ -145,6 +159,21 @@ describe("controls meet the accessibility floors", () => {
    */
   it("actually reads a meaningful number of fields", () => {
     expect(checked).toBeGreaterThan(20);
+  });
+
+  /**
+   * …and can read every control whose classes come from a constant.
+   *
+   * The total floor above is too coarse to catch one file going dark, which is
+   * exactly what happened when FIELD became a template literal — five selects
+   * left coverage and the total stayed comfortably over twenty because other
+   * files carried it. This fails on the control rather than on the count.
+   */
+  it("leaves no control whose classes it could not resolve", () => {
+    expect(
+      [...new Set(unresolved)],
+      "a className constant this scan cannot resolve — the size may be under 16px and unseen",
+    ).toEqual([]);
   });
 
   /**

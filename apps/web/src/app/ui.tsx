@@ -60,6 +60,33 @@ const TONE: Record<ButtonTone, string> = {
  */
 const DISABLED = "disabled:cursor-not-allowed";
 
+/**
+ * The same treatment, for form CONTROLS rather than buttons.
+ *
+ * `3e74775` fixed disabled buttons and stopped there, which turned out to be
+ * half the problem. macOS measured 18d's locked filter groups in WKWebView and
+ * found a disabled select **pixel-identical to a live one** — same opacity,
+ * same colour, same border, to the value:
+ *
+ *     FREE   distance: opacity 1  colour rgb(107,98,89)  border rgba(28,25,23,0.34)
+ *     LOCKED kids:     opacity 1  colour rgb(107,98,89)  border rgba(28,25,23,0.34)
+ *
+ * The reason is that `disabled:opacity-55` lives in this file's TONE map, which
+ * only buttons read. Filter fields have their own class string and never had
+ * any disabled styling at all, so the question we spent a while circling — is
+ * 55% dim enough — never applied to them in the first place.
+ *
+ * Seventeen controls were genuinely `:disabled` and none of them looked it. A
+ * member scanning the fold taps "Kids", nothing happens, and the only thing
+ * that ever said why is a tag on the legend above.
+ *
+ * The VALUE is deliberately the app's existing one rather than a new choice —
+ * extending a convention to controls that were missed, not restyling. What
+ * treatment a locked field ideally wants is still Kevin's, and it is a specific
+ * question with numbers now rather than a taste one.
+ */
+export const FIELD_DISABLED = `${DISABLED} disabled:opacity-55`;
+
 const SHAPE_BASE = `ease-brand inline-flex min-h-tap items-center justify-center rounded-lg text-body-sm transition-[opacity,transform,border-color,color] duration-200 ${DISABLED}`;
 
 const SHAPE = `${SHAPE_BASE} px-5`;
