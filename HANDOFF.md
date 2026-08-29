@@ -289,10 +289,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                                                    | since      |
-| ------- | ----------------------------------------------------------------------- | ---------- |
-| _macOS_ | server 18b (fine-grained photo privacy) — 18c done in `7e4c93b`         | 2026-08-29 |
-| _WSL_   | server 17 (schema + editor done; display/filters HELD on the migration) | 2026-08-29 |
+| session | item                                                            | since      |
+| ------- | --------------------------------------------------------------- | ---------- |
+| _macOS_ | server 18b (fine-grained photo privacy) — 18c done in `7e4c93b` | 2026-08-29 |
+| _WSL_   | — (16, 17, 19 done; 18a/18d next, not yet claimed)              | —          |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
 only**, said 2026-08-29, because this is one body of work he wants done in

@@ -871,7 +871,25 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     people who chose to blur, on an app whose premise is that disclosure is
     hard.
 
-17. **The attributes the profile does not hold yet.** Height, relationship
+17. ~~**The attributes the profile does not hold yet.**~~ — done and APPLIED
+    2026-08-29, across `6ae20c7`, `d125bc6`, `e86b146` and `612c4e5`. Eleven
+    columns rather than the ten this entry sketched: height, weight,
+    relationship structure, exercise, diet, pets, education, work, languages,
+    religion and politics. Migrations 20260829000100, 000200 and 000300, all
+    live, ledger at 79 of 93.
+
+    Religion and politics were held here as a counsel question and Kevin
+    answered directly; weight was added on his ask and is the one classified as
+    HEALTH data rather than profile content — it is what HealthKit stores, and
+    on a pool defined by a diagnosis it tracks treatment history closely enough
+    to stand in for it. That widens the scope of the Health declaration from
+    three fields behind a consent screen to one typed on a public profile, and
+    it belongs in Kevin 1 with the other two. None is named in the privacy
+    policy yet.
+
+    Kept below because two of its predictions were right and cost real time.
+
+    Originally: Height, relationship
     structure (mono / ENM / poly / unsure), languages, exercise, diet, pets,
     religion, politics, education, work. Kevin asked for depth 2026-08-29 and
     item 16 spends what already exists; this is the part that costs a migration.
@@ -960,7 +978,12 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     more likely to be SEEN is on the never list, and that list is pinned by a
     test.
 
-19. **A live match count beside the filters.** The mechanism that makes item
+19. ~~**A live match count beside the filters.**~~ — done 2026-08-29 in
+    `612c4e5`, alongside the rest of 17's filter surface. Both counts run
+    through one `applyFilters` helper, because a count applying different
+    predicates from the grid beneath it is worse than no count at all.
+
+    Originally: **A live match count beside the filters.** The mechanism that makes item
     16's soft-filter argument true rather than aspirational: a member widening
     or narrowing sees what each control costs before they are staring at an
     empty grid. Needs the count query to follow the filters, which today it
