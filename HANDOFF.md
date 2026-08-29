@@ -123,6 +123,33 @@ apps/web/.next` and start again. It is not a code error and the message does
   points at CommandLineTools and changing it needs sudo, so everything is driven
   with `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` instead.
   It is a beta: fine for the Simulator, **not** for a submission build.
+- **THE XCODE CLOUD BUILD NUMBER IS NOT AUTOMATIC. Bump it before every
+  archive, or the build fails at the end.**
+
+  `CURRENT_PROJECT_VERSION` is committed as a UTC minute stamp
+  (`202608292012`). That number is a FLOOR, not a mechanism: the next Xcode
+  Cloud archive reuses it and dies at "Prepare Build for App Store Connect"
+  with "The bundle version must be higher than the previously uploaded
+  version", after a full three-minute build.
+
+  Three attempts to set it from a script all failed, and what is known is worth
+  more than the theories were:
+
+  - `ci_scripts/` at `apps/ios/ios/App/` IS the right place. The log shows
+    `Run ci_post_clone.sh script`, and names
+    `/Volumes/workspace/repository/apps/ios/ios/App` when looking for the
+    others.
+  - `ci_post_clone.sh` DOES run. The project cannot compile without the files
+    `cap sync` writes, and it compiles.
+  - `Info.plist` reads `$(CURRENT_PROJECT_VERSION)`, so the pbxproj is the
+    correct file to edit, and editing it by COMMIT works.
+  - Editing that same file from inside `ci_post_clone.sh` does not reach the
+    archive. Why is unknown. `ci_pre_xcodebuild.sh` did not work either.
+
+  **The next person should read the expanded `Run ci_post_clone.sh script` log
+  before touching this**, which is the one thing nobody has done — three fixes
+  were reasoned out and all three were wrong.
+
 - **Xcode Cloud is set up, and the first build is a CONTROLLED EXPERIMENT.**
   Created 2026-08-29 from Xcode-beta, because App Store Connect will not create
   a first workflow in the browser and the release Xcode cannot launch here. The
