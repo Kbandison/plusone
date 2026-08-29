@@ -297,6 +297,11 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   condition: "Health & Fitness → Health",
   u_equals_u: "Health & Fitness → Health",
   cross_community_opt_in: "operational",
+  // Server 18a. A switch about who may see the member, in the same family as
+  // mode and search_radius_mi: it changes what the product shows, and it is not
+  // itself a fact about the person. Nothing about it is disclosed to anybody —
+  // the whole point is that it withholds.
+  incognito: "operational",
   intention: "operational",
   intention_changed_at: "operational",
   mode: "operational",
