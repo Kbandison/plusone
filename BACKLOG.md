@@ -970,6 +970,41 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     **Kevin's call 2026-08-29: build them, do not cut the lines.** So this is
     four features, not a copy edit.
 
+    **Before building 18a: READ THE GRANT SHAPE, because it decides where the
+    gate can live, and the two halves of this item differ.** Checked against the
+    live database 2026-08-29 rather than inferred from the migrations:
+
+    - `profile_photos` carries a **whole-table** `update` grant to
+      `authenticated` from 20260813000700, so a member can PATCH any column on
+      their own rows straight through PostgREST. A premium check in a server
+      action there is decoration — the action is not the only writer and never
+      was. macOS found this building 18b and gated it with a
+      `before insert or update` trigger, which holds whichever path the write
+      arrives on.
+    - `profiles` carries **no whole-table grant at all** — column-level only,
+      32 columns updatable. So the gate for incognito is stronger and simpler:
+      **do not grant `update (incognito)` to `authenticated` at all**, and write
+      it through a `security definer` function that checks premium, the way
+      `record_iap_entitlement` already writes `iap_entitlements`. A member then
+      has no path to the column, rather than a path that is checked.
+
+    The generalisation, which is the part worth keeping: the right gate is not a
+    style preference, it is a consequence of how the table was granted, and this
+    schema does BOTH. Read `information_schema.role_table_grants` before
+    deciding, not the migration that created the table — 20260826000200 exists
+    because a new table arrives with `anon` and `authenticated` holding
+    everything, and a grant that was revoked later is not visible in the file
+    that made it.
+
+    **And the lapse rule, which is the mirror of 18b's.** When premium ends,
+    premium-only filters must be IGNORED rather than error or persist. The safe
+    direction is the one that shows a member MORE people and never makes the
+    member themselves more visible — the same asymmetry macOS settled for
+    per-photo privacy, where overrides are retained forever and premium gates
+    only the setting of them. Pin it by test rather than by comment: a lapsed
+    subscription silently un-blurring somebody is the worst failure this app
+    could have, and the filter equivalent is quieter but the same shape.
+
     Whatever gets added to sweeten the tier has to clear `PREMIUM_NEVER` in the
     same file — no ranking or visibility boosts, no extra drops, no undo, no
     fuse extensions, no wall bypass. Decision #23/#24 says the paid line is
