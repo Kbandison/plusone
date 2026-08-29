@@ -43,6 +43,13 @@ export const RADIUS = {
   /** §6.1 — expand while candidates fall below this. */
   minPool: 12,
   minMi: 5,
+  /**
+   * The radii an activity alert is offered (server 18c). A ladder rather than
+   * a free number: the alert fires on a §8 floor of five visible people, and a
+   * member typing 7 would be choosing a radius that can essentially never
+   * clear it.
+   */
+  alertLadderMi: [5, 10, 25, 50, 100, 250],
   maxMi: 250,
 } as const;
 

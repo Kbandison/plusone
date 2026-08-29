@@ -256,6 +256,10 @@ export const TABLE_CLASSIFICATION: Readonly<
     note: "Content-blind by construction (§9.6) — an event kind and an id, never a body.",
   },
   notification_mutes: { feeds: [], note: "A member's own switches." },
+  activity_alerts: {
+    feeds: ["Identifiers → User ID"],
+    note: "A member's own saved alert. The radius is operational for the same reason profiles.search_radius_mi is — it is a setting about what to show, not a place. Nothing here records where anybody was, and no row names anyone but its owner.",
+  },
   deletion_requests: { feeds: ["Identifiers → User ID"], note: "That deletion was asked for." },
   moderation_queue: {
     feeds: ["User Content → Other User Content"],

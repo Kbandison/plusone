@@ -5,6 +5,7 @@ import { DRAFT_COPY, NOTIFICATION_EVENT_LABELS } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { PushToggle } from "../push-toggle";
+import { ActivityAlert } from "./activity-alert";
 import { NotificationSwitches } from "./switches";
 
 const C = DRAFT_COPY.app;
@@ -36,6 +37,27 @@ export default async function NotificationSettingsPage() {
   // has no rows, which is exactly what makes a change to NOTIFICATION_DEFAULTS
   // reach everybody who never expressed a preference.
   const { data } = await supabase.from("notification_mutes").select("event, channel");
+
+  /**
+   * The premium activity alert's own row (server 18c).
+   *
+   * `error` is treated as "not available" rather than thrown, and the reason is
+   * specific rather than defensive: 20260829001000 is written and NOT applied,
+   * so against production today this table does not exist. A settings page that
+   * threw would take the other forty-two switches down with it over a feature
+   * nobody can use yet. The component says so on screen instead of rendering a
+   * control that accepts a change and drops it.
+   */
+  const [{ data: isPremium }, { data: alertRow, error: alertError }] = await Promise.all([
+    supabase.rpc("i_am_premium"),
+    supabase.from("activity_alerts").select("radius_mi, enabled").maybeSingle(),
+  ]);
+  const alert = alertRow
+    ? {
+        radiusMi: (alertRow as { radius_mi: number }).radius_mi,
+        enabled: (alertRow as { enabled: boolean }).enabled,
+      }
+    : null;
   const muted = ((data ?? []) as { event: string; channel: string }[]).map(
     (row) => `${row.event}:${row.channel}`,
   );
@@ -47,6 +69,11 @@ export default async function NotificationSettingsPage() {
       {/* The device switch first. It is the one that decides whether the push
           column below means anything at all. */}
       <PushToggle vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
+
+      {/* Above the switches, because its own note points down at them: the
+          alert decides whether there is anything to deliver, and the push
+          column decides where. */}
+      <ActivityAlert premium={Boolean(isPremium)} alert={alert} available={!alertError} />
 
       <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
         <h2 className="text-[0.972rem]">{C.notificationSettingsHeading}</h2>

@@ -22,6 +22,7 @@ export type NotificationEvent =
   | "verification_decided"
   | "premium_expiring"
   | "nearby_joins"
+  | "activity_nearby"
   | "referral_converted";
 
 export interface NotificationTemplate {
@@ -136,6 +137,18 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     path: "/app/settings/premium",
   },
   nearby_joins: { event: "nearby_joins", body: "New members joined near you", path: "/app/browse" },
+  /**
+   * The premium activity alert (server 18c). Same content-blind sentence for
+   * everybody, and deliberately no number in it — `claim_activity_alerts`
+   * returns a count and it is used to decide WHETHER to send, never what to
+   * say. A number on a lock screen is the granularity §8 spends a rule
+   * refusing, and the floor is the same five.
+   */
+  activity_nearby: {
+    event: "activity_nearby",
+    body: "People are active near you",
+    path: "/app/browse",
+  },
   referral_converted: {
     event: "referral_converted",
     body: "Your invite was accepted",
@@ -265,6 +278,18 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly Notificat
    */
   premium_expiring: ["in_app", "push"],
   nearby_joins: ["in_app"],
+  /**
+   * In-app only by default, like nearby_joins, and for the same §3.3 reason —
+   * "come back, there are new people" is the engagement loop this product
+   * refuses to run.
+   *
+   * What makes this one defensible on a PAID tier is that §3.3 bans the APP
+   * nudging a member, and this alert does not exist until the member creates
+   * it, on a radius they chose, and can be deleted in one press. Push is
+   * available and off: a member who turns it on has asked to be interrupted,
+   * which is control rather than a loop. Nobody is ever opted in.
+   */
+  activity_nearby: ["in_app"],
   referral_converted: ["in_app"],
 };
 
@@ -291,6 +316,7 @@ export const MUTABLE_EVENTS: readonly NotificationEvent[] = [
   "like_received",
   "premium_expiring",
   "nearby_joins",
+  "activity_nearby",
   "referral_converted",
 ];
 
@@ -315,4 +341,19 @@ export const NOTIFY_TIMING = {
   premiumExpiryWarningDays: 3,
   /** How far back "new" reaches, and how often a member can be told at all. */
   nearbyJoinWindowDays: 7,
+  /** How recently somebody must have been seen to count as active. */
+  activityAlertWindowHours: 24,
+  /** The shortest gap between two activity alerts for the same member. */
+  activityAlertCooldownHours: 24,
+  /**
+   * The local hours an activity alert may be delivered in, half-open.
+   *
+   * profiles.timezone is real and set by timezone-actions.ts, so this is the
+   * member's own clock rather than the server's — the same thing
+   * claim_drop_notifications does with DROP.hourLocal. A member who has not
+   * opened the app since 20260821000500 shipped is still 'UTC', which makes
+   * this the wrong hour for them rather than a broken one.
+   */
+  activityAlertFromHourLocal: 9,
+  activityAlertToHourLocal: 21,
 } as const;

@@ -38,6 +38,10 @@
     {
       "path": "/api/cron/nearby-joins",
       "schedule": "0 17 * * 3"
+    },
+    {
+      "path": "/api/cron/activity-nearby",
+      "schedule": "10 * * * *"
     }
   ]
 }

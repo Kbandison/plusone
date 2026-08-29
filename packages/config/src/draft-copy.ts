@@ -1467,6 +1467,24 @@ export const DRAFT_COPY = {
     notificationSettingsAlwaysOn:
       "Always on. You are waiting on a person to look at your account, and there is nothing else to check.",
     notificationSettingsSaveFailed: "That didn't save. Try again in a moment.",
+    /** The premium activity alert (server 18c). */
+    activityAlertHeading: "Who's active near you",
+    activityAlertBody:
+      "Pick a distance and you'll be told when the people near you are around. At most once a day, and never before nine in the morning or after nine at night, your time.",
+    activityAlertFloor:
+      "You are only told when at least five people you can see are about. Below that, a count on a small local pool is close enough to a name.",
+    activityAlertRadiusLabel: "Within",
+    activityAlertRadiusOption: (mi: number) => `${mi} miles`,
+    activityAlertEnabledLabel: "Tell me when people are active nearby",
+    activityAlertSave: "Save",
+    activityAlertSaved: "Saved.",
+    activityAlertSaveFailed: "That didn't save. Try again in a moment.",
+    activityAlertChannelNote:
+      "This arrives in your list. To have it reach your phone as well, turn on push for it below.",
+    activityAlertPremiumOnly: "Part of Premium.",
+    activityAlertPremiumLink: "See what's included",
+    activityAlertUnavailable:
+      "This can't be set up right now. Nothing is wrong with your account — try again later.",
     /**
      * Turning something on that the device is not set up for.
      *
@@ -1541,6 +1559,13 @@ export const NOTIFICATION_LINES: Record<NotificationEvent, NotificationLine> = {
   verification_decided: () => "Your verification has been reviewed.",
   premium_expiring: () => "Your premium is ending soon.",
   nearby_joins: () => "New members joined near you.",
+  /**
+   * No count, and no "right now" either. The alert fires on a live number and
+   * says a flat sentence, because §8 forbids granularity below five and a
+   * member reading this in the list an hour later should not be told something
+   * that has since stopped being true.
+   */
+  activity_nearby: () => "People are active near you.",
   referral_converted: () => "Someone you invited joined and was verified.",
 };
 
@@ -1567,6 +1592,7 @@ export const NOTIFICATION_EVENT_LABELS: Record<NotificationEvent, string> = {
   verification_decided: "Your verification is decided",
   premium_expiring: "Premium is ending",
   nearby_joins: "New members near you",
+  activity_nearby: "People are active near you",
   referral_converted: "Someone you invited joins",
 };
 
