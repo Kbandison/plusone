@@ -84,6 +84,8 @@ describe("controls meet the accessibility floors", () => {
    * 16px, and the app sets no maximum-scale (nor should it). Fourteen fields
    * were at 15px, so focusing them jumped the page.
    */
+  let checked = 0;
+
   it("no focusable field is under 16px", () => {
     const offenders: string[] = [];
     for (const f of files) {
@@ -100,12 +102,49 @@ describe("controls meet the accessibility floors", () => {
       // them. Alternating `=>` against `[^>]` does not work — the class eats the
       // `=` before the alternative is ever tried.
       const source = read(f).replaceAll("=>", "==");
+
+      // Class strings extracted to a const are part of the tag too.
+      //
+      // The scan reads a literal `text-[Npx]` from between the angle brackets,
+      // so `className={FIELD}` is invisible to it — no match, no offender, no
+      // coverage, silently. `browse-filters.tsx` hoisted its field classes to a
+      // constant when it grew to nineteen controls and took six selects out of
+      // this gate's sight by doing it, which is the wrong direction for a
+      // refactor to move a safety check.
+      //
+      // Only same-file, single-line string consts, which is what this pattern
+      // is in practice. A className built at runtime still slips through, and
+      // that is worth knowing rather than pretending otherwise: this gate reads
+      // source, and the only complete check is measuring a rendered control.
+      const consts = new Map<string, string>();
+      for (const match of source.matchAll(/const (\w+)\s*=\s*"([^"]*)"/g)) {
+        consts.set(match[1] as string, match[2] as string);
+      }
+
       for (const match of source.matchAll(/<(input|textarea|select)\b[\s\S]{0,700}?\/?>/g)) {
-        const size = /text-\[(\d+(?:\.\d+)?)px\]/.exec(match[0]);
+        const tag = (match[0] as string).replace(
+          /className=\{(\w+)\}/g,
+          (whole, name: string) => consts.get(name) ?? whole,
+        );
+        const size = /text-\[(\d+(?:\.\d+)?)px\]/.exec(tag);
         if (size && Number(size[1]) < 16) offenders.push(f.replace(APP, "app"));
+        if (size) checked += 1;
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  /**
+   * That the scan above SEES anything.
+   *
+   * Every assertion it makes is of the form "no match was bad", so a pattern
+   * that matched nothing at all would pass it forever — and the const-resolution
+   * fix exists precisely because a refactor had already quietly cut its reach.
+   * A floor on the number of controls it actually read turns that from silent
+   * into loud.
+   */
+  it("actually reads a meaningful number of fields", () => {
+    expect(checked).toBeGreaterThan(20);
   });
 
   /**

@@ -153,6 +153,26 @@ describe("filters apply themselves", () => {
   });
 });
 
+/**
+ * The ladder is [50, 100, 150, 250] and the onboarding slider writes any
+ * integer from 5 to 250. A member on 110 had a select matching no option, so
+ * the browser fell back to the first — it rendered "50 miles" beside a stat
+ * correctly saying 110, and the next change to any other control submitted
+ * distance=50 and shrank their search without saying so. Caught on a real
+ * device, on Kevin's own radius.
+ */
+describe("the radius select can state a radius that is not on the ladder", () => {
+  it("adds the member's own value when the ladder does not carry it", () => {
+    expect(filters).toMatch(/ladderMi as readonly number\[\]\)\.includes\(state\.distanceMi\)/);
+    expect(filters).toMatch(/\[\.\.\.RADIUS\.ladderMi, state\.distanceMi\]\.sort/);
+  });
+
+  /** Still the offered set — this adds one value, it does not replace it. */
+  it("keeps the ladder as what is offered", () => {
+    expect(filters).toMatch(/RADIUS\.ladderMi\.map|\)\.map\(\(mi\)/);
+  });
+});
+
 /** Every string on this page comes from the copy file. */
 describe("the page has no words of its own", () => {
   it("names an unknown member from copy rather than a literal", () => {
