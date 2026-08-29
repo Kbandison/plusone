@@ -15,4 +15,7 @@
 -->
 <resources>
     <color name="shortcut_background">#F5F5F5</color>
+    <!-- Dusk's ground, from packages/ui-tokens/tokens.css. Sits behind the
+         adaptive icon so the mark's own dark square meets it seamlessly. -->
+    <color name="iconBackground">#14110F</color>
 </resources>
