@@ -73,13 +73,15 @@ export default async function ProfilePage() {
    * for every member.
    *
    * A second request costs a round trip and makes the deploy order stop
-   * mattering in both directions: before the migration these eight are simply
+   * mattering in both directions: before the migration these eleven are simply
    * unstated, and after it they fill in with no redeploy. The alternative is a
    * coupling nothing in the build can check and only production reveals.
    */
   const { data: extras } = await supabase
     .from("profiles")
-    .select("height_cm, relationship_structure, exercise, diet, pets, education, work, languages")
+    .select(
+      "height_cm, weight_kg, relationship_structure, exercise, diet, pets, education, work, languages, religion, politics",
+    )
     .eq("id", auth.user.id)
     .maybeSingle();
 
@@ -213,6 +215,9 @@ export default async function ProfilePage() {
             education: (extras?.education as string | null) ?? null,
             work: (extras?.work as string | null) ?? null,
             languages: (extras?.languages as string[] | null) ?? [],
+            weightKg: (extras?.weight_kg as number | null) ?? null,
+            religion: (extras?.religion as string | null) ?? null,
+            politics: (extras?.politics as string | null) ?? null,
           }}
         />
       </section>

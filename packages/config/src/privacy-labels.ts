@@ -390,6 +390,40 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   // A vendor's session reference, kept to re-check an outcome. It points at a
   // record; it does not contain one.
   liveness_session_id: "operational",
+
+  // ── 20260829000200 ─────────────────────────────────────────────────────────
+  // The two that were held on 20260829000100 and added on Kevin's answer.
+  //
+  // Sensitive Info without argument, unlike the conservative calls above:
+  // Apple's own enumeration names "religious or philosophical beliefs" and
+  // "political opinion" outright, and GDPR Article 9 puts both in the same tier
+  // as the health data this product is built around.
+  //
+  // Still no NEW category, since Sensitive Info is already declared — so
+  // play-data-safety.ts does not move for these either. What they DO oblige is
+  // the policy: Kevin 1 is open, and religious and political belief should be
+  // named there among what a member may choose to publish. They are not yet.
+  religion: "Sensitive Info",
+  politics: "Sensitive Info",
+
+  // ── 20260829000300 ─────────────────────────────────────────────────────────
+  // Health, and the only column in this whole batch that is not User Content or
+  // Sensitive Info.
+  //
+  // Everything else added on 2026-08-29 was deliberately kept OUT of the Health
+  // declaration, on the argument that it is about `condition` and that
+  // stretching it to cover "drinks sometimes" blurs the one label that most
+  // needs to stay precise. Body weight is the exception rather than a crack in
+  // that rule: it is what HealthKit stores, Apple's Health type names it, and
+  // on an app whose pool is defined by a diagnosis it correlates with treatment
+  // history — wasting and lipodystrophy — which makes it a proxy for health
+  // status without ever naming one.
+  //
+  // No new category; Health is already declared. What it changes is the SCOPE
+  // of that declaration, from three fields behind a consent screen and a
+  // community wall to one a member types onto a profile other members read.
+  // That belongs in Kevin 1 with religion and politics.
+  weight_kg: "Health & Fitness → Health",
 };
 
 /**

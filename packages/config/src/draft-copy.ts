@@ -479,6 +479,18 @@ export const DRAFT_COPY = {
     educationLabel: "Education",
     workLabel: "Line of work",
     languagesLabel: "Languages you speak",
+    weightLabel: "Weight",
+    religionLabel: "Faith",
+    politicsLabel: "Politics",
+    /**
+     * Said once, above the two, because these are the only fields on this form
+     * that are special category data a member types in themselves. Every other
+     * Article 9 field on this profile sits behind the consent screen and the
+     * community wall; these do not, and a member should know that before
+     * answering rather than after.
+     */
+    beliefHint:
+      "Both are optional and both show on your profile. \u201cRather not say\u201d is an answer too \u2014 it is not the same as leaving them blank.",
     languagesHint: (max: number) => `Up to ${max}.`,
 
     skipLabel: "Prefer not to say",
@@ -492,6 +504,8 @@ export const DRAFT_COPY = {
       ageRange: "Ages have to be between 18 and 120.",
       /** profiles_height_range refuses these; this is so the refusal is a sentence. */
       height: "Height has to be between 120 and 240 cm.",
+      /** profiles_weight_range refuses these; this is so the refusal is a sentence. */
+      weight: "Weight has to be between 35 and 250 kg.",
       failed: "That did not save. Try again.",
     },
   },
@@ -2039,6 +2053,46 @@ export const LANGUAGE_LABELS = {
   other: "Another language",
 } as const;
 
+/**
+ * Religion and politics — held on 20260829000100, added on Kevin's answer.
+ *
+ * Short lists on purpose. This app already asks people to disclose a diagnosis,
+ * and following that with a taxonomy of belief spends trust it needs elsewhere
+ * — the same argument GENDER_LABELS makes for having four options rather than
+ * fourteen.
+ *
+ * `prefer_not_to_say` is in both, and it is not the same as leaving them blank.
+ * Blank is "never asked". This is "asked, and declining is my answer" — which a
+ * member should be able to say out loud on a profile that asks about belief.
+ */
+export const RELIGION_LABELS = {
+  agnostic: "Agnostic",
+  atheist: "Atheist",
+  buddhist: "Buddhist",
+  christian: "Christian",
+  hindu: "Hindu",
+  jewish: "Jewish",
+  muslim: "Muslim",
+  spiritual: "Spiritual",
+  other: "Something else",
+  prefer_not_to_say: "Rather not say",
+} as const;
+
+/**
+ * Not a party, and not a left-right slider with a midpoint that flatters
+ * nobody. A party label ages badly and travels worse; this is how somebody
+ * would describe themselves at a table.
+ */
+export const POLITICS_LABELS = {
+  progressive: "Progressive",
+  liberal: "Liberal",
+  moderate: "Moderate",
+  conservative: "Conservative",
+  apolitical: "Not political",
+  other: "Something else",
+  prefer_not_to_say: "Rather not say",
+} as const;
+
 /** The CHECK refuses more than this, and the form should not offer to try. */
 export const LANGUAGES_MAX = 8;
 
@@ -2068,6 +2122,18 @@ export function formatHeight(cm: number): string {
 
 export const HEIGHT_MIN_CM = 120;
 export const HEIGHT_MAX_CM = 240;
+
+/**
+ * Kilograms in, pounds out — the same trade formatHeight makes, and for the
+ * same reason: stored as a number so a range filter is a range, rendered in the
+ * units this app's members use.
+ */
+export function formatWeight(kg: number): string {
+  return `${Math.round(kg * 2.2046)} lb`;
+}
+
+export const WEIGHT_MIN_KG = 35;
+export const WEIGHT_MAX_KG = 250;
 
 /**
  * Labels for the condition_detail enum. These are names for things, not

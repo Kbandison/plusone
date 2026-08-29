@@ -46,8 +46,9 @@ if (!DB_URL) {
 // rooms is 7, not the 5 §5.2 names: Latest news is a room now (20260820000300)
 // and there are two of it, one per community, because rooms are scoped by
 // community and news is too. The five the spec names are still all there.
-// Updated 2026-08-29, after both of that day's migrations were applied. Every
-// delta is attributable, which is the only reason to move these numbers at all:
+// Updated 2026-08-29, after ALL FOUR of that day's migrations were applied.
+// Every delta is attributable, which is the only reason to move these numbers
+// at all — a silent bump to green buries the thing they exist to notice:
 //   tables 32 -> 33, functions 119 -> 120   20260829001000, activity_alerts and
 //                                           claim_activity_alerts (server 18c).
 //   enums 21 -> 27                          20260829000100, the six new profile
@@ -55,9 +56,28 @@ if (!DB_URL) {
 //                                           diet_kind, pets_kind,
 //                                           education_level, work_field,
 //                                           language_tag.
-const EXPECT = { tables: 33, views: 5, functions: 120, enums: 27, rooms: 7, config: 23 };
+//   enums 27 -> 29                          20260829000200, religion_kind and
+//                                           politics_kind. 20260829000300 added
+//                                           weight_kg, which is a column on an
+//                                           existing type and moves nothing here.
+//
+// Read against the live database rather than by adding up the migrations: two
+// sessions applied four migrations to one schema on the same afternoon, and the
+// only account of it that cannot be stale is the one the database gives.
+const EXPECT = { tables: 33, views: 5, functions: 120, enums: 29, rooms: 7, config: 23 };
 // 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
 // emails_for() from 20260824000200, which had been sitting unapplied.
+//
+// 33/120/27 on 2026-08-29. The six enums are 20260829000100's — relationship
+// structure, diet, pets, education, work and language. The table and the
+// function were NOT: both were already live and this line had not been moved
+// with them, so two of the three failures this file reported that day predated
+// the migration it was run for.
+//
+// Worth knowing before the next person reads a red inventory as a fresh
+// mistake: `declared vs applied` below is the section that catches something
+// genuinely missing, and it was green throughout. These counts are a second,
+// weaker check that only notices drift when somebody remembers to move them.
 const INVOKER_VIEWS = [];
 const DEFINER_VIEWS = ["visible_profile_photos", "visible_profiles", "preview_profiles"];
 const NO_UPDATE_PATH = ["connects", "chats"];

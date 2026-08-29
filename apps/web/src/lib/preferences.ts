@@ -8,6 +8,10 @@ import {
   GENDER_LABELS,
   HEIGHT_MAX_CM,
   HEIGHT_MIN_CM,
+  WEIGHT_MAX_KG,
+  WEIGHT_MIN_KG,
+  POLITICS_LABELS,
+  RELIGION_LABELS,
   KIDS_LABELS,
   KIDS_PLAN_LABELS,
   LANGUAGES_MAX,
@@ -56,6 +60,9 @@ export interface ExtendedPreferenceValues {
   readonly education: string | null;
   readonly work: string | null;
   readonly languages: string[];
+  readonly religion: string | null;
+  readonly politics: string | null;
+  readonly weight_kg: number | null;
 }
 
 /**
@@ -86,6 +93,9 @@ export interface ExtendedPreferenceValues {
  */
 export const EXTENDED_PREFERENCE_COLUMNS = [
   "height_cm",
+  "weight_kg",
+  "religion",
+  "politics",
   "relationship_structure",
   "exercise",
   "diet",
@@ -137,13 +147,17 @@ function ageOrNull(value: FormDataEntryValue | null): number | null | "invalid" 
  * different fact — profiles_height_range refuses anything outside them, and a
  * typo'd 17 or 700 would otherwise sit in a filter forever matching nobody.
  */
-function heightOrNull(value: FormDataEntryValue | null): number | null | "invalid" {
+function boundedOrNull(
+  value: FormDataEntryValue | null,
+  min: number,
+  max: number,
+): number | null | "invalid" {
   const raw = typeof value === "string" ? value.trim() : "";
   if (raw === "") return null;
   if (!/^\d{2,3}$/.test(raw)) return "invalid";
-  const cm = Number(raw);
-  if (cm < HEIGHT_MIN_CM || cm > HEIGHT_MAX_CM) return "invalid";
-  return cm;
+  const n = Number(raw);
+  if (n < min || n > max) return "invalid";
+  return n;
 }
 
 /**
@@ -170,8 +184,17 @@ export function parsePreferences(
     .filter((value): value is string => typeof value === "string")
     .filter((value) => value in GENDER_LABELS);
 
-  const height = scope === "full" ? heightOrNull(formData.get("height_cm")) : null;
+  const height =
+    scope === "full"
+      ? boundedOrNull(formData.get("height_cm"), HEIGHT_MIN_CM, HEIGHT_MAX_CM)
+      : null;
   if (height === "invalid") return { error: E.height };
+
+  const weight =
+    scope === "full"
+      ? boundedOrNull(formData.get("weight_kg"), WEIGHT_MIN_KG, WEIGHT_MAX_KG)
+      : null;
+  if (weight === "invalid") return { error: E.weight };
 
   // Deduplicated and capped, because profiles_languages_count refuses more than
   // eight and a rejected update at the end of a filled-in form says nothing
@@ -222,6 +245,14 @@ export function parsePreferences(
             education: oneOf(formData.get("education"), EDUCATION_LABELS),
             work: oneOf(formData.get("work"), WORK_LABELS),
             languages,
+            weight_kg: weight,
+            // Article 9 special category, both of them. Read exactly like every
+            // other optional field here — an unrecognised value becomes null —
+            // but note that `prefer_not_to_say` is a REAL enum value and is not
+            // this branch: declining is an answer a member chose, and null is
+            // nobody having asked.
+            religion: oneOf(formData.get("religion"), RELIGION_LABELS),
+            politics: oneOf(formData.get("politics"), POLITICS_LABELS),
           }
         : {}),
     },

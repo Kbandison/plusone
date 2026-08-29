@@ -16,6 +16,11 @@ import {
   WORK_LABELS,
   LANGUAGE_LABELS,
   LANGUAGES_MAX,
+  RELIGION_LABELS,
+  POLITICS_LABELS,
+  formatWeight,
+  WEIGHT_MIN_KG,
+  WEIGHT_MAX_KG,
   formatHeight,
   HEIGHT_MIN_CM,
   HEIGHT_MAX_CM,
@@ -44,6 +49,12 @@ const HEIGHTS = Array.from(
   (_, i) => HEIGHT_MIN_CM + i * 2,
 );
 
+/** Every 2 kg, for the reason HEIGHTS is every 2 cm. */
+const WEIGHTS = Array.from(
+  { length: Math.floor((WEIGHT_MAX_KG - WEIGHT_MIN_KG) / 2) + 1 },
+  (_, i) => WEIGHT_MIN_KG + i * 2,
+);
+
 /** What the member already answered, so the step can be walked back into. */
 export interface PreferencesDefaults {
   readonly gender: string | null;
@@ -63,6 +74,9 @@ export interface PreferencesDefaults {
   readonly education?: string | null;
   readonly work?: string | null;
   readonly languages?: readonly string[];
+  readonly weightKg?: number | null;
+  readonly religion?: string | null;
+  readonly politics?: string | null;
 }
 
 /** A row of radios where one may be chosen and none is also an answer. */
@@ -236,6 +250,22 @@ export function PreferencesForm({
               </select>
             </label>
 
+            <label className="flex flex-col gap-2 text-[12.2px]">
+              {C.weightLabel}
+              <select
+                name="weight_kg"
+                defaultValue={defaults.weightKg != null ? String(defaults.weightKg) : ""}
+                className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
+              >
+                <option value="">{C.heightUnstated}</option>
+                {WEIGHTS.map((kg) => (
+                  <option key={kg} value={kg}>
+                    {formatWeight(kg)} · {kg} kg
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <Choice
               name="relationship_structure"
               legend={C.relationshipLabel}
@@ -297,6 +327,27 @@ export function PreferencesForm({
                 ))}
               </div>
             </fieldset>
+            {/* Below the rest and behind their own sentence, because these two
+                are the only fields on this form that are GDPR Article 9 special
+                category data a member types in themselves. Every other Article
+                9 field on this profile sits behind the consent screen and the
+                community wall; these do not, and somebody should know that
+                before answering rather than after. */}
+            <div className="flex flex-col gap-8 border-t border-line-2 pt-8">
+              <p className="text-[11.7px] text-ink-3">{C.beliefHint}</p>
+              <Choice
+                name="religion"
+                legend={C.religionLabel}
+                options={RELIGION_LABELS}
+                selected={defaults.religion ?? null}
+              />
+              <Choice
+                name="politics"
+                legend={C.politicsLabel}
+                options={POLITICS_LABELS}
+                selected={defaults.politics ?? null}
+              />
+            </div>
           </>
         ) : null}
       </div>
