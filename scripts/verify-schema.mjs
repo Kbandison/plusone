@@ -46,7 +46,16 @@ if (!DB_URL) {
 // rooms is 7, not the 5 §5.2 names: Latest news is a room now (20260820000300)
 // and there are two of it, one per community, because rooms are scoped by
 // community and news is too. The five the spec names are still all there.
-const EXPECT = { tables: 32, views: 5, functions: 119, enums: 21, rooms: 7, config: 23 };
+// Updated 2026-08-29, after both of that day's migrations were applied. Every
+// delta is attributable, which is the only reason to move these numbers at all:
+//   tables 32 -> 33, functions 119 -> 120   20260829001000, activity_alerts and
+//                                           claim_activity_alerts (server 18c).
+//   enums 21 -> 27                          20260829000100, the six new profile
+//                                           enums — relationship_structure,
+//                                           diet_kind, pets_kind,
+//                                           education_level, work_field,
+//                                           language_tag.
+const EXPECT = { tables: 33, views: 5, functions: 120, enums: 27, rooms: 7, config: 23 };
 // 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
 // emails_for() from 20260824000200, which had been sitting unapplied.
 const INVOKER_VIEWS = [];
