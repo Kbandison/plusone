@@ -26,16 +26,41 @@ type ButtonTone = "primary" | "secondary" | "quiet" | "danger";
  * and cancelling it is what made a keyboard user unable to see where they were.
  */
 const TONE: Record<ButtonTone, string> = {
-  primary: "bg-accent text-accent-ink hover:opacity-90 active:scale-[0.995] disabled:opacity-55",
-  secondary: "border border-line-control text-ink hover:border-accent disabled:opacity-55",
+  primary:
+    "bg-accent text-accent-ink hover:not-disabled:opacity-90 active:not-disabled:scale-[0.995] disabled:opacity-55",
+  secondary:
+    "border border-line-control text-ink hover:not-disabled:border-accent disabled:opacity-55",
   quiet:
-    "text-ink-2 underline decoration-line-control underline-offset-4 hover:text-ink disabled:opacity-55",
+    "text-ink-2 underline decoration-line-control underline-offset-4 hover:not-disabled:text-ink disabled:opacity-55",
   danger:
-    "border border-line-control text-ink hover:border-critical hover:text-critical disabled:opacity-55",
+    "border border-line-control text-ink hover:not-disabled:border-critical hover:not-disabled:text-critical disabled:opacity-55",
 };
 
-const SHAPE_BASE =
-  "ease-brand inline-flex min-h-tap items-center justify-center rounded-lg text-body-sm transition-[opacity,transform,border-color,color] duration-200";
+/**
+ * What a disabled button does BESIDES going translucent.
+ *
+ * `disabled:opacity-55` was the only marker on every tone, and on a filled
+ * accent button 55% still reads as solid and pressable. Found in the Simulator
+ * on 18a's "Turn incognito on", where a free member taps a button that looks
+ * live, nothing happens, and the reason is sitting in a paragraph BELOW the
+ * button rather than on it.
+ *
+ * Two things are wrong there and only one is a matter of taste.
+ *
+ * The opacity value is taste, and it is left alone — that is a design call, not
+ * a bug fix, and changing it unilaterally restyles every disabled control in
+ * the app.
+ *
+ * The rest is not taste. `:hover` still MATCHES a disabled button in every
+ * browser, so `hover:opacity-90` fired on a disabled primary and hovering one
+ * changed its appearance — the single strongest signal a control has for
+ * saying "I am interactive". Every hover on every tone is `not-disabled:` now,
+ * and the cursor says so too. A pointer over a dead control is the other half
+ * of the same lie.
+ */
+const DISABLED = "disabled:cursor-not-allowed";
+
+const SHAPE_BASE = `ease-brand inline-flex min-h-tap items-center justify-center rounded-lg text-body-sm transition-[opacity,transform,border-color,color] duration-200 ${DISABLED}`;
 
 const SHAPE = `${SHAPE_BASE} px-5`;
 
@@ -58,7 +83,7 @@ export function iconButtonClass(tone: ButtonTone = "secondary", extra = ""): str
 export function buttonClass(tone: ButtonTone = "primary", extra = ""): string {
   const shape =
     tone === "quiet"
-      ? "ease-brand inline-flex min-h-tap items-center text-body-sm transition-colors duration-200"
+      ? `ease-brand inline-flex min-h-tap items-center text-body-sm transition-colors duration-200 ${DISABLED}`
       : SHAPE;
   return `${shape} ${TONE[tone]} ${extra}`.trim();
 }

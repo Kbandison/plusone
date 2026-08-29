@@ -157,6 +157,53 @@ describe("controls meet the accessibility floors", () => {
   });
 });
 
+/**
+ * A disabled control must not tell the member it is live.
+ *
+ * `disabled:opacity-55` was the only marker on every tone, and on a filled
+ * accent button 55% still reads as solid and pressable. Found in the iOS
+ * Simulator on 18a's "Turn incognito on": a free member taps a button that
+ * looks live, nothing happens, and the reason sits in a paragraph BELOW it.
+ *
+ * The opacity value is a design call and is deliberately not asserted here.
+ * What is asserted is the part that is not taste — `:hover` MATCHES a disabled
+ * button in every browser, so an unguarded `hover:` fires on one and changes
+ * its appearance, which is the strongest signal a control has for saying it is
+ * interactive.
+ */
+describe("a disabled button does not behave like a live one", () => {
+  const ui = read(join(APP, "ui.tsx"));
+  const tones = /const TONE[\s\S]*?\n};/.exec(ui)?.[0] ?? "";
+
+  it("finds the tones at all", () => {
+    expect(tones).toMatch(/primary:/);
+    expect(tones).toMatch(/danger:/);
+  });
+
+  it("guards every hover and active against the disabled state", () => {
+    const unguarded = [
+      ...tones.matchAll(/(?:^|[\s"])((?:hover|active):(?!not-disabled)[\w[\].\-/%]+)/g),
+    ];
+    expect(
+      unguarded.map((m) => m[1]),
+      "an unguarded hover/active fires on a disabled button",
+    ).toEqual([]);
+  });
+
+  /** A pointer over a dead control is the other half of the same lie. */
+  it("says so with the cursor too", () => {
+    expect(ui).toMatch(/disabled:cursor-not-allowed/);
+  });
+
+  /** Every tone still marks the state somehow, whatever the chosen value. */
+  it("still dims every tone", () => {
+    for (const tone of ["primary", "secondary", "quiet", "danger"]) {
+      const line = new RegExp(`${tone}:[\\s\\S]*?disabled:opacity-`).exec(tones);
+      expect(line, `${tone} has no disabled marker`).not.toBeNull();
+    }
+  });
+});
+
 describe("a dialog keeps the browser's own hiding", () => {
   /**
    * `dialog:not([open]) { display: none }` is a UA rule, and any display
