@@ -178,6 +178,49 @@ export async function savePhotoPrivacy(
 }
 
 /**
+ * One photo's own privacy (server 18b).
+ *
+ * `null` means follow `profiles.photo_privacy`, which is the free model and
+ * what every row had before this existed.
+ *
+ * The premium check here is COURTESY, not the wall. `profile_photos` carries a
+ * whole-table update grant to `authenticated` (20260813000700), so a member can
+ * PATCH this column straight through PostgREST without going near this action —
+ * which is why 20260829002000 puts a trigger on the table. This check exists so
+ * the UI can say something useful instead of surfacing a 42501.
+ *
+ * Clearing an override is deliberately NOT gated. A member whose subscription
+ * has lapsed must still be able to return a photo to the profile-wide setting;
+ * refusing that would strand them in a state they can no longer edit. Nothing
+ * clears these automatically — see the migration for why that direction is the
+ * one that matters.
+ */
+export async function setPhotoPrivacy(
+  photoId: string,
+  privacy: "clear" | "blurred_until_connected" | null,
+): Promise<{ ok: boolean; reason?: "premium" }> {
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false };
+
+  if (privacy !== null) {
+    const { data: isPremium } = await supabase.rpc("i_am_premium");
+    if (!isPremium) return { ok: false, reason: "premium" };
+  }
+
+  const { error } = await supabase
+    .from("profile_photos")
+    .update({ photo_privacy: privacy })
+    .eq("id", photoId)
+    .eq("user_id", auth.user.id);
+
+  if (error) return { ok: false };
+
+  for (const path of ["/onboarding/photos", "/app/profile"]) revalidatePath(path);
+  return { ok: true };
+}
+
+/**
  * Removes one of the member's own photos, and the three objects behind it.
  *
  * There was no way to remove a photo at all. The step showed a count and no way

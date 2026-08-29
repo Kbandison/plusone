@@ -244,7 +244,9 @@ describe("the grid", () => {
   /** The add control is a tile beside the last photo, not a panel above them. */
   it("puts the add tile in the grid", () => {
     expect(form).toMatch(/border-dashed/);
-    expect(page).toMatch(/<PhotoGallery photos=\{photos\}>/);
+    // The add tile being INSIDE the gallery is what this checks; the prop
+    // list is not. It grew a `premium` prop for server 18b.
+    expect(page).toMatch(/<PhotoGallery[^>]*photos=\{photos\}/);
     expect(page).toMatch(/uploaded < MAX_PHOTOS \? <PhotoUploader/);
   });
 

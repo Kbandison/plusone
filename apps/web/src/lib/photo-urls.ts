@@ -143,6 +143,12 @@ export interface OwnPhoto {
   readonly id: string;
   readonly url: string;
   readonly position: number;
+  /**
+   * This photo's own privacy, or null to follow `profiles.photo_privacy`
+   * (server 18b). Null is what every row had before per-photo existed and what
+   * a free member always has — see 20260829002000.
+   */
+  readonly photoPrivacy: "clear" | "blurred_until_connected" | null;
 }
 
 /**
@@ -155,11 +161,42 @@ export interface OwnPhoto {
  */
 export async function ownPhotoList(userId: string): Promise<readonly OwnPhoto[]> {
   const supabase = await getServerSupabase();
-  const { data: rows } = await supabase
+
+  /**
+   * Asked for WITH photo_privacy, and again without it if the column is not
+   * there yet (server 18b).
+   *
+   * Migrations here are applied by hand and are Kevin's call, so code reaches
+   * production before its schema as a matter of course. PostgREST does not fail
+   * narrowly on an unknown column — it fails the WHOLE request — so without
+   * this the gallery would return NO photos at all on both the profile and the
+   * onboarding step, for every member, until 20260829002000 was applied. WSL
+   * blanked the entire profile page this way earlier today.
+   *
+   * The retry is narrow on purpose: PGRST204 is "column not found in schema
+   * cache" and 42703 is Postgres's `undefined_column`. Anything else is a
+   * genuine failure and still returns nothing, because a catch-all here would
+   * swallow a real error and quietly show a member an empty gallery.
+   */
+  const columns = "id, storage_path, card_path, position";
+  type PhotoRow = Record<string, unknown>;
+
+  const withPrivacy = await supabase
     .from("profile_photos")
-    .select("id, storage_path, card_path, position")
+    .select(`${columns}, photo_privacy`)
     .eq("user_id", userId)
     .order("position", { ascending: true });
+
+  let rows = withPrivacy.data as PhotoRow[] | null;
+  const code = withPrivacy.error?.code;
+  if (code === "PGRST204" || code === "42703") {
+    const fallback = await supabase
+      .from("profile_photos")
+      .select(columns)
+      .eq("user_id", userId)
+      .order("position", { ascending: true });
+    rows = fallback.data as PhotoRow[] | null;
+  }
 
   if (!rows?.length) return [];
 
@@ -174,6 +211,15 @@ export async function ownPhotoList(userId: string): Promise<readonly OwnPhoto[]>
   // rather than shift every id onto the wrong picture.
   return rows.flatMap((row, index) => {
     const url = signed?.[index]?.signedUrl;
-    return url ? [{ id: row.id as string, url, position: row.position as number }] : [];
+    return url
+      ? [
+          {
+            id: row.id as string,
+            url,
+            position: row.position as number,
+            photoPrivacy: (row.photo_privacy as OwnPhoto["photoPrivacy"]) ?? null,
+          },
+        ]
+      : [];
   });
 }

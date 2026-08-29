@@ -44,6 +44,12 @@ const SAFE_PREFIXES: readonly string[] = [
   "no plan to confirm",
   "not a participant",
   "only the recipient may ",
+  // Server 18b. About the caller's own subscription and nobody else's, and
+  // actionable by them. It should rarely be seen: setPhotoPrivacy checks
+  // premium first so the UI can say something better. What raises this is a
+  // member PATCHing profile_photos directly, which the whole-table update
+  // grant permits and the trigger is there to refuse.
+  "per-photo privacy is a premium setting",
   "the other person still needs to confirm this plan",
 ];
 

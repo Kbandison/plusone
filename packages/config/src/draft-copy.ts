@@ -530,6 +530,27 @@ export const DRAFT_COPY = {
      * change it.
      */
     mainBadge: "Main",
+    /**
+     * Per-photo privacy (server 18b), and the sentence that came out of a
+     * design flag rather than the feature itself.
+     *
+     * `photosFor` shows position 0 on every card in the app and always has.
+     * That was invisible while privacy was profile-wide, because the first
+     * photo's variant WAS every photo's variant. Once a member can set them
+     * separately, which photo is first stops being an ordering decision and
+     * starts being a privacy one — so the screen where the ordering happens has
+     * to say so. The alternative, quietly promoting whichever photo is clear,
+     * would raise somebody's visibility without their asking.
+     */
+    firstIsTheCard:
+      "Your first photo is the one shown on every card — the Drop, Browse, connects and rooms. Its setting is how you appear across the app.",
+    perPhotoLabel: "This photo",
+    perPhotoFollow: "Follows your setting",
+    perPhotoClear: "Clear",
+    perPhotoBlurred: "Blurred until connected",
+    perPhotoPremium: "Setting photos separately is part of Premium.",
+    perPhotoPremiumLink: "See what's included",
+    perPhotoSaveFailed: "That didn't save. Try again in a moment.",
     /** The instruction that replaced the buttons. */
     orderHint: "Drag your photos to reorder them. The first one is what people see first.",
     /**

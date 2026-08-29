@@ -88,13 +88,16 @@ export default async function ProfilePage() {
   const mode = profile?.mode === "support_only" ? "support_only" : "dating";
   const intention = profile?.intention as Intention | null;
   const prompts = (profile?.prompts ?? []) as ProfilePromptAnswer[];
-  const [photos, photoList, approximate, quizAnswers] = await Promise.all([
+  const [photos, photoList, approximate, quizAnswers, { data: isPremium }] = await Promise.all([
     ownPhotos(auth.user.id),
     // The manageable list, which carries the ids and positions the gallery
     // needs — ownPhotos returns rendered URLs and cannot be reordered.
     ownPhotoList(auth.user.id),
     approximateLocation(),
     ownQuizAnswers(auth.user.id),
+    // Whether per-photo privacy can be SET (server 18b). Never whether an
+    // existing override is kept — a lapse must not make anybody more visible.
+    supabase.rpc("i_am_premium"),
   ]);
   const photoPrivacy = (profile?.photo_privacy as string | null) ?? null;
 
@@ -136,7 +139,7 @@ export default async function ProfilePage() {
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{C.profilePhotosHeading}</h2>
 
-        <PhotoGallery photos={photoList} settings>
+        <PhotoGallery photos={photoList} settings premium={Boolean(isPremium)}>
           {photoList.length < MAX_PHOTOS ? <PhotoUploader count={photoList.length} /> : null}
         </PhotoGallery>
 

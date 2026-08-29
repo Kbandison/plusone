@@ -34,7 +34,10 @@ describe("the section is called Profile", () => {
  */
 describe("photos are managed here, not linked to", () => {
   it("renders the gallery on the profile itself", () => {
-    expect(page).toMatch(/<PhotoGallery photos=\{photoList\} settings>/);
+    // `settings` is the assertion; the prop list around it is not. It grew a
+    // `premium` prop for server 18b and this pinned the whole opening tag.
+    expect(page).toMatch(/<PhotoGallery[^>]*photos=\{photoList\}/);
+    expect(page).toMatch(/<PhotoGallery[^>]*\bsettings\b/);
     expect(page).toMatch(/<PhotoUploader count=\{photoList\.length\} \/>/);
     expect(page).toMatch(/<PrivacyChoice/);
     expect(page).not.toMatch(/href="\/app\/profile\/photos"/);

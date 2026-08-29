@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { downscalePhoto, isTooLargeToSend } from "@/lib/downscale";
@@ -8,7 +9,7 @@ import { ACCEPTED_TYPES, MAX_PHOTOS } from "@/lib/photo-limits";
 import type { OwnPhoto } from "@/lib/photo-urls";
 import { COPY, DRAFT_COPY } from "@plusone/config";
 
-import { deletePhoto, savePhotoPrivacy, uploadPhoto } from "./actions";
+import { deletePhoto, savePhotoPrivacy, setPhotoPrivacy, uploadPhoto } from "./actions";
 import { PHOTOS_INITIAL } from "./state";
 import { Badge, buttonClass } from "@/app/ui";
 import { StepActions } from "@/app/onboarding/step-actions";
@@ -283,6 +284,7 @@ export function PrivacyChoice({
 export function PhotoGallery({
   photos,
   settings = false,
+  premium = false,
   children,
 }: {
   /**
@@ -294,10 +296,13 @@ export function PhotoGallery({
    */
   settings?: boolean;
   photos: readonly OwnPhoto[];
+  /** Whether per-photo privacy can be SET (server 18b). Never whether it is kept. */
+  premium?: boolean;
   /** The add tile, so it sits with the photos rather than above them. */
   children?: React.ReactNode;
 }) {
   const [removeState, remove, removing] = useActionState(deletePhoto, PHOTOS_INITIAL);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
   // A plain fetch to a route handler, not a Server Action.
   //
   // A Server Action's response can carry a re-rendered RSC payload, and the
@@ -491,6 +496,36 @@ export function PhotoGallery({
                 <TrashIcon />
               </button>
             </form>
+
+            {/* Per-photo privacy (server 18b). Inside the tile, because a
+                separate list of six dropdowns somewhere else would make the
+                member match names to pictures. */}
+            <div data-no-drag className="mt-1.5">
+              <label className="sr-only" htmlFor={`privacy-${photo.id}`}>
+                {C.perPhotoLabel}
+              </label>
+              <select
+                id={`privacy-${photo.id}`}
+                defaultValue={photo.photoPrivacy ?? ""}
+                disabled={!premium}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setPrivacyError(null);
+                  void setPhotoPrivacy(
+                    photo.id,
+                    value === "" ? null : (value as "clear" | "blurred_until_connected"),
+                  ).then((result) => {
+                    if (!result.ok) setPrivacyError(C.perPhotoSaveFailed);
+                  });
+                }}
+                // 16px, or iOS zooms the page on focus and never zooms back.
+                className="w-[106.9px] rounded-lg border border-line-2 bg-surface px-1.5 py-1 text-[16px] disabled:opacity-50"
+              >
+                <option value="">{C.perPhotoFollow}</option>
+                <option value="clear">{C.perPhotoClear}</option>
+                <option value="blurred_until_connected">{C.perPhotoBlurred}</option>
+              </select>
+            </div>
           </li>
         ))}
 
@@ -504,11 +539,29 @@ export function PhotoGallery({
         {C.roomLeft(MAX_PHOTOS - order.length)}
       </p>
 
+      {/* Which photo is first stopped being an ordering decision the moment
+          photos could differ. Said where the ordering happens. */}
+      <p className="mx-auto mt-3 max-w-[52ch] text-center text-[11.3px] leading-[1.6] text-ink-3">
+        {C.firstIsTheCard}
+      </p>
+
+      {!premium ? (
+        <p className="mt-3 text-center text-[11.7px] text-ink-2">
+          {C.perPhotoPremium}{" "}
+          <Link
+            href="/app/settings/premium"
+            className="underline decoration-line-2 underline-offset-4"
+          >
+            {C.perPhotoPremiumLink}
+          </Link>
+        </p>
+      ) : null}
+
       {/* A failed reorder is silent otherwise: the grid keeps showing the
           arrangement the member dragged while the database holds the old one. */}
-      {(removeState.error ?? orderError) ? (
+      {(removeState.error ?? orderError ?? privacyError) ? (
         <p role="alert" className="mt-4 text-center text-[11.7px] text-critical">
-          {removeState.error ?? orderError}
+          {removeState.error ?? orderError ?? privacyError}
         </p>
       ) : null}
     </section>
