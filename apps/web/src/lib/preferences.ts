@@ -1,11 +1,20 @@
 import "server-only";
 
 import {
+  DIET_LABELS,
   DRAFT_COPY,
+  EDUCATION_LABELS,
   FREQUENCY_LABELS,
   GENDER_LABELS,
+  HEIGHT_MAX_CM,
+  HEIGHT_MIN_CM,
   KIDS_LABELS,
   KIDS_PLAN_LABELS,
+  LANGUAGES_MAX,
+  LANGUAGE_LABELS,
+  PETS_LABELS,
+  RELATIONSHIP_STRUCTURE_LABELS,
+  WORK_LABELS,
 } from "@plusone/config";
 import { profile } from "@plusone/logic";
 
@@ -31,6 +40,50 @@ export interface PreferenceValues {
   readonly drinks: string | null;
   readonly kids: string | null;
   readonly kids_plan: string | null;
+}
+
+/**
+ * The eight from 20260829000100, which only the profile editor renders.
+ *
+ * Optional on the update, and that is the whole point — see PREFERENCE_SCOPES.
+ */
+export interface ExtendedPreferenceValues {
+  readonly height_cm: number | null;
+  readonly relationship_structure: string | null;
+  readonly exercise: string | null;
+  readonly diet: string | null;
+  readonly pets: string | null;
+  readonly education: string | null;
+  readonly work: string | null;
+  readonly languages: string[];
+}
+
+/**
+ * Which half of the form posted, declared by the form itself.
+ *
+ * The onboarding step and the profile editor are the SAME component, and
+ * backlog 17 says the eight new answers must not lengthen onboarding — it is
+ * nine steps already. So one caller renders them and the other does not.
+ *
+ * That is a data-loss bug waiting to happen, and it is silent. `formData.get`
+ * returns null for a control that was never rendered, every one of these parses
+ * null as "not stated", and the update writes it — so a member who set their
+ * height on their profile and later walked back through onboarding would have
+ * had it quietly erased, along with all eight. `languages` is worse: an
+ * unchecked checkbox group posts nothing at all, which is indistinguishable
+ * from a group that was never on the page.
+ *
+ * A hidden field naming the scope makes it explicit rather than inferred. The
+ * absent case then means "this form does not own those columns" rather than
+ * "the member cleared them", and the update simply omits the keys.
+ */
+export const PREFERENCE_SCOPES = ["core", "full"] as const;
+export type PreferenceScope = (typeof PREFERENCE_SCOPES)[number];
+export const SCOPE_FIELD = "_scope";
+
+export function scopeOf(formData: FormData): PreferenceScope {
+  const raw = formData.get(SCOPE_FIELD);
+  return raw === "full" ? "full" : "core";
 }
 
 /**
@@ -60,6 +113,22 @@ function ageOrNull(value: FormDataEntryValue | null): number | null | "invalid" 
 }
 
 /**
+ * A height box: blank means not stated, and not stated is not zero.
+ *
+ * Same shape as ageOrNull, and separate from it because the bounds are a
+ * different fact — profiles_height_range refuses anything outside them, and a
+ * typo'd 17 or 700 would otherwise sit in a filter forever matching nobody.
+ */
+function heightOrNull(value: FormDataEntryValue | null): number | null | "invalid" {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (raw === "") return null;
+  if (!/^\d{2,3}$/.test(raw)) return "invalid";
+  const cm = Number(raw);
+  if (cm < HEIGHT_MIN_CM || cm > HEIGHT_MAX_CM) return "invalid";
+  return cm;
+}
+
+/**
  * Reads the preferences form, or says why it cannot.
  *
  * Shared by onboarding and by the profile editor. Two copies of this would be
@@ -68,7 +137,8 @@ function ageOrNull(value: FormDataEntryValue | null): number | null | "invalid" 
  */
 export function parsePreferences(
   formData: FormData,
-): { values: PreferenceValues } | { error: string } {
+): { values: PreferenceValues & Partial<ExtendedPreferenceValues> } | { error: string } {
+  const scope = scopeOf(formData);
   const gender = oneOf(formData.get("gender"), GENDER_LABELS);
   // Required, and not for tidiness: `gender` is the value everybody ELSE's
   // `seeking` is matched against, so a member without one is invisible to
@@ -81,6 +151,23 @@ export function parsePreferences(
     .getAll("seeking")
     .filter((value): value is string => typeof value === "string")
     .filter((value) => value in GENDER_LABELS);
+
+  const height = scope === "full" ? heightOrNull(formData.get("height_cm")) : null;
+  if (height === "invalid") return { error: E.height };
+
+  // Deduplicated and capped, because profiles_languages_count refuses more than
+  // eight and a rejected update at the end of a filled-in form says nothing
+  // useful to the member. Truncating rather than erroring: the form does not
+  // offer a ninth, so anything past it is a crafted post rather than a mistake
+  // somebody made.
+  const languages = [
+    ...new Set(
+      formData
+        .getAll("languages")
+        .filter((value): value is string => typeof value === "string")
+        .filter((value) => value in LANGUAGE_LABELS),
+    ),
+  ].slice(0, LANGUAGES_MAX);
 
   const ageMin = ageOrNull(formData.get("age_min"));
   const ageMax = ageOrNull(formData.get("age_max"));
@@ -99,6 +186,26 @@ export function parsePreferences(
       drinks: oneOf(formData.get("drinks"), FREQUENCY_LABELS),
       kids: oneOf(formData.get("kids"), KIDS_LABELS),
       kids_plan: oneOf(formData.get("kids_plan"), KIDS_PLAN_LABELS),
+      // Spread rather than set to null, so the keys are ABSENT from the update
+      // on a core post. A null here would be a write.
+      ...(scope === "full"
+        ? {
+            height_cm: height,
+            relationship_structure: oneOf(
+              formData.get("relationship_structure"),
+              RELATIONSHIP_STRUCTURE_LABELS,
+            ),
+            // The same enum smoking and drinking use, deliberately —
+            // 20260818000100 made lifestyle_frequency shared so there would not
+            // be three identical enums nobody could tell apart.
+            exercise: oneOf(formData.get("exercise"), FREQUENCY_LABELS),
+            diet: oneOf(formData.get("diet"), DIET_LABELS),
+            pets: oneOf(formData.get("pets"), PETS_LABELS),
+            education: oneOf(formData.get("education"), EDUCATION_LABELS),
+            work: oneOf(formData.get("work"), WORK_LABELS),
+            languages,
+          }
+        : {}),
     },
   };
 }

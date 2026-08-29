@@ -108,7 +108,7 @@ describe("every profiles column is classified", () => {
   const added = [...migrations.matchAll(/alter table public\.profiles\b([\s\S]*?);/g)].flatMap(
     (statement) =>
       [
-        ...statement[1].matchAll(
+        ...(statement[1] ?? "").matchAll(
           new RegExp(`add column(?: if not exists)? ([a-z_]+)\\s+(?:${TYPE})`, "g"),
         ),
       ].map((m) => m[1] as string),

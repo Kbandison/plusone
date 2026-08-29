@@ -56,7 +56,7 @@ export default async function ProfilePage() {
     // this string, and a `+` between two halves makes it a plain string and
     // every field on the result an error type.
     .select(
-      "display_name, intention, intention_changed_at, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
+      "display_name, intention, intention_changed_at, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan, height_cm, relationship_structure, exercise, diet, pets, education, work, languages",
     )
     .eq("id", auth.user.id)
     .maybeSingle();
@@ -164,8 +164,14 @@ export default async function ProfilePage() {
           settings in the product that determine everything a member ever sees. */}
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{DRAFT_COPY.preferences.editHeading}</h2>
+        {/* "full", so the eight from 20260829000100 render HERE and not in
+            onboarding — which is nine steps already. The prop also decides
+            whether those columns are written at all: parsePreferences reads it
+            off a hidden field, because a core post that parsed eight absent
+            controls would clear all eight. */}
         <PreferencesForm
           action={updatePreferences}
+          scope="full"
           submitLabel={DRAFT_COPY.preferences.editSaveLabel}
           savedMessage={DRAFT_COPY.preferences.editSaved}
           defaults={{
@@ -177,6 +183,14 @@ export default async function ProfilePage() {
             drinks: (profile?.drinks as string | null) ?? null,
             kids: (profile?.kids as string | null) ?? null,
             kidsPlan: (profile?.kids_plan as string | null) ?? null,
+            heightCm: (profile?.height_cm as number | null) ?? null,
+            relationshipStructure: (profile?.relationship_structure as string | null) ?? null,
+            exercise: (profile?.exercise as string | null) ?? null,
+            diet: (profile?.diet as string | null) ?? null,
+            pets: (profile?.pets as string | null) ?? null,
+            education: (profile?.education as string | null) ?? null,
+            work: (profile?.work as string | null) ?? null,
+            languages: (profile?.languages as string[] | null) ?? [],
           }}
         />
       </section>

@@ -448,11 +448,38 @@ export const DRAFT_COPY = {
      * who reads them as filters will answer strategically rather than honestly.
      */
     aboutHeading: "A bit more about you",
-    aboutHint: "None of these filter your Drop. They sit on your profile so people know you.",
+    /**
+     * This said "None of these filter your Drop. They sit on your profile so
+     * people know you." Half of that stopped being true.
+     *
+     * The Drop half still is — `drop_candidates` reads `matched_profiles`, and
+     * the only walls there are gender, seeking and age. But 3fc2212 made these
+     * filterable on Browse, so answering "smokes regularly" now genuinely
+     * removes you from somebody's search. A member reading the old sentence
+     * would have concluded that answering honestly could not cost them
+     * anything, and that is exactly the sentence you cannot leave standing once
+     * it is false.
+     *
+     * Said plainly rather than softened, because the alternative is a member
+     * discovering it by inference from an empty inbox.
+     */
+    aboutHint:
+      "These sit on your profile so people know you, and they never change your Drop. People browsing can filter by them, so answer honestly rather than strategically — the point is being found by the right person, not by everyone.",
     smokesLabel: "Smoke",
     drinksLabel: "Drink",
     kidsLabel: "Kids",
     kidsPlanLabel: "Feelings about kids",
+    /** The eight from 20260829000100. Same screen, same rules. */
+    heightLabel: "Height",
+    heightUnstated: "Prefer not to say",
+    relationshipLabel: "Looking for something",
+    exerciseLabel: "Exercise",
+    dietLabel: "Diet",
+    petsLabel: "Pets",
+    educationLabel: "Education",
+    workLabel: "Line of work",
+    languagesLabel: "Languages you speak",
+    languagesHint: (max: number) => `Up to ${max}.`,
 
     skipLabel: "Prefer not to say",
     /** The same questions on the profile, where they are changed rather than set. */
@@ -463,6 +490,8 @@ export const DRAFT_COPY = {
       genderRequired: "Choose one, so people looking for you can find you.",
       ageOrder: "The first age has to be lower than the second.",
       ageRange: "Ages have to be between 18 and 120.",
+      /** profiles_height_range refuses these; this is so the refusal is a sentence. */
+      height: "Height has to be between 120 and 240 cm.",
       failed: "That did not save. Try again.",
     },
   },
@@ -888,7 +917,6 @@ export const DRAFT_COPY = {
     browseCount: (n: number) => (n === 1 ? "1 person" : `${n} people`),
     filterDistance: "Within",
     filterIntention: "Looking for",
-    filterActive: "Active this week only",
     filterAny: "Any",
     applyFiltersLabel: "Apply",
     /**
@@ -931,8 +959,6 @@ export const DRAFT_COPY = {
     filterWritten: "Has written a bio",
     filtersMoreLabel: "More filters",
     filtersActiveCount: (n: number) => (n === 1 ? "1 filter on" : `${n} filters on`),
-    /** Prompts are jsonb and this one is a chip, not a filter — see server 16. */
-    traitsHeading: "About them",
     /**
      * The page asks for sixty rows and said nothing when it got sixty.
      *
@@ -1896,6 +1922,126 @@ export const KIDS_PLAN_LABELS = {
   no: "Do not want kids",
   unsure: "Not sure yet",
 } as const;
+
+/**
+ * The eight added by 20260829000100, labelled.
+ *
+ * Same rule as every list above: enums rather than free text, and every one of
+ * them carries the option that means "none of these". A list that forces
+ * somebody into the nearest wrong answer produces data worse than the null it
+ * replaced — a null is legible as unstated, and a wrong answer is not.
+ */
+export const RELATIONSHIP_STRUCTURE_LABELS = {
+  monogamous: "Monogamous",
+  open: "Open",
+  polyamorous: "Polyamorous",
+  unsure: "Still working it out",
+} as const;
+
+export const DIET_LABELS = {
+  omnivore: "Eats everything",
+  pescatarian: "Pescatarian",
+  vegetarian: "Vegetarian",
+  vegan: "Vegan",
+  other: "Something else",
+} as const;
+
+export const PETS_LABELS = {
+  none: "No pets",
+  dogs: "Dog person",
+  cats: "Cat person",
+  both: "Dogs and cats",
+  other: "Another animal",
+} as const;
+
+export const EDUCATION_LABELS = {
+  high_school: "High school",
+  trade: "Trade or vocational",
+  some_college: "Some college",
+  bachelors: "Bachelor's",
+  masters: "Master's",
+  doctorate: "Doctorate",
+  other: "Something else",
+} as const;
+
+/** A field of work, never a job title — a title is often unique to one person. */
+export const WORK_LABELS = {
+  healthcare: "Healthcare",
+  education: "Education",
+  technology: "Technology",
+  trades: "Skilled trades",
+  arts: "Arts and media",
+  service: "Service and hospitality",
+  business: "Business and finance",
+  public_service: "Public service",
+  student: "Student",
+  other: "Something else",
+} as const;
+
+/**
+ * ISO 639-1 codes, in the endonym where it is what people would look for.
+ *
+ * Not a complete list and not meant to be — `other` is what makes a short list
+ * honest. Widening it is `alter type ... add value` plus a line here.
+ */
+export const LANGUAGE_LABELS = {
+  en: "English",
+  es: "Spanish",
+  zh: "Chinese",
+  tl: "Tagalog",
+  vi: "Vietnamese",
+  ar: "Arabic",
+  fr: "French",
+  ko: "Korean",
+  ru: "Russian",
+  de: "German",
+  ht: "Haitian Creole",
+  pt: "Portuguese",
+  it: "Italian",
+  hi: "Hindi",
+  pl: "Polish",
+  ur: "Urdu",
+  fa: "Persian",
+  ja: "Japanese",
+  bn: "Bengali",
+  pa: "Punjabi",
+  he: "Hebrew",
+  el: "Greek",
+  sw: "Swahili",
+  am: "Amharic",
+  so: "Somali",
+  other: "Another language",
+} as const;
+
+/** The CHECK refuses more than this, and the form should not offer to try. */
+export const LANGUAGES_MAX = 8;
+
+/**
+ * Exercise, phrased as a statement rather than as an answer — the same split
+ * SMOKING_TRAIT_LABELS makes, and for the same reason. "Sometimes" on a chip
+ * beside "Vegan" and "Dog person" reads as an answer to a question nobody can
+ * see.
+ */
+export const EXERCISE_TRAIT_LABELS = {
+  never: "Not one for the gym",
+  sometimes: "Exercises sometimes",
+  often: "Exercises often",
+} as const;
+
+/**
+ * Centimetres in, feet and inches out.
+ *
+ * Stored as a number so a range filter is a range rather than a set of buckets
+ * somebody has to agree on, and rendered in the units this app's members
+ * actually use — every other distance in the product is miles.
+ */
+export function formatHeight(cm: number): string {
+  const totalInches = Math.round(cm / 2.54);
+  return `${Math.floor(totalInches / 12)}\u2032${totalInches % 12}\u2033`;
+}
+
+export const HEIGHT_MIN_CM = 120;
+export const HEIGHT_MAX_CM = 240;
 
 /**
  * Labels for the condition_detail enum. These are names for things, not

@@ -9,6 +9,16 @@ import {
   GENDER_LABELS,
   KIDS_LABELS,
   KIDS_PLAN_LABELS,
+  RELATIONSHIP_STRUCTURE_LABELS,
+  DIET_LABELS,
+  PETS_LABELS,
+  EDUCATION_LABELS,
+  WORK_LABELS,
+  LANGUAGE_LABELS,
+  LANGUAGES_MAX,
+  formatHeight,
+  HEIGHT_MIN_CM,
+  HEIGHT_MAX_CM,
 } from "@plusone/config";
 
 import { PREFERENCES_INITIAL, type PreferencesState } from "./state";
@@ -21,6 +31,19 @@ const AGE_CEILING = profile.OLDEST_PREFERENCE;
 
 const C = DRAFT_COPY.preferences;
 
+/**
+ * Every 2 cm from the floor to the ceiling.
+ *
+ * Not every centimetre: sixty options is a scroll, a hundred and twenty is a
+ * chore, and nobody picking their own height off a list is distinguishing 178
+ * from 179. The column still stores the exact number, so a range filter stays a
+ * range.
+ */
+const HEIGHTS = Array.from(
+  { length: Math.floor((HEIGHT_MAX_CM - HEIGHT_MIN_CM) / 2) + 1 },
+  (_, i) => HEIGHT_MIN_CM + i * 2,
+);
+
 /** What the member already answered, so the step can be walked back into. */
 export interface PreferencesDefaults {
   readonly gender: string | null;
@@ -31,6 +54,15 @@ export interface PreferencesDefaults {
   readonly drinks: string | null;
   readonly kids: string | null;
   readonly kidsPlan: string | null;
+  /** The eight from 20260829000100. Only the profile editor renders these. */
+  readonly heightCm?: number | null;
+  readonly relationshipStructure?: string | null;
+  readonly exercise?: string | null;
+  readonly diet?: string | null;
+  readonly pets?: string | null;
+  readonly education?: string | null;
+  readonly work?: string | null;
+  readonly languages?: readonly string[];
 }
 
 /** A row of radios where one may be chosen and none is also an answer. */
@@ -98,16 +130,31 @@ export function PreferencesForm({
   action: save,
   submitLabel = COPY.actions.continueLabel,
   savedMessage,
+  scope = "core",
 }: {
   defaults: PreferencesDefaults;
   action: (previous: PreferencesState, formData: FormData) => Promise<PreferencesState>;
   submitLabel?: string;
   savedMessage?: string;
+  /**
+   * "core" is onboarding, "full" is the profile editor.
+   *
+   * Backlog 17: the eight new answers must not lengthen onboarding, which is
+   * nine steps already. A member who has met somebody has a reason to fill this
+   * in; a member who has not is being asked eleven more questions before seeing
+   * a single face.
+   *
+   * The hidden field below is not decoration — parsePreferences reads it to
+   * decide whether to WRITE those columns at all. Without it a core post would
+   * parse eight absent controls as eight cleared answers.
+   */
+  scope?: "core" | "full";
 }) {
   const [state, action, pending] = useActionState(save, PREFERENCES_INITIAL);
 
   return (
     <form action={action} className="mt-10 flex flex-col gap-10">
+      <input type="hidden" name="_scope" value={scope} />
       {/* The two that actually filter, first. A member who abandons halfway has
           still answered the ones that decide whether their Drop means anything. */}
       <Choice
@@ -170,6 +217,88 @@ export function PreferencesForm({
           options={KIDS_PLAN_LABELS}
           selected={defaults.kidsPlan}
         />
+
+        {scope === "full" ? (
+          <>
+            <label className="flex flex-col gap-2 text-[12.2px]">
+              {C.heightLabel}
+              <select
+                name="height_cm"
+                defaultValue={defaults.heightCm != null ? String(defaults.heightCm) : ""}
+                className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
+              >
+                <option value="">{C.heightUnstated}</option>
+                {HEIGHTS.map((cm) => (
+                  <option key={cm} value={cm}>
+                    {formatHeight(cm)} · {cm} cm
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <Choice
+              name="relationship_structure"
+              legend={C.relationshipLabel}
+              options={RELATIONSHIP_STRUCTURE_LABELS}
+              selected={defaults.relationshipStructure ?? null}
+            />
+            <Choice
+              name="exercise"
+              legend={C.exerciseLabel}
+              options={FREQUENCY_LABELS}
+              selected={defaults.exercise ?? null}
+            />
+            <Choice
+              name="diet"
+              legend={C.dietLabel}
+              options={DIET_LABELS}
+              selected={defaults.diet ?? null}
+            />
+            <Choice
+              name="pets"
+              legend={C.petsLabel}
+              options={PETS_LABELS}
+              selected={defaults.pets ?? null}
+            />
+            <Choice
+              name="education"
+              legend={C.educationLabel}
+              options={EDUCATION_LABELS}
+              selected={defaults.education ?? null}
+            />
+            <Choice
+              name="work"
+              legend={C.workLabel}
+              options={WORK_LABELS}
+              selected={defaults.work ?? null}
+            />
+
+            {/* Checkboxes rather than a multi-select, which is the same call
+                `seeking` above already made — a native multi-select is close to
+                unusable on a phone, and this is the longer of the two lists. */}
+            <fieldset className="flex flex-col gap-3">
+              <legend className="mb-1 text-[12.2px]">{C.languagesLabel}</legend>
+              <p className="mb-2 text-[11px] text-ink-3">{C.languagesHint(LANGUAGES_MAX)}</p>
+              <div className="flex flex-wrap gap-2.5">
+                {Object.entries(LANGUAGE_LABELS).map(([value, label]) => (
+                  <label
+                    key={value}
+                    className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
+                  >
+                    <input
+                      type="checkbox"
+                      name="languages"
+                      value={value}
+                      defaultChecked={(defaults.languages ?? []).includes(value)}
+                      className="size-[13.8px] accent-accent"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </>
+        ) : null}
       </div>
 
       {state.error ? (

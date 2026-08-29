@@ -1,4 +1,4 @@
-import { RADIUS } from "@plusone/config";
+import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
 /**
  * Every Browse filter, parsed once.
@@ -17,10 +17,20 @@ import { RADIUS } from "@plusone/config";
 export const AGE_FLOOR = 18;
 export const AGE_CEILING = 99;
 
+/**
+ * The label is here rather than a key the form looks up.
+ *
+ * It was `copyKey: "filterActivityDay"` with the component doing
+ * `C[window.copyKey]`, which works and is invisible to `copy-is-wired.test.ts`
+ * — that suite scans source for the literal member access and exists because
+ * three separate strings had been written and never wired to anything. A
+ * dynamic lookup is exactly the shape it cannot see, so a rung deleted from
+ * this list would leave its copy behind with nothing to notice.
+ */
 export const ACTIVITY_WINDOWS = [
-  { id: "day", days: 1, copyKey: "filterActivityDay" },
-  { id: "week", days: 7, copyKey: "filterActivityWeek" },
-  { id: "month", days: 30, copyKey: "filterActivityMonth" },
+  { id: "day", days: 1, label: DRAFT_COPY.app.filterActivityDay },
+  { id: "week", days: 7, label: DRAFT_COPY.app.filterActivityWeek },
+  { id: "month", days: 30, label: DRAFT_COPY.app.filterActivityMonth },
 ] as const;
 
 export type ActivityWindow = (typeof ACTIVITY_WINDOWS)[number]["id"];

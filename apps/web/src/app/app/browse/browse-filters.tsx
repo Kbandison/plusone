@@ -110,7 +110,7 @@ export function BrowseFilters({
             <option value="">{C.filterActivityAny}</option>
             {ACTIVITY_WINDOWS.map((window) => (
               <option key={window.id} value={window.id}>
-                {C[window.copyKey]}
+                {window.label}
               </option>
             ))}
           </select>
