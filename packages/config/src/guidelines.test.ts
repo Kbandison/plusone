@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CHILD_SAFETY,
+  CHILD_SAFETY_INTRO,
   COPY,
   HOW_IT_WORKS,
   HOW_IT_WORKS_INTRO,
@@ -136,7 +138,11 @@ describe("the marketing site and terms", () => {
     ...HOW_IT_WORKS.flatMap((s) => [s.title, ...s.body]),
   ];
   const terms = [TERMS_INTRO, ...TERMS.flatMap((s) => [s.title, ...s.body])];
-  const everything = [...marketing, ...terms];
+  // The child safety standards are published at /child-safety for Google Play,
+  // so they are read by people who have never seen the app. Held to the same
+  // bar as everything else, not a lower one for being a compliance page.
+  const childSafety = [CHILD_SAFETY_INTRO, ...CHILD_SAFETY.flatMap((s) => [s.title, ...s.body])];
+  const everything = [...marketing, ...terms, ...childSafety];
 
   it.each(BANNED_COPY_TERMS)("never says %s", (term) => {
     for (const text of everything) {

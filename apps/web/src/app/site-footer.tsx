@@ -15,6 +15,10 @@ const LINKS = [
   { href: "/guidelines", label: "Community guidelines" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+  // Play requires the child safety standards to be reachable by anyone, from
+  // anywhere, without an account. A page nobody can navigate to is not
+  // published, whatever URL the console holds.
+  { href: "/child-safety", label: "Child safety" },
 ];
 
 export function SiteFooter({ current }: { current?: string }) {

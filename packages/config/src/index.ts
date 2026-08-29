@@ -105,6 +105,8 @@ export { HOW_IT_WORKS, HOW_IT_WORKS_INTRO, PRICING_INTRO, PRICING_NEVER_NOTE } f
 export type { HowItWorksStep } from "./marketing";
 
 export { TERMS, TERMS_INTRO, TERMS_EFFECTIVE } from "./terms";
+export { CHILD_SAFETY, CHILD_SAFETY_INTRO } from "./child-safety";
+export type { ChildSafetySection } from "./child-safety";
 export type { TermsSection } from "./terms";
 
 export {
