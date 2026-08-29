@@ -64,7 +64,8 @@ if (!DB_URL) {
 // Read against the live database rather than by adding up the migrations: two
 // sessions applied four migrations to one schema on the same afternoon, and the
 // only account of it that cannot be stale is the one the database gives.
-const EXPECT = { tables: 33, views: 5, functions: 120, enums: 29, rooms: 7, config: 23 };
+// functions 120 -> 121: 20260829002000, enforce_photo_privacy_is_premium (server 18b).
+const EXPECT = { tables: 33, views: 5, functions: 121, enums: 29, rooms: 7, config: 23 };
 // 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
 // emails_for() from 20260824000200, which had been sitting unapplied.
 //
