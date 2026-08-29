@@ -336,6 +336,30 @@ time I read the schema it was applied and in the ledger. I found out from an
 enum count, not from a message. Read the database, not the last thing anybody
 said about it.
 
+**The Simulator run, and the one thing it changed.** Both today's `apps/web`
+changes are now seen in WKWebView — my alert and WSL's filter fold, the real
+components, iOS 27.0. The fold arrives open on `?kids=none` and the radius
+select is 16px. Neither is checked in the TWA, which is a different engine.
+
+**The 16px rule cannot be checked statically, and `design-system.test.ts` reads
+as though it can.** It scans for a literal `text-[Npx]` inside a control's tag,
+so a field that INHERITS a small size is invisible to it. Measured at runtime
+every text-and-select field is >= 16px and the only two under are checkboxes,
+which raise no keyboard and do not zoom — so nothing is broken. But the gate is
+narrower than its name, and a runtime measurement is the only thing that knows.
+
+**Scripting the shell without a rebuild.** `capacitor.config.json` can be
+edited INSIDE the installed `App.app` in the simulator's container, then
+`terminate` + `launch` — no Xcode build, no reinstall, seconds rather than
+minutes. Copy the original aside first and put it back; the repo's own copy is
+never touched. That is a good deal faster than the technique the older note
+describes, and it is what made a three-round measure-and-refine loop cheap.
+
+**`next dev` failed with "Failed to open database" on the first try**, which is
+the corrupt Turbopack cache the machine notes already describe. `rm -rf
+apps/web/.next` and it started. Worth knowing the note is accurate — it cost
+nothing because it was written down.
+
 **Left off:** tree clean, five gates green, nothing in flight. 18b claimed and
 not started. The Play catalogue is UNREAD since the 27th — the phone is not
 reachable from WSL and needs Kevin to re-enable wireless debugging.

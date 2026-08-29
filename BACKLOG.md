@@ -780,6 +780,15 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     age as a browse-narrowing filter · has a bio · has answered prompts ·
     active-recency as a ladder rather than one checkbox.
 
+    **The `<details>` fold verified in WKWebView 2026-08-29** by the macOS
+    session, since this is `apps/web` and reaches both engines. Loaded with
+    `?kids=none` in the iOS 27.0 Simulator: the fold arrives ALREADY OPEN,
+    `open` is true at runtime and not merely in the server HTML, and the
+    summary reads "More filters · 1 filter on" with Kids showing "No kids".
+    So the failure worth worrying about — a member following a filtered link,
+    seeing a short page, and never learning the reason is folded one tap above
+    them — does not happen on iOS. Still unchecked in the TWA.
+
     **Age here is NOT the age wall.** `matched_profiles` enforces a mutual range
     — both sides have to want each other's age or the row does not exist. A
     browse filter narrows what already passed that and cannot widen it. Two
@@ -879,8 +888,20 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
       without deleting the radius, and `notifier()` is built before the
       self-consuming claim.
 
-      **Unseen in either shell.** It is `apps/web`, so it reaches the TWA and
-      WKWebView both, and neither has looked at it.
+      **Seen in WKWebView 2026-08-29, NOT in the TWA.** Rendered in the iOS
+      27.0 Simulator against the real component — the radius `<select>`
+      computes to 16px, six options, and the section lays out correctly. The
+      Android half is still unlooked-at, and per `AGENTS.md` that is not the
+      same engine.
+
+      What the run also settled, and it is worth more than the pass: the
+      16px rule cannot be checked statically. `design-system.test.ts` scans
+      for a literal `text-[Npx]` inside a control's tag, so a field that
+      INHERITS a small size is invisible to it. Measured at runtime, every
+      text-and-select field on both components is >= 16px and the only two
+      under are checkboxes, which do not raise a keyboard and so do not zoom.
+      No bug — but the gate is narrower than it reads, and the next person to
+      trust it should know that.
 
     - "Fine-grained photo privacy controls" — `photo_privacy` is a two-value
       enum, free, and "fine-grained" is doing a lot of work.
