@@ -61,8 +61,15 @@ mkdirSync(OUT, { recursive: true });
  *
  * Play wants an aspect ratio between 16:9 and 9:16 inclusive, so 1080×1920 is
  * the tallest it accepts. Apple wants specific pixel dimensions per display
- * class and rejects anything else: 1320×2868 is the 6.9" iPhone, and since 2026
- * that is the only iPhone set required — Apple scales it down for the rest.
+ * class and rejects anything else.
+ *
+ * TWO Apple sizes, because the console asked for one this file did not make.
+ * 1320×2868 is the 6.9" iPhone, and an earlier version of this comment claimed
+ * that since 2026 it is the only iPhone set required. The actual App Store
+ * Connect record for this app shows an **iPhone 6.5" Display** slot wanting
+ * 1242×2688, and offers no 6.9" one — so the claim was either wrong or does not
+ * apply to a record created when this one was. Both are generated now; an
+ * unused set costs a file, and a missing one costs a submission.
  *
  * An earlier version of this file claimed one set served both. It does not, and
  * a 1080×1920 upload is refused by App Store Connect before anybody looks at
@@ -76,7 +83,10 @@ mkdirSync(OUT, { recursive: true });
  */
 const SIZES = [
   { dir: "play", width: 1080, height: 1920, caption: 240 },
-  { dir: "app-store-iphone", width: 1320, height: 2868, caption: 360 },
+  { dir: "app-store-iphone-6.9", width: 1320, height: 2868, caption: 360 },
+  // What the console actually asks for. 1242×2688 is 0.4620 against the
+  // capture's 0.4615, so this crops even less than the 6.9" set does.
+  { dir: "app-store-iphone-6.5", width: 1242, height: 2688, caption: 340 },
 ] as const;
 
 /** Dusk, from packages/ui-tokens/tokens.css. */

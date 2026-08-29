@@ -140,6 +140,11 @@ apps/web/.next` and start again. It is not a code error and the message does
   installed. Listed and installed are different things, and that is two hours if
   you believe the first one.
 
+- **`simctl privacy <device> grant location app.loveplusone` works**, and would
+  have saved a rebuild while chasing the onboarding bug. There is NO
+  notifications service in that list, so badge and push permission still cannot
+  be granted without a tap — which is why the badge count has never been seen.
+
 - **A modern Xcode ships with no simulator to run.** `xcodebuild -downloadPlatform iOS`
   is a second, much larger download, and nothing warns you — `simctl list
 runtimes` just comes back empty.
