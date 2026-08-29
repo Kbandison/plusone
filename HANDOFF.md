@@ -272,8 +272,19 @@ runtimes` just comes back empty.
   Also worth having, since it cost a wrong conclusion: turbo reports only the
   tasks it EXECUTED, so a mostly-cached run prints "Tasks: 1 successful, 1
   total" and reads exactly like a gate that only covers one package. It is not —
-  `--dry=json` lists all six, and `--force` runs them. I nearly wrote up a hole
+  `--dry=json` lists the plan, and `--force` runs it. I nearly wrote up a hole
   in the gate that does not exist.
+
+  **And the dry plan disagrees with the run by two, also correctly.** It names
+  **8** tasks; a forced run executes **6**. `@plusone/db` and `@plusone/types`
+  have no `test` script and no test files, so the plan lists the packages while
+  the run has nothing to execute for them. Six is the complete number.
+
+  This matters because the dry plan is exactly what somebody reaches for to
+  check a run was complete, and 8-versus-6 looks precisely like the hole they
+  are checking for. Two counts, both right, and the reassuring one is smaller —
+  which is the wrong way round for anybody in a hurry. macOS hit it minutes
+  after this note was written.
 
 - **`adb` reaches an Android phone from WSL over the LAN, no cable.** Android's
   wireless debugging is enough; WSL's NAT routes outbound to the LAN fine, and
