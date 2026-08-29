@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import {
   COPY,
   DRAFT_COPY,
+  FREQUENCY_LABELS,
   INTENTION_LABELS,
-  RADIUS,
+  KIDS_LABELS,
+  KIDS_PLAN_LABELS,
   promptQuestion,
   type Intention,
   type ProfilePromptAnswer,
@@ -17,8 +19,16 @@ import { photosFor } from "@/lib/photo-urls";
 import { compatibilityFor } from "@/lib/drop";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
+import { MemberTraitChips } from "../member-traits";
 import { Badge } from "@/app/ui";
 import { BrowseFilters } from "./browse-filters";
+import {
+  activityDays,
+  advancedFilterCount,
+  isFiltered,
+  parseBrowseFilters,
+  type BrowseSearchParams,
+} from "./filter-state";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navBrowse };
 
@@ -30,7 +40,7 @@ const LIMIT = 60;
 /**
  * Browse (§7.2) — the secondary directory.
  *
- * Reads `visible_profiles`, so every wall applies before a row exists. The
+ * Reads `matched_profiles`, so every wall applies before a row exists. The
  * filters narrow what is already permitted; they cannot widen it, because there
  * is nothing here that queries `profiles` directly.
  *
@@ -41,15 +51,9 @@ const LIMIT = 60;
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    distance?: string;
-    intention?: string;
-    active?: string;
-  }>;
+  searchParams: Promise<BrowseSearchParams>;
 }) {
-  const filters = await searchParams;
-  const intention = filters.intention as Intention | undefined;
-  const activeOnly = filters.active === "1";
+  const params = await searchParams;
 
   const supabase = await getServerSupabase();
 
@@ -73,27 +77,31 @@ export default async function BrowsePage({
   }>();
   if (me?.mode === "support_only") redirect("/app");
 
-  // The member's OWN radius is the default, not the maximum.
-  //
-  // It was `Number(filters.distance) || RADIUS.maxMi` — two hundred and fifty
-  // miles — so the last step of onboarding decided nothing here until a member
-  // found this filter and set the same number a second time. An explicit
-  // ?distance= still wins: this is a default, not a ceiling.
-  //
-  // Clamped, because ?distance= is a URL and a URL is typed by hand. The select
-  // only offers the ladder, so nothing a member can click needs this — but
-  // `.lte("distance_mi", 99999)` is a whole country, and RADIUS.maxMi exists to
-  // mean something. Not a wall: matched_profiles holds every one of those, and
-  // widening a radius cannot reach anybody it excluded.
-  const asked = Number(filters.distance) || me?.search_radius_mi || RADIUS.defaultMi;
-  const distanceMi = Math.min(RADIUS.maxMi, Math.max(RADIUS.minMi, Math.round(asked)));
+  // One parse, in one module, shared with the form that wrote the URL. The
+  // parameter names were spelled out in both files and a rename in one produced
+  // a control that silently stopped doing anything.
+  const filters = parseBrowseFilters(
+    params,
+    {
+      intentions: Object.keys(INTENTION_LABELS),
+      frequencies: Object.keys(FREQUENCY_LABELS),
+      kids: Object.keys(KIDS_LABELS),
+      kidsPlans: Object.keys(KIDS_PLAN_LABELS),
+    },
+    me?.search_radius_mi ?? null,
+  );
+  const distanceMi = filters.distanceMi;
 
-  // One boundary for the filter, the stat and the card marker. Three separate
-  // `Date.now() - 7 * DAY` calls would be three moments a few milliseconds
-  // apart, which is how a card says "active this week" on a page whose count
-  // did not include it.
+  // One instant for the filter, the stat and the card marker. Separate
+  // `Date.now()` calls are separate moments a few milliseconds apart, which is
+  // how a card says "active this week" on a page whose count did not include
+  // it. It was one boundary because there was one window; there are now four,
+  // and they all come off this.
   // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
-  const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
+  const now = Date.now();
+  const since = (days: number) => new Date(now - days * DAY).toISOString();
+  /** The stat and the card marker, both of which describe a week whatever the filter asks. */
+  const weekAgo = since(7);
 
   let query = supabase
     // matched_profiles, not visible_profiles: the same gender, seeking and age
@@ -104,13 +112,43 @@ export default async function BrowsePage({
     // selects wholesale. It is the one thing on a card that is something the
     // person SAID rather than another measurement of them — and, per Decision
     // #14, the thing the next screen will ask you to reply to.
-    .select("id, display_name, age, intention, distance_mi, last_active_at, prompts")
+    //
+    // The four lifestyle columns have been in this view since 20260818000100
+    // and were selected by nothing. Every member answers them in onboarding.
+    .select(
+      "id, display_name, age, intention, distance_mi, last_active_at, prompts, smokes, drinks, kids, kids_plan",
+    )
     .lte("distance_mi", distanceMi)
     .order("last_active_at", { ascending: false })
     .limit(LIMIT);
 
-  if (intention && intention in INTENTION_LABELS) query = query.eq("intention", intention);
-  if (activeOnly) query = query.gte("last_active_at", weekAgo);
+  if (filters.intention) query = query.eq("intention", filters.intention);
+  if (filters.activity) query = query.gte("last_active_at", since(activityDays(filters.activity)));
+
+  // The four that were already there. Equality against an enum column, so an
+  // unrecognised value would be an error rather than an empty result — which is
+  // why parseBrowseFilters drops anything it does not know instead of passing
+  // it through.
+  if (filters.smokes) query = query.eq("smokes", filters.smokes);
+  if (filters.drinks) query = query.eq("drinks", filters.drinks);
+  if (filters.kids) query = query.eq("kids", filters.kids);
+  if (filters.kidsPlan) query = query.eq("kids_plan", filters.kidsPlan);
+
+  // Narrows what the mutual age wall in matched_profiles already permitted. It
+  // cannot widen it: both sides had to be inside the other's stated range
+  // before a row existed at all.
+  if (filters.ageMin != null) query = query.gte("age", filters.ageMin);
+  if (filters.ageMax != null) query = query.lte("age", filters.ageMax);
+
+  // A profile with a photograph and nothing else is the hardest kind to answer,
+  // and Decision #14 makes a connect a reply to something they wrote.
+  //
+  // Bio only. "Has answered a prompt" is the better question and cannot be
+  // asked from here — `prompts` is jsonb and PostgREST has no length predicate
+  // for it, so it wants a computed column on the view. Shipping a filter that
+  // approximates it with `neq('prompts', '[]')` would pass a profile holding
+  // one prompt with an empty answer.
+  if (filters.writtenOnly) query = query.not("bio", "is", null);
 
   const { data } = await query;
   const rows = data ?? [];
@@ -173,10 +211,11 @@ export default async function BrowsePage({
    * wanted, head:true sends no rows back for it, and the alternative is pulling
    * every matching profile in the radius to call .length on them.
    *
-   * Deliberately not narrowed by the intention filter. The sentence says how
-   * many people are near you, which is a fact about the area rather than about
-   * the current search — an "N people active" line that drops when you pick a
-   * filter is describing the filter.
+   * Deliberately not narrowed by ANY of the filters. The sentence says how many
+   * people are near you, which is a fact about the area rather than about the
+   * current search — an "N people active" line that drops when you pick a
+   * filter is describing the filter. That mattered when there were three
+   * filters and matters more now there are eleven.
    */
   const { count: activeNearby } = await supabase
     .from("matched_profiles")
@@ -186,9 +225,8 @@ export default async function BrowsePage({
 
   const activeThisWeek = activeNearby ?? 0;
 
-  // Whether the emptiness is the member's own doing. A default radius is not a
-  // filter — clearing it would change nothing and the offer would be a lie.
-  const filtered = Boolean(intention) || activeOnly || Boolean(filters.distance);
+  const advanced = advancedFilterCount(filters);
+  const filtered = isFiltered(filters);
 
   return (
     <main id="main">
@@ -199,7 +237,7 @@ export default async function BrowsePage({
         {COPY.browse.activityStat(activeThisWeek, distanceMi)}
       </p>
 
-      <BrowseFilters distanceMi={distanceMi} intention={intention} activeOnly={activeOnly} />
+      <BrowseFilters state={filters} advancedCount={advanced} />
 
       {rows.length === 0 ? (
         <div className="mt-10">
@@ -281,6 +319,12 @@ export default async function BrowsePage({
                           {INTENTION_LABELS[row.intention as Intention]}
                         </p>
                       ) : null}
+
+                      {/* Two of the four, because this grid is two columns at
+                          every width and four chips wrap to three lines here,
+                          which pushes the prompt off the bottom of the card.
+                          The connect panel one tap away shows all of them. */}
+                      <MemberTraitChips member={row} max={2} className="mt-2" />
 
                       {/* Something they said, not another measurement of them.
                           Decision #14 makes a connect a reply to a prompt, so

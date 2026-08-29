@@ -892,6 +892,48 @@ export const DRAFT_COPY = {
     filterAny: "Any",
     applyFiltersLabel: "Apply",
     /**
+     * The deeper filters (backlog server 16).
+     *
+     * Browse had three controls and the profile held far more than three
+     * things. These four were already answered by every member in onboarding
+     * and read by nothing — see member-traits.tsx.
+     *
+     * "Any" throughout rather than "No preference": the filter is a question
+     * about the search, not about the member, and it is the same word the
+     * intention filter beside it already uses.
+     */
+    filterSmokes: "Smoking",
+    filterDrinks: "Drinking",
+    filterKids: "Kids",
+    filterKidsPlan: "Wants kids",
+    /**
+     * Age here narrows what the mutual wall already allowed. It cannot widen
+     * it: `matched_profiles` requires each side to be inside the other's stated
+     * range before a row exists at all, so this is a view of that set rather
+     * than a second, competing rule.
+     */
+    filterAgeFrom: "Age from",
+    filterAgeTo: "to",
+    /**
+     * A ladder rather than the checkbox it replaces. "Active this week" was one
+     * bit for a question with obvious shades — somebody here this afternoon and
+     * somebody here on Sunday were the same answer.
+     */
+    filterActivity: "Active",
+    filterActivityAny: "Any time",
+    filterActivityDay: "Today",
+    filterActivityWeek: "This week",
+    filterActivityMonth: "This month",
+    /**
+     * A profile with a photograph and nothing else is the hardest kind to
+     * answer, and Decision #14 makes a connect a reply to something they wrote.
+     */
+    filterWritten: "Has written a bio",
+    filtersMoreLabel: "More filters",
+    filtersActiveCount: (n: number) => (n === 1 ? "1 filter on" : `${n} filters on`),
+    /** Prompts are jsonb and this one is a chip, not a filter — see server 16. */
+    traitsHeading: "About them",
+    /**
      * The page asks for sixty rows and said nothing when it got sixty.
      *
      * A member in a dense city saw a grid that ended and had no way to know
@@ -1813,6 +1855,31 @@ export const FREQUENCY_LABELS = {
   never: "No",
   sometimes: "Sometimes",
   often: "Regularly",
+} as const;
+
+/**
+ * The same two enums, phrased as a statement about a person rather than as an
+ * answer to a form.
+ *
+ * FREQUENCY_LABELS is the answer set — "No", "Sometimes", "Regularly" — and it
+ * is right beside the question that gives it meaning. On a card there is no
+ * question, and a chip reading "No" beside one reading "Sometimes" tells a
+ * reader nothing about either. Prefixing the question mechanically does not
+ * work either: "Smoke no" is not English.
+ *
+ * So the profile keeps the short answers and the card gets whole sentences.
+ * Same enum, same order, two places it is read.
+ */
+export const SMOKING_TRAIT_LABELS = {
+  never: "Doesn't smoke",
+  sometimes: "Smokes sometimes",
+  often: "Smokes regularly",
+} as const;
+
+export const DRINKING_TRAIT_LABELS = {
+  never: "Doesn't drink",
+  sometimes: "Drinks sometimes",
+  often: "Drinks regularly",
 } as const;
 
 /** Labels for the kids_status enum — what is true now. */

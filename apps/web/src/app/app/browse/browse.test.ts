@@ -38,7 +38,12 @@ describe("the activity stat counts people, not cards", () => {
     const stat = page.slice(page.indexOf("const { count: activeNearby }"));
     const call = stat.slice(0, stat.indexOf(";"));
     expect(call).toMatch(/lte\("distance_mi", distanceMi\)/);
-    expect(call).not.toMatch(/intention/);
+    // Mattered when there were three filters and matters more now there are
+    // eleven: the sentence is a fact about the area, so nothing the member
+    // picked may narrow it.
+    for (const param of ["intention", "smokes", "drinks", "kids", "age", "bio", "activity"]) {
+      expect(call, `the stat narrowed by ${param}`).not.toMatch(new RegExp(param));
+    }
   });
 
   /**
@@ -46,9 +51,14 @@ describe("the activity stat counts people, not cards", () => {
    * Date.now() calls are three moments a few milliseconds apart, which is how a
    * card says "active this week" on a page whose count did not include it.
    */
-  it("uses one instant for all three", () => {
-    expect(page).toMatch(/const weekAgo = new Date\(Date\.now\(\) - 7 \* DAY\)\.toISOString\(\)/);
-    expect(page.match(/Date\.now\(\) - 7 \* DAY/g) ?? []).toHaveLength(1);
+  it("uses one instant for all of them", () => {
+    // Was one boundary because there was one window. The activity ladder made
+    // four, and the property worth pinning is the one the old assertion was
+    // reaching for: every window comes off a single reading of the clock.
+    expect(page).toMatch(/const now = Date\.now\(\)/);
+    expect(page).toMatch(/const since = \(days: number\) =>/);
+    expect(page).toMatch(/const weekAgo = since\(7\)/);
+    expect(page.match(/Date\.now\(\)/g) ?? []).toHaveLength(1);
   });
 });
 
@@ -59,7 +69,14 @@ describe("the activity stat counts people, not cards", () => {
  */
 describe("a hand-typed radius cannot exceed the maximum", () => {
   it("clamps to the configured bounds", () => {
-    expect(page).toMatch(/Math\.min\(RADIUS\.maxMi, Math\.max\(RADIUS\.minMi/);
+    // The clamp moved into filter-state.ts with the rest of the parsing, and is
+    // tested there against both ends. What this file cares about is that the
+    // page takes its radius from that parse and not from the URL directly.
+    expect(page).toMatch(/const filters = parseBrowseFilters\(/);
+    expect(page).toMatch(/const distanceMi = filters\.distanceMi/);
+    expect(page).not.toMatch(/Number\(params\.distance\)/);
+    const state = read("./filter-state.ts");
+    expect(state).toMatch(/Math\.min\(RADIUS\.maxMi, Math\.max\(RADIUS\.minMi/);
   });
 
   /** Not a wall, and the page should not be the thing pretending it is one. */
@@ -103,9 +120,17 @@ describe("a card says whether they have been around", () => {
  * commitment than a search radius.
  */
 describe("filters apply themselves", () => {
-  it("submits when any of the three changes", () => {
-    expect(filters.match(/onChange=\{apply\}/g) ?? []).toHaveLength(3);
+  it("submits when any of them changes", () => {
     expect(filters).toMatch(/const apply = \(\) => form\.current\?\.requestSubmit\(\)/);
+    // Not a fixed count any more — the set grew from three to eleven and will
+    // grow again. What must hold is that every control wires the same handler,
+    // so none of them is the one that silently needs an Apply press.
+    const tags = [...filters.matchAll(/<(select|input|Choice)\b[\s\S]*?\/?>/g)].map((m) => m[0]);
+    expect(tags.length).toBeGreaterThan(3);
+    for (const tag of tags) {
+      const name = /name="([a-z_]+)"/.exec(tag)?.[1] ?? tag.slice(0, 40);
+      expect(tag, `${name} does not apply itself`).toMatch(/onChange=\{/);
+    }
   });
 
   /**
@@ -205,9 +230,11 @@ describe("the empty state offers a way out of itself", () => {
    * offer would be a lie.
    */
   it("does not offer it when nothing is filtered", () => {
-    expect(page).toMatch(
-      /const filtered = Boolean\(intention\) \|\| activeOnly \|\| Boolean\(filters\.distance\)/,
-    );
+    // The condition moved into filter-state.ts when it grew past three terms;
+    // it is unit-tested there against every filter rather than pinned as a
+    // string here, which had already been a spelling test rather than a
+    // behaviour one.
+    expect(page).toMatch(/const filtered = isFiltered\(filters\)/);
     expect(page).toMatch(/\{filtered \? \(/);
   });
 
@@ -225,7 +252,7 @@ describe("the empty state offers a way out of itself", () => {
  */
 describe("a card carries something they said", () => {
   it("reads the prompts through the view that holds the walls", () => {
-    expect(page).toMatch(/last_active_at, prompts"\)/);
+    expect(page).toMatch(/last_active_at, prompts,/);
     expect(page).toMatch(/from\("matched_profiles"\)/);
   });
 

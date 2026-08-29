@@ -757,6 +757,122 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     right: a button that takes money and grants nothing is worse than a paid
     tier that is unreachable.
 
+16. **Browse can filter on three things, and the profile holds far more.**
+    Distance, intention, active-this-week — that is every filter in the app.
+    Kevin asked for much deeper filtering 2026-08-29 and this is the half that
+    needs no schema at all.
+
+    **`smokes`, `drinks`, `kids` and `kids_plan` are already collected, already
+    editable, and go nowhere.** Onboarding asks for all four
+    (`onboarding/preferences/preferences-form.tsx`), the profile edits them, and
+    `visible_profiles` carries them through `matched_profiles` via `select v.*`
+    — and then no card shows them and no filter reads them. Four questions every
+    member answers that do nothing. So this is a `.eq()` and a `<select>`: no
+    migration, no column grants, and nothing to re-answer on either store's
+    data-safety form.
+
+    Everything below is in the view today: smokes · drinks · kids · kids plan ·
+    age as a browse-narrowing filter · has a bio · has answered prompts ·
+    active-recency as a ladder rather than one checkbox.
+
+    **Age here is NOT the age wall.** `matched_profiles` enforces a mutual range
+    — both sides have to want each other's age or the row does not exist. A
+    browse filter narrows what already passed that and cannot widen it. Two
+    different mechanisms, and conflating them would let a filter look like it
+    was reaching people the wall excluded.
+
+    **Display is a prerequisite, not a follow-up.** Filtering on an attribute
+    that appears on no card is a control with no visible effect. The connect
+    panel is worse than Browse — it selects `id, display_name, prompts` and
+    nothing else, so the screen where somebody decides whether to reach out
+    shows a name, a photo and a prompt.
+
+    **Soft, not hard, and the argument is already in this repo.**
+    `20260818000100` refuses to make lifestyle a wall: "this is a pool of people
+    who share a diagnosis in one city… Filtering that pool again on smoking
+    would empty it." That reasoning does not weaken because the control moved
+    from the Drop to Browse. Rank and reorder, show a live count of what a
+    filter costs, and allow at most a couple of true exclusions — a dozen
+    exclusion filters over a thin pool renders an empty grid, and a member reads
+    an empty grid as a dead app rather than as their own filters.
+
+    **A compatibility threshold cannot be in this item.** `compatibilityFor`
+    runs after the query, on the 60 rows already fetched, so `≥70%` would fetch
+    sixty and render twelve — and the "N people active" stat beside it would
+    describe a different set. Sorting within the page is free and fine; a real
+    threshold needs the score in SQL, which is item 17's view rebuild.
+
+    **Health-adjacent stays out. Kevin's call 2026-08-29.** `condition` and
+    `u_equals_u` are both in the view and both one line away from being
+    filterable. Held pending a decision — U=U is genuinely valued inside the HIV
+    community and is self-declared, and condition detail sorts people by their
+    diagnosis, which are not the same question and should not be settled
+    together. Adding either later is small; that is the reason to wait.
+
+    Also deliberately not built: **a "has clear photos" filter.** `photo_privacy`
+    is right there and it would work. It is a filter aimed squarely at the
+    people who chose to blur, on an app whose premise is that disclosure is
+    hard.
+
+17. **The attributes the profile does not hold yet.** Height, relationship
+    structure (mono / ENM / poly / unsure), languages, exercise, diet, pets,
+    religion, politics, education, work. Kevin asked for depth 2026-08-29 and
+    item 16 spends what already exists; this is the part that costs a migration.
+
+    Per column: enum or type, the column, **column-level grants** (this repo
+    grants select/insert/update per column and `check:db` enforces it), a
+    `visible_profiles` rebuild to carry it, onboarding or the profile editor,
+    the card, the filter — **and both stores' data-safety answers**.
+    `privacy-labels.ts` and `play-data-safety.ts` have a test that fails when
+    they disagree, so a new column propagates all the way to two review forms.
+    That chain is working as intended and it is why none of these is a
+    one-liner.
+
+    **Do not put these in onboarding.** It is nine steps already. Collect them
+    after signup against a profile-completeness nudge — a member who has met
+    somebody has a reason to fill this in, and a member who has not is being
+    asked to answer eleven more questions before seeing a single face.
+
+    Rebuilding `visible_profiles` is a `drop view` — see the ownership note in
+    `HANDOFF.md` before starting, since item 18 rebuilds it too.
+
+18. **The premium tier promises five things and one is built.**
+    `PREMIUM_INCLUDES` (`packages/config/src/pricing.ts:121`) renders on TWO
+    public pages — `/pricing` and the premium settings screen — so this is being
+    sold today to anyone who can reach a buy button:
+
+    - "10 connects a day" — **built**, `CONNECTS.premiumPerDay`.
+    - "Advanced browse filters" — **do not exist.** Item 16 builds them; this
+      item decides which of them are paid.
+    - "Incognito browse — visible only to people you've already connected with"
+      — **the string appears nowhere else in the repo.** Needs a column and a
+      `visible_profiles` predicate, which is the second rebuild the HANDOFF note
+      is about.
+    - "Who's active near you" — the activity stat is on Browse, free, for
+      everyone. Either build a premium surface or this line is describing the
+      free tier.
+    - "Fine-grained photo privacy controls" — `photo_privacy` is a two-value
+      enum, free, and "fine-grained" is doing a lot of work.
+
+    **Kevin's call 2026-08-29: build them, do not cut the lines.** So this is
+    four features, not a copy edit.
+
+    Whatever gets added to sweeten the tier has to clear `PREMIUM_NEVER` in the
+    same file — no ranking or visibility boosts, no extra drops, no undo, no
+    fuse extensions, no wall bypass. Decision #23/#24 says the paid line is
+    **reach and control**, which is what the four above already are, and what a
+    saved search with an alert would be. Anything that makes a paying member
+    more likely to be SEEN is on the never list, and that list is pinned by a
+    test.
+
+19. **A live match count beside the filters.** The mechanism that makes item
+    16's soft-filter argument true rather than aspirational: a member widening
+    or narrowing sees what each control costs before they are staring at an
+    empty grid. Needs the count query to follow the filters, which today it
+    deliberately does not — the "N people active" stat is a fact about the area
+    and drops the intention filter on purpose (`browse/page.tsx`). Two numbers
+    with two jobs, and the difference between them wants saying on screen.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they

@@ -289,10 +289,20 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item | since |
-| ------- | ---- | ----- |
-| _macOS_ | —    | —     |
-| _WSL_   | —    | —     |
+| session | item                                            | since      |
+| ------- | ----------------------------------------------- | ---------- |
+| _macOS_ | —                                               | —          |
+| _WSL_   | server 16 (deeper filters, stage 1 — no schema) | 2026-08-29 |
+
+**Kevin has authorised the macOS session into the server lane for server 16–19
+only**, said 2026-08-29, because this is one body of work he wants done in
+parallel and none of it needs a Mac. It does not open the lane generally — take
+16–19 and nothing else, and claim above before starting.
+
+**One session owns `visible_profiles` at a time.** Items 17 and 18 both rebuild
+it (17 to carry new columns, 18 for incognito) and a rebuild is a `drop view` —
+whichever lands second replays against a shape it did not write. 16 does not
+touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
 
