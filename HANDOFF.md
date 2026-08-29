@@ -360,9 +360,41 @@ the corrupt Turbopack cache the machine notes already describe. `rm -rf
 apps/web/.next` and it started. Worth knowing the note is accurate — it cost
 nothing because it was written down.
 
-**Left off:** tree clean, five gates green, nothing in flight. 18b claimed and
-not started. The Play catalogue is UNREAD since the 27th — the phone is not
-reachable from WSL and needs Kevin to re-enable wireless debugging.
+**18b went on to land too** — per-photo privacy, applied, `43a35dc`. Its own
+reasoning is in the backlog entry. The one thing here rather than there: the
+right premium gate is a consequence of HOW A TABLE WAS GRANTED, and this schema
+does both. `profile_photos` carries a whole-table update grant so a member can
+PATCH any column on their own rows and a check in a server action is decoration
+— that one needs a trigger. `profiles` has no such grant, so 18a could simply
+never grant the column and write through a definer function, which is the
+stronger shape. **Read `information_schema.role_table_grants`, never the
+migration that created the table** — 20260826000200 exists precisely because a
+table's grants are not what its creating file says, which makes that file the
+one source guaranteed to be able to lie about this.
+
+**Staging a state in the production database was proposed and refused**, and
+the refusal is the durable part. WSL suggested forcing a column as owner so a
+lapsed-premium screen could be photographed. BACKLOG shells 11 had already
+settled it — "inventing one in the production database to watch a button render
+is a worse idea than the bug" — and it was a real member's row. Rendering the
+component directly with props answered the same question. Worth knowing the
+answer exists, because the request is a reasonable-sounding one and it will
+come again.
+
+**A test nobody has watched fail is a test nobody has a reason to trust.** Three
+separate instances of this turned up in one afternoon: a labels scan that read
+zero columns and passed, a grant assertion satisfied by the migration's own
+COMMENT saying the right sentence, and a 16px gate blinded by a class hoisted
+into a constant. Give any source-scanning test a floor on what it actually read,
+strip comments before matching, and break it once on purpose.
+
+**Left off:** tree clean, five gates green, nothing in flight, no claim. All
+five PREMIUM_INCLUDES promises are built between the two lanes. Two things are
+waiting on Kevin and neither is code: the disabled-control convention in
+`ui.tsx` (opacity alone, flagged and deliberately not changed), and 18d's
+question of whether a paid filter should appear disabled or be absent. The Play
+catalogue is UNREAD since the 27th — the phone is not reachable from WSL and
+needs Kevin to re-enable wireless debugging, which is Kevin item 17.
 
 ### 2026-08-29 · WSL · deeper filters, and a deploy order nobody controls
 
