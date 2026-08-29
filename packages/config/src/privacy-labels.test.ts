@@ -76,25 +76,55 @@ describe("every table is classified", () => {
 });
 
 describe("every profiles column is classified", () => {
-  const block = /create table public\.profiles \(([\s\S]*?)\n\);/.exec(migrations)?.[1] ?? "";
+  const TYPE =
+    "uuid|text|date|boolean|integer|smallint|timestamptz|jsonb|real|extensions\\.|public\\.";
+
   /**
    * Matched on the TYPE rather than on "a word at the start of a line". The
    * looser form scooped up `or` from the second line of a multi-line CHECK
    * constraint and demanded a privacy classification for it.
    */
-  const columns = block
+  const block = /create table public\.profiles \(([\s\S]*?)\n\);/.exec(migrations)?.[1] ?? "";
+  const declared = block
     .split("\n")
     .map((line) => line.trim())
-    .map(
-      (line) =>
-        /^([a-z_]+)\s+(?:uuid|text|date|boolean|integer|timestamptz|jsonb|real|extensions\.|public\.)/.exec(
-          line,
-        )?.[1],
-    )
+    .map((line) => new RegExp(`^([a-z_]+)\\s+(?:${TYPE})`).exec(line)?.[1])
     .filter((name): name is string => Boolean(name));
+
+  /**
+   * …and the ones that arrived later, which this suite could not see.
+   *
+   * It read the `create table` block alone, so every column added by an `alter
+   * table` since 2026-08-13 was invisible to it — six of them, all six landed
+   * by 20260818000100, none classified, suite green throughout. The file's own
+   * header says it "fails when a table or a profile column appears that nothing
+   * declares", and for two weeks that was true only of columns nobody was
+   * adding any more.
+   *
+   * `add column` rather than every `alter table`: a type change or a constraint
+   * is not a new thing to classify, and 20260818000100 does both to columns
+   * that were already in the block above.
+   */
+  const added = [...migrations.matchAll(/alter table public\.profiles\b([\s\S]*?);/g)].flatMap(
+    (statement) =>
+      [
+        ...statement[1].matchAll(
+          new RegExp(`add column(?: if not exists)? ([a-z_]+)\\s+(?:${TYPE})`, "g"),
+        ),
+      ].map((m) => m[1] as string),
+  );
+
+  const columns = [...new Set([...declared, ...added])];
 
   it("finds the columns", () => {
     expect(columns.length).toBeGreaterThan(15);
+  });
+
+  /** The hole this suite had. If it ever reads zero again, it is blind again. */
+  it("sees the ones added after the table was created", () => {
+    expect(added).toContain("smokes");
+    expect(added).toContain("age_min");
+    expect(added.length).toBeGreaterThanOrEqual(6);
   });
 
   it.each(columns)("classifies profiles.%s", (column) => {

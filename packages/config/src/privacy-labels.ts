@@ -308,6 +308,84 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   last_active_at: "operational",
   created_at: "operational",
   updated_at: "operational",
+
+  // ── added after the table was created ──────────────────────────────────────
+  // The six below landed in 20260818000100 and were never classified, because
+  // the suite that enforces this read only the original `create table` block.
+  // It reads `add column` too now. The eight after them are 20260829000100.
+  //
+  // Nothing here declares a NEW Apple category: every one resolves to a
+  // category PRIVACY_LABELS already carries, which is why play-data-safety.ts
+  // is untouched by any of it.
+
+  // A search preference. It says who this member wants to see, not anything
+  // about the member — the same reason search_radius_mi is operational.
+  age_min: "operational",
+  age_max: "operational",
+
+  // Structured answers a member writes on their profile for other members to
+  // read, which is what "Other User Content" is. Not Health & Fitness: Apple's
+  // Health type is medical and sensor data, and "drinks sometimes" on a dating
+  // profile is neither. The same argument covers exercise and height below —
+  // this app's Health declaration is about `condition`, and stretching it to
+  // cover lifestyle answers would blur the one label that most needs to stay
+  // precise.
+  smokes: "User Content → Other User Content",
+  drinks: "User Content → Other User Content",
+  kids: "User Content → Other User Content",
+  kids_plan: "User Content → Other User Content",
+  height_cm: "User Content → Other User Content",
+  exercise: "User Content → Other User Content",
+  // The enum is omnivore/pescatarian/vegetarian/vegan/other, which is why this
+  // is not Sensitive Info. A diet list carrying `kosher` or `halal` WOULD be —
+  // it would collect religious belief by proxy — and that is the line to hold
+  // if anybody widens it.
+  diet: "User Content → Other User Content",
+  pets: "User Content → Other User Content",
+  education: "User Content → Other User Content",
+  // A field of work, never an employer or a job title.
+  work: "User Content → Other User Content",
+
+  // Sensitive Info, and deliberately the conservative reading of two fields
+  // Apple's list does not name outright.
+  //
+  // Relationship structure is not sexual orientation, which is what Apple
+  // actually enumerates — but monogamous/open/polyamorous is adjacent enough
+  // that the honest answer is the careful one, and `gender` and `seeking` above
+  // are already classified this way on exactly that reasoning.
+  relationship_structure: "Sensitive Info",
+  // Language is not ethnic data either, and it is a strong proxy for it. Free,
+  // since Sensitive Info is declared regardless — and a category chosen because
+  // it costs nothing is a bad reason to choose the weaker one.
+  languages: "Sensitive Info",
+
+  // ── and seven more the widened suite turned up ─────────────────────────────
+  // Not part of the filter work at all. Found by fixing the discovery above,
+  // which is the point of fixing it: six columns were expected and thirteen
+  // were unclassified.
+  //
+  // All operational — timestamps and state flags recording that something
+  // happened, none of them a fact about the member that Apple names.
+  onboarded_at: "operational",
+  appeal_opened_at: "operational",
+  appeal_decided_at: "operational",
+  drop_notified_night: "operational",
+  nearby_notified_at: "operational",
+
+  // These two are operational and they are the two worth pausing on, because
+  // the thing they record IS biometric.
+  //
+  // Neither holds any of it. `liveness_passed_at` is a timestamp; the video
+  // streamed to Rekognition and nothing survived it — no face collection, no
+  // matching, OutputConfig unset, AuditImagesLimit at 0. The declaration that
+  // covers the check itself is in PRIVACY_LABELS above, and it is the entry
+  // that is HELD FOR COUNSEL. That question is about the processing, not about
+  // these columns, and classifying them as anything else here would be an
+  // attempt to answer it in the wrong file.
+  liveness_passed_at: "operational",
+  // A vendor's session reference, kept to re-check an outcome. It points at a
+  // record; it does not contain one.
+  liveness_session_id: "operational",
 };
 
 /**
