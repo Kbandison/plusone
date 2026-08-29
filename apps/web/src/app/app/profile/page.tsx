@@ -56,8 +56,30 @@ export default async function ProfilePage() {
     // this string, and a `+` between two halves makes it a plain string and
     // every field on the result an error type.
     .select(
-      "display_name, intention, intention_changed_at, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan, height_cm, relationship_structure, exercise, diet, pets, education, work, languages",
+      "display_name, intention, intention_changed_at, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
     )
+    .eq("id", auth.user.id)
+    .maybeSingle();
+
+  /**
+   * The eight from 20260829000100, read SEPARATELY and allowed to fail.
+   *
+   * They were appended to the select above, and that is a production outage
+   * rather than a missing feature: migrations in this repo are applied by hand
+   * and Kevin's call, so code reaches production BEFORE the schema does.
+   * PostgREST answers an unknown column by failing the whole request, supabase-js
+   * hands back `data: null`, and every field on this page — name, bio, prompts,
+   * intention, the lot — renders empty. One unshipped column blanks the profile
+   * for every member.
+   *
+   * A second request costs a round trip and makes the deploy order stop
+   * mattering in both directions: before the migration these eight are simply
+   * unstated, and after it they fill in with no redeploy. The alternative is a
+   * coupling nothing in the build can check and only production reveals.
+   */
+  const { data: extras } = await supabase
+    .from("profiles")
+    .select("height_cm, relationship_structure, exercise, diet, pets, education, work, languages")
     .eq("id", auth.user.id)
     .maybeSingle();
 
@@ -183,14 +205,14 @@ export default async function ProfilePage() {
             drinks: (profile?.drinks as string | null) ?? null,
             kids: (profile?.kids as string | null) ?? null,
             kidsPlan: (profile?.kids_plan as string | null) ?? null,
-            heightCm: (profile?.height_cm as number | null) ?? null,
-            relationshipStructure: (profile?.relationship_structure as string | null) ?? null,
-            exercise: (profile?.exercise as string | null) ?? null,
-            diet: (profile?.diet as string | null) ?? null,
-            pets: (profile?.pets as string | null) ?? null,
-            education: (profile?.education as string | null) ?? null,
-            work: (profile?.work as string | null) ?? null,
-            languages: (profile?.languages as string[] | null) ?? [],
+            heightCm: (extras?.height_cm as number | null) ?? null,
+            relationshipStructure: (extras?.relationship_structure as string | null) ?? null,
+            exercise: (extras?.exercise as string | null) ?? null,
+            diet: (extras?.diet as string | null) ?? null,
+            pets: (extras?.pets as string | null) ?? null,
+            education: (extras?.education as string | null) ?? null,
+            work: (extras?.work as string | null) ?? null,
+            languages: (extras?.languages as string[] | null) ?? [],
           }}
         />
       </section>

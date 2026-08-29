@@ -77,6 +77,24 @@ export interface ExtendedPreferenceValues {
  * absent case then means "this form does not own those columns" rather than
  * "the member cleared them", and the update simply omits the keys.
  */
+/**
+ * The eight columns that may not exist yet.
+ *
+ * Named once so the retry in updatePreferences cannot drift from the spread in
+ * parsePreferences — a column in one list and not the other is a save that
+ * fails forever with a message about nothing.
+ */
+export const EXTENDED_PREFERENCE_COLUMNS = [
+  "height_cm",
+  "relationship_structure",
+  "exercise",
+  "diet",
+  "pets",
+  "education",
+  "work",
+  "languages",
+] as const satisfies readonly (keyof ExtendedPreferenceValues)[];
+
 export const PREFERENCE_SCOPES = ["core", "full"] as const;
 export type PreferenceScope = (typeof PREFERENCE_SCOPES)[number];
 export const SCOPE_FIELD = "_scope";
