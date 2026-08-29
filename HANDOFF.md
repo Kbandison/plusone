@@ -123,6 +123,23 @@ apps/web/.next` and start again. It is not a code error and the message does
   points at CommandLineTools and changing it needs sudo, so everything is driven
   with `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` instead.
   It is a beta: fine for the Simulator, **not** for a submission build.
+- **TWO Xcodes, and the release one is the submission toolchain.**
+  `/Applications/Xcode.app` is 26.6 (release) and **cannot launch** — macOS 27.0
+  beta refuses it. Irrelevant: its `xcodebuild` works and every command here is
+  `xcodebuild`, so point `DEVELOPER_DIR` at it for anything going to review, and
+  at `Xcode-beta.app` (27.0) only for Simulator work. Verified 2026-08-29 with a
+  Release build against `iPhoneOS26.5.sdk`, which is the public SDK submissions
+  require.
+
+  Getting there needed two things the errors do not name. **The licence** —
+  `sudo env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+-license accept` — because until it is accepted EVERY command, `-showsdks`
+  included, answers with the licence text and reads like a broken install. And
+  **the platform**: `xcodebuild -downloadPlatform iOS`, 8.5 GB, during which
+  `-showsdks` happily lists iOS 26.5 while builds fail saying it is not
+  installed. Listed and installed are different things, and that is two hours if
+  you believe the first one.
+
 - **A modern Xcode ships with no simulator to run.** `xcodebuild -downloadPlatform iOS`
   is a second, much larger download, and nothing warns you — `simctl list
 runtimes` just comes back empty.

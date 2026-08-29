@@ -62,8 +62,30 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
    `window.Capacitor`, so every branch that trusted `inNativeShell()` was
    treating it as the web. Harmless until there was something to sell through
    Play, and Play's billing policy the moment there was.
-7. **A release Xcode.** `apps/ios` is driven by 27 beta 6 through
-   `DEVELOPER_DIR`. Fine for the Simulator, not for a submission build.
+7. ~~**A release Xcode**~~ — solved 2026-08-29, and not the way this entry
+   assumed. `Xcode.app` 26.6 (release) **will not launch** on this machine —
+   macOS is 27.0 beta and refuses it with "This version of Xcode isn't supported
+   in this version of macOS". That block is on the APP. Its `xcodebuild` runs
+   perfectly, and every command this project uses is `xcodebuild`, so the app
+   never needs to open.
+
+   Proven rather than assumed: a Release build for `generic/platform=iOS`
+   against **`iPhoneOS26.5.sdk`**, which is the public SDK an App Store
+   submission requires. Beta-built binaries are fine for TestFlight and are not
+   what you want under review.
+
+   Two steps were needed and neither is obvious from the error:
+
+   - `sudo env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -license accept`
+     — until this is done every command answers with the licence text and
+     nothing else, including `-showsdks`, which reads like the install failed.
+   - `xcodebuild -downloadPlatform iOS` — 8.5 GB, and until it finishes
+     `-showsdks` LISTS iOS 26.5 while any build fails with "iOS 26.5 is not
+     installed". Listed and installed are different things.
+
+   So a submission build is made by pointing `DEVELOPER_DIR` at
+   `/Applications/Xcode.app` rather than the beta. Both remain installed.
+
 8. ~~**A registered device, and the first TestFlight build**~~ — done
    2026-08-26. Kevin's iPad Pro is registered, Developer Mode is on, and
    version 1.0 (1) is uploaded and processing. Signed `Apple Distribution:
