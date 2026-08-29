@@ -87,6 +87,24 @@ const SIZES = [
   // What the console actually asks for. 1242×2688 is 0.4620 against the
   // capture's 0.4615, so this crops even less than the 6.9" set does.
   { dir: "app-store-iphone-6.5", width: 1242, height: 2688, caption: 340 },
+  /**
+   * iPad, and it is a COMPOSITION rather than a capture — which is the honest
+   * word for it and the reason this entry needs a comment.
+   *
+   * 2048×2732 is 0.75. The captures are 0.4615, taken on a phone. Filling an
+   * iPad frame from one the way the phone sizes do would scale a phone UI to
+   * 1.42× and crop away almost half of it: enormous text, half a screen, and
+   * unmistakably not what the app looks like on an iPad.
+   *
+   * So this one CONTAINS the capture instead — full height, centred, on the
+   * app's own ground, with the caption above it. That reads as a deliberate
+   * marketing image rather than a stretched screenshot, which is what it is.
+   *
+   * It is still second best. The app is universal and lays out wide on a 13"
+   * iPad, so the only image that shows an iPad member what they will get is one
+   * taken on an iPad. Replace these the moment somebody has five.
+   */
+  { dir: "app-store-ipad-13", width: 2048, height: 2732, caption: 300, fit: "contain" },
 ] as const;
 
 /** Dusk, from packages/ui-tokens/tokens.css. */
@@ -142,8 +160,23 @@ const SHOTS: readonly Shot[] = [
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+/** The captures, measured once. 155px of status bar comes off the top. */
+const CAP_W = 1440;
+const CAP_H = 3120;
+const CROP_TOP = 155;
+
 function html(shot: Shot, capture: string, size: (typeof SIZES)[number]): string {
   const { width: WIDTH, height: HEIGHT, caption: CAPTION_H } = size;
+  const SHOT_H = HEIGHT - CAPTION_H;
+  const contain = "fit" in size && size.fit === "contain";
+
+  /**
+   * Cover scales to the canvas WIDTH and clips the height; contain scales so
+   * the whole capture fits the height and leaves ground either side. The
+   * difference is the only thing separating a phone screenshot in an iPad frame
+   * from a picture of the app on a background.
+   */
+  const IMG_SCALE = contain ? SHOT_H / (CAP_H - CROP_TOP) : WIDTH / CAP_W;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   @font-face { font-family: "Instrument Serif"; src: url(data:font/ttf;base64,${FONTS.instrument}) format("truetype"); font-weight: 400; font-display: block; }
   @font-face { font-family: "Satoshi"; src: url(data:font/woff2;base64,${FONTS.satoshi400}) format("woff2"); font-weight: 400; font-display: block; }
@@ -172,8 +205,15 @@ function html(shot: Shot, capture: string, size: (typeof SIZES)[number]): string
    * a 9:19.5 phone anyway. The device status bar is cropped off first (155px of the 1440-wide capture, measured rather than guessed — 90 left a visible sliver) so
    * the shot reads as the app rather than as somebody's phone.
    */
-  .shot { position: relative; height: ${HEIGHT - CAPTION_H}px; overflow: hidden; }
-  .shot img { position: absolute; top: -${Math.round(155 * (WIDTH / 1440))}px; left: 0; width: ${WIDTH}px; display: block; }
+  .shot { position: relative; height: ${SHOT_H}px; overflow: hidden; }
+  .shot img {
+    position: absolute;
+    top: -${Math.round(CROP_TOP * IMG_SCALE)}px;
+    left: ${Math.round((WIDTH - CAP_W * IMG_SCALE) / 2)}px;
+    width: ${Math.round(CAP_W * IMG_SCALE)}px;
+    display: block;
+    ${contain ? "border-radius: 28px;" : ""}
+  }
 </style></head><body>
   <div class="caption">
     <h1>${escape(shot.caption)}</h1>
