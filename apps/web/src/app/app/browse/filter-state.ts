@@ -213,6 +213,24 @@ export const RANGE_FILTERS = [
 export type RangeFilter = (typeof RANGE_FILTERS)[number];
 export type RangeKey = RangeFilter["key"];
 
+/**
+ * Which filters Premium buys (server 18d).
+ *
+ * The four in the "top" group are free: distance, what they are looking for,
+ * how recently they were active, and age. Those are what somebody opens Browse
+ * to set, and Decision #23/#24 keeps the free tier genuinely usable — a member
+ * who cannot narrow by distance does not have a directory, they have a list.
+ *
+ * Everything behind "More filters" is paid, which is exactly what
+ * `PREMIUM_INCLUDES` has been promising on two public pages: "Advanced browse
+ * filters". The line falls where the fold already was, so nothing moves.
+ *
+ * Kevin's call 2026-08-29, both halves — this split, and that a paid filter
+ * APPEARS DISABLED rather than being absent, so a free member can see the shape
+ * of the tier on the screen where they would use it.
+ */
+export const isPaidGroup = (group: string): boolean => group !== "top";
+
 export type BrowseSearchParams = Partial<
   Record<
     | EnumParam
@@ -256,6 +274,7 @@ const bounded = (value: string | undefined, min: number, max: number): number | 
 export function parseBrowseFilters(
   params: BrowseSearchParams,
   ownRadiusMi: number | null,
+  isPremium: boolean,
 ): BrowseFilterState {
   // The member's OWN radius is the default, not the maximum. It was
   // `Number(filters.distance) || RADIUS.maxMi` — two hundred and fifty miles —
@@ -275,14 +294,29 @@ export function parseBrowseFilters(
   const ladder = ACTIVITY_WINDOWS.find((w) => w.id === params.activity)?.id ?? null;
   const activity: ActivityWindow | null = ladder ?? (params.active === "1" ? "week" : null);
 
+  // A paid filter in the URL is DROPPED for a non-premium member, not refused.
+  //
+  // This is the gate. Disabling the control is presentation — the URL is the
+  // real input, it is typed by hand and bookmarked and shared, and a member
+  // whose premium lapsed still has yesterday's filtered link. Dropping here
+  // means the query, the match count and the rendered control all agree: the
+  // select shows "Any" because the filter genuinely is not applied.
+  //
+  // Ignored rather than an error, which is the lapse rule and the mirror of
+  // 18b's. The safe direction is the one that shows a member MORE people and
+  // never makes the member themselves more visible. An error would strand
+  // somebody on a bookmarked link; persisting would sell them something they
+  // are no longer paying for.
   const enums: Partial<Record<EnumParam, string>> = {};
   for (const filter of ENUM_FILTERS) {
+    if (!isPremium && isPaidGroup(filter.group)) continue;
     const raw = params[filter.param];
     if (raw != null && raw in filter.options) enums[filter.param] = raw;
   }
 
   const ranges: BrowseFilterState["ranges"] = {};
   for (const range of RANGE_FILTERS) {
+    if (!isPremium && isPaidGroup(range.group)) continue;
     const min = bounded(params[`${range.key}_min`], range.min, range.max);
     const max = bounded(params[`${range.key}_max`], range.min, range.max);
     // Ends swapped match nobody, and an empty grid reads as a dead app rather
@@ -298,7 +332,8 @@ export function parseBrowseFilters(
     activity,
     enums,
     ranges,
-    writtenOnly: params.written === "1",
+    // Folded, so paid like the rest of the fold.
+    writtenOnly: isPremium && params.written === "1",
   };
 }
 

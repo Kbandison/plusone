@@ -9,14 +9,18 @@ import {
   ARRAY_FILTER_PARAMS,
   ENUM_FILTERS,
   RANGE_FILTERS,
+  isPaidGroup,
   activityDays,
   advancedFilterCount,
   isFiltered,
   parseBrowseFilters,
 } from "./filter-state";
 
+/** Premium by default, so the existing cases keep testing what they tested. */
 const parse = (params: Record<string, string>, ownRadius: number | null = 50) =>
-  parseBrowseFilters(params, ownRadius);
+  parseBrowseFilters(params, ownRadius, true);
+
+const parseFree = (params: Record<string, string>) => parseBrowseFilters(params, 50, false);
 
 /**
  * Every one of these is a hand-typable string reaching PostgREST. An enum column
@@ -214,11 +218,90 @@ describe("the filter table itself", () => {
    * a SEARCH rather than a person. Everything else is folded, because nineteen
    * controls above a two-column grid pushes every face off the screen.
    */
+  it("marks every folded group as paid and the top group as free", () => {
+    for (const filter of ENUM_FILTERS) {
+      expect(isPaidGroup(filter.group), filter.param).toBe(filter.group !== "top");
+    }
+  });
+
   it("keeps the unfolded set small", () => {
     const top = [
       ...ENUM_FILTERS.filter((f) => f.group === "top"),
       ...RANGE_FILTERS.filter((r) => r.group === "top"),
     ];
     expect(top.length).toBeLessThanOrEqual(2);
+  });
+});
+
+/**
+ * The paid split (server 18d), and why it is enforced HERE rather than by
+ * disabling a control.
+ *
+ * The URL is the real input. It is typed by hand, bookmarked and shared, and a
+ * member whose premium lapsed still has yesterday's filtered link. A gate that
+ * lives only in the form is decoration — these are the assertions that make it
+ * a gate.
+ */
+describe("a free member cannot apply a paid filter", () => {
+  const PAID = {
+    kids: "none",
+    smokes: "never",
+    diet: "vegan",
+    religion: "atheist",
+    politics: "moderate",
+    language: "es",
+    height_min: "170",
+    weight_max: "90",
+    written: "1",
+  };
+
+  it("drops every paid filter from a hand-typed URL", () => {
+    const free = parseFree(PAID);
+    expect(free.enums).toEqual({});
+    expect(free.ranges).toEqual({});
+    expect(free.writtenOnly).toBe(false);
+    expect(advancedFilterCount(free)).toBe(0);
+  });
+
+  it("applies exactly the same URL for a premium member", () => {
+    const paid = parse(PAID);
+    expect(Object.keys(paid.enums).length).toBe(6);
+    expect(Object.keys(paid.ranges).length).toBe(2);
+    expect(paid.writtenOnly).toBe(true);
+  });
+
+  /**
+   * Decision #23/#24 — the free tier stays genuinely usable. A member who
+   * cannot narrow by distance does not have a directory, they have a list.
+   */
+  it("leaves the four free filters working", () => {
+    const free = parseFree({
+      distance: "100",
+      intention: "casual",
+      activity: "day",
+      age_min: "25",
+      age_max: "40",
+    });
+    expect(free.distanceMi).toBe(100);
+    expect(free.enums.intention).toBe("casual");
+    expect(free.activity).toBe("day");
+    expect(free.ranges.age).toEqual({ min: 25, max: 40 });
+  });
+
+  /**
+   * The lapse rule, and the mirror of 18b's. Ignored rather than refused: the
+   * safe direction shows a member MORE people and never makes the member
+   * themselves more visible. An error would strand somebody on a bookmarked
+   * link; persisting would sell them something they stopped paying for.
+   *
+   * Dropping in the parser is also what keeps the SCREEN honest — the control
+   * renders "Any" because the filter genuinely is not applied, rather than
+   * displaying "No kids" over a grid that ignored it.
+   */
+  it("ignores rather than errors, and says so by showing nothing selected", () => {
+    const free = parseFree({ kids: "none", intention: "casual" });
+    expect(free.enums.kids).toBeUndefined();
+    expect(free.enums.intention).toBe("casual");
+    expect(isFiltered(free)).toBe(true);
   });
 });

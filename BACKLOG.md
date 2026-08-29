@@ -917,9 +917,30 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     sold today to anyone who can reach a buy button:
 
     - "10 connects a day" — **built**, `CONNECTS.premiumPerDay`.
-    - "Advanced browse filters" — built by item 16; **18d decides which are
-      paid, and Kevin decided the harder half 2026-08-29: a paid filter APPEARS
-      DISABLED rather than being absent.**
+    - ~~"Advanced browse filters"~~ — **done 2026-08-29.** Built by item 16,
+      gated by 18d. Free: distance, intention, activity, age — the four above
+      the fold, which are what somebody opens Browse to set, and Decision
+      #23/#24 keeps the free tier usable. Paid: the fifteen behind "More
+      filters", which is where `PREMIUM_INCLUDES` always drew the line.
+
+      **Enforced in `parseBrowseFilters`, not by disabling a control.** The URL
+      is the real input — hand-typed, bookmarked, shared — and a member whose
+      premium lapsed still has yesterday's filtered link. Paid filters are
+      DROPPED from the parsed state for a free member, so the query, the match
+      count and the rendered control all agree: the select shows "Any" because
+      the filter genuinely is not applied, rather than displaying "No kids" over
+      a grid that ignored it.
+
+      Ignored rather than refused, which is the lapse rule and the mirror of
+      18b's: the safe direction shows a member MORE people and never makes the
+      member themselves more visible.
+
+      Kevin decided the harder half 2026-08-29: a paid filter APPEARS DISABLED
+      rather than being absent, and at fifteen controls the state is said ONCE
+      PER GROUP — `disabled` on the fieldset, a Premium tag on the legend, and
+      one line with a link at the bottom of the fold. Fifteen chips would be a
+      page telling somebody fifteen times that they cannot have something, which
+      buries the controls it exists to show them.
 
       The question was not gating, it was what a free member is shown. Absent
       means they cannot tell what Premium would add; disabled means they can,

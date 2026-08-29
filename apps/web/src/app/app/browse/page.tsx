@@ -97,7 +97,23 @@ export default async function BrowsePage({
   // One parse, in one module, shared with the form that wrote the URL. The
   // parameter names were spelled out in both files and a rename in one produced
   // a control that silently stopped doing anything.
-  const filters = parseBrowseFilters(params, me?.search_radius_mi ?? null);
+  // The gate for the paid filters (server 18d). Read here rather than trusted
+  // from the client: parseBrowseFilters DROPS paid filters for a non-premium
+  // member, so this decides what the query actually does, not just what the
+  // form looks like.
+  //
+  // `i_am_premium`, NOT `is_premium(uuid)` — which is revoked from
+  // `authenticated` (20260814001000, closing a uuid-probe leak). I wrote the
+  // revoked one first and it fails in the worst possible way: the call returns
+  // "permission denied", supabase-js RESOLVES rather than rejects, `data` is
+  // null, and null reads as "not premium". Every paying member would have been
+  // silently handed the free tier with five locked filter groups. The premium
+  // settings page carries a comment about this exact bug, having shipped it
+  // once already.
+  const { data: isPremium } = await supabase.rpc("i_am_premium");
+  const premium = isPremium === true;
+
+  const filters = parseBrowseFilters(params, me?.search_radius_mi ?? null, premium);
   const distanceMi = filters.distanceMi;
 
   // One instant for the filter, the stat and the card marker. Separate
@@ -291,6 +307,7 @@ export default async function BrowsePage({
         advancedCount={advanced}
         matching={matching}
         shown={rows.length}
+        isPremium={premium}
       />
 
       {rows.length === 0 ? (

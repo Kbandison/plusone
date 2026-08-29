@@ -1000,6 +1000,19 @@ export const DRAFT_COPY = {
     filterGroupBackground: "Background",
     filterGroupBelief: "Faith and politics",
     /**
+     * The paid groups (server 18d). Kevin chose disabled over absent, so a free
+     * member sees the whole shape of the tier on the screen where they would
+     * use it.
+     *
+     * Said ONCE per group rather than once per control. Fifteen "Premium" chips
+     * on one screen is a page telling somebody fifteen times that they cannot
+     * have something; five section locks say the same thing and leave the
+     * controls legible, which is the point of showing them at all.
+     */
+    filterPremiumGroup: "Premium",
+    filterPremiumNote: "Advanced filters are part of Premium.",
+    filterPremiumLink: "See what Premium adds",
+    /**
      * Incognito (server 18a) — the second of the five things PREMIUM_INCLUDES
      * promised on two public pages and did not have.
      *

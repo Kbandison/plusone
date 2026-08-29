@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 
+import Link from "next/link";
+
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
@@ -10,6 +12,7 @@ import {
   ACTIVITY_WINDOWS,
   ENUM_FILTERS,
   RANGE_FILTERS,
+  isPaidGroup,
   type BrowseFilterState,
   type EnumFilter,
   type RangeFilter,
@@ -65,11 +68,21 @@ export function BrowseFilters({
   advancedCount,
   matching,
   shown,
+  isPremium,
 }: {
   state: BrowseFilterState;
   advancedCount: number;
   matching: number;
   shown: number;
+  /**
+   * Whether the paid groups are interactive (server 18d).
+   *
+   * Presentation ONLY. The gate is in parseBrowseFilters, which drops paid
+   * filters from the state for a non-premium member — so a hand-typed
+   * `?kids=none` is not applied however this renders, and the control shows
+   * "Any" because the filter genuinely is not on.
+   */
+  isPremium: boolean;
 }) {
   const form = useRef<HTMLFormElement>(null);
   const apply = () => form.current?.requestSubmit();
@@ -138,15 +151,32 @@ export function BrowseFilters({
           ) : null}
         </summary>
 
+        {/* One lock per GROUP, not one per control.
+            
+            Kevin chose disabled over absent, so a free member sees the whole
+            shape of the tier here rather than a shorter screen they cannot
+            interpret. At fifteen controls that decision needs the state said
+            once per section: fifteen "Premium" chips is a page telling somebody
+            fifteen times they cannot have something, and it buries the controls
+            it exists to show them.
+            
+            `disabled` on the fieldset, which cascades to every control inside
+            it — one attribute rather than nineteen, and it cannot drift. */}
         {GROUPS.map((group) => {
           const enums = ENUM_FILTERS.filter((f) => f.group === group.id);
           const ranges = RANGE_FILTERS.filter((r) => r.group === group.id);
           if (enums.length === 0 && ranges.length === 0) return null;
+          const locked = !isPremium && isPaidGroup(group.id);
 
           return (
-            <fieldset key={group.id} className="mt-6">
-              <legend className="mb-3 text-[10px] tracking-[0.02em] text-ink-3 uppercase">
+            <fieldset key={group.id} className="mt-6" disabled={locked}>
+              <legend className="mb-3 flex items-center gap-2 text-[10px] tracking-[0.02em] text-ink-3 uppercase">
                 {group.heading}
+                {locked ? (
+                  <span className="rounded-full border border-line-2 px-2 py-0.5 tracking-[0.02em] text-ink-3 normal-case">
+                    {C.filterPremiumGroup}
+                  </span>
+                ) : null}
               </legend>
               <div className="flex flex-wrap items-end gap-4">
                 {enums.map((filter) => (
@@ -160,17 +190,34 @@ export function BrowseFilters({
           );
         })}
 
-        <label className="mt-6 flex min-h-tap items-center gap-2.5 text-[11.7px]">
-          <input
-            type="checkbox"
-            name="written"
-            value="1"
-            defaultChecked={state.writtenOnly}
-            onChange={apply}
-            className="size-[14.6px] accent-accent"
-          />
-          {C.filterWritten}
-        </label>
+        <fieldset disabled={!isPremium}>
+          <label className="mt-6 flex min-h-tap items-center gap-2.5 text-[11.7px]">
+            <input
+              type="checkbox"
+              name="written"
+              value="1"
+              defaultChecked={state.writtenOnly}
+              onChange={apply}
+              className="size-[14.6px] accent-accent"
+            />
+            {C.filterWritten}
+          </label>
+        </fieldset>
+
+        {/* Said once, at the bottom of the fold, with somewhere to go. A screen
+            that says "you cannot have this" five times and offers no way to
+            change that is a complaint rather than an offer. */}
+        {!isPremium ? (
+          <p className="mt-6 text-[11.7px] leading-[1.6] text-ink-3">
+            {C.filterPremiumNote}{" "}
+            <Link
+              href="/app/settings/premium"
+              className="underline decoration-line-2 underline-offset-4 hover:text-ink"
+            >
+              {C.filterPremiumLink}
+            </Link>
+          </p>
+        ) : null}
       </details>
 
       {/* What the filters cost, while they are still one tap from being undone.
