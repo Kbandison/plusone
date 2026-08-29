@@ -512,6 +512,49 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     asked for, where `plusonepremium` is old. So the remaining difference is
     age, not configuration: propagation, or a stale catalogue on the device.
 
+    ── 2026-08-29, and the cache theory is dead ───────────────────────────────
+
+    **Re-read on the device at 18:18. Still 0, and the bridge is HEALTHY.**
+
+    ```
+    TWAProviderPicker: Found TWA provider: com.android.chrome
+    TWAConnectionPool: Found app.loveplusone.DelegationService to handle request
+    LicenseClient: License check succeeded.
+    TwaBilling.DG: Calling getDetails for premium1month, premium3months, premium6months
+    TwaBilling.DG: Connected to Play Billing library.
+    TwaBilling.DG: GetDetails returned: 0        (twice, .789 and 55.388)
+    Finsky: Billing preferred account via installer — hash unchanged
+    ```
+
+    No `clientAppUnavailable` anywhere in the launch. So every reading below
+    that blamed the bridge was reading a transient, and the catalogue problem
+    underneath it has not moved in two days.
+
+    **This kills the standing hypothesis.** The entry above says to leave it
+    overnight and re-read, on the theory that the Play Store cache wiped at
+    ~22:00 on the 27th would refill. It has had two days and it has not.
+
+    One new number, and it cuts the other way from the 27th's: the first
+    `getDetails` took **152ms**, against 23ms then. 23ms with no network request
+    was the evidence for "local cache lookup against an empty cache". 152ms is
+    long enough to have asked, which would make this a live answer of zero
+    rather than a stale one — and a live zero is a different problem, on Play's
+    side of the line, about products it will not serve to this app.
+
+    Not proof; a slow local path can also take 152ms. But it is the first
+    reading that distinguishes the two hypotheses at all, and it points away
+    from caching.
+
+    **The premium screen renders the three plans anyway**, from `PLANS` in
+    config, with working-looking Choose buttons and a Restore purchases button
+    below them. Nothing takes money — the Play purchase flow is server 15 and
+    unbuilt — but a member on Android today sees a full pricing screen backed by
+    an empty catalogue. Worth knowing before anyone ships server 15 on top of it.
+
+    Next lever is unchanged and it is Kevin 12: finish Play's app setup. Not
+    because it is known to matter, but because it is the last variable left and
+    is required before launch regardless.
+
     ── and then the bridge broke again, which is the real finding ──────────────
 
     **`clientAppUnavailable` IS TRANSIENT, AND IT CAN BE REPRODUCED ON DEMAND.**
