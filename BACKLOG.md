@@ -964,8 +964,42 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
       No bug — but the gate is narrower than it reads, and the next person to
       trust it should know that.
 
-    - "Fine-grained photo privacy controls" — `photo_privacy` is a two-value
-      enum, free, and "fine-grained" is doing a lot of work.
+    - ~~"Fine-grained photo privacy controls"~~ — **done 2026-08-29 in
+      `43a35dc`, applied.** Per-photo rather than more audiences, and paid with
+      a free floor. Kevin settled both halves; the second is the one worth not
+      re-deciding.
+
+      **Safety stays free.** The profile-wide blur is untouched and still free,
+      so no member's protection is behind the paywall — anybody can blur
+      everything. Premium buys arrangement. That was put to Kevin explicitly
+      rather than assumed, because 20260818000100 and item 16 above both refuse
+      to build things that press on the people who chose to blur, and charging
+      for privacy on a disclosure-first app is the same shape.
+
+      **A lapse must never make a member more visible.** Overrides are kept for
+      ever; premium gates only the SETTING of one, and clearing back to "follow
+      the profile" is never gated or a lapsed member is stranded. Pinned by
+      `photo-privacy.test.ts`, which greps every migration for anything that
+      nulls the column and checks the premium-expiry sweep never mentions
+      photos.
+
+      **The gate is a trigger, and that is a property of the schema.**
+      `profile_photos` carries a whole-table update grant to `authenticated`
+      (20260813000700), so a member can PATCH the column straight through
+      PostgREST and a check in the server action is decoration. `profiles` has
+      no such grant, which is why 18a's answer is the opposite — never grant
+      the column and write it through a definer function. Read
+      `information_schema.role_table_grants`, not the creating migration.
+
+      **Position 0 is unchanged, deliberately.** `photosFor` is
+      `.eq("position", 0)`, so the first photo is what all six card surfaces
+      show. Picking the first CLEAR photo instead is the tempting alternative
+      and it is the same implicit un-blurring the lapse rule refuses. What
+      changed is that the gallery now SAYS the first photo is the one every card
+      shows — a hidden consequence made informed, which is cheaper than a
+      redesign and addresses the actual problem.
+
+      **Unseen in either shell.**
 
     **Kevin's call 2026-08-29: build them, do not cut the lines.** So this is
     four features, not a copy edit.
