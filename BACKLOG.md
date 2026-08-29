@@ -213,27 +213,35 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     fail silently, including a call to an unregistered plugin, which never
     settles rather than rejecting.
 
-12. **Verification debt — build 1.0 (5) is the one to check them on.**
+12. **Verification debt — two closed, one still needs a person.**
 
-    Uploaded 2026-08-29 with the RELEASE Xcode (`DTXcode 2660`, SDK
-    `iphoneos26.5`), which also makes it the first genuinely submittable build.
-    Verified against the archive's own binary rather than assumed: it carries
-    `PlusOneStoreKit`, `PlusOneShell`, `KeyboardPlugin` and
-    `PushNotificationsPlugin`, both entitlements, and the new location purpose
-    string.
+    Onboarding is fixed and confirmed on hardware: Kevin got through the radius
+    step on 1.0 (5), which is what the location purpose string was for.
 
-    Four things to look at on it, none known to be broken and none ever seen:
+    **Re-verified in the Simulator against the current tree on 2026-08-29**,
+    after the `MainViewController` split and `ShellPlugins` — because a fix
+    verified before a refactor is not a fix verified after one:
 
-    - **Onboarding gets past the last step.** The one that prompted the build —
-      iOS should now ASK for location on the radius step, and the button should
-      say "Finding you…" rather than nothing. This is the important one.
-    - **The badge count.** Needs notification permission, so it cannot be shown
-      in a Simulator.
-    - **The status bar band**, with the system dark and Linen chosen.
-    - **The keyboard**, which should no longer reserve a home indicator's height
-      while it is up.
-    - **The camera**, the liveness gate, which has always needed hardware — and
-      is now reachable, since onboarding can be completed.
+    - ~~**The status-bar band**~~ — `rgb(239,233,223)` at every row to the top
+      edge, which is Linen exactly. `PlusOneShell` registers,
+      `setInterfaceStyle` and `setBadge` both answer.
+    - ~~**The keyboard**~~ — safe-area inset `34 -> 0` with the keyboard up, the
+      web view resizes, and the composer stays 44.6px clear.
+
+    **Still unseen: the badge, and only its last inch.** The native method
+    answers `{"count":7}`, so the plumbing is proven — what nobody has watched
+    is iOS actually drawing the number on the icon, and that needs notification
+    permission granted, which needs a tap no Simulator will accept from a
+    script. Look at the home screen with unread notifications on 1.0 (5).
+
+    **The camera**, the liveness gate, is now reachable for the first time —
+    onboarding could not be finished in the shell before this build.
+
+    One trap worth keeping, because it cost a false alarm today: an unanswered
+    system permission dialogue DIMS the whole page, so a pixel sample taken
+    while one is up reads as a grey band that is not there. The numbers said
+    regression; the screenshot said stale dialogue. Reboot the simulator and
+    look at the picture before believing a colour.
 
 13. ~~**The web view does not come back after the keyboard closes**~~ — does
     NOT reproduce on hardware, checked 2026-08-26. Kevin typed on the rooms page
