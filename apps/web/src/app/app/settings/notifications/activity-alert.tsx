@@ -5,8 +5,9 @@ import { useState, useTransition } from "react";
 
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
+import { withStoredValue } from "@/lib/ladder";
+
 import { saveActivityAlert } from "./activity-alert-actions";
-import { alertRadiusOptions } from "./alert-radius-options";
 
 const C = DRAFT_COPY.app;
 
@@ -106,7 +107,7 @@ export function ActivityAlert({
                  out — pinned by design-system.test.ts, which caught this. */
               className="rounded-lg border border-line-2 bg-bg px-2.5 py-1.5 text-[16px]"
             >
-              {alertRadiusOptions(radiusMi).map((mi) => (
+              {withStoredValue(RADIUS.alertLadderMi, radiusMi).map((mi) => (
                 <option key={mi} value={mi}>
                   {C.activityAlertRadiusOption(mi)}
                 </option>
