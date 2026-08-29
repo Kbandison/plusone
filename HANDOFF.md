@@ -255,6 +255,26 @@ runtimes` just comes back empty.
   on 2026-08-22, with corrupted journals and no Linux OOM entries, because the
   kill came from outside Linux. Do not raise those numbers casually, and prefer
   a targeted `vitest` run to `pnpm test` when only one file is in question.
+
+  **But `pnpm test --concurrency=1` is safe and it is the only complete gate.**
+  The memory risk here is parallel fan-out, not the suite, and `--concurrency=1`
+  removes it: a forced full run of all six packages takes seconds and never went
+  near the ceiling. Fully cached it is about two seconds.
+
+  This matters because the targeted habit above has a failure mode that has now
+  happened: working in `apps/web`, running `cd apps/web && pnpm vitest run`, and
+  never running `packages/config` — where the migration-to-privacy-labels chain
+  is enforced. `6e9679f` added a `profiles` column, passed every check I ran,
+  and left main red for both lanes until macOS classified it in `035994b`.
+  **A `profiles` column is never "one file in question"** — it reaches two store
+  data-safety forms through that suite.
+
+  Also worth having, since it cost a wrong conclusion: turbo reports only the
+  tasks it EXECUTED, so a mostly-cached run prints "Tasks: 1 successful, 1
+  total" and reads exactly like a gate that only covers one package. It is not —
+  `--dry=json` lists all six, and `--force` runs them. I nearly wrote up a hole
+  in the gate that does not exist.
+
 - **`adb` reaches an Android phone from WSL over the LAN, no cable.** Android's
   wireless debugging is enough; WSL's NAT routes outbound to the LAN fine, and
   nothing is needed on the Windows side. Two traps, both costing a round trip:
