@@ -699,7 +699,49 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     without an in-app purchase path until it is fixed — a product decision
     rather than a technical one, and Kevin's.
 
-14. **The Play purchase flow, which is on no list until now.** Server 12 records
+14. **A real Play purchase did not grant, and the cause was one arrow
+    function.** Found 2026-08-29, on the first purchase anybody made.
+
+    Vercel's OIDC federation was returning no token, so `verifyPlayPurchase`
+    raised "google auth unavailable", `submitPlayPurchase` answered
+    "unverified", no `iap_entitlements` row was written, and Play retried the
+    notification indefinitely. A member pays and gets nothing, and Play refunds
+    an unacknowledged subscription after 72 hours without telling anybody.
+
+    **google-auth-library calls the subject token supplier as
+    `getSubjectToken(context)`**, where context is `{ audience,
+subjectTokenType }`. `getVercelOidcToken` takes an options object whose
+    `audience` field means "exchange for a token carrying that audience". So
+    passing the function bare — which is what Vercel's own documented example
+    does — feeds the STS context in as options and mints a token with
+    `aud: //iam.googleapis.com/...`. Wrap it: `() => getVercelOidcToken()`.
+
+    Two things worth carrying beyond the fix:
+
+    - **The error quoted our own input back and read as a diagnosis.**
+      "The audience in ID Token [//iam.googleapis.com/...] does not match the
+      expected audience" names the value we had just sent, so it points at the
+      STS request rather than at the token. It cost two deploys — one changing
+      the GCP provider theory, one changing the audience to a different wrong
+      value. The tell was that the bracketed string tracked whatever we sent.
+    - **The chain was recorded as "proven" on 2026-08-27 and half of it had
+      never run.** That proof was a test notification answering 200 — but the
+      route returns early on a test notification and never calls Google at all.
+      Pub/Sub delivery and caller verification were proven; the Developer API
+      call was not. A green light from the wrong end of the pipe.
+
+    Read the provider config rather than inferring it, which settles the
+    audience question in one command:
+
+    ```
+    gcloud iam workload-identity-pools providers describe vercel \
+      --location=global --workload-identity-pool=vercel --project=luxweb-studio
+    ```
+
+    It allows `https://vercel.com/kevin-bandisons-projects` — Vercel's default,
+    and what an un-argumented call produces.
+
+15. **The Play purchase flow, which is on no list until now.** Server 12 records
     WHY three products and 10 records the TWA that would run them, but nothing
     said who builds the buying. It is web-side — a TWA runs `apps/web` in real
     Chrome — so it is this lane, not the shells one.
