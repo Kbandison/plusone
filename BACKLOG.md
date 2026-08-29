@@ -213,32 +213,27 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     fail silently, including a call to an unregistered plugin, which never
     settles rather than rejecting.
 
-12. **Verification debt — four things, and one build unblocks all of them.**
+12. **Verification debt — build 1.0 (5) is the one to check them on.**
 
-    Build 1.0 (4) is what is on Kevin's iPad and it was archived on 2026-08-26
-    at 12:56, which is BEFORE three of these landed. Checked against the
-    archive's binary rather than assumed: it contains `PlusOneStoreKit` and
-    nothing added after it. So:
+    Uploaded 2026-08-29 with the RELEASE Xcode (`DTXcode 2660`, SDK
+    `iphoneos26.5`), which also makes it the first genuinely submittable build.
+    Verified against the archive's own binary rather than assumed: it carries
+    `PlusOneStoreKit`, `PlusOneShell`, `KeyboardPlugin` and
+    `PushNotificationsPlugin`, both entitlements, and the new location purpose
+    string.
 
-    - **The badge count** (item 4). Needs notification permission, so a
-      Simulator cannot show it. The plugin method is not in 1.0 (4) at all.
-    - **The status bar band** (item 1). `PlusOneShell` is not in 1.0 (4). What
-      Kevin sees there today is the old behaviour, not a regression.
-    - **The keyboard safe-area inset** (`69097b3`). `@capacitor/keyboard` is not
-      in 1.0 (4) either.
-    - **The camera**, the liveness gate, which has always needed hardware.
+    Four things to look at on it, none known to be broken and none ever seen:
 
-    None of them is broken as far as anyone knows; all four are simply unseen.
-    A new TestFlight build carries the first three and makes the fourth
-    reachable in the same sitting, which is the cheapest way to close the lot —
-    and until it exists, anything Kevin reports about the keyboard or the status
-    bar on that build is describing code that was superseded two days ago.
-
-    Cleared 2026-08-26: the tapped universal link, confirmed by Kevin on the
-    iPad against build 1.0 (4) — it opens the app instead of Safari. And the
-    keyboard against the fixed composer, measured in the Simulator; what that
-    turned up is item 13 and the fix in `69097b3`. Dusk, the offline page and
-    both bottom sheets were cleared on 2026-08-25; what Dusk turned up is item 1.
+    - **Onboarding gets past the last step.** The one that prompted the build —
+      iOS should now ASK for location on the radius step, and the button should
+      say "Finding you…" rather than nothing. This is the important one.
+    - **The badge count.** Needs notification permission, so it cannot be shown
+      in a Simulator.
+    - **The status bar band**, with the system dark and Linen chosen.
+    - **The keyboard**, which should no longer reserve a home indicator's height
+      while it is up.
+    - **The camera**, the liveness gate, which has always needed hardware — and
+      is now reachable, since onboarding can be completed.
 
 13. ~~**The web view does not come back after the keyboard closes**~~ — does
     NOT reproduce on hardware, checked 2026-08-26. Kevin typed on the rooms page
