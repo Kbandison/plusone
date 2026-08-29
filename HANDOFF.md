@@ -292,7 +292,7 @@ line per session; clear it when you finish or abandon the item.
 | session | item                                            | since      |
 | ------- | ----------------------------------------------- | ---------- |
 | _macOS_ | —                                               | —          |
-| _WSL_   | server 16 (deeper filters, stage 1 — no schema) | 2026-08-29 |
+| _WSL_   | server 17 + 18a (new columns, then incognito — both rebuild `visible_profiles`) | 2026-08-29 |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
 only**, said 2026-08-29, because this is one body of work he wants done in

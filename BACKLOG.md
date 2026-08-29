@@ -757,10 +757,15 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     right: a button that takes money and grants nothing is worse than a paid
     tier that is unreachable.
 
-16. **Browse can filter on three things, and the profile holds far more.**
-    Distance, intention, active-this-week — that is every filter in the app.
-    Kevin asked for much deeper filtering 2026-08-29 and this is the half that
-    needs no schema at all.
+16. ~~**Browse can filter on three things, and the profile holds far more.**~~
+    — done 2026-08-29 in `3fc2212`. Eleven filters, eight of them folded, and the
+    four lifestyle answers now render on the card and the connect panel. No
+    migration, exactly as this entry predicted. Everything below is kept because
+    the four deliberate omissions are the part worth not re-deciding.
+
+    Distance, intention, active-this-week — that was every filter in the app.
+    Kevin asked for much deeper filtering 2026-08-29 and this was the half that
+    needed no schema at all.
 
     **`smokes`, `drinks`, `kids` and `kids_plan` are already collected, already
     editable, and go nowhere.** Onboarding asks for all four
