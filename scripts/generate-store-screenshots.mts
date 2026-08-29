@@ -56,11 +56,28 @@ mkdirSync(OUT, { recursive: true });
  * these were taken on is 1440×3120 — 9:19.5, TALLER than the limit — so an
  * unedited capture from it is rejected before anybody looks at it.
  */
-const WIDTH = 1080;
-const HEIGHT = 1920;
-
-/** The caption band. 240px is 12.5% of the height — inside Play's 20% cap. */
-const CAPTION_H = 240;
+/**
+ * Two stores, two sizes, and they are NOT interchangeable.
+ *
+ * Play wants an aspect ratio between 16:9 and 9:16 inclusive, so 1080×1920 is
+ * the tallest it accepts. Apple wants specific pixel dimensions per display
+ * class and rejects anything else: 1320×2868 is the 6.9" iPhone, and since 2026
+ * that is the only iPhone set required — Apple scales it down for the rest.
+ *
+ * An earlier version of this file claimed one set served both. It does not, and
+ * a 1080×1920 upload is refused by App Store Connect before anybody looks at
+ * it. The device capture is 1440×3120, which is 0.4615 — almost exactly Apple's
+ * 0.4603 — so the Apple set loses nothing to cropping and the Play set is the
+ * one that gives up height.
+ *
+ * If the iOS build stays universal, a 13" iPad set (2064×2752) is required too.
+ * That wants captures from an iPad rather than a phone shot in an iPad-shaped
+ * frame, so it is deliberately not faked here.
+ */
+const SIZES = [
+  { dir: "play", width: 1080, height: 1920, caption: 240 },
+  { dir: "app-store-iphone", width: 1320, height: 2868, caption: 360 },
+] as const;
 
 /** Dusk, from packages/ui-tokens/tokens.css. */
 const T = { ground: "#14110f", ink: "#ede7de", ink2: "#a79c90", accent: "#d69a4e" };
@@ -115,7 +132,8 @@ const SHOTS: readonly Shot[] = [
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function html(shot: Shot, capture: string): string {
+function html(shot: Shot, capture: string, size: (typeof SIZES)[number]): string {
+  const { width: WIDTH, height: HEIGHT, caption: CAPTION_H } = size;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   @font-face { font-family: "Instrument Serif"; src: url(data:font/ttf;base64,${FONTS.instrument}) format("truetype"); font-weight: 400; font-display: block; }
   @font-face { font-family: "Satoshi"; src: url(data:font/woff2;base64,${FONTS.satoshi400}) format("woff2"); font-weight: 400; font-display: block; }
@@ -165,17 +183,24 @@ for (const shot of SHOTS) {
 }
 
 const browser = await chromium.launch();
-const page = await browser.newPage({
-  viewport: { width: WIDTH, height: HEIGHT },
-  deviceScaleFactor: 1,
-});
+const page = await browser.newPage({ deviceScaleFactor: 1 });
 
-for (const shot of SHOTS) {
-  await page.setContent(html(shot, b64(join(CAPTURES, shot.capture))), { waitUntil: "load" });
-  await page.evaluate(() => document.fonts.ready);
-  const png = await page.screenshot({ type: "png" });
-  writeFileSync(join(OUT, shot.file), png);
-  console.log(`  ${shot.file}  ${WIDTH}×${HEIGHT}  ${png.length} bytes  (${shot.capture})`);
+for (const size of SIZES) {
+  const dir = join(OUT, size.dir);
+  mkdirSync(dir, { recursive: true });
+  await page.setViewportSize({ width: size.width, height: size.height });
+  console.log(`\n  ${size.dir}  ${size.width}×${size.height}`);
+  for (const shot of SHOTS) {
+    await page.setContent(html(shot, b64(join(CAPTURES, shot.capture)), size), {
+      waitUntil: "load",
+    });
+    await page.evaluate(() => document.fonts.ready);
+    const png = await page.screenshot({ type: "png" });
+    writeFileSync(join(dir, shot.file), png);
+    console.log(`    ${shot.file}  ${png.length} bytes  (${shot.capture})`);
+  }
+  const pct = Math.round((size.caption / size.height) * 100);
+  console.log(`    caption band ${size.caption}px of ${size.height} — ${pct}%`);
 }
 
 /**
@@ -208,10 +233,40 @@ const feature = await page.screenshot({ type: "png" });
 writeFileSync(join(OUT, "feature-graphic.png"), feature);
 console.log(`  feature-graphic.png  ${FEATURE.width}×${FEATURE.height}  ${feature.length} bytes`);
 
+/**
+ * The wordmark as a file, which it has never been.
+ *
+ * It exists only as markup in ui.tsx, so anybody needing it outside the app —
+ * a press kit, a social avatar, a slide — had nothing to use. Two inks on
+ * transparency rather than two backgrounds, so it drops onto anything.
+ */
+const LOGO = { width: 1200, height: 420 };
+await page.setViewportSize(LOGO);
+for (const [name, ink] of [
+  ["wordmark-for-dark-backgrounds.png", T.ink],
+  ["wordmark-for-light-backgrounds.png", "#1c1917"],
+] as const) {
+  await page.setContent(
+    `<!doctype html><html><head><meta charset="utf-8"><style>
+      @font-face { font-family: "Instrument Serif"; src: url(data:font/ttf;base64,${FONTS.instrument}) format("truetype"); font-weight: 400; font-display: block; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { width: ${LOGO.width}px; height: ${LOGO.height}px; background: transparent; }
+      body { display: flex; align-items: center; justify-content: center; }
+      .wordmark { font-family: "Instrument Serif", serif; font-size: 260px; line-height: 1;
+        letter-spacing: -0.02em; color: ${ink}; }
+      .wordmark .plus { font-size: 0.90em; vertical-align: 0.30em; color: ${T.accent}; }
+    </style></head><body>
+      <span class="wordmark"><span class="plus">+</span>One</span>
+    </body></html>`,
+    { waitUntil: "load" },
+  );
+  await page.evaluate(() => document.fonts.ready);
+  const png = await page.screenshot({ type: "png", omitBackground: true });
+  writeFileSync(join(OUT, name), png);
+  console.log(`  ${name}  ${LOGO.width}×${LOGO.height}  ${png.length} bytes`);
+}
+
 await browser.close();
 console.log(
-  `\n  ${SHOTS.length} screenshots + the feature graphic in apps/android/store-screenshots/`,
-);
-console.log(
-  `  Caption band is ${CAPTION_H}px of ${HEIGHT} — ${Math.round((CAPTION_H / HEIGHT) * 100)}%, inside Play's 20% cap.`,
+  `\n  ${SHOTS.length} screenshots × ${SIZES.length} sizes + the feature graphic, in apps/android/store-screenshots/`,
 );

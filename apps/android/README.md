@@ -114,6 +114,19 @@ are the only honest source.
 the script cannot reproduce — a listing asset that needs a phone in your hand to
 rebuild wants its source in the repository.
 
+**Two stores, two sizes, and they are NOT interchangeable.** `pnpm screenshots`
+emits both: `play/` at 1080×1920 and `app-store-iphone/` at 1320×2868. An
+earlier note here said one set served both — it does not, and a 1080×1920 upload
+is refused by App Store Connect before anybody looks at it. Since 2026 the 6.9"
+iPhone is the only iPhone set Apple requires; it scales that down for the rest.
+A 13" iPad set (2064×2752) is required only if the iOS build stays universal,
+and it wants real iPad captures rather than a phone shot in an iPad-shaped
+frame, so it is deliberately not faked.
+
+The script also renders the wordmark as transparent PNGs in two inks. It had
+never existed as a file — only as markup in `ui.tsx` — so anything outside the
+app had nothing to use.
+
 **1080×1920 is not a preference.** Play requires an aspect ratio between 16:9
 and 9:16 inclusive, and the device is 1440×3120 — 9:19.5, taller than the limit
 — so an unedited capture is rejected before anybody looks at it.

@@ -102,3 +102,11 @@ copy-review.html
 #
 # Ignored rather than fought, because the alternative is noticing every time.
 * [2-9].*
+
+# Generated store screenshots. The CAPTURES beside them are committed, because
+# they are inputs this repo cannot reproduce without a phone in hand — but the
+# composed 1080×1920 and 1320×2868 sets are derived from them by
+# `pnpm screenshots` in seconds, and at ~17 MB a run they would add that much to
+# git history every time anybody regenerated.
+apps/android/store-screenshots/play/
+apps/android/store-screenshots/app-store-iphone/
