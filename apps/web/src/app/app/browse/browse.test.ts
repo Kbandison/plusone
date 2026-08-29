@@ -162,14 +162,12 @@ describe("filters apply themselves", () => {
  * device, on Kevin's own radius.
  */
 describe("the radius select can state a radius that is not on the ladder", () => {
-  it("adds the member's own value when the ladder does not carry it", () => {
-    expect(filters).toMatch(/ladderMi as readonly number\[\]\)\.includes\(state\.distanceMi\)/);
-    expect(filters).toMatch(/\[\.\.\.RADIUS\.ladderMi, state\.distanceMi\]\.sort/);
-  });
-
-  /** Still the offered set — this adds one value, it does not replace it. */
-  it("keeps the ladder as what is offered", () => {
-    expect(filters).toMatch(/RADIUS\.ladderMi\.map|\)\.map\(\(mi\)/);
+  it("offers the member's own value through the shared helper", () => {
+    // The behaviour is unit-tested in lib/ladder.test.ts. What this file pins
+    // is that Browse goes through it rather than mapping the raw ladder, which
+    // is the spelling that had the bug.
+    expect(filters).toMatch(/withStoredValue\(RADIUS\.ladderMi, state\.distanceMi\)/);
+    expect(filters).not.toMatch(/RADIUS\.ladderMi\.map/);
   });
 });
 

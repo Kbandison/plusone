@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
+import { withStoredValue } from "@/lib/ladder";
 import {
   ACTIVITY_WINDOWS,
   ENUM_FILTERS,
@@ -79,19 +80,10 @@ export function BrowseFilters({
   return (
     <form ref={form} method="get" className="mt-8">
       <div className="flex flex-wrap items-end gap-4">
-        {/* The member's own radius is an option even when it is off the ladder.
-            
-            RADIUS.ladderMi is [50, 100, 150, 250] and the onboarding slider
-            writes any integer from 5 to 250 — so a member on 110 had a select
-            whose value matched no option, and a browser falls back to the first
-            one. It RENDERED "50 miles" while the stat above it correctly said
-            110, and the next change to any other control submitted distance=50
-            and silently shrank their search.
-            
-            Latent since this filter existed and nearly harmless at three
-            controls; there are nineteen now, and every one of them submits this
-            form. The ladder is still what is OFFERED — this only adds the value
-            they already have, so the select can state it. */}
+        {/* The ladder is still what is OFFERED; withStoredValue only adds the
+            radius the member already has, so the select can state it rather
+            than silently falling back to its first option and writing that on
+            the next submit. The full account is in lib/ladder.ts. */}
         <label className={LABEL}>
           {C.filterDistance}
           <select
@@ -100,12 +92,7 @@ export function BrowseFilters({
             onChange={apply}
             className={FIELD}
           >
-            {/* Widened to number[] because ladderMi is a readonly tuple of its
-                four literal values, and the member's radius is any integer. */}
-            {((RADIUS.ladderMi as readonly number[]).includes(state.distanceMi)
-              ? [...RADIUS.ladderMi]
-              : [...RADIUS.ladderMi, state.distanceMi].sort((a, b) => a - b)
-            ).map((mi) => (
+            {withStoredValue(RADIUS.ladderMi, state.distanceMi).map((mi) => (
               <option key={mi} value={mi}>
                 {mi} miles
               </option>

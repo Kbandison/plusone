@@ -29,6 +29,7 @@ import {
 import { PREFERENCES_INITIAL, type PreferencesState } from "./state";
 import { buttonClass } from "@/app/ui";
 import { StepActions } from "@/app/onboarding/step-actions";
+import { withStoredValue } from "@/lib/ladder";
 import { profile } from "@plusone/logic";
 
 const AGE_FLOOR = profile.MINIMUM_AGE;
@@ -49,7 +50,15 @@ const HEIGHTS = Array.from(
   (_, i) => HEIGHT_MIN_CM + i * 2,
 );
 
-/** Every 2 kg, for the reason HEIGHTS is every 2 cm. */
+/**
+ * Every 2 kg, for the reason HEIGHTS is every 2 cm.
+ *
+ * Both are a SHORTER list than the column accepts — profiles_height_range and
+ * profiles_weight_range allow every integer — so both go through
+ * withStoredValue. Only a crafted post can produce an odd value today, since
+ * this form is the sole writer; it is guarded anyway because the obvious next
+ * change makes the rare case normal and the failure is silent. See lib/ladder.ts.
+ */
 const WEIGHTS = Array.from(
   { length: Math.floor((WEIGHT_MAX_KG - WEIGHT_MIN_KG) / 2) + 1 },
   (_, i) => WEIGHT_MIN_KG + i * 2,
@@ -242,7 +251,7 @@ export function PreferencesForm({
                 className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
               >
                 <option value="">{C.heightUnstated}</option>
-                {HEIGHTS.map((cm) => (
+                {withStoredValue(HEIGHTS, defaults.heightCm).map((cm) => (
                   <option key={cm} value={cm}>
                     {formatHeight(cm)} · {cm} cm
                   </option>
@@ -258,7 +267,7 @@ export function PreferencesForm({
                 className="rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent"
               >
                 <option value="">{C.heightUnstated}</option>
-                {WEIGHTS.map((kg) => (
+                {withStoredValue(WEIGHTS, defaults.weightKg).map((kg) => (
                   <option key={kg} value={kg}>
                     {formatWeight(kg)} · {kg} kg
                   </option>
