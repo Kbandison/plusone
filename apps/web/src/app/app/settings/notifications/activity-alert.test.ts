@@ -3,7 +3,14 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { NEARBY_JOIN_MIN_COUNT, NOTIFICATIONS, NOTIFICATION_DEFAULTS } from "@plusone/config";
+import {
+  NEARBY_JOIN_MIN_COUNT,
+  NOTIFICATIONS,
+  NOTIFICATION_DEFAULTS,
+  RADIUS,
+} from "@plusone/config";
+
+import { alertRadiusOptions } from "./alert-radius-options";
 
 const HERE = join(import.meta.dirname);
 const read = (p: string) => readFileSync(join(HERE, p), "utf8");
@@ -99,5 +106,41 @@ describe("the activity alert cannot become a nag or a leak", () => {
     // A generic 500 every hour is something people learn to scroll past.
     expect(route).toMatch(/42883/);
     expect(route).toMatch(/20260829001000/);
+  });
+});
+
+/**
+ * A <select> whose value is not among its options selects the FIRST one, with
+ * no error and nothing that looks wrong. WSL hit this in the Browse distance
+ * filter on 2026-08-29 — a member whose radius was 110 saw "50 miles", and
+ * touching any other control submitted 50 and shrank their search silently.
+ *
+ * The same shape was live here: radius_mi accepts any integer between
+ * RADIUS.minMi and RADIUS.maxMi, and the member holds update on that column.
+ */
+describe("the radius select cannot silently rewrite a member's radius", () => {
+  it("offers the ladder unchanged when the stored value is on it", () => {
+    expect(alertRadiusOptions(RADIUS.defaultMi)).toEqual(RADIUS.alertLadderMi);
+  });
+
+  it("offers a stored radius the ladder does not carry", () => {
+    const options = alertRadiusOptions(110);
+    expect(options).toContain(110);
+    // In place, not appended — a ladder that reads 5, 10, 25, 50, 100, 250, 110
+    // is a control that looks broken even though it now behaves.
+    expect([...options]).toEqual([...options].sort((a, b) => a - b));
+    for (const mi of RADIUS.alertLadderMi) expect(options).toContain(mi);
+  });
+
+  it("keeps the default on the ladder, so the common path never grows an option", () => {
+    // If this ever fails, every member with no alert yet gets a stray rung.
+    expect(RADIUS.alertLadderMi).toContain(RADIUS.defaultMi);
+  });
+
+  it("never offers a radius the table would refuse", () => {
+    for (const mi of RADIUS.alertLadderMi) {
+      expect(mi).toBeGreaterThanOrEqual(RADIUS.minMi);
+      expect(mi).toBeLessThanOrEqual(RADIUS.maxMi);
+    }
   });
 });
