@@ -75,17 +75,47 @@ export async function googleAccessToken(
   const config = googleAuthConfig();
   if (!config) return null;
 
+  const audience =
+    `//iam.googleapis.com/projects/${config.projectNumber}` +
+    `/locations/global/workloadIdentityPools/${config.poolId}/providers/${config.providerId}`;
+
   const client = ExternalAccountClient.fromJSON({
     type: "external_account",
-    audience:
-      `//iam.googleapis.com/projects/${config.projectNumber}` +
-      `/locations/global/workloadIdentityPools/${config.poolId}/providers/${config.providerId}`,
+    audience,
     subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
     token_url: "https://sts.googleapis.com/v1/token",
     service_account_impersonation_url:
       `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/` +
       `${config.serviceAccountEmail}:generateAccessToken`,
-    subject_token_supplier: { getSubjectToken: getVercelOidcToken },
+    /**
+     * The OIDC token has to be MINTED FOR GCP, not handed over as issued.
+     *
+     * Vercel's default token carries `aud: https://vercel.com/<team-slug>`.
+     * A workload identity provider left on "Default audience" — which is what
+     * Google recommends — expects its own resource URL instead, and rejects
+     * anything else with a message that reads as though the audience we sent
+     * is the problem rather than the one in the token:
+     *
+     *   invalid_grant: The audience in ID Token [//iam.googleapis.com/...]
+     *   does not match the expected audience.
+     *
+     * That failed silently in production for the first real Play purchase:
+     * `googleAccessToken` returns null, `verifyPlayPurchase` raises "google
+     * auth unavailable", and the RTDN retries forever while the entitlement is
+     * never written. Nothing before that had exercised this path — the test
+     * notification returns early without calling Google at all, so the chain
+     * looked proven when only its first half was.
+     *
+     * `getVercelOidcToken({ audience })` exchanges the token for one carrying
+     * that audience. Derived from the same env vars rather than added as a
+     * sixth, so there is no way for the two to disagree. Note the scheme: the
+     * STS `audience` above is Google's canonical `//iam.googleapis.com/...`
+     * form, while a token audience is the `https://` URL the provider page
+     * displays.
+     */
+    subject_token_supplier: {
+      getSubjectToken: () => getVercelOidcToken({ audience: `https:${audience}` }),
+    },
     scopes: [scope],
   });
   if (!client) return null;
