@@ -123,27 +123,33 @@ apps/web/.next` and start again. It is not a code error and the message does
   points at CommandLineTools and changing it needs sudo, so everything is driven
   with `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` instead.
   It is a beta: fine for the Simulator, **not** for a submission build.
-- **TWO Xcodes, and the release one is the submission toolchain.**
-  `/Applications/Xcode.app` is 26.6 (release) and **cannot launch** — macOS 27.0
-  beta refuses it. Irrelevant: its `xcodebuild` works and every command here is
-  `xcodebuild`, so point `DEVELOPER_DIR` at it for anything going to review, and
-  at `Xcode-beta.app` (27.0) only for Simulator work. Verified 2026-08-29 with a
-  Release build against `iPhoneOS26.5.sdk`, which is the public SDK submissions
-  require.
+- **TWO Xcodes, and the BETA is the submission toolchain. This is the opposite
+  of what this note said on 2026-08-29 and the correction cost a rejected
+  build.**
 
-  Getting there needed two things the errors do not name. **The licence** —
-  `sudo env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
--license accept` — because until it is accepted EVERY command, `-showsdks`
-  included, answers with the licence text and reads like a broken install. And
-  **the platform**: `xcodebuild -downloadPlatform iOS`, 8.5 GB, during which
-  `-showsdks` happily lists iOS 26.5 while builds fail saying it is not
-  installed. Listed and installed are different things, and that is two hours if
-  you believe the first one.
+  Apple refused build 5 with **ITMS-90111: Unsupported SDK or Xcode version —
+  App submissions must use the latest Xcode and SDK Release Candidates (RC)**.
+  It was built with `/Applications/Xcode.app`, 26.6, the newest FINAL release,
+  which carries the iOS **26.5** SDK. Apple wants the latest SDK, not a released
+  one.
 
-- **`simctl privacy <device> grant location app.loveplusone` works**, and would
-  have saved a rebuild while chasing the onboarding bug. There is NO
-  notifications service in that list, so badge and push permission still cannot
-  be granted without a tap — which is why the badge count has never been seen.
+  Checked against Apple's own releases page rather than assumed twice: Xcode
+  26.6 (June) is the newest final release, Xcode 27 beta 6 is the newest Xcode,
+  and **there is no Xcode 27 RC**. So Apple rejected the newest shipping Xcode
+  and asked for a candidate that does not exist. The only toolchain with a newer
+  SDK is `/Applications/Xcode-beta.app` — 27.0, iOS 27.0 SDK — which is what
+  build 6 used.
+
+  So: `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` for
+  anything going to Apple, until an Xcode 27 RC ships and can be checked. The
+  release Xcode stays installed and is still the only one whose `xcodebuild`
+  runs without the macOS-27 launch block mattering — but its SDK is now too old
+  to submit.
+
+  The reasoning that produced the wrong note is worth keeping because it is
+  seductive: "beta SDK bad, release SDK good" is true most of the year and
+  false in the weeks before an OS ships, which is exactly when a first
+  submission happens.
 
 - **A modern Xcode ships with no simulator to run.** `xcodebuild -downloadPlatform iOS`
   is a second, much larger download, and nothing warns you — `simctl list
