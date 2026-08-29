@@ -85,7 +85,31 @@ export async function googleAccessToken(
     service_account_impersonation_url:
       `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/` +
       `${config.serviceAccountEmail}:generateAccessToken`,
-    subject_token_supplier: { getSubjectToken: getVercelOidcToken },
+    /**
+     * Wrapped so it is called with NOTHING, and that is the whole fix.
+     *
+     * google-auth-library invokes the supplier as `getSubjectToken(context)`,
+     * where context is `{ audience, subjectTokenType }` — the STS audience
+     * declared above. `getVercelOidcToken` takes an options object whose
+     * `audience` field means "exchange this token for one carrying that
+     * audience". So passing the function bare, exactly as Vercel's own example
+     * does, hands the STS context in as options and mints a token with
+     * `aud: //iam.googleapis.com/...` instead of Vercel's default.
+     *
+     * Google then rejects it against the provider's allowed audiences, with a
+     * message that quotes the bad audience back and reads as though the STS
+     * request were wrong:
+     *
+     *   invalid_grant: The audience in ID Token [//iam.googleapis.com/...]
+     *   does not match the expected audience.
+     *
+     * The provider here allows `https://vercel.com/kevin-bandisons-projects`,
+     * which is Vercel's default and what an un-argumented call produces. The
+     * two are one arrow function apart, and the failure is silent: the token
+     * comes back null, `verifyPlayPurchase` raises "google auth unavailable",
+     * and a paid subscription is never recorded.
+     */
+    subject_token_supplier: { getSubjectToken: () => getVercelOidcToken() },
     scopes: [scope],
   });
   if (!client) return null;
