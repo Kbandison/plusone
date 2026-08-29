@@ -6,21 +6,17 @@ import {
   ACTIVITY_WINDOWS,
   AGE_CEILING,
   AGE_FLOOR,
+  ARRAY_FILTER_PARAMS,
+  ENUM_FILTERS,
+  RANGE_FILTERS,
   activityDays,
   advancedFilterCount,
   isFiltered,
   parseBrowseFilters,
 } from "./filter-state";
 
-const VOCAB = {
-  intentions: ["long_term", "open_to_either", "casual", "friends_support"],
-  frequencies: ["never", "sometimes", "often"],
-  kids: ["none", "have", "have_grown"],
-  kidsPlans: ["want", "open", "no", "unsure"],
-};
-
 const parse = (params: Record<string, string>, ownRadius: number | null = 50) =>
-  parseBrowseFilters(params, VOCAB, ownRadius);
+  parseBrowseFilters(params, ownRadius);
 
 /**
  * Every one of these is a hand-typable string reaching PostgREST. An enum column
@@ -31,30 +27,30 @@ const parse = (params: Record<string, string>, ownRadius: number | null = 50) =>
 describe("nothing in the URL is trusted", () => {
   it("drops a value the vocabulary does not contain", () => {
     const state = parse({ smokes: "occasionally", kids: "maybe", intention: "marriage" });
-    expect(state.smokes).toBeNull();
-    expect(state.kids).toBeNull();
-    expect(state.intention).toBeNull();
+    expect(state.enums.smokes).toBeUndefined();
+    expect(state.enums.kids).toBeUndefined();
+    expect(state.enums.intention).toBeUndefined();
   });
 
   /** A stale link naming a retired option keeps working, minus that option. */
   it("keeps the rest of a URL when one value is junk", () => {
     const state = parse({ smokes: "never", kids: "nonsense" });
-    expect(state.smokes).toBe("never");
-    expect(state.kids).toBeNull();
+    expect(state.enums.smokes).toBe("never");
+    expect(state.enums.kids).toBeUndefined();
   });
 
   it("refuses an age outside the bounds, either end", () => {
-    expect(parse({ age_min: "17" }).ageMin).toBeNull();
-    expect(parse({ age_min: "0" }).ageMin).toBeNull();
-    expect(parse({ age_max: "200" }).ageMax).toBeNull();
-    expect(parse({ age_min: String(AGE_FLOOR) }).ageMin).toBe(AGE_FLOOR);
-    expect(parse({ age_max: String(AGE_CEILING) }).ageMax).toBe(AGE_CEILING);
+    expect(parse({ age_min: "17" }).ranges.age).toBeUndefined();
+    expect(parse({ age_min: "0" }).ranges.age).toBeUndefined();
+    expect(parse({ age_max: "200" }).ranges.age).toBeUndefined();
+    expect(parse({ age_min: String(AGE_FLOOR) }).ranges.age?.min).toBe(AGE_FLOOR);
+    expect(parse({ age_max: String(AGE_CEILING) }).ranges.age?.max).toBe(AGE_CEILING);
   });
 
   it("refuses a fractional or non-numeric age rather than rounding one", () => {
-    expect(parse({ age_min: "24.5" }).ageMin).toBeNull();
-    expect(parse({ age_min: "twenty" }).ageMin).toBeNull();
-    expect(parse({ age_min: "" }).ageMin).toBeNull();
+    expect(parse({ age_min: "24.5" }).ranges.age).toBeUndefined();
+    expect(parse({ age_min: "twenty" }).ranges.age).toBeUndefined();
+    expect(parse({ age_min: "" }).ranges.age).toBeUndefined();
   });
 
   /**
@@ -64,15 +60,14 @@ describe("nothing in the URL is trusted", () => {
    */
   it("ignores a range with the ends swapped rather than matching nobody", () => {
     const state = parse({ age_min: "50", age_max: "30" });
-    expect(state.ageMin).toBeNull();
-    expect(state.ageMax).toBeNull();
+    expect(state.ranges.age).toBeUndefined();
     expect(advancedFilterCount(state)).toBe(0);
   });
 
   it("keeps a range whose ends are equal", () => {
     const state = parse({ age_min: "30", age_max: "30" });
-    expect(state.ageMin).toBe(30);
-    expect(state.ageMax).toBe(30);
+    expect(state.ranges.age?.min).toBe(30);
+    expect(state.ranges.age?.max).toBe(30);
   });
 });
 
@@ -147,6 +142,8 @@ describe("whether the emptiness is the member's own doing", () => {
   });
 
   it("counts each of the folded eight, and only those", () => {
+    // intention and the age range are the un-folded ones, so neither counts
+    // toward the badge that decides whether the fold opens itself.
     expect(advancedFilterCount(parse({ intention: "casual", activity: "day" }))).toBe(0);
     expect(isFiltered(parse({ intention: "casual" }))).toBe(true);
 
@@ -155,11 +152,10 @@ describe("whether the emptiness is the member's own doing", () => {
       drinks: "never",
       kids: "none",
       kids_plan: "want",
-      age_min: "25",
-      age_max: "40",
-      bio: "1",
+      height_min: "170",
+      written: "1",
     });
-    expect(advancedFilterCount(all)).toBe(7);
+    expect(advancedFilterCount(all)).toBe(6);
     expect(isFiltered(all)).toBe(true);
   });
 
@@ -168,9 +164,61 @@ describe("whether the emptiness is the member's own doing", () => {
     expect(advancedFilterCount(parse({ smokes: "occasionally" }))).toBe(0);
   });
 
-  it("treats the bio checkbox as on only when it is the value the form writes", () => {
-    expect(parse({ bio: "1" }).writtenOnly).toBe(true);
-    expect(parse({ bio: "0" }).writtenOnly).toBe(false);
-    expect(parse({ bio: "true" }).writtenOnly).toBe(false);
+  it("treats the written checkbox as on only when it is the value the form writes", () => {
+    expect(parse({ written: "1" }).writtenOnly).toBe(true);
+    expect(parse({ written: "0" }).writtenOnly).toBe(false);
+    expect(parse({ written: "true" }).writtenOnly).toBe(false);
+  });
+});
+
+/**
+ * The table is the contract now, so the things that were previously guaranteed
+ * by writing each filter out by hand have to be asserted instead.
+ */
+describe("the filter table itself", () => {
+  it("gives every filter a unique query parameter", () => {
+    const params = [
+      ...ENUM_FILTERS.map((f) => f.param),
+      ...RANGE_FILTERS.flatMap((r) => [`${r.key}_min`, `${r.key}_max`]),
+    ];
+    expect(new Set(params).size).toBe(params.length);
+  });
+
+  /**
+   * The one-word mistake with no error and no wrong-looking empty state.
+   * `.eq()` against a text[] matches only somebody whose entire list is exactly
+   * the value asked for, which for anybody bilingual is nobody.
+   */
+  it("names every array column, and only the array columns", () => {
+    expect(ARRAY_FILTER_PARAMS).toEqual(["language"]);
+    for (const param of ARRAY_FILTER_PARAMS) {
+      expect(ENUM_FILTERS.some((f) => f.param === param)).toBe(true);
+    }
+  });
+
+  /** A filter whose options are empty is a control offering only "Any". */
+  it("gives every enum filter a non-empty vocabulary", () => {
+    for (const filter of ENUM_FILTERS) {
+      expect(Object.keys(filter.options).length, filter.param).toBeGreaterThan(1);
+    }
+  });
+
+  it("keeps every range the right way round", () => {
+    for (const range of RANGE_FILTERS) {
+      expect(range.min, range.key).toBeLessThan(range.max);
+    }
+  });
+
+  /**
+   * Only four controls sit above the fold, and they are the ones that describe
+   * a SEARCH rather than a person. Everything else is folded, because nineteen
+   * controls above a two-column grid pushes every face off the screen.
+   */
+  it("keeps the unfolded set small", () => {
+    const top = [
+      ...ENUM_FILTERS.filter((f) => f.group === "top"),
+      ...RANGE_FILTERS.filter((r) => r.group === "top"),
+    ];
+    expect(top.length).toBeLessThanOrEqual(2);
   });
 });

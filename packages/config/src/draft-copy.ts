@@ -956,6 +956,39 @@ export const DRAFT_COPY = {
      */
     filterAgeFrom: "Age from",
     filterAgeTo: "to",
+    /** The rest of server 17's columns, once 20260829000100–000300 were applied. */
+    filterRelationship: "Relationship",
+    filterExercise: "Exercise",
+    filterDiet: "Diet",
+    filterPets: "Pets",
+    filterEducation: "Education",
+    filterWork: "Works in",
+    filterLanguage: "Speaks",
+    filterReligion: "Faith",
+    filterPolitics: "Politics",
+    filterHeightFrom: "Height from",
+    filterWeightFrom: "Weight from",
+    /**
+     * The groups the fold is broken into. Nineteen controls in one flat row is
+     * a wall, and a wall invites somebody to narrow a thin pool to nothing
+     * before they have seen a single face.
+     */
+    filterGroupLife: "Life",
+    filterGroupHabits: "Habits",
+    filterGroupBody: "Height and weight",
+    filterGroupBackground: "Background",
+    filterGroupBelief: "Faith and politics",
+    /**
+     * Server 19 — what a filter costs, before an empty grid says it.
+     *
+     * The stat at the top of the page is a fact about the AREA and deliberately
+     * ignores every filter. This is the other number: what the current search
+     * actually returns. Two numbers with two jobs, and the difference between
+     * them is the whole reason a member can tell "nobody is near me" from "I
+     * have asked for too much".
+     */
+    filterMatchCount: (shown: number, total: number) =>
+      shown === total ? `${total} of them match` : `${shown} shown of ${total} matching`,
     /**
      * A ladder rather than the checkbox it replaces. "Active this week" was one
      * bit for a question with obvious shades — somebody here this afternoon and

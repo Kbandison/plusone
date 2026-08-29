@@ -5,10 +5,7 @@ import { redirect } from "next/navigation";
 import {
   COPY,
   DRAFT_COPY,
-  FREQUENCY_LABELS,
   INTENTION_LABELS,
-  KIDS_LABELS,
-  KIDS_PLAN_LABELS,
   promptQuestion,
   type Intention,
   type ProfilePromptAnswer,
@@ -23,6 +20,9 @@ import { MemberTraitChips } from "../member-traits";
 import { Badge } from "@/app/ui";
 import { BrowseFilters } from "./browse-filters";
 import {
+  ARRAY_FILTER_PARAMS,
+  ENUM_FILTERS,
+  RANGE_FILTERS,
   activityDays,
   advancedFilterCount,
   isFiltered,
@@ -36,6 +36,23 @@ const C = DRAFT_COPY.app;
 const DAY = 24 * 60 * 60 * 1000;
 /** As many as one screen of browsing is worth fetching. Also a promise the page has to keep. */
 const LIMIT = 60;
+
+/**
+ * Just enough of a PostgREST builder to narrow one.
+ *
+ * `<T extends typeof query>` is the obvious spelling and it does not compile:
+ * the row query and the head-only count query have different row types baked
+ * into their generics, so the two are not assignable to one another and the
+ * inference goes excessively deep trying. Structural typing over the four
+ * methods actually used is both simpler and the honest description of what this
+ * helper needs — anything shaped like this can be filtered.
+ */
+interface Filterable<T> {
+  eq(column: string, value: unknown): T;
+  gte(column: string, value: unknown): T;
+  lte(column: string, value: unknown): T;
+  contains(column: string, value: unknown): T;
+}
 
 /**
  * Browse (§7.2) — the secondary directory.
@@ -80,16 +97,7 @@ export default async function BrowsePage({
   // One parse, in one module, shared with the form that wrote the URL. The
   // parameter names were spelled out in both files and a rename in one produced
   // a control that silently stopped doing anything.
-  const filters = parseBrowseFilters(
-    params,
-    {
-      intentions: Object.keys(INTENTION_LABELS),
-      frequencies: Object.keys(FREQUENCY_LABELS),
-      kids: Object.keys(KIDS_LABELS),
-      kidsPlans: Object.keys(KIDS_PLAN_LABELS),
-    },
-    me?.search_radius_mi ?? null,
-  );
+  const filters = parseBrowseFilters(params, me?.search_radius_mi ?? null);
   const distanceMi = filters.distanceMi;
 
   // One instant for the filter, the stat and the card marker. Separate
@@ -103,7 +111,7 @@ export default async function BrowsePage({
   /** The stat and the card marker, both of which describe a week whatever the filter asks. */
   const weekAgo = since(7);
 
-  let query = supabase
+  const query = supabase
     // matched_profiles, not visible_profiles: the same gender, seeking and age
     // rule the Drop obeys. Reading the wider view meant a member seeking women
     // saw every man in range one tab away from a Drop that had excluded them.
@@ -116,41 +124,62 @@ export default async function BrowsePage({
     // The four lifestyle columns have been in this view since 20260818000100
     // and were selected by nothing. Every member answers them in onboarding.
     .select(
-      "id, display_name, age, intention, distance_mi, last_active_at, prompts, smokes, drinks, kids, kids_plan",
+      "id, display_name, age, intention, distance_mi, last_active_at, prompts, smokes, drinks, kids, kids_plan, height_cm, weight_kg, relationship_structure, exercise, diet, pets, education, work, languages, religion, politics",
     )
-    .lte("distance_mi", distanceMi)
     .order("last_active_at", { ascending: false })
     .limit(LIMIT);
 
-  if (filters.intention) query = query.eq("intention", filters.intention);
-  if (filters.activity) query = query.gte("last_active_at", since(activityDays(filters.activity)));
+  /**
+   * Every filter, applied the same way to the page query and to the count.
+   *
+   * One function rather than two copies, because the count exists precisely to
+   * tell a member what the filters cost — and a count applying a different set
+   * of predicates from the grid beneath it is worse than no count at all. That
+   * is not hypothetical: the honest-stat bug this page already carries a
+   * comment about was the same mistake in the other direction.
+   */
+  const applyFilters = <T extends Filterable<T>>(q: T): T => {
+    let next = q.lte("distance_mi", distanceMi);
+    if (filters.activity) {
+      next = next.gte("last_active_at", since(activityDays(filters.activity)));
+    }
 
-  // The four that were already there. Equality against an enum column, so an
-  // unrecognised value would be an error rather than an empty result — which is
-  // why parseBrowseFilters drops anything it does not know instead of passing
-  // it through.
-  if (filters.smokes) query = query.eq("smokes", filters.smokes);
-  if (filters.drinks) query = query.eq("drinks", filters.drinks);
-  if (filters.kids) query = query.eq("kids", filters.kids);
-  if (filters.kidsPlan) query = query.eq("kids_plan", filters.kidsPlan);
+    // Equality against an enum column, so an unrecognised value would be an
+    // ERROR rather than an empty result — which is why parseBrowseFilters drops
+    // anything it does not know instead of passing it through.
+    for (const filter of ENUM_FILTERS) {
+      const value = filters.enums[filter.param];
+      if (value == null) continue;
+      // `languages` is text[]; .eq() against it matches only somebody whose
+      // whole list is exactly this one, which for anybody bilingual is nobody.
+      next = ARRAY_FILTER_PARAMS.includes(filter.param)
+        ? next.contains(filter.column, [value])
+        : next.eq(filter.column, value);
+    }
 
-  // Narrows what the mutual age wall in matched_profiles already permitted. It
-  // cannot widen it: both sides had to be inside the other's stated range
-  // before a row existed at all.
-  if (filters.ageMin != null) query = query.gte("age", filters.ageMin);
-  if (filters.ageMax != null) query = query.lte("age", filters.ageMax);
+    // Narrows what the mutual age wall in matched_profiles already permitted.
+    // It cannot widen it: both sides had to be inside the other's stated range
+    // before a row existed at all.
+    for (const range of RANGE_FILTERS) {
+      const chosen = filters.ranges[range.key];
+      if (chosen?.min != null) next = next.gte(range.column, chosen.min);
+      if (chosen?.max != null) next = next.lte(range.column, chosen.max);
+    }
 
-  // A profile with a photograph and nothing else is the hardest kind to answer,
-  // and Decision #14 makes a connect a reply to something they wrote.
-  //
-  // Bio only. "Has answered a prompt" is the better question and cannot be
-  // asked from here — `prompts` is jsonb and PostgREST has no length predicate
-  // for it, so it wants a computed column on the view. Shipping a filter that
-  // approximates it with `neq('prompts', '[]')` would pass a profile holding
-  // one prompt with an empty answer.
-  if (filters.writtenOnly) query = query.not("bio", "is", null);
+    // A profile with a photograph and nothing else is the hardest kind to
+    // answer, and Decision #14 makes a connect a reply to something they wrote.
+    //
+    // `answered_prompts` is a real count on the view as of 20260829000100. It
+    // was `bio is not null`, which was the closest thing askable from here
+    // while `prompts` was raw jsonb — PostgREST has no length predicate for it,
+    // and `neq('prompts', '[]')` would have passed a profile holding one prompt
+    // with an empty answer.
+    if (filters.writtenOnly) next = next.gte("answered_prompts", 1);
 
-  const { data } = await query;
+    return next;
+  };
+
+  const { data } = await applyFilters(query);
   const rows = data ?? [];
 
   const ids = rows.map((row) => row.id as string);
@@ -225,6 +254,26 @@ export default async function BrowsePage({
 
   const activeThisWeek = activeNearby ?? 0;
 
+  /**
+   * The OTHER number (server 19) — how many the current search actually
+   * returns, filters and all.
+   *
+   * Two counts with two jobs, and the difference between them is the whole
+   * reason a member can tell "nobody is near me" from "I have asked for too
+   * much". The stat above deliberately ignores every filter because it states a
+   * fact about the area; this one is the cost of the controls, shown beside
+   * them while they are still one tap from being undone.
+   *
+   * It matters more at nineteen filters than it did at three. Without it the
+   * only feedback a narrowing member gets is an empty grid, which reads as a
+   * dead app rather than as their own doing.
+   */
+  // Extracted rather than applied inline: passing the builder straight into a
+  // generic sends TypeScript excessively deep through PostgREST's row generics.
+  const countQuery = supabase.from("matched_profiles").select("id", { count: "exact", head: true });
+  const { count: matchingCount } = await applyFilters<typeof countQuery>(countQuery);
+  const matching = matchingCount ?? 0;
+
   const advanced = advancedFilterCount(filters);
   const filtered = isFiltered(filters);
 
@@ -237,7 +286,12 @@ export default async function BrowsePage({
         {COPY.browse.activityStat(activeThisWeek, distanceMi)}
       </p>
 
-      <BrowseFilters state={filters} advancedCount={advanced} />
+      <BrowseFilters
+        state={filters}
+        advancedCount={advanced}
+        matching={matching}
+        shown={rows.length}
+      />
 
       {rows.length === 0 ? (
         <div className="mt-10">

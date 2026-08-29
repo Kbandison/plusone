@@ -2,25 +2,32 @@
 
 import { useRef } from "react";
 
-import {
-  DRAFT_COPY,
-  DRINKING_TRAIT_LABELS,
-  INTENTION_LABELS,
-  KIDS_LABELS,
-  KIDS_PLAN_LABELS,
-  RADIUS,
-  SMOKING_TRAIT_LABELS,
-  type Intention,
-} from "@plusone/config";
+import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
-import { ACTIVITY_WINDOWS, AGE_FLOOR, AGE_CEILING, type BrowseFilterState } from "./filter-state";
+import {
+  ACTIVITY_WINDOWS,
+  ENUM_FILTERS,
+  RANGE_FILTERS,
+  type BrowseFilterState,
+  type EnumFilter,
+  type RangeFilter,
+} from "./filter-state";
 
 const C = DRAFT_COPY.app;
 
-const field =
+const FIELD =
   "rounded-lg border border-line-control bg-surface px-3.5 py-2.5 text-[16px] focus:border-accent";
-const legend = "flex flex-col gap-2 text-[11px] text-ink-2";
+const LABEL = "flex flex-col gap-2 text-[11px] text-ink-2";
+
+/** The folded groups, in order, with the heading each gets. */
+const GROUPS = [
+  { id: "life", heading: C.filterGroupLife },
+  { id: "body", heading: C.filterGroupBody },
+  { id: "habits", heading: C.filterGroupHabits },
+  { id: "background", heading: C.filterGroupBackground },
+  { id: "belief", heading: C.filterGroupBelief },
+] as const;
 
 /**
  * The filters, applied when they are changed.
@@ -34,41 +41,51 @@ const legend = "flex flex-col gap-2 text-[11px] text-ink-2";
  * knows how to serialise itself into a query string, and reimplementing that in
  * JavaScript would be a second place for the parameter names to live.
  *
- * ── the deeper set (backlog server 16) ──────────────────────────────────────
+ * ── nineteen controls, and why most of them are folded and grouped ──────────
  *
- * Three controls became eleven, and the extra eight are folded behind a
- * `<details>` rather than laid out flat. Two reasons, and neither is tidiness:
- * this grid is two columns on a phone and eleven controls above it would push
- * every face below the fold, and a wall of filters on a pool this size invites
- * a member to narrow it to nothing before they have seen anybody.
+ * Three became eleven became nineteen. The four not folded are the ones that
+ * describe a search rather than a person — how far, what for, how recently,
+ * how old — and they are the four somebody actually opens this page to set.
  *
- * The fold OPENS ITSELF when any of the eight is set. A bookmarked URL with
- * `?kids=none` in it must not render as a normal Browse page that happens to be
+ * The rest are behind a `<details>` and broken into named groups. Two reasons,
+ * and neither is tidiness: this grid is two columns on a phone, so nineteen
+ * controls above it would push every face below the fold; and a flat wall of
+ * them invites a member to narrow a pool this size to nothing before they have
+ * seen anybody. The match count beside the summary is the other half of that —
+ * it says what the filters cost while they are still one tap from being undone.
+ *
+ * The fold OPENS ITSELF when any of them is set. A bookmarked URL with
+ * `?kids=none` must not render as a normal Browse page that happens to be
  * short — that is the failure where a member concludes the app is empty and the
  * reason is folded away one tap above them.
- *
- * All four lifestyle answers were already on every profile and read by nothing.
  */
 export function BrowseFilters({
   state,
   advancedCount,
+  matching,
+  shown,
 }: {
   state: BrowseFilterState;
   advancedCount: number;
+  matching: number;
+  shown: number;
 }) {
   const form = useRef<HTMLFormElement>(null);
   const apply = () => form.current?.requestSubmit();
 
+  const top = ENUM_FILTERS.filter((f) => f.group === "top");
+  const topRanges = RANGE_FILTERS.filter((r) => r.group === "top");
+
   return (
     <form ref={form} method="get" className="mt-8">
       <div className="flex flex-wrap items-end gap-4">
-        <label className={legend}>
+        <label className={LABEL}>
           {C.filterDistance}
           <select
             name="distance"
             defaultValue={String(state.distanceMi)}
             onChange={apply}
-            className={field}
+            className={FIELD}
           >
             {RADIUS.ladderMi.map((mi) => (
               <option key={mi} value={mi}>
@@ -78,34 +95,21 @@ export function BrowseFilters({
           </select>
         </label>
 
-        <label className={legend}>
-          {C.filterIntention}
-          <select
-            name="intention"
-            defaultValue={state.intention ?? ""}
-            onChange={apply}
-            className={field}
-          >
-            <option value="">{C.filterAny}</option>
-            {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (
-              <option key={value} value={value}>
-                {INTENTION_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {top.map((filter) => (
+          <EnumSelect key={filter.param} filter={filter} state={state} onChange={apply} />
+        ))}
 
         {/* Was a checkbox, and "active this week" is one bit for a question with
             obvious shades — somebody here this afternoon and somebody here last
             Sunday were the same answer. `?active=1` still means this week, so
             every URL anyone has bookmarked or sent still resolves. */}
-        <label className={legend}>
+        <label className={LABEL}>
           {C.filterActivity}
           <select
             name="activity"
             defaultValue={state.activity ?? ""}
             onChange={apply}
-            className={field}
+            className={FIELD}
           >
             <option value="">{C.filterActivityAny}</option>
             {ACTIVITY_WINDOWS.map((window) => (
@@ -115,9 +119,12 @@ export function BrowseFilters({
             ))}
           </select>
         </label>
+
+        {topRanges.map((range) => (
+          <Range key={range.key} range={range} state={state} onChange={apply} />
+        ))}
       </div>
 
-      {/* open when something inside is on — see the header. */}
       <details open={advancedCount > 0} className="mt-4 border-t border-line-2 pt-4">
         <summary className="cursor-pointer text-[11.7px] text-ink-2 marker:text-ink-3">
           {C.filtersMoreLabel}
@@ -126,80 +133,46 @@ export function BrowseFilters({
           ) : null}
         </summary>
 
-        <div className="mt-4 flex flex-wrap items-end gap-4">
-          <Choice
-            name="kids"
-            label={C.filterKids}
-            options={KIDS_LABELS}
-            value={state.kids}
-            onChange={apply}
-          />
-          <Choice
-            name="kids_plan"
-            label={C.filterKidsPlan}
-            options={KIDS_PLAN_LABELS}
-            value={state.kidsPlan}
-            onChange={apply}
-          />
-          <Choice
-            name="smokes"
-            label={C.filterSmokes}
-            options={SMOKING_TRAIT_LABELS}
-            value={state.smokes}
-            onChange={apply}
-          />
-          <Choice
-            name="drinks"
-            label={C.filterDrinks}
-            options={DRINKING_TRAIT_LABELS}
-            value={state.drinks}
-            onChange={apply}
-          />
+        {GROUPS.map((group) => {
+          const enums = ENUM_FILTERS.filter((f) => f.group === group.id);
+          const ranges = RANGE_FILTERS.filter((r) => r.group === group.id);
+          if (enums.length === 0 && ranges.length === 0) return null;
 
-          {/* Narrows what the mutual age wall already permitted; it cannot widen
-              it. Both ends default to blank rather than to 18 and 99, so a
-              member who never touches this is not silently filtering. */}
-          <div className="flex items-end gap-2">
-            <label className={legend}>
-              {C.filterAgeFrom}
-              <select
-                name="age_min"
-                defaultValue={state.ageMin ?? ""}
-                onChange={apply}
-                className={field}
-              >
-                <option value="">{C.filterAny}</option>
-                {AGE_OPTIONS}
-              </select>
-            </label>
-            <label className={legend}>
-              <span className="sr-only">{C.filterAgeTo}</span>
-              <span aria-hidden="true">{C.filterAgeTo}</span>
-              <select
-                name="age_max"
-                defaultValue={state.ageMax ?? ""}
-                onChange={apply}
-                className={field}
-              >
-                <option value="">{C.filterAny}</option>
-                {AGE_OPTIONS}
-              </select>
-            </label>
-          </div>
+          return (
+            <fieldset key={group.id} className="mt-6">
+              <legend className="mb-3 text-[10px] tracking-[0.02em] text-ink-3 uppercase">
+                {group.heading}
+              </legend>
+              <div className="flex flex-wrap items-end gap-4">
+                {enums.map((filter) => (
+                  <EnumSelect key={filter.param} filter={filter} state={state} onChange={apply} />
+                ))}
+                {ranges.map((range) => (
+                  <Range key={range.key} range={range} state={state} onChange={apply} />
+                ))}
+              </div>
+            </fieldset>
+          );
+        })}
 
-          <label className="flex min-h-tap items-center gap-2.5 text-[11.7px]">
-            <input
-              type="checkbox"
-              name="bio"
-              value="1"
-              defaultChecked={state.writtenOnly}
-              onChange={apply}
-              className="size-[14.6px] accent-accent"
-            />
-            {C.filterWritten}
-          </label>
-        </div>
+        <label className="mt-6 flex min-h-tap items-center gap-2.5 text-[11.7px]">
+          <input
+            type="checkbox"
+            name="written"
+            value="1"
+            defaultChecked={state.writtenOnly}
+            onChange={apply}
+            className="size-[14.6px] accent-accent"
+          />
+          {C.filterWritten}
+        </label>
       </details>
+
+      {/* What the filters cost, while they are still one tap from being undone.
+          Deliberately NOT the stat at the top of the page: that one describes
+          the area and ignores every filter, and a member needs both to tell
+          "nobody is near me" from "I have asked for too much". */}
+      <p className="mt-4 text-[11px] text-ink-3">{C.filterMatchCount(shown, matching)}</p>
 
       {/* The only way through without JavaScript, and invisible with it. The
           selects above submit on change, so a button beside them is a second
@@ -216,29 +189,31 @@ export function BrowseFilters({
 /**
  * One labelled select over an enum's label map.
  *
- * Written out four times it was four places for "Any" to drift, and the label
- * maps are the same ones the onboarding form writes with — so a member reads
- * back the words they picked rather than a second translation of them.
+ * Reads ENUM_FILTERS rather than being written out fourteen times — see the
+ * header of filter-state.ts. Fourteen hand-written copies is fourteen chances
+ * to validate a value against the wrong map, and the symptom of getting that
+ * wrong is a filter that silently matches nobody.
  */
-function Choice({
-  name,
-  label,
-  options,
-  value,
+function EnumSelect({
+  filter,
+  state,
   onChange,
 }: {
-  name: string;
-  label: string;
-  options: Readonly<Record<string, string>>;
-  value: string | null;
+  filter: EnumFilter;
+  state: BrowseFilterState;
   onChange: () => void;
 }) {
   return (
-    <label className={legend}>
-      {label}
-      <select name={name} defaultValue={value ?? ""} onChange={onChange} className={field}>
+    <label className={LABEL}>
+      {filter.label}
+      <select
+        name={filter.param}
+        defaultValue={state.enums[filter.param] ?? ""}
+        onChange={onChange}
+        className={FIELD}
+      >
         <option value="">{C.filterAny}</option>
-        {Object.entries(options).map(([id, text]) => (
+        {Object.entries(filter.options).map(([id, text]) => (
           <option key={id} value={id}>
             {text}
           </option>
@@ -248,12 +223,60 @@ function Choice({
   );
 }
 
-/** Built once at module scope — the same eighty-two options render twice. */
-const AGE_OPTIONS = Array.from(
-  { length: AGE_CEILING - AGE_FLOOR + 1 },
-  (_, i) => AGE_FLOOR + i,
-).map((age) => (
-  <option key={age} value={age}>
-    {age}
-  </option>
-));
+/**
+ * A from/to pair over a numeric column.
+ *
+ * Both ends default to blank rather than to the bounds, so a member who never
+ * touches this is not silently filtering — and a range narrows what the mutual
+ * wall already permitted rather than widening it.
+ */
+function Range({
+  range,
+  state,
+  onChange,
+}: {
+  range: RangeFilter;
+  state: BrowseFilterState;
+  onChange: () => void;
+}) {
+  const current = state.ranges[range.key];
+  const options = [];
+  for (let value = range.min; value <= range.max; value += 1) options.push(value);
+
+  return (
+    <div className="flex items-end gap-2">
+      <label className={LABEL}>
+        {range.fromLabel}
+        <select
+          name={`${range.key}_min`}
+          defaultValue={current?.min != null ? String(current.min) : ""}
+          onChange={onChange}
+          className={FIELD}
+        >
+          <option value="">{C.filterAny}</option>
+          {options.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={LABEL}>
+        {range.toLabel}
+        <select
+          name={`${range.key}_max`}
+          defaultValue={current?.max != null ? String(current.max) : ""}
+          onChange={onChange}
+          className={FIELD}
+        >
+          <option value="">{C.filterAny}</option>
+          {options.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}

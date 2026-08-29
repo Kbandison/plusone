@@ -43,7 +43,7 @@ export async function ConnectPanel({
   const { data: target } = await supabase
     .from("visible_profiles")
     .select(
-      "id, display_name, age, distance_mi, intention, bio, prompts, smokes, drinks, kids, kids_plan",
+      "id, display_name, age, distance_mi, intention, bio, prompts, smokes, drinks, kids, kids_plan, height_cm, relationship_structure, exercise, diet, pets, education, work, languages, religion, politics",
     )
     .eq("id", id)
     .maybeSingle();

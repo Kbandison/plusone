@@ -1,8 +1,18 @@
 import {
+  DIET_LABELS,
   DRINKING_TRAIT_LABELS,
+  EDUCATION_LABELS,
+  EXERCISE_TRAIT_LABELS,
   KIDS_LABELS,
   KIDS_PLAN_LABELS,
+  LANGUAGE_LABELS,
+  PETS_LABELS,
+  POLITICS_LABELS,
+  RELATIONSHIP_STRUCTURE_LABELS,
+  RELIGION_LABELS,
   SMOKING_TRAIT_LABELS,
+  WORK_LABELS,
+  formatHeight,
 } from "@plusone/config";
 
 /**
@@ -29,6 +39,17 @@ export interface MemberTraits {
   readonly drinks?: string | null | undefined;
   readonly kids?: string | null | undefined;
   readonly kids_plan?: string | null | undefined;
+  readonly height_cm?: number | null | undefined;
+  readonly weight_kg?: number | null | undefined;
+  readonly relationship_structure?: string | null | undefined;
+  readonly exercise?: string | null | undefined;
+  readonly diet?: string | null | undefined;
+  readonly pets?: string | null | undefined;
+  readonly education?: string | null | undefined;
+  readonly work?: string | null | undefined;
+  readonly languages?: readonly string[] | null | undefined;
+  readonly religion?: string | null | undefined;
+  readonly politics?: string | null | undefined;
 }
 
 const label = (map: Record<string, string>, value: string | null | undefined) =>
@@ -46,12 +67,52 @@ const label = (map: Record<string, string>, value: string | null | undefined) =>
  */
 export function traitList(member: MemberTraits): { key: string; text: string }[] {
   const entries = [
+    {
+      key: "relationship",
+      text: label(RELATIONSHIP_STRUCTURE_LABELS, member.relationship_structure),
+    },
     { key: "kids", text: label(KIDS_LABELS, member.kids) },
     { key: "kids_plan", text: label(KIDS_PLAN_LABELS, member.kids_plan) },
+    { key: "height", text: member.height_cm != null ? formatHeight(member.height_cm) : null },
+    { key: "work", text: label(WORK_LABELS, member.work) },
+    { key: "education", text: label(EDUCATION_LABELS, member.education) },
+    { key: "languages", text: languageText(member.languages) },
+    { key: "exercise", text: label(EXERCISE_TRAIT_LABELS, member.exercise) },
+    { key: "diet", text: label(DIET_LABELS, member.diet) },
+    { key: "pets", text: label(PETS_LABELS, member.pets) },
     { key: "smokes", text: label(SMOKING_TRAIT_LABELS, member.smokes) },
     { key: "drinks", text: label(DRINKING_TRAIT_LABELS, member.drinks) },
+    { key: "religion", text: label(RELIGION_LABELS, member.religion) },
+    { key: "politics", text: label(POLITICS_LABELS, member.politics) },
   ];
   return entries.filter((t): t is { key: string; text: string } => t.text != null);
+}
+
+/**
+ * Weight is filterable and is NOT a chip.
+ *
+ * It is in `MemberTraits` because Browse selects it for the filter, and it is
+ * deliberately absent from this list. A number a member can search on is one
+ * thing; the same number printed under somebody's face beside "Vegan" and "Dog
+ * person" is another, and on an app whose pool is defined by a diagnosis — where
+ * weight tracks treatment history closely enough to stand in for it — the
+ * second is a cost with no matching benefit. Kevin asked for the filter.
+ *
+ * Delete this comment along with the decision if it is ever revisited; do not
+ * add the chip and leave the comment.
+ */
+
+/** "English and Spanish", or "English +2" past what a chip can hold. */
+function languageText(languages: readonly string[] | null | undefined): string | null {
+  const named = (languages ?? [])
+    .map((code) =>
+      code in LANGUAGE_LABELS ? (LANGUAGE_LABELS as Record<string, string>)[code] : null,
+    )
+    .filter((name): name is string => name != null);
+  if (named.length === 0) return null;
+  if (named.length === 1) return named[0] as string;
+  if (named.length === 2) return `${named[0]} and ${named[1]}`;
+  return `${named[0]} +${named.length - 1}`;
 }
 
 /**
@@ -74,6 +135,8 @@ export function MemberTraitChips({
   const traits = traitList(member);
   if (traits.length === 0) return null;
   const shown = max == null ? traits : traits.slice(0, max);
+  // traitList is in priority order, so a card showing two shows the two that
+  // say most about somebody rather than the two that happen to be filled in.
 
   return (
     <ul className={`flex flex-wrap gap-1.5 ${className}`}>
