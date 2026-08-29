@@ -123,6 +123,25 @@ apps/web/.next` and start again. It is not a code error and the message does
   points at CommandLineTools and changing it needs sudo, so everything is driven
   with `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` instead.
   It is a beta: fine for the Simulator, **not** for a submission build.
+- **Xcode Cloud is set up, and the first build is a CONTROLLED EXPERIMENT.**
+  Created 2026-08-29 from Xcode-beta, because App Store Connect will not create
+  a first workflow in the browser and the release Xcode cannot launch here. The
+  workflow only configures; builds run on Apple's machines.
+
+  What that first build is testing, precisely:
+
+  ```
+  Xcode Version   Xcode 26.6 (17F113)          identical to build 5
+  macOS Version   macOS Tahoe 26.6.2 (25G83)   NOT a beta — the only difference
+  ```
+
+  Build 5 was that same Xcode and SDK, built here on macOS 27 beta, and Apple
+  refused it with ITMS-90111. So if an Xcode Cloud build is ACCEPTED, the beta
+  build machine was the cause and this Mac cannot produce a submittable binary
+  until macOS 27 ships. If it is refused the same way, that inference is wrong
+  and the toolchain theory needs rethinking from scratch. Either answer is worth
+  the build; do not let the result go unread.
+
 - **TWO Xcodes, and the BETA is the submission toolchain. This is the opposite
   of what this note said on 2026-08-29 and the correction cost a rejected
   build.**
