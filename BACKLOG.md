@@ -644,7 +644,19 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     re-checking permissions. Kevin tried the licence-and-reinstall round on
     2026-08-27 and none of it moved.
 
-    **One thing on our side is genuinely stale, and it is not a diagnosis.**
+    **The library bump was tried and did NOT fix it, 2026-08-28.** Version 2 was
+    built with `androidbrowserhelper` at 2.7.3 against the previous 2.6.2 —
+    verified in the resolved dependency tree, not just in the build file — and
+    installed from the internal track. `clientAppUnavailable` still shows. So
+    the old-core/new-billing pairing recorded below is eliminated, and with it
+    the last thing on our side of the line.
+
+    Held to this repo's own rule, that is strong evidence and not proof: the
+    error flipped three times in an hour on the 27th, so one reading is not its
+    state. But there is now nothing left to try here that is not upstream.
+
+    **What follows was the reasoning for trying it, and it still reads as sound
+    — which is the useful part.**
     `androidbrowserhelper` is pinned at **2.6.2** against a current **2.7.3**,
     while the `billing` artifact is at 1.2.0, the newest — and 2.7.0's notes
     read "Upgrade play billing library to v8.3.0 **and fix listener
