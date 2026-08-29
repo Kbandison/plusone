@@ -289,10 +289,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                                                            | since      |
-| ------- | ------------------------------------------------------------------------------- | ---------- |
-| _macOS_ | server 18c (who's active near you), then 18b once 17 lands                      | 2026-08-29 |
-| _WSL_   | server 17 + 18a (new columns, then incognito — both rebuild `visible_profiles`) | 2026-08-29 |
+| session | item                                                                    | since      |
+| ------- | ----------------------------------------------------------------------- | ---------- |
+| _macOS_ | server 18c (who's active near you), then 18b once 17 lands              | 2026-08-29 |
+| _WSL_   | server 17 (schema + editor done; display/filters HELD on the migration) | 2026-08-29 |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
 only**, said 2026-08-29, because this is one body of work he wants done in
@@ -305,6 +305,48 @@ whichever lands second replays against a shape it did not write. 16 does not
 touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
+
+### 2026-08-29 · WSL · deeper filters, and a deploy order nobody controls
+
+**Server 16 and 17 are in**, `3fc2212` through `c96122a`. Browse went from three
+filters to eleven; the profile gained eight columns and an editor for them. The
+detail is in the commits and in BACKLOG 16–19. Three things belong here instead.
+
+**CODE REACHES PRODUCTION BEFORE THE SCHEMA DOES, AS A MATTER OF COURSE.**
+Migrations are applied by hand and are Kevin's call, so a push deploys against
+whatever schema is live — which for a migration written the same day is the OLD
+one. I put a live break in doing exactly this and it lasted a few minutes.
+
+**PostgREST does not fail narrowly on an unknown column — it fails the whole
+request.** `data: null`, so the profile page rendered with no name, no bio, no
+prompts, no intention and no preferences. ONE unshipped column blanked the
+entire profile for every member. The write is the mirror: an update naming a
+missing column fails entirely, so "that did not save" was true of gender,
+seeking and the age range as well.
+
+Nothing in the build can catch this. `check:sql` validates the migration,
+typecheck validates the TypeScript, and the gap between them is where it lives.
+The fix is in `c96122a` if the shape is ever needed again: read the new columns
+in a SEPARATE request that is allowed to fail, and retry the write without them
+on PGRST204 or 42703 — narrow, because a catch-all swallows a real write error
+and tells the member it saved.
+
+**`--dry-run` catches what `check:sql` cannot.** My first draft of
+20260829000100 had a CHECK constraint containing a subquery, which Postgres
+rejects outright. `check:sql` parses against the real grammar and passed it —
+the constraint is syntactically fine and semantically illegal. One command would
+have caught it and did.
+
+**Unapplied and waiting on Kevin: `20260829000100`.** Dry run clean. It drops and
+recreates `visible_profiles` and `matched_profiles`, so if it is applied
+alongside macOS's `20260829001000` the order matters on my side. The rest of
+item 17 — the new columns on cards and in filters — is written nowhere and
+deliberately held until it lands, because Browse reads them through
+`matched_profiles` and the blast radius there is the whole grid.
+
+**Left off clean.** typecheck, lint, format:check green; 1732 web tests and 1128
+package tests pass. Note vitest from the repo ROOT fails eight lib suites on
+unresolved `@/` aliases — pre-existing, run the web suite from `apps/web`.
 
 ### 2026-08-27 · WSL · the Android buy button, and what logcat settled
 
