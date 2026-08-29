@@ -917,8 +917,31 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     sold today to anyone who can reach a buy button:
 
     - "10 connects a day" — **built**, `CONNECTS.premiumPerDay`.
-    - "Advanced browse filters" — **do not exist.** Item 16 builds them; this
-      item decides which of them are paid.
+    - "Advanced browse filters" — built by item 16; **18d decides which are
+      paid, and Kevin decided the harder half 2026-08-29: a paid filter APPEARS
+      DISABLED rather than being absent.**
+
+      The question was not gating, it was what a free member is shown. Absent
+      means they cannot tell what Premium would add; disabled means they can,
+      at the cost of a screen that says "you cannot have this" once per paid
+      control. Kevin chose disabled — so a free member sees the whole shape of
+      the tier on the screen where it would be used, rather than a shorter
+      screen and a pricing page somewhere else.
+
+      **What that decision now depends on, and it is not decided.** With
+      nineteen filters, "disabled" stops being a state one control is in and
+      becomes the design of the screen. `ui.tsx` marks every disabled control
+      with `disabled:opacity-55` and nothing else — `3e74775` fixed the real
+      bug, hover firing on disabled buttons, and deliberately left the opacity
+      alone as Kevin's call. At 55% a filled control still reads as pressable.
+      One of those is a flagged nicety; a page carrying a dozen of them is the
+      first impression of the paid tier. **Settle the disabled treatment before
+      building 18d**, not after.
+
+      The copy problem is the rest of it: a member has to be told what a
+      control does BEFORE they meet the consequence, not after. Same shape as
+      the sentence 18b needed about the first photo.
+
     - "Incognito browse — visible only to people you've already connected with"
       — **the string appears nowhere else in the repo.** Needs a column and a
       `visible_profiles` predicate, which is the second rebuild the HANDOFF note
