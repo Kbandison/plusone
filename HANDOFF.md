@@ -94,6 +94,21 @@ Keep it short. If a section has been true and unread for a month, delete it.
   covered what existed in August. Every migration that creates a table must
   revoke for itself and then grant back what it means to expose. Two had missed
   it; `check:db` now catches both roles.
+- **`git checkout <file>` to undo a sabotage run eats the unstaged work with
+  it.** Breaking a guard on purpose to watch it fail is worth doing, and the
+  obvious undo is the destructive one — `git checkout` restores from the index,
+  so an edit that was never staged is simply gone. Cost me a comment block on
+  2026-08-29. Hold the original in the script that does the sabotage and write
+  it back, or `git stash` around the run.
+
+  **And a sabotage that PASSES proves nothing.** macOS's version reported FAILS
+  on every row, which is self-verifying: the test can only fail if the edit
+  landed. Mine reported silence, and silence reads identically for "the guard is
+  vacuous" and "the edit never happened" — the shell had mangled a multi-space
+  string, nothing was replaced, and I was one step from rewriting a guard that
+  was fine. So: a failing sabotage proves itself; a passing one is not evidence
+  until you have separately confirmed the file changed.
+
 - **The scripts do not load `.env.local`.** They read `process.env`, so a
   `check:*` or `seed` run needs the value exported into the shell first.
 

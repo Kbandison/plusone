@@ -99,8 +99,14 @@ describe("the two lapse rules stay opposite, and each says so", () => {
       /paid filters \(18d\)\s+DROPPED on a lapse/,
     ];
     // Raw, not comment-stripped — see the header.
+    //
+    // `incognito-actions.ts`, NOT the migration. The table lived in
+    // 20260829000400 until Kevin ruled that an applied migration is never
+    // edited, comments included — so the prose moved to where the code is read
+    // and this assertion moved with it. The migration still holds the
+    // enforcement; it just no longer holds the explanation.
     const sites: Record<string, string> = {
-      "20260829000400": sql,
+      "incognito-actions.ts": read("./incognito-actions.ts"),
       "filter-state.ts": read("../../browse/filter-state.ts"),
     };
     for (const [name, source] of Object.entries(sites)) {
@@ -116,8 +122,10 @@ describe("the two lapse rules stay opposite, and each says so", () => {
     // the sentence wraps across lines and `// ` lands in the middle of it.
     // Note this is the opposite of the grant assertion below, which removes the
     // prose entirely; see the header for why both are right.
-    const stripped = (s: string) => s.replace(/^\s*(\/\/|--)\s?/gm, "").replace(/\s+/g, " ");
-    expect(stripped(sql)).toMatch(/does not increase the member's OWN exposure/i);
+    const stripped = (s: string) => s.replace(/^\s*(\/\/|--|\*)\s?/gm, "").replace(/\s+/g, " ");
+    expect(stripped(read("./incognito-actions.ts"))).toMatch(
+      /does not increase the member's OWN exposure/i,
+    );
     expect(stripped(read("../../browse/filter-state.ts"))).toMatch(
       /does not increase the member's own exposure/i,
     );
