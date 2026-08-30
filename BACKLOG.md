@@ -1524,6 +1524,50 @@ unblock other work.
     you can paste the expanded post-clone log into a session, that unblocks the
     whole thing.
 
+19. **Apple's Guideline 2.1 reply — the pack is written, three sections need
+    you.** 2026-08-29, 6:58 PM. `apps/ios/APP_REVIEW_NOTES.md`.
+
+    **This is not a rejection of the app.** 2.1 "Information Needed" means the
+    binary was accepted, passed validation and reached a human, who is asking
+    for the App Review Information the Notes field did not contain. Sections 3,
+    5, 6 and 7 are written and ready to paste; 1 (screen recording), 2 (device
+    list) and 4 (demo access) need you.
+
+    **Section 4 is the real one, and Kevin 12 predicted it.** That item said on
+    2026-08-27 that the sign-in OTP "blocks submission on both stores rather
+    than delaying a listing, and it wants solving before somebody is waiting on
+    a review". Somebody is now waiting on a review.
+
+    The way out is better than the one that entry feared, and it is already
+    built: **sign-in accepts an EMAIL as well as a phone**, and
+    `verifyOtp({ type: "email" })` takes a six-digit code typed into the app
+    rather than a magic link — so `SMS_TEST_OTP` may not be needed at all, and
+    neither is a working redirect URL. Two things have to be true and neither
+    has been checked: the reviewer account needs an email on it, and Supabase's
+    email template must contain `{{ .Token }}` rather than only
+    `{{ .ConfirmationURL }}`. Both are dashboard work. Detail in the pack.
+
+    Paste the answers into **App Review Information → Notes**, not only into the
+    reply. Apple asks for that explicitly and it is what stops the next
+    submission asking the same seven questions.
+
+20. **ITMS-90111 did not recur, and that is most of Kevin 18's experiment.**
+    Inferred 2026-08-29 from the rejection itself rather than from a build log:
+    a submission that reaches human review has already passed Apple's upload
+    validation, and ITMS-90111 is an upload-time refusal. So whatever toolchain
+    produced this build is one Apple accepts.
+
+    **Confirm which build it was before believing the strong version.** If it
+    was archived here with `/Applications/Xcode-beta.app`, then this Mac CAN
+    produce a submittable binary on macOS 27 beta, the beta-SDK theory in
+    `HANDOFF.md` is confirmed, and Xcode Cloud is a convenience rather than the
+    only route. If it came from Xcode Cloud, the beta build machine was the
+    cause and the note stands as written.
+
+    Either way the toolchain half of Kevin 18 is answered and only the
+    `ci_post_clone.sh` build-number log is still worth reading — and that only
+    matters if Xcode Cloud is the route.
+
 ---
 
 ## Done, so nobody re-opens it
