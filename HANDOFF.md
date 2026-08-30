@@ -57,6 +57,18 @@ Keep it short. If a section has been true and unread for a month, delete it.
   files rather than a range, one transaction each, rolled back unless every
   object the file declares resolves afterwards.
 
+  **An APPLIED migration is never edited, including its comments. Kevin's call
+  2026-08-29**, after the two sessions had quietly diverged on it for an
+  evening. Supersede it with a new file, the way 20260826000200 fixed
+  20260826000100 rather than rewriting it. An applied migration is a record of
+  what ran, and a record you may edit is not one.
+
+  This is a stricter rule than the mechanics require and that is deliberate: a
+  comment-only edit causes no drift, `check:sql` passes either way, and the
+  ledger's `statements` column is NULL so nothing compares the text. All true,
+  and none of it is the point — the value is that the file still says what was
+  applied. Explanatory prose goes where the code is read instead.
+
   The ledger was backfilled on 2026-08-26 and now holds 75 of 90 rather than 28,
   every one of them checked against the live schema by
   `scripts/backfill-migration-ledger.mjs`. That does NOT make push safe. Fourteen
