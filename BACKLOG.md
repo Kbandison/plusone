@@ -597,8 +597,8 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
 
     **Do not treat a single reading as the state of this.** It flipped three
     times in an hour. Anything claimed about it needs the diagnostic re-read at
-    the time of claiming, and a fix is only a fix if it survives a Play Store
-    restart.
+    the time of claiming — with `?diag=1` on the URL since `8df5b0f` — and a fix
+    is only a fix if it survives a Play Store restart.
 
     ── what `adb logcat` said, 2026-08-27 ──────────────────────────────────────
 
@@ -611,7 +611,9 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     Launch the page directly with
     `adb shell am start -a android.intent.action.VIEW -d <url>` — assetlinks is
     verified, so it opens in the TWA rather than a browser, and it beats asking
-    somebody to tap through. `adb exec-out screencap -p` reads the screen.
+    somebody to tap through. `adb exec-out screencap -p` reads the screen. For
+    the on-page panel the url needs **`?diag=1`** since `8df5b0f`; logcat needs
+    nothing, the `TwaBilling.DG` lines appear on any launch.
 
     What one launch produced, and it settles four things:
 
@@ -674,7 +676,11 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     What remains is Play's own catalogue cache, which was deliberately wiped
     from here at about 22:00 and has not refilled. That is not something we can
     force. **Leave it overnight and re-read before doing anything else** — the
-    diagnostic is deployed and `adb` is set up, so it is one command. If the ids
+    diagnostic is deployed and `adb` is set up, so it is one command. **That URL
+    now needs `?diag=1`** — the panel was gated in `8df5b0f` because it was live
+    to every Android member on the payment screen, and without the parameter it
+    does not fetch at all. Launching the bare URL shows nothing and reads
+    exactly like the panel having been removed. If the ids
     resolve in the morning the cache was the whole story; if they still do not,
     the next lever is finishing Play's app setup (Kevin 12), not because it is
     known to matter but because it is the last variable left and it is required
