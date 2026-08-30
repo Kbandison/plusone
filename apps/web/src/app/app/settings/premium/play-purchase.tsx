@@ -81,19 +81,34 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
   /**
    * Runs when there is nothing to sell, and never otherwise.
    *
-   * This was behind `?debug=play` for about ten minutes, which was useless: a
-   * TWA has no address bar, so there is no way to reach a query parameter from
-   * inside the app it is meant to diagnose. Asking somebody to visit a URL in a
-   * thing whose whole purpose is having no URL bar.
+   * Behind `?diag=1` again, and the objection that removed it the first time no
+   * longer holds. Kevin's call 2026-08-29.
    *
-   * So it runs on the failure path itself — which is the only time anybody
-   * wants it, and a path a member should never reach. It reports the shape of a
-   * failure and no purchase. Comes out once Android has been bought from once.
+   * The original note said a query parameter was useless because a TWA has no
+   * address bar, so there is no way to reach one from inside the app it is
+   * meant to diagnose. That was true when it was written and it is not true
+   * now: `adb shell am start -a android.intent.action.VIEW -d <url>` launches
+   * any URL straight into the TWA, because assetlinks is verified — and that is
+   * how this panel has actually been read on both occasions. The technique
+   * arrived after the objection.
+   *
+   * What made the change necessary is that the failure path stopped being "a
+   * path a member should never reach". Play returns an empty catalogue for all
+   * three ids, so `broken` is TRUE for every Android member right now, and a
+   * raw dump of service resolution, referrer and user agent was rendering on
+   * the payment screen of an app whose members are trusting it with a
+   * diagnosis. The panel was right about when it is wanted and wrong about how
+   * often that is.
+   *
+   * Gated at the fetch rather than the render, so a member does not silently
+   * run three product-id probes to produce something nobody will see.
    */
   const [diagnostics, setDiagnostics] = useState<string[] | null>(null);
   const broken = products === null || (products !== "loading" && products.length === 0);
   useEffect(() => {
     if (!broken || diagnostics) return;
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("diag") !== "1") return;
     void playDiagnostics(PLANS.map((plan) => plan.playProductId)).then(setDiagnostics);
   }, [broken, diagnostics]);
 

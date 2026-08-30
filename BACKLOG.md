@@ -824,9 +824,28 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     right: a button that takes money and grants nothing is worse than a paid
     tier that is unreachable.
 
-16. **The Play diagnostic panel must come out, and right now nothing durable
-    says so.** Found 2026-08-29 by running macOS's audit — read the tree, not the
-    entry — on this lane's prose.
+16. ~~**The Play diagnostic panel must come out**~~ — **resolved a different
+    way 2026-08-29: gated behind `?diag=1` rather than kept or removed.** Kevin's
+    call, and it keeps the instrument while no member can meet it.
+
+    Everything below is the finding as WSL wrote it, kept because the reasoning
+    about `HANDOFF.md` is the durable part and because the objection that had to
+    be overturned is worth not re-deriving.
+
+    **The objection was real and is now obsolete.** The panel had been behind
+    `?debug=play` once and that was abandoned with a written reason: a TWA has
+    no address bar, so there is no way to reach a query parameter from inside
+    the app being diagnosed. True when written. Not true now —
+    `adb shell am start -a android.intent.action.VIEW -d <url>` launches any URL
+    straight into the TWA because assetlinks is verified, and that is how this
+    panel has actually been read on both occasions. **The technique arrived
+    after the objection**, and nobody went back to the paragraph. Same shape as
+    server 15.
+
+    Gated at the FETCH, not the render, so a member does not silently run three
+    product-id probes to produce something nobody will see.
+
+    The original finding follows.
 
     `play-purchase.tsx` renders a `debugPanel` of raw `playDiagnostics()` output
     when `broken` is true, which is whenever `getDetails` returns nothing. That
