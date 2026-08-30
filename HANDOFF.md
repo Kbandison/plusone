@@ -446,13 +446,40 @@ COMMENT saying the right sentence, and a 16px gate blinded by a class hoisted
 into a constant. Give any source-scanning test a floor on what it actually read,
 strip comments before matching, and break it once on purpose.
 
-**Left off:** tree clean, five gates green, nothing in flight, no claim. All
-five PREMIUM_INCLUDES promises are built between the two lanes. Two things are
-waiting on Kevin and neither is code: the disabled-control convention in
-`ui.tsx` (opacity alone, flagged and deliberately not changed), and 18d's
-question of whether a paid filter should appear disabled or be absent. The Play
-catalogue is UNREAD since the 27th — the phone is not reachable from WSL and
-needs Kevin to re-enable wireless debugging, which is Kevin item 17.
+**One technique produced everything above, and it is the thing to carry.** Read
+the ARTIFACT, not the claim about it. Every finding on both sides today came
+from that and nothing else: the packaged resource table rather than the
+generated manifest, `information_schema` rather than the migration that created
+the table, the tree rather than the backlog entry, the rendered control rather
+than the source scan, the live schema rather than a session's account of it. Not
+eight lessons — one, applied to eight artifacts.
+
+The corollary is that a claim goes stale silently, in whichever direction costs
+least to believe, and **prose has no gate at all**. Nine of today's cases were
+in comments, backlog entries and machine notes; every one had survived multiple
+sessions, where the test-shaped ones fell the moment somebody widened a regex.
+Two guards were added and both are narrow on purpose — a guard is honest when
+you can say what it does NOT cover.
+
+**Breaking a guard on purpose has an asymmetry worth knowing before you rely on
+it.** A sabotage that FAILS proves itself: the test could only fail if the edit
+landed. A sabotage that PASSES is not evidence until you have separately
+confirmed the file actually changed — silence reads identically for "the guard
+is vacuous" and "nothing was replaced", and WSL was one step from rewriting a
+working guard on exactly that.
+
+**Left off:** tree clean, five gates green on a forced run (3039 tests, nothing
+cached), nothing in flight, nothing claimed in either lane. All five
+PREMIUM_INCLUDES promises are built and applied.
+
+Everything outstanding is Kevin's and none of it is code — the device, the App
+Store Connect log (Kevin 18, and read the log BEFORE touching the build number),
+Play's app setup, and counsel. The Play catalogue is unread since the 27th and
+the phone is unreachable from both machines.
+
+This paragraph previously said two things were waiting on Kevin that he had
+decided hours earlier. It was rewritten rather than appended to, which is the
+whole point of this file being a whiteboard.
 
 ### 2026-08-29 · WSL · deeper filters, and a deploy order nobody controls
 
