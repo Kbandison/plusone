@@ -505,6 +505,8 @@ false one there is the most-cited cause of this error; ours is true.
 **Left off clean.** typecheck, lint and format green; the play, shell and
 subscription suites pass. Nothing claimed. `adb` is paired to Kevin's phone and
 can be reconnected with `adb connect 192.168.50.94:44687` while wireless
-debugging stays on. The on-page diagnostic panel is deployed and **must come out
-once Android has been bought from once** — it renders only on the failure path
-and shows no purchase, but it is not something a member should ever meet.
+debugging stays on. (That address is stale — the phone was at
+`192.168.50.122` on the 29th, and both ports rotate every time the dialog is
+opened, so it always needs Kevin.) The on-page diagnostic panel is **now
+backlog server 20** rather than a line in a session block that this file's own
+three-block rule was about to delete.

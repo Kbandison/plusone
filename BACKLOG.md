@@ -824,7 +824,42 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     right: a button that takes money and grants nothing is worse than a paid
     tier that is unreachable.
 
-16. ~~**Browse can filter on three things, and the profile holds far more.**~~
+16. **The Play diagnostic panel must come out, and right now nothing durable
+    says so.** Found 2026-08-29 by running macOS's audit — read the tree, not the
+    entry — on this lane's prose.
+
+    `play-purchase.tsx` renders a `debugPanel` of raw `playDiagnostics()` output
+    when `broken` is true, which is whenever `getDetails` returns nothing. That
+    is the state Android is in today, so **any member who opens the premium
+    screen in the TWA can meet it.** It shows service-resolution status,
+    referrer, user agent and product-id probe results. It is a developer tool
+    and it is deployed.
+
+    **It must not be removed yet.** It is the instrument server 13 is being
+    diagnosed with, and the catalogue is still empty. Removing it now would take
+    away the only view we have of the thing that is broken.
+
+    **The condition is: once Android has been bought from once.** At that point
+    `broken` should never be true for a real member, and a member who somehow
+    hits it should meet an ordinary error rather than a debug dump.
+
+    ── why this is an item rather than a note ──────────────────────────────────
+
+    It was already written down, accurately and prominently, in the WSL session
+    block of `HANDOFF.md` dated 2026-08-27. That is the OLDEST of exactly three
+    blocks, and that file's own rule is "keep the last three; delete below
+    that." So the next session block written deletes the note, and the panel
+    ships to members permanently with nothing anywhere recording that it should
+    not.
+
+    That is the failure macOS named on the shells side the same day: **a note
+    that describes work without creating any.** Every session reads it, agrees,
+    and does nothing, because there is nothing in a lane to pick up. This one
+    additionally had a delete date. `HANDOFF.md` is a whiteboard by design and
+    is the wrong place for anything that has to outlive three sessions —
+    `BACKLOG.md` says so at the top and this is the proof.
+
+17. ~~**Browse can filter on three things, and the profile holds far more.**~~
     — done 2026-08-29 in `3fc2212`. Eleven filters, eight of them folded, and the
     four lifestyle answers now render on the card and the connect panel. No
     migration, exactly as this entry predicted. Everything below is kept because
@@ -904,7 +939,7 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     people who chose to blur, on an app whose premise is that disclosure is
     hard.
 
-17. ~~**The attributes the profile does not hold yet.**~~ — done and APPLIED
+18. ~~**The attributes the profile does not hold yet.**~~ — done and APPLIED
     2026-08-29, across `6ae20c7`, `d125bc6`, `e86b146` and `612c4e5`. Eleven
     columns rather than the ten this entry sketched: height, weight,
     relationship structure, exercise, diet, pets, education, work, languages,
@@ -944,7 +979,7 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     Rebuilding `visible_profiles` is a `drop view` — see the ownership note in
     `HANDOFF.md` before starting, since item 18 rebuilds it too.
 
-18. **The premium tier promises five things and one is built.**
+19. **The premium tier promises five things and one is built.**
     `PREMIUM_INCLUDES` (`packages/config/src/pricing.ts:121`) renders on TWO
     public pages — `/pricing` and the premium settings screen — so this is being
     sold today to anyone who can reach a buy button:
@@ -1124,7 +1159,7 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     more likely to be SEEN is on the never list, and that list is pinned by a
     test.
 
-19. ~~**A live match count beside the filters.**~~ — done 2026-08-29 in
+20. ~~**A live match count beside the filters.**~~ — done 2026-08-29 in
     `612c4e5`, alongside the rest of 17's filter surface. Both counts run
     through one `applyFilters` helper, because a count applying different
     predicates from the grid beneath it is worse than no count at all.
