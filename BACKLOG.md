@@ -49,8 +49,16 @@ Needs Xcode, a Simulator, or a Play Console. Nobody else can do these.
 
    **Not once seen on a device.** iOS grants badge authorization as part of the
    notification permission, so this cannot be checked in a Simulator and the
-   build on Kevin's iPad — 1.0 (4) — predates the plugin method entirely. See
-   item 12: it is one of four iOS things now waiting on the same new build.
+   build on Kevin's iPad — 1.0 (4) — predates the plugin method entirely.
+
+   **Corrected 2026-08-29: it is ONE thing waiting, not four.** This paragraph
+   said "one of four iOS things now waiting on the same new build" and item 12
+   had already closed three of them — onboarding confirmed on hardware, the
+   status-bar band and the keyboard re-verified in the Simulator against the
+   current tree. Only the badge is left, and only its last inch: the native
+   method answers `{"count":7}`, so what is unseen is iOS drawing the number on
+   the icon. A stale count reads as a bigger blocker than exists and argues for
+   a build nobody needs.
 
 5. **Moved to the server lane.** The Android TWA was here because this lane is
    "Xcode, a Simulator, **or a Play Console**" — but nothing about it needs this
@@ -1424,6 +1432,37 @@ unblock other work.
     has been verified correct and Play still returns an empty catalogue, so the
     next reading is the only new information available — and the last one is
     from the 27th.
+
+18. **Two things about the iOS build are unread, and both need App Store
+    Connect — which is you.** Found 2026-08-29 by auditing this lane the way
+    WSL audited theirs: reading the tree rather than the entry.
+
+    `HANDOFF.md` says twice that these must not go unread, and neither was on
+    any list, so nobody was ever going to.
+
+    - **The controlled experiment's answer.** The first Xcode Cloud build
+      exists to settle one question: build 5 was refused with ITMS-90111 and
+      was built here on macOS 27 beta. If an Xcode Cloud build is ACCEPTED,
+      this Mac cannot produce a submittable binary until macOS 27 ships, and
+      every future submission goes through Xcode Cloud. If it is refused the
+      same way, the toolchain theory is wrong and needs rethinking from
+      scratch. Either answer is worth having and neither has been read.
+    - **The expanded `Run ci_post_clone.sh script` log.** Three fixes to the
+      build number were reasoned out and all three were wrong. Reading that log
+      is the one thing nobody has done, and `HANDOFF.md` asks for it explicitly
+      before anybody touches this again.
+
+    **These two are deadlocked and that is the thing to know.**
+    `CURRENT_PROJECT_VERSION` is a committed floor rather than a mechanism, so
+    an Xcode Cloud archive reuses it and dies at "Prepare Build for App Store
+    Connect" after a full build — which means the experiment cannot produce its
+    answer until the build number is fixed, and the build number should not be
+    touched again until the log is read. **Read the log first.** It is the only
+    move that breaks the loop, and it costs nothing but the reading.
+
+    A session cannot do either: both live in the App Store Connect web UI. If
+    you can paste the expanded post-clone log into a session, that unblocks the
+    whole thing.
 
 ---
 
