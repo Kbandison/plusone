@@ -120,6 +120,20 @@ Keep it short. If a section has been true and unread for a month, delete it.
   covered what existed in August. Every migration that creates a table must
   revoke for itself and then grant back what it means to expose. Two had missed
   it; `check:db` now catches both roles.
+- **Read the ARTIFACT, not the claim about it.** Every finding on 2026-08-29,
+  in both lanes, came from this and nothing else: the packaged resource table
+  rather than the generated manifest, `information_schema` rather than the
+  migration that created the table, the tree rather than the backlog entry, the
+  rendered control rather than the source scan, the live schema rather than
+  another session's account of it. It reads as a list of lessons and it is one
+  technique applied to ten artifacts.
+
+  The corollary is why it needs saying: a claim goes stale silently, in
+  whichever direction costs least to believe, and **prose has no gate at all**.
+  The prose cases that day had each survived several sessions; the test-shaped
+  ones fell the moment somebody widened a regex. A guard helps only where you
+  can say what it does NOT cover.
+
 - **`git checkout <file>` to undo a sabotage run eats the unstaged work with
   it.** Breaking a guard on purpose to watch it fail is worth doing, and the
   obvious undo is the destructive one — `git checkout` restores from the index,
@@ -472,27 +486,12 @@ COMMENT saying the right sentence, and a 16px gate blinded by a class hoisted
 into a constant. Give any source-scanning test a floor on what it actually read,
 strip comments before matching, and break it once on purpose.
 
-**One technique produced everything above, and it is the thing to carry.** Read
-the ARTIFACT, not the claim about it. Every finding on both sides today came
-from that and nothing else: the packaged resource table rather than the
-generated manifest, `information_schema` rather than the migration that created
-the table, the tree rather than the backlog entry, the rendered control rather
-than the source scan, the live schema rather than a session's account of it. Not
-eight lessons — one, applied to eight artifacts.
-
-The corollary is that a claim goes stale silently, in whichever direction costs
-least to believe, and **prose has no gate at all**. Nine of today's cases were
-in comments, backlog entries and machine notes; every one had survived multiple
-sessions, where the test-shaped ones fell the moment somebody widened a regex.
-Two guards were added and both are narrow on purpose — a guard is honest when
-you can say what it does NOT cover.
-
-**Breaking a guard on purpose has an asymmetry worth knowing before you rely on
-it.** A sabotage that FAILS proves itself: the test could only fail if the edit
-landed. A sabotage that PASSES is not evidence until you have separately
-confirmed the file actually changed — silence reads identically for "the guard
-is vacuous" and "nothing was replaced", and WSL was one step from rewriting a
-working guard on exactly that.
+Everything this block used to say about how to work is in the machine notes
+above now — read the artifact not the claim, the two sabotage traps, the
+floor-and-strip-comments rules for source-scanning tests. They are standing
+rules, and a session block is one of three under a delete-below rule, so a rule
+kept here has an expiry date. That was the `debugPanel` failure and both of us
+had committed it in our own blocks by the end of the day.
 
 **Left off:** tree clean, five gates green on a forced run (3039 tests, nothing
 cached), nothing in flight, nothing claimed in either lane. All five
