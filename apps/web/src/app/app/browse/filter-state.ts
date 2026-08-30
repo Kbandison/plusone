@@ -302,11 +302,25 @@ export function parseBrowseFilters(
   // means the query, the match count and the rendered control all agree: the
   // select shows "Any" because the filter genuinely is not applied.
   //
-  // Ignored rather than an error, which is the lapse rule and the mirror of
-  // 18b's. The safe direction is the one that shows a member MORE people and
-  // never makes the member themselves more visible. An error would strand
-  // somebody on a bookmarked link; persisting would sell them something they
-  // are no longer paying for.
+  // Ignored rather than an error. An error would strand somebody on a
+  // bookmarked link; persisting would sell them something they are no longer
+  // paying for.
+  //
+  // ── this rule and incognito's prescribe OPPOSITE actions ───────────────────
+  //
+  // A lapsed filter is DROPPED. A lapsed incognito is KEPT — 20260829000400
+  // gates turning it on and never gates keeping it. Read either one alone and
+  // applied to the other, both give the wrong answer, and one of the two wrong
+  // answers is the worst failure in this product: taking incognito off a member
+  // whose subscription ended puts somebody who is ill back into a directory
+  // they had paid to be absent from, at a moment they were not present.
+  //
+  // The principle that resolves both is not "ignore the lapsed state" and not
+  // "keep it". It is: **the safe direction is whichever one does not increase
+  // the member's own exposure.** Dropping a filter exposes nobody — it shows
+  // the viewer more people. Dropping incognito exposes the member. Same rule,
+  // opposite mechanics, because one control acts on what a member SEES and the
+  // other on who sees THEM.
   const enums: Partial<Record<EnumParam, string>> = {};
   for (const filter of ENUM_FILTERS) {
     if (!isPremium && isPaidGroup(filter.group)) continue;

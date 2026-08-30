@@ -66,6 +66,39 @@ describe("a lapse never makes a member more visible", () => {
   });
 });
 
+/**
+ * The two lapse rules point in opposite directions, and the comments now say
+ * so. This pins the pair, because a comment explaining why two things differ is
+ * only as durable as the next person's willingness to read it.
+ */
+describe("the two lapse rules stay opposite, and each says so", () => {
+  it("keeps incognito on a lapse and drops a filter on one", () => {
+    const fn =
+      /create or replace function public\.set_incognito[\s\S]*?\$\$;/.exec(code)?.[0] ?? "";
+    // Incognito: the premium test is reachable only in the ON direction, so a
+    // lapsed member stays hidden.
+    expect(fn).toMatch(/if\s+p_on\s+and\s+not\s+public\.is_premium/);
+
+    // Filters: the paid ones are skipped entirely for a non-premium member.
+    const filters = read("../../browse/filter-state.ts");
+    expect(filters).toMatch(/if \(!isPremium && isPaidGroup\(filter\.group\)\) continue;/);
+  });
+
+  /**
+   * Applying either rule to the other gives the wrong answer, and one of the
+   * two wrong answers un-hides a member who is ill. Both sites have to carry
+   * the cross-reference, or whichever one is read first is believed.
+   */
+  it("names the other case at both sites", () => {
+    const migration =
+      /-- Incognito browse \(backlog server 18a\)[\s\S]*?alter table public\.profiles/.exec(
+        sql,
+      )?.[0] ?? "";
+    expect(migration).toMatch(/opposite action from the lapse rule on the browse filters/i);
+    expect(read("../../browse/filter-state.ts")).toMatch(/prescribe OPPOSITE actions/);
+  });
+});
+
 describe("the gate is the missing grant, not the action", () => {
   /**
    * `profiles` has no whole-table grant, so withholding the column grant leaves
