@@ -23,6 +23,8 @@ const mine = withoutComments(
   readFileSync(join(MIGRATIONS, "20260829002000_a_photo_at_a_time.sql"), "utf8"),
 );
 const actions = withoutComments(read("actions.ts"));
+/** With comments: the lapse cross-reference below is prose, and prose is the point. */
+const actionsRaw = read("actions.ts");
 const form = withoutComments(read("photos-form.tsx"));
 
 /**
@@ -106,5 +108,41 @@ describe("which photo is first is now a privacy decision, so the screen says so"
     // photo. Deliberately NOT changed to pick the first clear one: that would
     // raise a member's visibility without their asking.
     expect(form).toMatch(/C\.firstIsTheCard/);
+  });
+});
+
+/**
+ * The third site of the lapse principle. WSL pinned the incognito/filter PAIR
+ * in incognito.test.ts; this pins that the photo site names both of them.
+ *
+ * Deliberately narrow, and it is worth saying what it does NOT cover: it checks
+ * three named places cross-reference each other, not that prose anywhere is
+ * current. A guard is honest when it pins a named set and dishonest when it
+ * implies a class it cannot see.
+ *
+ * READS THE RAW FILE, comments included, and that is the opposite of WSL's
+ * grant assertion which had to strip them. The difference is what is being
+ * claimed. Theirs asserted a BEHAVIOUR — no grant exists — and a comment saying
+ * "no grant here, deliberately" satisfied it, which made prose stand in for
+ * fact. This asserts that DOCUMENTATION exists, so the comment is the subject
+ * rather than a way of faking one. Anybody later "fixing" this to strip
+ * comments will delete the only thing it checks.
+ */
+describe("the photo lapse rule names the other two", () => {
+  it("states the principle rather than just its own answer", () => {
+    expect(actionsRaw).toMatch(/DOES NOT INCREASE THE MEMBER'S OWN EXPOSURE/i);
+  });
+
+  it("names incognito and the paid filters", () => {
+    // Applying the filter rule here would un-blur photographs of somebody who
+    // is ill because their card expired. The two wrong answers are not equally
+    // bad, and this site has to say which neighbour it differs from.
+    // The three ROWS, not the three words. A bare /incognito/ passes on a
+    // partial deletion, because the prose below names incognito again while
+    // explaining the principle — found by breaking this on purpose, which is
+    // the only reason it is written this way.
+    expect(actionsRaw).toMatch(/photo overrides \(here\)\s+KEPT on a lapse/);
+    expect(actionsRaw).toMatch(/incognito \(18a\)\s+KEPT on a lapse/);
+    expect(actionsRaw).toMatch(/paid filters \(18d\)\s+DROPPED on a lapse/);
   });
 });

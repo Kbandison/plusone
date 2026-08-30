@@ -194,6 +194,30 @@ export async function savePhotoPrivacy(
  * refusing that would strand them in a state they can no longer edit. Nothing
  * clears these automatically — see the migration for why that direction is the
  * one that matters.
+ *
+ * ── the third site of one principle, and the rule that resolves all three ────
+ *
+ * There are now three lapse rules in this app and they do NOT prescribe the
+ * same action, which is why each has to name the others:
+ *
+ *   photo overrides (here)   KEPT on a lapse
+ *   incognito (18a)          KEPT on a lapse — set_incognito gates ON only
+ *   paid filters (18d)       DROPPED on a lapse — parseBrowseFilters skips them
+ *
+ * "Keep" and "drop" are both wrong as the rule. The principle underneath is
+ * WHICHEVER DIRECTION DOES NOT INCREASE THE MEMBER'S OWN EXPOSURE. Dropping a
+ * filter exposes nobody — it shows the viewer more people. Dropping incognito,
+ * or clearing a photo override back to a clear profile setting, exposes the
+ * member. One control acts on what a member SEES, the others on WHO SEES THEM,
+ * so one principle points two ways.
+ *
+ * This site was written before the principle was articulated and obeys it
+ * anyway, which is the reason to trust the formulation rather than treat it as
+ * a story told after the fact.
+ *
+ * The worst available failure in this product lives one wrong generalisation
+ * away: applying the filter rule here would un-blur photographs of somebody who
+ * is ill, because their card expired.
  */
 export async function setPhotoPrivacy(
   photoId: string,
