@@ -88,6 +88,32 @@ Keep it short. If a section has been true and unread for a month, delete it.
   re-run an `alter table ... add column`. The dry run is read-only and settles it
   in one command.
 
+- **CODE REACHES PRODUCTION BEFORE THE SCHEMA DOES, as a matter of course, and
+  PostgREST does not fail narrowly on an unknown column — it fails the WHOLE
+  request.** Migrations here are applied by hand and are Kevin's call, so a push
+  deploys against whatever schema is live, which for a migration written the
+  same day is the old one.
+
+  `data: null`, so a page selecting one column that does not exist yet renders
+  with NOTHING. One unshipped column blanked the entire profile — no name, no
+  bio, no prompts, no intention — for every member, on 2026-08-29. The write is
+  the mirror: an update naming a missing column fails entirely, so "that did not
+  save" was true of every other field on the form too.
+
+  Nothing in the build can catch it. `check:sql` validates the migration,
+  typecheck validates the TypeScript, and the gap between them is where this
+  lives. The shape of the fix is in `c96122a`: read the new columns in a
+  SEPARATE request that is allowed to fail, and retry the write without them on
+  PGRST204 or 42703 — narrow, because a catch-all swallows a real write error
+  and tells the member it saved.
+
+- **`--dry-run` catches what `check:sql` structurally cannot.** `check:sql`
+  parses against the real PostgreSQL grammar, so it passes anything
+  syntactically legal — including a CHECK constraint containing a subquery,
+  which Postgres rejects outright at execution. That exact thing was written on
+  2026-08-29 and only the dry run found it. Run it before trusting a green
+  `check:sql` on anything new.
+
 - **A NEW table arrives with `anon` and `authenticated` holding everything.**
   Supabase's default privileges grant all on new tables in `public`, and
   20260813000700's opening `revoke all ... from anon, authenticated` only
@@ -481,47 +507,42 @@ This paragraph previously said two things were waiting on Kevin that he had
 decided hours earlier. It was rewritten rather than appended to, which is the
 whole point of this file being a whiteboard.
 
-### 2026-08-29 · WSL · deeper filters, and a deploy order nobody controls
+### 2026-08-29 · WSL · the filters, the premium tier, and one technique
 
-**Server 16 and 17 are in**, `3fc2212` through `c96122a`. Browse went from three
-filters to eleven; the profile gained eight columns and an editor for them. The
-detail is in the commits and in BACKLOG 16–19. Three things belong here instead.
+**Server 16, 17, 18a, 18d and 19 are done, applied and pushed.** Browse went
+from three filters to nineteen with a paid split; the profile gained eleven
+columns including religion, politics and weight; incognito browse exists. Four
+migrations are LIVE — 20260829000100, 000200, 000300, 000400 — ledger re-run,
+`check:db` green. **All five `PREMIUM_INCLUDES` promises are now built**, from
+one this morning.
 
-**CODE REACHES PRODUCTION BEFORE THE SCHEMA DOES, AS A MATTER OF COURSE.**
-Migrations are applied by hand and are Kevin's call, so a push deploys against
-whatever schema is live — which for a migration written the same day is the OLD
-one. I put a live break in doing exactly this and it lasted a few minutes.
+Detail is in the commits and in BACKLOG 16–20. The standing rules this session
+produced have moved into the machine notes above, where they are not on a
+three-entry countdown — the deploy-order/PostgREST trap, `--dry-run` versus
+`check:sql`, the `git checkout` sabotage trap, and the failing-versus-passing
+sabotage asymmetry. What is left here is only where I stopped.
 
-**PostgREST does not fail narrowly on an unknown column — it fails the whole
-request.** `data: null`, so the profile page rendered with no name, no bio, no
-prompts, no intention and no preferences. ONE unshipped column blanked the
-entire profile for every member. The write is the mirror: an update naming a
-missing column fails entirely, so "that did not save" was true of gender,
-seeking and the age range as well.
+**One technique produced every finding today, and it is worth having as one
+thing rather than as eight.** Read the artifact, not the claim about it. The
+packaged resource table rather than the generated manifest. `information_schema`
+rather than the migration that created the table. The tree rather than the
+backlog entry. The rendered control rather than the source scan. The live schema
+rather than a session's account of it. Eight artifacts, one move.
 
-Nothing in the build can catch this. `check:sql` validates the migration,
-typecheck validates the TypeScript, and the gap between them is where it lives.
-The fix is in `c96122a` if the shape is ever needed again: read the new columns
-in a SEPARATE request that is allowed to fail, and retry the write without them
-on PGRST204 or 42703 — narrow, because a catch-all swallows a real write error
-and tells the member it saved.
+What it found, so the shape is recognisable: a labels suite that had never seen
+a column added by `alter table`; a 16px scan blinded twice by refactors, once by
+me; an `is_premium` RPC that resolves to null on permission denied, so every
+paying member would have read as free; a backlog entry calling finished work
+blocked; a removal note with a delete date on it; and a locked filter that was
+pixel-identical to a live one. All of them had been passing for days or weeks,
+and every one failed silently in the comfortable direction.
 
-**`--dry-run` catches what `check:sql` cannot.** My first draft of
-20260829000100 had a CHECK constraint containing a subquery, which Postgres
-rejects outright. `check:sql` parses against the real grammar and passed it —
-the constraint is syntactically fine and semantically illegal. One command would
-have caught it and did.
-
-**Unapplied and waiting on Kevin: `20260829000100`.** Dry run clean. It drops and
-recreates `visible_profiles` and `matched_profiles`, so if it is applied
-alongside macOS's `20260829001000` the order matters on my side. The rest of
-item 17 — the new columns on cards and in filters — is written nowhere and
-deliberately held until it lands, because Browse reads them through
-`matched_profiles` and the blast radius there is the whole grid.
-
-**Left off clean.** typecheck, lint, format:check green; 1732 web tests and 1128
-package tests pass. Note vitest from the repo ROOT fails eight lib suites on
-unresolved `@/` aliases — pre-existing, run the web suite from `apps/web`.
+**Left off clean.** Full forced run — `turbo run test --concurrency=1 --force`,
+6 tasks, nothing cached, 3040 tests — plus typecheck, lint, format:check,
+check:sql and check:db. Nothing claimed. `adb` is NOT connected; the phone drops
+off and both ports rotate every time the dialog opens, so the TWA screenshot and
+the Play re-read both need Kevin with the device. The Play diagnostic now needs
+`?diag=1` on the URL.
 
 ### 2026-08-27 · WSL · the Android buy button, and what logcat settled
 
