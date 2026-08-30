@@ -34,17 +34,21 @@
 -- lapsed while incognito must not be trapped invisible behind a paywall; that
 -- would be selling the exit rather than the feature.
 --
--- **This is the opposite action from the lapse rule on the browse filters**,
--- which DROPS a paid filter for a lapsed member rather than keeping it. Said
--- here because the two are one import apart and each is wrong applied to the
--- other — and one of the two mistakes is the worst failure this product has,
--- namely un-hiding somebody who is ill.
+-- **One of THREE sites of this rule, and the paid filters are the odd one out:**
 --
--- The principle underneath both is neither "keep" nor "drop". It is: the safe
--- direction is whichever one does not increase the member's OWN exposure.
+--     photo overrides (18b)  KEPT on a lapse
+--     incognito (18a)        KEPT on a lapse
+--     paid filters (18d)     DROPPED on a lapse
+--
+-- Said here because they are a short import apart and each is wrong applied to
+-- another. Applying the FILTER rule to this one is the dangerous direction: it
+-- would un-hide somebody who is ill because their card expired.
+--
+-- The principle underneath all three is neither "keep" nor "drop". It is: the
+-- safe direction is whichever one does not increase the member's OWN exposure.
 -- Dropping a filter exposes nobody, it shows the viewer more people. Dropping
--- incognito exposes the member. One control acts on what a member sees, the
--- other on who sees them, so the same rule points in opposite directions.
+-- incognito or a photo override exposes the member. One control acts on what a
+-- member sees and the other two on who sees them, so one rule points two ways.
 --
 -- ── what "already connected with" means, precisely ──────────────────────────
 --

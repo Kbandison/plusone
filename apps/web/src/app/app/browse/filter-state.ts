@@ -306,21 +306,35 @@ export function parseBrowseFilters(
   // bookmarked link; persisting would sell them something they are no longer
   // paying for.
   //
-  // ── this rule and incognito's prescribe OPPOSITE actions ───────────────────
+  // ── THIS SITE IS THE ODD ONE OUT OF THREE ─────────────────────────────────
   //
-  // A lapsed filter is DROPPED. A lapsed incognito is KEPT — 20260829000400
-  // gates turning it on and never gates keeping it. Read either one alone and
-  // applied to the other, both give the wrong answer, and one of the two wrong
-  // answers is the worst failure in this product: taking incognito off a member
-  // whose subscription ended puts somebody who is ill back into a directory
-  // they had paid to be absent from, at a moment they were not present.
+  //     photo overrides (18b)  KEPT on a lapse
+  //     incognito (18a)        KEPT on a lapse
+  //     paid filters (18d)     DROPPED on a lapse
   //
-  // The principle that resolves both is not "ignore the lapsed state" and not
-  // "keep it". It is: **the safe direction is whichever one does not increase
-  // the member's own exposure.** Dropping a filter exposes nobody — it shows
-  // the viewer more people. Dropping incognito exposes the member. Same rule,
-  // opposite mechanics, because one control acts on what a member SEES and the
-  // other on who sees THEM.
+  // Written as a pair and corrected to a triple within the hour: per-photo
+  // privacy is a third site and named neither of the others, so the guard for
+  // the pair could not see it. Each site pins its OWN cross-reference —
+  // `incognito.test.ts` for these two, `photo-privacy.test.ts` for that one.
+  // A fourth site brings its own guard rather than editing these.
+  //
+  // Read any one alone and applied to another, two of the three give the wrong
+  // answer, and the wrong answers are not equally bad. Applying THIS rule to
+  // either of the others is the dangerous direction: dropping a lapsed member's
+  // incognito, or their per-photo overrides, exposes somebody who is ill to a
+  // surface they had paid to be absent from, at a moment they were not present
+  // and had not agreed to anything.
+  //
+  // The principle is not "ignore the lapsed state" and not "keep it". It is:
+  // the safe direction is whichever one does not increase the member's own
+  // exposure. Dropping a filter exposes nobody — it shows the viewer more
+  // people. Dropping incognito or a photo override exposes the member. One
+  // control acts on what a member SEES and the other two on who sees THEM,
+  // which is why one rule points two ways.
+  //
+  // The photo site was written BEFORE this was articulated and obeys it anyway.
+  // A rule that predicts a case it was not derived from is a rule; one that
+  // only explains the cases it came from is a story told afterwards.
   const enums: Partial<Record<EnumParam, string>> = {};
   for (const filter of ENUM_FILTERS) {
     if (!isPremium && isPaidGroup(filter.group)) continue;

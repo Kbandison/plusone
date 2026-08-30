@@ -89,13 +89,38 @@ describe("the two lapse rules stay opposite, and each says so", () => {
    * two wrong answers un-hides a member who is ill. Both sites have to carry
    * the cross-reference, or whichever one is read first is believed.
    */
-  it("names the other case at both sites", () => {
-    const migration =
-      /-- Incognito browse \(backlog server 18a\)[\s\S]*?alter table public\.profiles/.exec(
-        sql,
-      )?.[0] ?? "";
-    expect(migration).toMatch(/opposite action from the lapse rule on the browse filters/i);
-    expect(read("../../browse/filter-state.ts")).toMatch(/prescribe OPPOSITE actions/);
+  it("carries all three rows at both of this lane's sites", () => {
+    // The ROWS, not the words. macOS found a bare /incognito/ survived deleting
+    // the incognito row, because the prose names it again while explaining the
+    // principle. Same trap here.
+    const rows = [
+      /photo overrides \(18b\)\s+KEPT on a lapse/,
+      /incognito \(18a\)\s+KEPT on a lapse/,
+      /paid filters \(18d\)\s+DROPPED on a lapse/,
+    ];
+    // Raw, not comment-stripped — see the header.
+    const sites: Record<string, string> = {
+      "20260829000400": sql,
+      "filter-state.ts": read("../../browse/filter-state.ts"),
+    };
+    for (const [name, source] of Object.entries(sites)) {
+      for (const row of rows) {
+        expect(source, `${name} lost a row from the lapse table`).toMatch(row);
+      }
+    }
+  });
+
+  /** The principle itself, not just the three answers it produces. */
+  it("states the principle at both sites", () => {
+    // Comment MARKERS removed and whitespace collapsed, but the prose kept —
+    // the sentence wraps across lines and `// ` lands in the middle of it.
+    // Note this is the opposite of the grant assertion below, which removes the
+    // prose entirely; see the header for why both are right.
+    const stripped = (s: string) => s.replace(/^\s*(\/\/|--)\s?/gm, "").replace(/\s+/g, " ");
+    expect(stripped(sql)).toMatch(/does not increase the member's OWN exposure/i);
+    expect(stripped(read("../../browse/filter-state.ts"))).toMatch(
+      /does not increase the member's own exposure/i,
+    );
   });
 });
 
