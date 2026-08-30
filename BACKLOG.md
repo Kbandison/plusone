@@ -783,18 +783,34 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     said who builds the buying. It is web-side — a TWA runs `apps/web` in real
     Chrome — so it is this lane, not the shells one.
 
-    **Blocked on Kevin 15, the same service account as RTDN**, and the reason is
-    worth stating because it differs from Apple's: a Play purchase hands back an
-    opaque `purchaseToken`, not a signed statement. There is nothing to verify
-    offline. It has to be exchanged with the Play Developer API, which is what
-    the service account is for. So unlike `submitAppStoreTransaction`, the
-    server half cannot be written first and cannot be written at all yet.
+    **THIS ENTRY IS STALE AND BOTH HALVES ARE BUILT.** Corrected 2026-08-29 by
+    reading the tree rather than the entry. It still said "blocked… cannot be
+    written at all yet" — written before the service account existed — and the
+    blocker cleared the same day it was raised: Kevin 16 resolved the account on
+    2026-08-27, and server 14 fixed the last real defect in the chain on the
+    29th. Nobody came back to this paragraph, so the list said unbuildable about
+    something that had shipped.
 
-    What it will be, once unblocked: `getDigitalGoodsService`,
-    `getDetails([...playProductId])` for live per-storefront prices, a
-    `PaymentRequest` against `https://play.google.com/billing`, and a server
-    action mirroring the Apple one — verify, then write `iap_entitlements` with
-    `store: 'google'` through `record_iap_entitlement`, which already takes it.
+    What actually exists: `lib/play-iap.ts` (`getDetails`, a `PaymentRequest`
+    against `https://play.google.com/billing`, and the acknowledge step),
+    `play-purchase.tsx`, and `play-actions.ts` with `submitPlayPurchase` →
+    `verifyPlayPurchase` → `record_iap_entitlement` with `store: 'google'` —
+    exactly the shape this entry predicted.
+
+    **What is left is not code.** Play returns an EMPTY CATALOGUE for the three
+    product ids, so `getDetails` finds nothing to sell and the flow cannot be
+    exercised end to end. That is server 13, and it is not ours: everything on
+    our side of the line is verified correct. The last untried lever is Kevin 12,
+    finishing Play's app setup.
+
+    Kept below because the reasoning is still the reasoning, and because it
+    records why Play differs from Apple:
+
+    A Play purchase hands back an opaque `purchaseToken`, not a signed
+    statement. There is nothing to verify offline. It has to be exchanged with
+    the Play Developer API, which is what the service account is for. So unlike
+    `submitAppStoreTransaction`, the server half could not have been written
+    first.
 
     Do NOT ship the client half alone. macOS made the same call on iOS and was
     right: a button that takes money and grants nothing is worse than a paid
