@@ -175,9 +175,23 @@ export async function purchasePlayProduct(
  * rejects, and a `getDetails` that throws, and those have completely different
  * causes. This walks the same steps and says which one stopped.
  *
- * Runs on the failure path and nowhere else — a TWA has no address bar, so the
- * `?debug=play` this first hid behind was unreachable from inside the app it
- * was meant to diagnose. It reports the shape of a failure, never a purchase:
+ * Runs on the failure path AND behind `?diag=1` since 8df5b0f. Both conditions,
+ * because the failure path stopped being one a member never reaches: Play
+ * returns an empty catalogue for all three ids, so it was true for every
+ * Android member and this was rendering on the payment screen.
+ *
+ * This paragraph used to end at "runs on the failure path and nowhere else",
+ * and explained that a `?debug=play` gate had been abandoned because a TWA has
+ * no address bar. That reason was sound when written and is obsolete now:
+ * `adb shell am start -a android.intent.action.VIEW -d <url>` opens any URL
+ * straight into the TWA, and it is how this has actually been read every time.
+ *
+ * Left as a correction rather than a rewrite, because the stale version of it
+ * survived in THIS file after being overturned in play-purchase.tsx — the same
+ * argument in two places goes stale in one of them, and the copy that still
+ * reads as current is the one that gets believed.
+ *
+ * It reports the shape of a failure, never a purchase:
  * the ids it prints are our own product ids, already in the client bundle, and
  * no purchase token is ever put on screen (§9.6).
  */
