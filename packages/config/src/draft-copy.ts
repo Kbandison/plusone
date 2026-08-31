@@ -110,14 +110,60 @@ export const DRAFT_COPY = {
     },
   },
 
+  /**
+   * Confirmation, which has to say WHICH of the two things they signed up for.
+   *
+   * The first version showed one sentence to everybody — the waitlist promise —
+   * so somebody who ticked "I would try an early build" got no acknowledgement
+   * that the tick registered and no way to tell they were in a different queue.
+   * Two people in genuinely different situations were told the same thing, and
+   * the one who had done the extra step was the one told nothing about it.
+   */
   waitlistConfirm: {
     heading: "You are on the list",
     body: "We will email you when Plus One opens in your area. Nothing else is coming — no newsletter, and nothing on a schedule.",
+
+    betaHeading: "You are on the list, and down to test",
+    betaBody:
+      "Two things now. We will email you when Plus One opens in your area, and separately when there is an early build to try — that one usually comes first.",
+    /** Says the tick landed, which is the whole point of splitting these. */
+    betaNote:
+      "You ticked the box for testing an early build. If that was not what you meant, you can change it below.",
+
+    /** Nobody has to guess whether a decision is final. */
+    manage: "Change your area or your answer",
+
     /** A token that is wrong, spent, or expired. Deliberately one message. */
     invalidHeading: "That link has expired",
     invalidBody:
       "Confirmation links are good for 30 days. Join the list again and we will send a new one.",
     rejoin: "Back to the list",
+  },
+
+  /**
+   * Changing what we hold, without an account.
+   *
+   * This page exists because `joinWaitlist` refuses to do anything for an
+   * address that is already confirmed — it has to, or resubmitting the form is
+   * an email bomb aimed at whoever owns that mailbox. The consequence was that
+   * a confirmed person could never change their mind about testing or say they
+   * had moved. There was no path at all, and nothing said so.
+   */
+  waitlistManage: {
+    heading: "Your place on the list",
+    intro: "Change either of these, or leave altogether. No sign-in — this link is the proof.",
+    areaLabel: "Your area",
+    betaLabel: "I would try an early build",
+    betaHelp:
+      "Testers get in before their area opens. It means installing a pre-release app and telling us what breaks.",
+    save: "Save",
+    saved: "Saved.",
+    invitedNote:
+      "You have an invitation already — check your email for it. Turning testing off here will not cancel it.",
+    leaveHeading: "Or leave the list",
+    leaveBody: "Your address and the area you picked are deleted. Nothing is kept.",
+    invalidHeading: "That link has expired",
+    invalidBody: "Links in our emails stop working once an address leaves the list.",
   },
 
   waitlistLeave: {
@@ -135,6 +181,16 @@ export const DRAFT_COPY = {
   betaInvite: {
     heading: "You are invited",
     body: "This link is yours and works once. It gets you through signup while Plus One is still in closed beta.",
+    /**
+     * The sentence that stops somebody waiting for nothing.
+     *
+     * Android ships as a TWA — Chrome running this site with the address bar
+     * removed — and the iOS shell is a WKWebView pointed at the same origin. So
+     * the store build is not a different product, and a tester who does not
+     * know that will sit on their hands until an invitation arrives.
+     */
+    worksNow:
+      "You can start right now, in this browser. The version in a store is the same app with the same account — installing it is about getting an icon and notifications, not about getting in.",
     start: "Start",
     expiredHeading: "That invitation has expired",
     expiredBody:

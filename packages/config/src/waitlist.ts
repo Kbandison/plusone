@@ -258,3 +258,131 @@ export const WAITLIST_INVITE_TTL_DAYS = 14;
  * nights, allowing for the ones who never sign up.
  */
 export const WAITLIST_METRO_TARGET = 30;
+
+/**
+ * How a beta tester actually gets the app, per platform.
+ *
+ * ── the gap this closes ─────────────────────────────────────────────────────
+ *
+ * The first version of this feature invited people to a beta and then told them
+ * nothing about how to be in it. `/beta/<code>` said "you are invited", offered
+ * a Start button into web onboarding, and hid the store-account question in a
+ * fold BELOW it. So a tester's actual journey — give us the right address, wait
+ * to be added to a store track, install from the store — was described nowhere,
+ * and the one question that determines all of it was an afterthought.
+ *
+ * ── the thing worth saying first ────────────────────────────────────────────
+ *
+ * THE WEB APP IS THE APP. Android ships as a TWA, which is Chrome running
+ * apps/web with the address bar removed, and the iOS shell is a WKWebView
+ * pointed at the same origin. So "install" is about notifications, an icon and
+ * a store relationship — it is not the difference between using Plus One and
+ * not using it. Saying so removes the wait from the critical path: a tester can
+ * start now, in a browser, while a store invitation is still being arranged.
+ *
+ * Every step below is what the person does, not what we do. A list of our
+ * internal actions reads as progress and answers none of their questions.
+ */
+export type BetaPlatform = "android" | "ios" | "browser";
+
+export interface BetaInstall {
+  readonly id: BetaPlatform;
+  readonly label: string;
+  /** Which address we need, and why it is probably not the one they gave us. */
+  readonly accountLabel: string | null;
+  readonly accountHint: string | null;
+  readonly heading: string;
+  readonly steps: readonly string[];
+  /** Said before they start waiting, not after they ask. */
+  readonly wait: string | null;
+}
+
+export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
+  android: {
+    id: "android",
+    label: "Android phone",
+    accountLabel: "The email on your Google account",
+    /**
+     * The single most common reason a tester never finds the build. Play looks
+     * up the Google account signed in on the phone, which for a great many
+     * people is not the address they use for mail — and the failure is silent:
+     * the store simply says the app is not available in their country.
+     */
+    accountHint:
+      "It has to be the Google account signed in on the phone. That is often not the address you gave us, and if they do not match the Play Store will say Plus One is unavailable rather than telling you why.",
+    heading: "Getting it on your phone",
+    steps: [
+      "We add your Google account to the test group.",
+      "You get an email from Google Play with a link to join. Open it on the phone you will use.",
+      "Tap Become a tester, then Download it on Google Play.",
+      "Install Plus One the way you would install anything else.",
+    ],
+    wait: "Being added takes a day or so. You do not have to wait for it — signing in below works right now in your browser, and it is the same app with the same account.",
+  },
+
+  ios: {
+    id: "ios",
+    label: "iPhone or iPad",
+    accountLabel: "The email on your Apple ID",
+    accountHint:
+      "It has to be the Apple ID signed in on the device. TestFlight sends the invitation to that address and nowhere else.",
+    heading: "Getting it on your phone",
+    steps: [
+      "Install TestFlight from the App Store first. Apple's invitation does nothing without it.",
+      "We add your Apple ID to the test group.",
+      "Apple emails you an invitation. Open it on the device and it hands you to TestFlight.",
+      "Install Plus One from TestFlight.",
+    ],
+    /**
+     * Deliberately vaguer than Android's, and honestly so. An iOS build reaches
+     * external testers only after Apple's Beta App Review, which is a queue we
+     * do not control and cannot predict — and a promised date we miss is worse
+     * than no date. Do not add one here without a reason to believe it.
+     */
+    wait: "Apple reviews builds before they reach testers, and we cannot predict how long that takes. Signing in below works right now in your browser meanwhile — it is the same app.",
+  },
+
+  browser: {
+    id: "browser",
+    label: "I will just use the browser",
+    accountLabel: null,
+    accountHint: null,
+    heading: "You are already done",
+    steps: [
+      "Sign in below. That is the whole thing — the app in a browser is the same app.",
+      "On a phone, Add to Home Screen gives it an icon and its own window.",
+    ],
+    /**
+     * True, specific, and the reason this option is not a lesser one. iOS only
+     * grants web push to a page that was added to the home screen, so on an
+     * iPhone that step is the difference between getting a message and never
+     * hearing about it — which for a tester is the difference between reporting
+     * a bug and never seeing the feature.
+     */
+    wait: "On an iPhone, Add to Home Screen is also what lets Plus One send you notifications at all — Safari will not deliver them to a tab.",
+  },
+};
+
+/**
+ * The store opt-in links, if we have them.
+ *
+ * **HELD FOR KEVIN.** Both are read off a console this repo cannot reach:
+ *
+ *   android  Play Console -> Testing -> Internal testing -> Testers -> the
+ *            "Copy link" opt-in URL, of the shape
+ *            https://play.google.com/apps/internaltest/<id>
+ *   ios      App Store Connect -> TestFlight -> a public link, IF one is
+ *            enabled. Individual invitations need no link at all, which is why
+ *            this one may legitimately stay null.
+ *
+ * Null is a supported state and not a broken one: the pages render the steps
+ * without a link and say the invitation arrives by email, which is true either
+ * way. A link only shortens it.
+ *
+ * NOT INVENTED. A plausible-looking wrong URL here would send a tester to
+ * somebody else's app, and they would have no way to tell that is what happened.
+ */
+export const BETA_OPT_IN_URL: Record<"android" | "ios", string | null> = {
+  android: null,
+  ios: null,
+};

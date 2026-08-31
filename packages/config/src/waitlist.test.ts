@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 import { BANNED_COPY_TERMS } from "./brand";
 import { DRAFT_COPY } from "./draft-copy";
 import {
+  BETA_INSTALL,
+  BETA_OPT_IN_URL,
   METROS,
   METRO_IDS,
   WAITLIST_EMAIL,
@@ -246,5 +248,99 @@ describe("the two lifetimes", () => {
     // Not arbitrary: an invitation that outlived the row it points at would be
     // a live link to a deleted person.
     expect(WAITLIST_INVITE_TTL_DAYS).toBeLessThan(WAITLIST_UNCONFIRMED_TTL_DAYS);
+  });
+});
+
+describe("a person can tell which of the two things they signed up for", () => {
+  const C = DRAFT_COPY.waitlistConfirm;
+
+  it("says something different to a tester", () => {
+    // The defect this replaced: one sentence for everybody, so somebody who
+    // ticked the testing box got no acknowledgement the tick had registered.
+    expect(C.betaHeading).not.toBe(C.heading);
+    expect(C.betaBody).not.toBe(C.body);
+  });
+
+  it("tells the tester the tick landed, in words", () => {
+    expect(C.betaNote.toLowerCase()).toMatch(/ticked|early build/);
+  });
+
+  it("offers a way to change the answer from the confirmation itself", () => {
+    // Without this the decision is final at the moment of a checkbox nobody
+    // read carefully, and joinWaitlist refuses to act on a confirmed address.
+    expect(C.manage.length).toBeGreaterThan(0);
+  });
+});
+
+describe("a tester is told how to get the app", () => {
+  it("covers all three platforms, browser included", () => {
+    expect(Object.keys(BETA_INSTALL).sort()).toEqual(["android", "browser", "ios"]);
+  });
+
+  for (const [id, install] of Object.entries(BETA_INSTALL)) {
+    it(`${id}: has real steps rather than a promise`, () => {
+      expect(install.steps.length).toBeGreaterThanOrEqual(2);
+      for (const step of install.steps) expect(step.length).toBeGreaterThan(20);
+    });
+  }
+
+  it("asks for the store account on the two platforms that need one", () => {
+    expect(BETA_INSTALL.android.accountLabel).toMatch(/google/i);
+    expect(BETA_INSTALL.ios.accountLabel).toMatch(/apple/i);
+    // The browser needs no account from anybody — asking would be collecting
+    // an identifier for nothing.
+    expect(BETA_INSTALL.browser.accountLabel).toBeNull();
+  });
+
+  it("warns that the store account is probably not the address they gave us", () => {
+    // The single most common reason a tester never finds the build, and it
+    // fails silently — the store just says the app is unavailable.
+    for (const id of ["android", "ios"] as const) {
+      expect(BETA_INSTALL[id].accountHint ?? "").toMatch(/signed in|that address|not the address/i);
+    }
+  });
+
+  it("promises Apple no timeline", () => {
+    // Beta App Review is a queue we do not control. A date we miss is worse
+    // than no date.
+    const wait = BETA_INSTALL.ios.wait ?? "";
+    expect(wait).not.toMatch(/\b\d+\s*(hours?|days?|weeks?)\b/);
+    expect(wait).toMatch(/cannot predict|review/i);
+  });
+
+  it("tells an iPhone user the one thing that decides whether push works", () => {
+    // iOS grants web push only to a page added to the home screen. For a
+    // tester that is the difference between reporting a bug and never seeing
+    // the feature.
+    expect(BETA_INSTALL.browser.wait ?? "").toMatch(/home screen/i);
+  });
+
+  it("invents no store link", () => {
+    // Null is the supported state: these are read off consoles this repo
+    // cannot reach, and a plausible wrong URL sends a tester to somebody
+    // else's app with no way to tell.
+    for (const value of Object.values(BETA_OPT_IN_URL)) {
+      expect(value === null || /^https:\/\//.test(value)).toBe(true);
+    }
+  });
+});
+
+describe("somebody already on the list can still change their mind", () => {
+  const C = DRAFT_COPY.waitlistManage;
+
+  it("offers both the area and the testing answer", () => {
+    expect(C.areaLabel.length).toBeGreaterThan(0);
+    expect(C.betaLabel.length).toBeGreaterThan(0);
+  });
+
+  it("does not pretend unticking cancels an invitation already sent", () => {
+    expect(C.invitedNote.toLowerCase()).toMatch(/will not cancel|already/);
+  });
+
+  it("keeps leaving available but does not lead with it", () => {
+    // The page exists because the exit used to be the only door: joinWaitlist
+    // refuses a confirmed address, so somebody who wanted to move city or
+    // start testing could do neither.
+    expect(C.leaveHeading.toLowerCase()).toMatch(/^or /);
   });
 });

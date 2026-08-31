@@ -41,7 +41,8 @@ export default async function ConfirmPage({
   searchParams: Promise<{ t?: string }>;
 }) {
   const { t } = await searchParams;
-  const ok = await confirmWaitlist(t ?? "");
+  const token = t ?? "";
+  const { ok, wantsBeta } = await confirmWaitlist(token);
 
   return (
     <main
@@ -51,10 +52,29 @@ export default async function ConfirmPage({
       <Wordmark className="text-[24.3px]" />
 
       <Card className="mt-12">
-        <h1 className="text-h2">{ok ? C.heading : C.invalidHeading}</h1>
-        <p className="mt-3 text-body leading-[1.7] text-ink-2">{ok ? C.body : C.invalidBody}</p>
+        {/* Two different people, told two different things. Somebody who ticked
+            the testing box has done an extra step and is in a different queue;
+            showing them the plain waitlist sentence is how they conclude the
+            tick did not register. */}
+        <h1 className="text-h2">
+          {!ok ? C.invalidHeading : wantsBeta ? C.betaHeading : C.heading}
+        </h1>
+        <p className="mt-3 text-body leading-[1.7] text-ink-2">
+          {!ok ? C.invalidBody : wantsBeta ? C.betaBody : C.body}
+        </p>
 
-        {ok ? null : (
+        {ok && wantsBeta ? (
+          <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">{C.betaNote}</p>
+        ) : null}
+
+        {ok ? (
+          <Link
+            href={`/waitlist/manage?t=${encodeURIComponent(token)}`}
+            className={buttonClass("secondary", "mt-8 self-start")}
+          >
+            {C.manage}
+          </Link>
+        ) : (
           <Link href="/waitlist" className={buttonClass("secondary", "mt-8 self-start")}>
             {C.rejoin}
           </Link>

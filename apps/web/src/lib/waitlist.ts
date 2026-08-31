@@ -79,7 +79,10 @@ function appOrigin(): string {
  * "ignore this" is only true if there is a way out that does not need us.
  */
 function footer(token: string): string {
-  return `\n\nLeave the list: ${appOrigin()}/waitlist/leave?t=${encodeURIComponent(token)}\n`;
+  // "Change or leave", not "unsubscribe". The same page does both, and naming
+  // only the destructive half means somebody who just wanted to move city or
+  // opt into testing takes the exit instead — the only door they were shown.
+  return `\n\nChange your area, opt in or out of testing, or leave the list:\n${appOrigin()}/waitlist/manage?t=${encodeURIComponent(token)}\n`;
 }
 
 export interface JoinInput {
@@ -161,9 +164,25 @@ async function sendConfirmation(to: string, token: string): Promise<void> {
   });
 }
 
-/** True if the token matched a row that was not already confirmed or gone. */
-export async function confirmWaitlist(token: string): Promise<boolean> {
-  if (!token) return false;
+export interface Confirmation {
+  readonly ok: boolean;
+  /** Which of the two things they signed up for. Null when the token is dead. */
+  readonly wantsBeta: boolean | null;
+}
+
+/**
+ * Confirm, and say WHICH list they are on.
+ *
+ * The first version returned a bare boolean, so the confirmation page showed
+ * one sentence to everybody: "we will email you when Plus One opens in your
+ * area". That is the waitlist promise. Somebody who ticked "I would try an
+ * early build" got no acknowledgement that the tick registered, no idea they
+ * were in a different queue, and no way to tell whether they had misclicked.
+ *
+ * The row is right here and knows the answer, so the page can say it.
+ */
+export async function confirmWaitlist(token: string): Promise<Confirmation> {
+  if (!token) return { ok: false, wantsBeta: null };
   const supabase = serviceClient();
 
   const { data } = await supabase
@@ -171,21 +190,77 @@ export async function confirmWaitlist(token: string): Promise<boolean> {
     .update({ confirmed_at: new Date().toISOString() })
     .eq("token", token)
     .is("confirmed_at", null)
-    .select("id")
+    .select("wants_beta")
     .maybeSingle();
 
-  if (data) return true;
+  if (data) return { ok: true, wantsBeta: Boolean(data.wants_beta) };
 
   // Already confirmed reads as success, not as a broken link. Somebody who taps
   // the same link twice — or whose mail client prefetched it — has not done
   // anything wrong and should not be told the link expired.
   const { data: already } = await supabase
     .from("waitlist")
-    .select("id")
+    .select("wants_beta")
     .eq("token", token)
     .maybeSingle();
 
-  return Boolean(already);
+  return already
+    ? { ok: true, wantsBeta: Boolean(already.wants_beta) }
+    : { ok: false, wantsBeta: null };
+}
+
+export interface Preferences {
+  readonly metro: string;
+  readonly wantsBeta: boolean;
+  readonly confirmed: boolean;
+  readonly invited: boolean;
+}
+
+/** What we hold, for the person who holds the token. */
+export async function waitlistPreferences(token: string): Promise<Preferences | null> {
+  if (!token) return null;
+  const { data } = await serviceClient()
+    .from("waitlist")
+    .select("metro, wants_beta, confirmed_at, invited_at")
+    .eq("token", token)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    metro: data.metro as string,
+    wantsBeta: Boolean(data.wants_beta),
+    confirmed: Boolean(data.confirmed_at),
+    invited: Boolean(data.invited_at),
+  };
+}
+
+/**
+ * Change the area, or change their mind about testing.
+ *
+ * ── the hole this fills, which was a real one ───────────────────────────────
+ *
+ * `joinWaitlist` returns early for an address that is already confirmed — it
+ * must, or resubmitting the form is an email bomb aimed at whoever owns that
+ * mailbox. The consequence nobody noticed: a CONFIRMED person could never
+ * change anything. Somebody who did not tick "I would try an early build" and
+ * then wanted to test had no path at all, and somebody who moved city had no
+ * way to say so.
+ *
+ * Keyed on the token rather than on the address, so it needs no sign-in and
+ * cannot be aimed at somebody else's row. Same proof as leaving.
+ */
+export async function updatePreferences(
+  token: string,
+  changes: { metro?: string; wantsBeta?: boolean },
+): Promise<void> {
+  if (!token) return;
+
+  const patch: Record<string, unknown> = {};
+  if (changes.metro !== undefined && isMetro(changes.metro)) patch["metro"] = changes.metro;
+  if (changes.wantsBeta !== undefined) patch["wants_beta"] = changes.wantsBeta;
+  if (Object.keys(patch).length === 0) return;
+
+  await serviceClient().from("waitlist").update(patch).eq("token", token);
 }
 
 /**
