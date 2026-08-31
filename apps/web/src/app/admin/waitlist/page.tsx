@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { METROS, WAITLIST_METRO_TARGET, metroLabel } from "@plusone/config";
+import { WAITLIST_METRO_TARGET, metroLabel } from "@plusone/config";
 
 import { Card } from "@/app/ui";
 import { confirmedWaitlist, countByMetro, testerList } from "@/lib/waitlist";
@@ -161,6 +161,3 @@ function TesterBlock({
     </div>
   );
 }
-
-/** Re-exported for the invite form's option list. */
-export { METROS };
