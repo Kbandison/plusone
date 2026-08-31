@@ -63,6 +63,45 @@ rejection reason; a list that implies coverage nobody has is.
 
 ## 4. Setting up and accessing the app — KEVIN, AND READ THIS FIRST
 
+> **CHANGED UNDER THIS DOCUMENT ON 2026-08-31, by WSL, and it is not a detail.**
+> Plus One is now in a **closed beta**: no account can be created without an
+> invitation, and the home page is a waitlist form rather than "Get started".
+> Server 21. This section was written hours before that landed and everything
+> in it is still correct — but it is no longer sufficient, and the missing part
+> is the kind a reviewer resolves by rejecting.
+>
+> **What still works, and why.** The gate is on account CREATION only.
+> `/onboarding/phone` is the one call that can mint an account and it now
+> refuses without an invitation; `/sign-in` was already closed to non-members
+> and is untouched. So the email-OTP route below is exactly as valid as it was,
+> and a reviewer signing in to the prepared account meets no new obstacle.
+>
+> **What has to be added to the reply.** A reviewer who opens the app looking
+> for a way in now sees a waitlist form, and a reviewer who concludes the app
+> cannot be used files a 2.1 rather than asking. The App Review notes must say,
+> before anything else:
+>
+> ```
+> Plus One is currently in a closed beta: new accounts require an
+> invitation, so the app opens on a waitlist form. Please use "Sign in"
+> — not "Get started" and not the waitlist form — with the credentials
+> below. The account already exists and has completed onboarding.
+> ```
+>
+> Naming the button is not politeness. `apps/android/README.md` records a round
+> trip lost to exactly this: "Get started" and "Sign in" are different doors and
+> only one of them works once the account exists.
+>
+> The Play-side equivalent is already rewritten in `apps/android/README.md`,
+> including why its previous note — "creating a NEW account does require a
+> one-time identity check" — is now actively wrong and invites a reviewer to go
+> and try something that is refused outright. The same sentence must not survive
+> into Apple's reply.
+>
+> Left as a note rather than edited into the sections below, because this is the
+> shells lane and the 2.1 reply is macOS's to send. The correction is here so it
+> cannot be missed; the wording of the reply is theirs.
+
 **A reviewer cannot sign in with a phone number.** Sign-in sends a one-time code
 by SMS to the member's own phone, and a reviewer has no way to receive it. This
 is the App Access problem BACKLOG Kevin 12 flagged on 2026-08-27 as the thing
