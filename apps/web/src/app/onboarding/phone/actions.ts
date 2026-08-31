@@ -5,10 +5,13 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
+import { cookies } from "next/headers";
+
 import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
 import { nextRoute } from "@/lib/onboarding";
+import { acceptBetaInvite, betaInviteIsOpen } from "@/lib/waitlist";
 
 const E = DRAFT_COPY.phone.errors;
 
@@ -31,8 +34,51 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
   const phone = verification.normalizePhone(raw);
   if (!phone) return { error: E.phoneInvalid, sentTo: null };
 
+  /**
+   * The closed beta gate, and the ONLY place it can live.
+   *
+   * ── why here and nowhere else ───────────────────────────────────────────────
+   *
+   * This is the one call in the app that can bring an account into existence.
+   * `/sign-in` passes `shouldCreateUser: false` on both branches and says so in
+   * its own header — "This screen can never mint an account" — so it is already
+   * closed to anybody who is not already a member, and gating it a second time
+   * would do nothing except break the anti-enumeration property it was built
+   * for.
+   *
+   * That distinction is the whole design. "Nobody outside the beta gets in" is
+   * implemented as "no account can be CREATED without an invitation", not as
+   * "nobody can sign in" — and the difference is what stops the gate stranding
+   * real people:
+   *
+   *   an invited stranger      shouldCreateUser: true. Account created.
+   *   an EXISTING member       Account already exists, so the OTP sends and
+   *                            they sign in, invitation or not. A member whose
+   *                            invitation was spent months ago, or who never
+   *                            had one because they joined before the beta,
+   *                            cannot be locked out of their own account.
+   *   a store REVIEWER         The same case. They sign in to an account that
+   *                            already exists and is past every one-time gate,
+   *                            which is what App Review Information tells them
+   *                            to do — so this gate cannot cause the rejection
+   *                            it most looks like it would.
+   *   an uninvited stranger    No account to sign into and none created. Told
+   *                            it is a closed beta, and offered the list.
+   *
+   * The cookie is a CLAIM and this is where it gets checked. proxy.ts only
+   * carries the value; `betaInviteIsOpen` asks the database whether that code
+   * was really issued, has not expired, and has not already been spent. Checked
+   * on every send rather than once, because a cookie outlives the invitation it
+   * names and the browser is not ours.
+   */
+  const inviteCode = (await cookies()).get("plusone_beta")?.value;
+  const invited = await betaInviteIsOpen(inviteCode);
+
   const supabase = await getServerSupabase();
-  const { error } = await supabase.auth.signInWithOtp({ phone });
+  const { error } = await supabase.auth.signInWithOtp({
+    phone,
+    options: { shouldCreateUser: invited },
+  });
 
   if (error) {
     // The same classifier /sign-in uses, rather than a regex over the provider's
@@ -46,9 +92,19 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
         return { error: E.rateLimited, sentTo: null };
       case "undeliverable":
         return { error: E.undeliverable, sentTo: null };
-      // A brand-new member has no account yet, so the enumeration concern that
-      // makes /sign-in pretend does not apply here — there is nothing to hide.
+      // `pretend_sent` is Supabase refusing to create an account, which on this
+      // screen means exactly one thing: no account exists for this number and
+      // `shouldCreateUser` was false. That is the closed beta, and it is the
+      // only way this branch can be reached now.
+      //
+      // Before the gate this was unreachable in practice, and the old comment
+      // said so — "a brand-new member has no account yet, so the enumeration
+      // concern that makes /sign-in pretend does not apply here". The second
+      // half of that is still true and is why this can be answered plainly
+      // rather than pretended at: there is nothing to hide about a number with
+      // no account when we are refusing every number with no account.
       case "pretend_sent":
+        return { error: null, sentTo: null, closed: true };
       case "failed":
         return { error: E.sendFailed, sentTo: null };
     }
@@ -74,6 +130,21 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
   // Wrong code and expired code are deliberately one message. Distinguishing
   // them tells someone guessing which half they got right.
   if (error) return { error: E.codeInvalid, sentTo: phone };
+
+  /**
+   * Spend the invitation, now that the account it authorised actually exists.
+   *
+   * AFTER the OTP, never before. Marking it accepted at send time would burn an
+   * invitation for anybody who reached the code screen and stopped — a mistyped
+   * number, a text that never arrived, a closed tab — and they would have to
+   * ask for another one that nothing in the product can issue.
+   *
+   * Not awaited for its result and not allowed to fail the signup: the account
+   * is made either way, and refusing a verified member their session because a
+   * bookkeeping update failed would be the worst possible trade. The cost of
+   * missing it is one invitation reusable once more, which the TTL still bounds.
+   */
+  await acceptBetaInvite((await cookies()).get("plusone_beta")?.value);
 
   // Record on the profile what the OTP just proved.
   //

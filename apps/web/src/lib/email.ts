@@ -41,6 +41,62 @@ const BATCH = 100;
  * a lock-screen line does not. Subject and body are the ones buildPayload made;
  * nothing is added, interpolated, or personalised.
  */
+/**
+ * One message to one address that belongs to no member.
+ *
+ * `emailNotifier` cannot do this and should not learn how: it resolves
+ * addresses through `emails_for(user_ids)`, which is the right shape for a
+ * notification — it only ever reaches a member who confirmed an address and
+ * left the switch on. A waitlist confirmation has no user id to resolve, no
+ * notification preference to respect, and no member behind it at all.
+ *
+ * Everything else about it is deliberately identical, because the reasons are:
+ * plain text, no HTML, and no remote image. A tracking pixel would tell a
+ * server that this address opened a message from an HSV and HIV app, at a time,
+ * from an IP — and that is a worse disclosure here than in the member path,
+ * because the recipient has not agreed to anything yet.
+ *
+ * Returns whether it went. Callers must NOT surface that to the browser — see
+ * the oracle note in lib/waitlist.ts.
+ */
+export async function sendDirectEmail(message: {
+  to: string;
+  subject: string;
+  text: string;
+}): Promise<boolean> {
+  const from = process.env["RESEND_FROM"];
+  const key = process.env["RESEND_API_KEY"];
+  if (!from || !key) {
+    console.error(JSON.stringify({ at: "email.direct", problem: "not configured" }));
+    return false;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from, ...message }),
+    });
+    if (!response.ok) {
+      // Status only. Resend echoes the request back in an error body, and both
+      // the subject and the recipient are things that must not reach a log
+      // (§9.6) — the recipient most of all, since an address in our logs beside
+      // this app's name is the disclosure the whole waitlist design avoids.
+      console.error(JSON.stringify({ at: "email.direct", status: response.status }));
+      return false;
+    }
+    return true;
+  } catch (cause) {
+    console.error(
+      JSON.stringify({
+        at: "email.direct",
+        problem: cause instanceof Error ? cause.message : "unknown",
+      }),
+    );
+    return false;
+  }
+}
+
 export function emailNotifier(): notify.Notifier {
   return {
     name: "resend",

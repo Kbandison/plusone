@@ -1197,6 +1197,90 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     and drops the intention filter on purpose (`browse/page.tsx`). Two numbers
     with two jobs, and the difference between them wants saying on screen.
 
+21. ~~**A waitlist, and the closed beta it feeds.**~~ — done and APPLIED
+    2026-08-31, at Kevin's ask. Migrations 20260831000100 and 000200 are live,
+    ledger at 83 of 98, `check:db` green.
+
+    What exists: `/waitlist` with a metro select and an optional "I would test
+    an early build"; double opt-in by email; one-click leave with no account;
+    `/beta/<code>` invitations; an admin screen at `/admin/waitlist` that shows
+    density by metro and produces paste-ready tester lists for Play and
+    TestFlight; and the gate itself.
+
+    **The gate is on account CREATION only, and that is the whole design.**
+    `/onboarding/phone` is the one call in the app that can mint an account, so
+    it passes `shouldCreateUser: invited`. `/sign-in` was already closed to
+    non-members — `shouldCreateUser: false` on both branches since it was
+    written — so gating it a second time would do nothing except break its
+    anti-enumeration property and risk locking somebody out of their own data.
+
+    Four cases, and the reason the shape is right:
+
+    | who                | what happens                                         |
+    | ------------------ | ---------------------------------------------------- |
+    | invited stranger   | account created                                      |
+    | existing member    | account exists, so the OTP sends — invitation or not |
+    | **store reviewer** | the same case. Signs in to an account that exists    |
+    | uninvited stranger | told it is a closed beta, offered the list           |
+
+    The reviewer row is the one worth keeping. Gating sign-in would have caused
+    exactly the rejection this gate most looks like it would cause, and
+    `apps/android/README.md`'s App access section is rewritten because the old
+    reviewer note is now actively wrong — it said creating an account needs an
+    identity check, which invites a reviewer to go and try something that is
+    refused outright.
+
+    **What the table deliberately does not hold**, because an address on this
+    list is a health disclosure by inference: no condition, no birthdate, no
+    name, no phone, nothing finer than a metro picked from a fixed list, and no
+    IP or UTM. `WAITLIST_NEVER` in `packages/config/src/waitlist.ts` is the
+    explicit list with the argument against each, and `waitlist.test.ts` reads
+    the migration and fails on a column matching any of them. Proven by planting
+    one.
+
+    **It is the only table here granted to nobody at all.** No RLS policies, no
+    grant to `anon` or `authenticated`, `force row level security`. The service
+    client is the only reader and writer. The specific hole that closes: a
+    definer RPC callable by `anon` would RETURN the confirmation token to
+    whoever called it, so anybody could join with somebody else's address and
+    confirm it themselves — which is double opt-in doing nothing.
+
+    That made `check:db`'s "every table has at least one policy" fail, and the
+    fix was to SPLIT it rather than relax it — `check:sql` had the correct rule
+    all along ("every table **granted to a role** has at least one policy"), and
+    the live-schema version was broader than the failure it describes. It now
+    asserts both halves, including that a closed table stays granted to nobody,
+    which is strictly stronger than what it replaced. Watched it fail on a
+    planted grant.
+
+22. **Reopening: what has to change when the beta ends.** Written now because
+    the closed beta is deliberately temporary and every piece of it is a thing
+    somebody has to remember to undo.
+
+    - `/` and `site-header.tsx` point at `/waitlist`. They go back to
+      `/onboarding/phone` with `DRAFT_COPY.home.getStarted`, which is sitting in
+      `KNOWINGLY_UNUSED` in `copy-is-wired.test.ts` waiting for it. **That map
+      cleans itself** — the moment anything references `.getStarted` the test
+      fails and demands the entry be removed, so this cannot rot.
+    - `sign-in-form.tsx`'s "new here" link and `/i/[code]`'s referral button
+      both point at `/waitlist` too. The referral one is the interesting case:
+      during the beta a member's referral does NOT grant entry, because letting
+      it would mean any member could mint a way through the gate. Attribution
+      still survives the detour — `plusone_ref` lives thirty days and is
+      attributed once there is an account.
+    - The gate in `onboarding/phone/actions.ts` becomes `shouldCreateUser: true`
+      again, and `waitlist.test.ts` in `apps/web/src/lib` will fail until its
+      assertions are updated — deliberately, since that file is the record of
+      what the gate is for.
+    - `apps/android/README.md`'s App access note must go back, and the App Store
+      equivalent with it. **Do not leave a reviewer note describing a beta that
+      has ended** — it is the same class of error as the one being fixed there
+      now.
+
+    The waitlist itself stays. It is worth having whether or not signup is open:
+    it is the only thing that turns `COPY.drop.thin` from an apology into a
+    plan.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they

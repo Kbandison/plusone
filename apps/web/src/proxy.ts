@@ -71,6 +71,36 @@ export async function proxy(request: NextRequest) {
     });
   }
 
+  // The beta invitation, carried the same way and for the same reason.
+  //
+  // A SEPARATE cookie and a separate path from the referral above, deliberately.
+  // A referral says "an existing member invited a friend" and is minted by
+  // my_referral_code() for anybody who asks; a beta invitation says "the
+  // operator admitted this person" and is the only thing that permits an
+  // account to exist right now. Sharing one namespace would mean any member
+  // could mint themselves a way through the beta gate.
+  //
+  // Sixteen hex characters, matching mintInviteCode() in lib/waitlist.ts. The
+  // pattern is narrow on purpose: this cookie is read by the one action that
+  // decides whether an account may be created.
+  //
+  // Still not a decision — this only carries the value. Whether it is valid,
+  // unexpired and unspent is asked in the onboarding action, against the
+  // database, on every send. A cookie is a claim, not a credential.
+  const beta = /^\/beta\/([0-9a-f]{16})$/.exec(request.nextUrl.pathname);
+  if (beta?.[1]) {
+    response.cookies.set("plusone_beta", beta[1], {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      // Matches WAITLIST_INVITE_TTL_DAYS. The database is what actually
+      // expires it; this only stops a stale cookie outliving the invitation it
+      // names by months.
+      maxAge: 60 * 60 * 24 * 14,
+    });
+  }
+
   return response;
 }
 

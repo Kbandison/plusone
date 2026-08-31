@@ -6,11 +6,13 @@ import { useActionState, useEffect, useId, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { Field, RESEND_COOLDOWN_SECONDS, Submit } from "@/app/auth-fields";
+import { buttonClass, Card } from "@/app/ui";
 import { sendCode, verifyCode } from "./actions";
 import { type PhoneState } from "./state";
 import { PHONE_INITIAL } from "./state";
 
 const C = DRAFT_COPY.phone;
+const B = DRAFT_COPY.betaClosed;
 
 export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: string }) {
   const [sendState, send, sending] = useActionState(sendCode, PHONE_INITIAL);
@@ -19,6 +21,41 @@ export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: stri
 
   if (sendState.sentTo && !changingNumber) {
     return <CodeForm sent={sendState} onChangeNumber={() => setChangingNumber(true)} />;
+  }
+
+  /**
+   * The closed beta, said as a shut door rather than a broken one.
+   *
+   * Replaces the form outright instead of appearing under it as an error,
+   * because there is nothing here to retry — the same number will be refused
+   * identically for as long as the beta is closed, and leaving the field in
+   * place invites somebody to try again until they conclude the app is broken.
+   *
+   * The sign-in link is the half that is easy to leave out and strands somebody
+   * real: a member who already has an account and typed their number on the
+   * wrong screen. They do not need an invitation and must not be told they do.
+   */
+  if (sendState.closed) {
+    return (
+      <Card className="mt-10">
+        <h2 className="text-h3">{B.heading}</h2>
+        <p className="mt-3 text-body leading-[1.7] text-ink-2">{B.body}</p>
+
+        <Link href="/waitlist" className={buttonClass("primary", "mt-8 self-start")}>
+          {B.join}
+        </Link>
+
+        <p className="mt-6 text-[11.7px] text-ink-2">
+          {B.already}{" "}
+          <Link
+            href="/sign-in"
+            className="underline decoration-line-2 underline-offset-4 hover:text-ink"
+          >
+            {B.signIn}
+          </Link>
+        </p>
+      </Card>
+    );
   }
 
   return (

@@ -404,6 +404,61 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
 
+### 2026-08-31 · WSL · the waitlist, and a gate that had to not lock anybody out
+
+**Server 21 is done, applied and pushed.** Kevin asked for a beta-tester page
+and a waitlist, and chose a CLOSED BETA with it — nobody signs up without an
+invitation. Two migrations live, ledger 83 of 98, all six gates green on a
+forced run. Detail is backlog server 21; 22 is the reopening checklist.
+
+Three things belong here rather than there.
+
+**Sign-up and sign-in are different doors, and only one of them can be gated.**
+`/onboarding/phone` is the only call in this app that can mint an account, so
+that is where `shouldCreateUser: invited` goes. `/sign-in` has passed
+`shouldCreateUser: false` on both branches since it was written — it is already
+closed to non-members — so gating it would have added nothing and broken its
+anti-enumeration property.
+
+That distinction is what stops the gate causing a store rejection. A reviewer
+signs IN to an account that already exists, so they are untouched by it. Had the
+gate gone on sign-in "to be thorough", it would have locked out the reviewer,
+every existing member, and anybody whose invitation was long spent. **The
+thorough-looking version was the broken one**, which is why this is here and not
+only in a commit body.
+
+**A guard that is too broad gets relaxed; split it instead.** `check:db`
+asserted "every table has at least one policy" and the waitlist deliberately has
+none — it is granted to nobody, so a policy would be decoration. The tempting
+fix was an exception. What was actually wrong is that `check:sql` had the
+correct rule all along — "every table **granted to a role** has at least one
+policy" — and the live-schema copy had drifted broader than the failure it
+describes. It now checks both halves and names the closed tables, which is
+strictly stronger than what it replaced. Watched it fail on a planted grant
+before believing it.
+
+**Two floors caught two blind scans in one file, and I wrote both bugs.** The
+`signInWithOtp` scan is the gate's own test. First it anchored on a trailing
+`;`, which missed /sign-in's ternary branch that ends `})`. Then it CONSUMED a
+300-character window, so the second call — sitting inside the first one's window
+— was skipped, because `matchAll` resumes at lastIndex. Two nearby call sites
+read as one. Both times the assertion still passed; only `expect(calls >= 3)`
+failed. A lookahead fixed it.
+
+The scan would have gone on reporting success for a check covering two thirds of
+its subject. **The floor is the entire reason I know that**, and it is the
+cheapest line in the file.
+
+**Left off:** tree clean, six tasks / 3118 tests on `--force`, plus typecheck,
+lint, format:check, check:sql and check:db. Nothing claimed. Nothing in flight.
+
+**What Kevin needs to know before the next store submission**, and it is not
+code: the closed beta changes App Access on BOTH stores. `apps/android/README.md`
+is rewritten — its old reviewer note is now actively wrong, since it told a
+reviewer that creating an account needs an identity check, when it is refused
+outright. The App Store guide needs the same correction and does not have it
+yet, because it lives in an artifact rather than in the repo.
+
 ### 2026-08-29 · macOS · the premium alert, and the gap between two green gates
 
 **Server 18c is done, applied and pushed** — `7e4c93b`, ledger recorded, and
@@ -548,45 +603,3 @@ check:sql and check:db. Nothing claimed. `adb` is NOT connected; the phone drops
 off and both ports rotate every time the dialog opens, so the TWA screenshot and
 the Play re-read both need Kevin with the device. The Play diagnostic now needs
 `?diag=1` on the URL.
-
-### 2026-08-27 · WSL · the Android buy button, and what logcat settled
-
-**Not fixed, and the reason is worth the length.** Play returns an empty
-catalogue to the TWA, so there is no buy button on Android. Everything under our
-control is now verified correct and it still returns 0. Full detail is backlog
-server 13; what belongs here is the shape of the day.
-
-**`clientAppUnavailable` is TRANSIENT.** It flipped three times in an hour on
-one device, with nothing changing between readings. Two consequences: the
-upstream issues that call it a permanent property of a device are describing
-something else, and **no single reading of this is its state** — I told Kevin
-the blocker was fixed on one reading and it came back twenty minutes later.
-
-**Clearing the Play Store cache reproduces it on demand.** That is a
-reproduction none of the three upstream issues has, and it is worth reporting.
-It is also how I broke a working state: "clear Play Store cache" appears in
-those threads as a remedy people tried, and on this evidence it may be how some
-of them acquired the problem. It has not refilled since.
-
-**Ask both `getDetails` AND `listPurchases`.** They cross the same bridge, so
-one answering while the other throws separates a broken CONNECTION from a broken
-LOOKUP. Three days of readings looked identical until the diagnostic asked both.
-
-**Finsky's obfuscated account id is `base64url(sha256(email))`**, padding
-stripped. Play logs which account it bills an app against and prints only that
-hash; computing it against the tester address settled in one command what would
-otherwise have meant reading somebody's list of seventeen Google accounts.
-
-**Read the artifact, not the config.** `DelegationService`'s `android:enabled`
-is a resource REFERENCE in the generated manifest, and the value that matters is
-in the packaged resource table — `aapt2 dump resources` on the signed APK. A
-false one there is the most-cited cause of this error; ours is true.
-
-**Left off clean.** typecheck, lint and format green; the play, shell and
-subscription suites pass. Nothing claimed. `adb` is paired to Kevin's phone and
-can be reconnected with `adb connect 192.168.50.94:44687` while wireless
-debugging stays on. (That address is stale — the phone was at
-`192.168.50.122` on the 29th, and both ports rotate every time the dialog is
-opened, so it always needs Kevin.) The on-page diagnostic panel is **now
-backlog server 20** rather than a line in a session block that this file's own
-three-block rule was about to delete.

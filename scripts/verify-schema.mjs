@@ -77,7 +77,26 @@ if (!DB_URL) {
 // Both sessions applied to one schema within minutes here, so 123 is read off
 // the live database rather than reached by adding the two deltas — which is
 // also how the collision on this line was noticed rather than averaged.
-const EXPECT = { tables: 33, views: 5, functions: 123, enums: 29, rooms: 7, config: 23 };
+// tables 33 -> 34                          20260831000100, server 21: `waitlist`.
+//                                           One table, no functions, no views and
+//                                           no enums — and no POLICIES either,
+//                                           which is why check:sql still passes
+//                                           on it. That rule is conditional on
+//                                           the table being granted to a role,
+//                                           and this one is granted to nobody by
+//                                           design. Read off the live database
+//                                           after applying, not inferred.
+const EXPECT = { tables: 34, views: 5, functions: 123, enums: 29, rooms: 7, config: 23 };
+
+// Tables that deliberately hold no policy AND no grant to anon or
+// authenticated. Reachable only by the service client, from a server path that
+// owns the whole request.
+//
+// `waitlist` is the only one: there is no member behind a waitlist row, so
+// "their own rows" has no meaning, and a definer RPC callable by anon would
+// hand the confirmation token back to whoever called it. The migration header
+// has the full argument.
+const CLOSED_TABLES = ["waitlist"];
 // 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
 // emails_for() from 20260824000200, which had been sitting unapplied.
 //
@@ -162,13 +181,57 @@ check(
   `every table enables RLS${noRls.length ? ` — missing: ${noRls.map((r) => r.tablename).join(", ")}` : ""}`,
 );
 
+// A table with no policy is deny-all. Whether that is a BUG or the point
+// depends entirely on whether anything was granted to it — which this check
+// did not ask, and check:sql's version of the same rule always has:
+// "every table granted to a role has at least one policy (a granted table with
+// no policy is silently deny-all)".
+//
+// The failure worth catching is a table somebody meant to open: grants written,
+// policies forgotten, and PostgREST returning an empty set forever with no
+// error anywhere. A table granted to NOBODY is a different object — closed on
+// purpose, and `waitlist` (20260831000100) is the first one here.
+//
+// So the rule is split rather than relaxed, and the pair is strictly stronger
+// than the single check was. The second half is the one that matters: it
+// refuses a table that has no policy AND has grants appearing later, which is
+// exactly how a deliberately-closed table becomes an accidentally-open one.
 const noPolicy = await q(`
-  select tablename from pg_tables t where schemaname = 'public'
-    and not exists (
-      select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = t.tablename)`);
+  select t.tablename,
+         coalesce((
+           select string_agg(distinct g.grantee, ',' order by g.grantee)
+           from information_schema.role_table_grants g
+           where g.table_schema = 'public'
+             and g.table_name = t.tablename
+             and g.grantee in ('anon', 'authenticated')
+         ), '') as granted
+    from pg_tables t
+   where t.schemaname = 'public'
+     and not exists (
+       select 1 from pg_policies p
+        where p.schemaname = 'public' and p.tablename = t.tablename)`);
+
+const grantedNoPolicy = noPolicy.filter((r) => r.granted !== "");
 check(
-  noPolicy.length === 0,
-  `every table has at least one policy${noPolicy.length ? ` — missing: ${noPolicy.map((r) => r.tablename).join(", ")}` : ""}`,
+  grantedNoPolicy.length === 0,
+  `every table granted to a role has at least one policy${
+    grantedNoPolicy.length
+      ? ` — silently deny-all: ${grantedNoPolicy.map((r) => `${r.tablename} (${r.granted})`).join(", ")}`
+      : ""
+  }`,
+);
+
+// The exemption, asserted rather than assumed. Naming them means a NEW closed
+// table shows up in this line rather than passing in silence — a table nobody
+// can reach is a decision, and a decision nobody can see is how it gets undone.
+const closed = noPolicy.filter((r) => r.granted === "").map((r) => r.tablename);
+check(
+  closed.every((name) => CLOSED_TABLES.includes(name)),
+  `tables closed to anon and authenticated by design: ${closed.join(", ") || "none"}${
+    closed.every((name) => CLOSED_TABLES.includes(name))
+      ? ""
+      : ` — unexpected: ${closed.filter((n) => !CLOSED_TABLES.includes(n)).join(", ")}`
+  }`,
 );
 
 // Two of the three views are projections over data the caller could already

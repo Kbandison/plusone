@@ -11,6 +11,12 @@ import { DRAFT_COPY } from "@plusone/config";
  * who read the privacy policy — which is the page a careful person reads FIRST
  * on an app like this — could circle the six legal pages forever and never find
  * the way in.
+ *
+ * The call to action points at `/waitlist` rather than `/onboarding/phone` for
+ * the duration of the closed beta. It is the same reasoning as the front page:
+ * no account can be created without an invitation, so the old link was a button
+ * that led to a refusal — and this one is on every marketing page, which is
+ * where somebody who has just read the privacy policy decides.
  */
 export function SiteHeader() {
   return (
@@ -21,7 +27,7 @@ export function SiteHeader() {
         <ButtonLink tone="quiet" href="/sign-in">
           {DRAFT_COPY.home.signIn}
         </ButtonLink>
-        <ButtonLink href="/onboarding/phone">{DRAFT_COPY.home.getStarted}</ButtonLink>
+        <ButtonLink href="/waitlist">{DRAFT_COPY.waitlist.submit}</ButtonLink>
       </div>
     </header>
   );

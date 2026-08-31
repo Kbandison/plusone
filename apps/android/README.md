@@ -161,9 +161,33 @@ The liveness check is not the problem it looks like: a reviewer account that
 Kevin has already taken through onboarding is past that gate permanently, so the
 only live barrier is the sign-in code.
 
+**THE APP IS IN A CLOSED BETA SINCE 2026-08-31, AND THAT CHANGES THIS SECTION
+MORE THAN ANYTHING ELSE ON THE PAGE.** No account can be created without an
+invitation — `/onboarding/phone` passes `shouldCreateUser: false` to Supabase
+unless a valid, unexpired, unspent invitation cookie is present — and the front
+door is now a waitlist form.
+
+A reviewer who taps through looking for a way in finds a form asking for their
+email address, and a reviewer who concludes the app cannot be used files a
+rejection. The instructions below are the whole defence and they have to be
+right.
+
+**What saves it is that the gate is on account CREATION only.** `/sign-in` was
+already closed to non-members — it has passed `shouldCreateUser: false` on both
+branches since it was written — so the reviewer's journey is unchanged: they
+sign in to an account that already exists and is past every one-time gate. The
+gate cannot lock out a member, a returning member, or a reviewer. It was
+deliberately not put on sign-in for exactly this reason, and putting it there
+later would cause the rejection it looks like it prevents.
+
 What to tell Play, once the account exists:
 
 ```
+Plus One is currently in a closed beta: new accounts require an
+invitation, so the home page shows a waitlist form. The test account
+below already exists — please use "Sign in", NOT "Get started" or the
+waitlist form.
+
 All functionality requires a verified account. Sign in with the phone
 number below; the app will ask for a 6-digit code, which is fixed for
 this test number and does not require receiving an SMS.
@@ -172,9 +196,14 @@ this test number and does not require receiving an SMS.
   Code:  <fixed OTP>
 
 This account has already completed identity verification, so no camera
-or selfie is needed. Creating a NEW account does require a one-time
-identity check, which is why the test account is provided.
+or selfie is needed.
 ```
+
+The old version of that note ended "Creating a NEW account does require a
+one-time identity check, which is why the test account is provided." That
+sentence is now WRONG in a way that invites a reviewer to go and try: creating
+an account is not gated by an identity check, it is refused outright. Replaced
+rather than appended to.
 
 **Hosted Supabase supports this, and the path is VERIFIED end to end** —
 2026-08-27, against the live project rather than reasoned about. Authentication →

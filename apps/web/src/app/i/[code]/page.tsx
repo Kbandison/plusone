@@ -49,7 +49,18 @@ export default async function InvitePage() {
 
       <p className="mt-6 text-[13.8px] leading-[1.7] text-ink-2">{COPY.referral.landingSub}</p>
 
-      <Link href="/onboarding/phone" className={buttonClass("primary", "mt-10 self-start")}>
+      {/* /waitlist during the closed beta, and the referral survives it.
+       *
+       * A referral is a MEMBER inviting a friend; a beta invitation is the
+       * operator admitting somebody. Letting the first stand in for the second
+       * would mean any member could mint a way through the gate, at which point
+       * the beta is not closed. So the friend joins the list like anybody else.
+       *
+       * Nothing is lost by the detour: `plusone_ref` was set by proxy.ts on
+       * this request and lives thirty days, and attribution happens once the
+       * invitee has an account — which is the point at which there is anyone to
+       * attribute it to, whenever that turns out to be. */}
+      <Link href="/waitlist" className={buttonClass("primary", "mt-10 self-start")}>
         {COPY.referral.landingButton}
       </Link>
     </main>

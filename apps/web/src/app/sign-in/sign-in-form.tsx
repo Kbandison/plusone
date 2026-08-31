@@ -74,8 +74,12 @@ export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: str
 
       <p className="text-[11.7px] text-ink-2">
         {C.newHere}{" "}
+        {/* /waitlist, not /onboarding/phone, for the duration of the closed
+            beta: signup refuses anybody without an invitation, so the old link
+            sent somebody who is new — which is exactly who this line is for —
+            to a door that does not open. */}
         <Link
-          href="/onboarding/phone"
+          href="/waitlist"
           className="underline decoration-line-2 underline-offset-4 hover:text-ink"
         >
           {C.newHereLink}

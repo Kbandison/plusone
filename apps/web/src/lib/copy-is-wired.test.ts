@@ -27,7 +27,26 @@ const ROOTS = [join(import.meta.dirname, ".."), join(import.meta.dirname, "../..
  * Being on this list is a claim that somebody looked. Delete an entry when the
  * thing gets built.
  */
-const KNOWINGLY_UNUSED: Record<string, string> = {};
+const KNOWINGLY_UNUSED: Record<string, string> = {
+  /**
+   * The front-door call to action, unwired for the duration of the closed beta.
+   *
+   * `/` and the marketing header both pointed at `/onboarding/phone` with this
+   * label. Since 2026-08-31 no account can be created without an invitation, so
+   * that was a button leading to a refusal, and both now say
+   * DRAFT_COPY.waitlist.submit and go to `/waitlist`.
+   *
+   * Kept rather than deleted because it is the exact string that comes back
+   * when the beta opens, and because this map cleans itself: the moment
+   * anything references `.getStarted` again, the assertion above fails and
+   * demands this entry be removed. An excuse here cannot outlive its reason.
+   *
+   * Reopening is BACKLOG server 22, so this is not the only record of it — a
+   * note that describes work without creating any is how the Play diagnostic
+   * panel nearly shipped to members.
+   */
+  getStarted: "closed beta — the front door is /waitlist until it opens. BACKLOG server 22.",
+};
 
 function sourceFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

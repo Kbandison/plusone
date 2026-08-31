@@ -1,0 +1,65 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+import { DRAFT_COPY } from "@plusone/config";
+
+import { buttonClass, Card, Wordmark } from "@/app/ui";
+import { betaInviteIsOpen } from "@/lib/waitlist";
+import { StoreAccount } from "./store-account";
+
+const C = DRAFT_COPY.betaInvite;
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Where a beta invitation lands.
+ *
+ * The cookie is set in proxy.ts on this same request, not here — a Server
+ * Component cannot write one. Next seals the cookie object outside the action
+ * phase, so `cookies().set()` during render throws; `/i/[code]` learned this
+ * the expensive way, silently attributing no referrals at all until it was
+ * found. The same shape, so the same fix.
+ *
+ * ── it says nothing, and that is the design ─────────────────────────────────
+ *
+ * This link arrives by email and gets forwarded. Anyone who sees it before
+ * tapping through — a preview in a group chat, a colleague looking at a
+ * notification — should learn only that a private community exists. Same rule
+ * as the referral landing, and the metadata matters more than the page for
+ * exactly the reason written there: a preview is seen by more people than the
+ * page is.
+ */
+export const metadata: Metadata = {
+  title: C.heading,
+  description: C.body,
+  openGraph: { title: C.heading, description: C.body, type: "website" },
+  robots: { index: false, follow: false },
+};
+
+export default async function BetaInvitePage({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = await params;
+  const open = await betaInviteIsOpen(code);
+
+  return (
+    <main
+      id="main"
+      className="mx-auto flex min-h-[100dvh] max-w-[453.6px] flex-col justify-center px-6 py-24"
+    >
+      <Wordmark className="text-[24.3px]" />
+
+      <Card className="mt-12">
+        <h1 className="text-h2">{open ? C.heading : C.expiredHeading}</h1>
+        <p className="mt-3 text-body leading-[1.7] text-ink-2">{open ? C.body : C.expiredBody}</p>
+
+        <Link
+          href={open ? "/onboarding/phone" : "/waitlist"}
+          className={buttonClass(open ? "primary" : "secondary", "mt-8 self-start")}
+        >
+          {open ? C.start : DRAFT_COPY.waitlistConfirm.rejoin}
+        </Link>
+
+        {open ? <StoreAccount code={code} /> : null}
+      </Card>
+    </main>
+  );
+}

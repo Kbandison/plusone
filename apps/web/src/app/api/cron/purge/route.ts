@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { stripe } from "@/lib/stripe";
+import { sweepUnconfirmed } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
 
@@ -203,6 +204,33 @@ export async function POST(request: Request) {
     }
   }
 
+  /**
+   * Waitlist addresses that were never confirmed.
+   *
+   * Here rather than in a job of its own because it is the same promise: this
+   * is the retention sweep, and an unconfirmed row is data we hold about
+   * somebody who never agreed to be held. It is arguably the clearest case in
+   * this file — a member at least signed up.
+   *
+   * In its own try/catch, and deliberately last. Everything above deletes
+   * accounts and detaches cards on a §9.3 deadline; a failure sweeping a
+   * waitlist must not take that down with it, and the reverse ordering would
+   * let it.
+   *
+   * The count is returned rather than logged, like every other number here.
+   */
+  let waitlistSwept = 0;
+  try {
+    waitlistSwept = await sweepUnconfirmed();
+  } catch (cause) {
+    console.error(
+      JSON.stringify({
+        at: "purge.waitlist",
+        problem: cause instanceof Error ? cause.message : "unknown",
+      }),
+    );
+  }
+
   // Reported rather than swallowed: an orphaned object is a file that should
   // not exist, and a billing failure is a card still being charged. Nobody
   // finds out unless the job says so.
@@ -211,6 +239,7 @@ export async function POST(request: Request) {
     blockedThreadsPurged: blockedThreads.length,
     orphaned,
     billingFailures,
+    waitlistSwept,
   });
 }
 

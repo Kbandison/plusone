@@ -14,11 +14,23 @@ import { buttonClass } from "@/app/ui";
  * which it did not before: every screen in the product was reachable only by
  * someone who already knew the URL.
  *
- * Two links, because there are two people knocking. `/onboarding/phone` starts
- * an account and forwards a member who already has a live session to `/app`;
- * `/sign-in` is for the one whose session lapsed, who would otherwise be sent
- * to step one of signing up and charged a text to reach an account they already
- * had. Neither needs to know who is knocking, so this page stays static.
+ * Two links, because there are two people knocking. `/waitlist` is for somebody
+ * new, and `/sign-in` is for a member — including one whose session lapsed, who
+ * would otherwise be sent to step one of signing up and charged a text to reach
+ * an account they already had. Neither needs to know who is knocking, so this
+ * page stays static.
+ *
+ * ── the primary link is the waitlist, not signup. 2026-08-31, Kevin's call ──
+ *
+ * Plus One is in a closed beta and no account can be created without an
+ * invitation — the gate is in `/onboarding/phone`, which is the only call in
+ * the app that can mint one. So "Get started" would have been a button leading
+ * to a refusal, and the honest front door is the list.
+ *
+ * `/onboarding/phone` is deliberately still reachable and is NOT linked here.
+ * An invited member arrives from `/beta/<code>`, which sets the cookie the gate
+ * reads and sends them straight there. Linking it from the front page would
+ * offer everybody a door that opens for almost nobody.
  */
 export default function Home() {
   return (
@@ -35,8 +47,8 @@ export default function Home() {
       <p className="mt-6 max-w-[46ch] text-ink-2">{COPY.marketing.sub}</p>
 
       <div className="mt-11 flex flex-wrap items-center gap-x-7 gap-y-4">
-        <Link href="/onboarding/phone" className={buttonClass("primary")}>
-          {DRAFT_COPY.home.getStarted}
+        <Link href="/waitlist" className={buttonClass("primary")}>
+          {DRAFT_COPY.waitlist.submit}
         </Link>
 
         <Link

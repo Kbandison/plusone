@@ -116,6 +116,20 @@ export type {
   QuizOption,
 } from "./draft-copy";
 
+export {
+  METROS,
+  METRO_IDS,
+  isMetro,
+  metroLabel,
+  WAITLIST_NEVER,
+  WAITLIST_DOUBLE_OPT_IN,
+  WAITLIST_UNCONFIRMED_TTL_DAYS,
+  WAITLIST_EMAIL,
+  WAITLIST_INVITE_TTL_DAYS,
+  WAITLIST_METRO_TARGET,
+} from "./waitlist";
+export type { Metro, WaitlistEmail } from "./waitlist";
+
 export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
 export type { Section, FaqEntry } from "./guidelines";
 

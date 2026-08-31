@@ -261,6 +261,41 @@ export const TABLE_CLASSIFICATION: Readonly<
     note: "A member's own saved alert. The radius is operational for the same reason profiles.search_radius_mi is — it is a setting about what to show, not a place. Nothing here records where anybody was, and no row names anyone but its owner.",
   },
   deletion_requests: { feeds: ["Identifiers → User ID"], note: "That deletion was asked for." },
+
+  /**
+   * The waitlist, and the one table here that holds a NON-member.
+   *
+   * ── it feeds Contact Info, and nothing else ─────────────────────────────────
+   *
+   * An address and a metro. No condition, no community, no U=U, no birthdate,
+   * no name and no phone — WAITLIST_NEVER in waitlist.ts is the explicit list,
+   * with the argument against each, and waitlist.test.ts reads the migration
+   * and fails on a column matching any of them.
+   *
+   * ── why the metro is NOT declared as Coarse Location ────────────────────────
+   *
+   * This is the judgement call in this entry and it goes the other way from
+   * `profiles`, so it is worth stating rather than assuming.
+   *
+   * Apple's Location categories are about a device's position — something
+   * derived from GPS, a network, or an IP. The metro here is none of those: it
+   * is a value a person chose from a dropdown, about where they would like to
+   * be told about, and it is stored exactly as chosen with nothing measured. A
+   * member who picks "Atlanta, GA" while sitting in Chicago has told us the
+   * truth about what they want and nothing at all about where they are.
+   *
+   * `profiles.location` is the opposite — a real position, rounded by a trigger
+   * — which is why that one IS declared and why Precise Location is answered
+   * NO rather than left out.
+   *
+   * If this ever starts being prefilled from an IP or a geolocation call, that
+   * reasoning collapses and this entry becomes Coarse Location. Nothing does
+   * that today, and WAITLIST_NEVER refuses `ip` for the same reason.
+   */
+  waitlist: {
+    feeds: ["Contact Info → Email Address"],
+    note: "An address and a chosen metro, for somebody with no account. Deleted outright on leaving, and swept if never confirmed.",
+  },
   moderation_queue: {
     feeds: ["User Content → Other User Content"],
     note: "Holds reported content for review.",

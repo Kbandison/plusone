@@ -52,6 +52,116 @@ export const DRAFT_COPY = {
     // spec copy and says what that particular link is for.
   },
 
+  /**
+   * The waitlist, and the closed beta.
+   *
+   * Every string here is written for somebody who has not decided to be on this
+   * app yet, which is a different reader from the rest of DRAFT_COPY. Two rules
+   * follow and both are load-bearing:
+   *
+   *   · It never assumes the reader has a diagnosis. "People with HSV and HIV"
+   *     describes who the app is FOR; it does not say who the reader is. The
+   *     difference matters on a page somebody might be reading over a
+   *     shoulder, and it costs nothing.
+   *   · It says what joining actually stores, on the form, before the button.
+   *     A privacy policy link is not the same as telling somebody the two
+   *     things you are about to keep about them.
+   */
+  waitlist: {
+    heading: "Plus One is opening one city at a time",
+    intro:
+      "We are in a closed beta while there are enough people in each area for it to be worth using. Tell us where you are and we will let you know when it opens near you.",
+    /**
+     * The whole disclosure, above the button rather than behind a link.
+     *
+     * An email address on this list carries an inference about the person, and
+     * the honest thing is to say what is kept before they decide, not to make
+     * them go and read a policy to find out.
+     */
+    holds:
+      "We keep your email address and the area you pick. That is all — we do not ask what brought you here, and we never will.",
+    emailLabel: "Email address",
+    emailHelp: "Anything we send has a plain subject line. Nothing on it names a condition.",
+    metroLabel: "Where are you?",
+    metroPlaceholder: "Choose an area",
+    betaLabel: "I would try an early build",
+    betaHelp:
+      "Beta testers get in before their area opens. It means installing a pre-release app and telling us what breaks.",
+    submit: "Join the list",
+    /**
+     * The same answer whether the address was already on the list or not.
+     *
+     * The alternative — "you are already on this list" — turns the form into a
+     * membership oracle for anyone who wants to know whether a particular
+     * person signed up for an HSV and HIV app. Same property /sign-in has, and
+     * for the same reason.
+     */
+    sent: "Check your email",
+    sentBody:
+      "If that address can receive mail, a confirmation is on its way. You are on the list once you tap the link in it.",
+    leaveLink: "Leave the list",
+    errors: {
+      emailRequired: "Enter an email address.",
+      emailInvalid: "That does not look like an email address.",
+      metroRequired: "Choose an area.",
+      metroInvalid: "Choose an area from the list.",
+      rateLimited: "Too many tries. Give it a minute.",
+      failed: "That did not go through. Try again in a moment.",
+    },
+  },
+
+  waitlistConfirm: {
+    heading: "You are on the list",
+    body: "We will email you when Plus One opens in your area. Nothing else is coming — no newsletter, and nothing on a schedule.",
+    /** A token that is wrong, spent, or expired. Deliberately one message. */
+    invalidHeading: "That link has expired",
+    invalidBody:
+      "Confirmation links are good for 30 days. Join the list again and we will send a new one.",
+    rejoin: "Back to the list",
+  },
+
+  waitlistLeave: {
+    heading: "You are off the list",
+    body: "Your address and the area you picked are deleted. If you change your mind, the list is still there.",
+    /** No error twin: an already-deleted row and a bad token both land here. */
+    rejoin: "Back to the list",
+  },
+
+  /**
+   * The invite landing. Reached from an email, so it is the first screen of a
+   * signup rather than a marketing page — it says what happens next and gets
+   * out of the way.
+   */
+  betaInvite: {
+    heading: "You are invited",
+    body: "This link is yours and works once. It gets you through signup while Plus One is still in closed beta.",
+    start: "Start",
+    expiredHeading: "That invitation has expired",
+    expiredBody:
+      "Invitations are good for 14 days. Ask us for another and we will send one — the list still has you on it.",
+  },
+
+  /**
+   * What somebody uninvited meets at /onboarding/phone.
+   *
+   * NOT an error, and not "something went wrong". They did nothing wrong and
+   * the app is working exactly as intended — so this reads as a door that is
+   * shut rather than a door that is broken, and it offers the only thing there
+   * is to offer.
+   */
+  betaClosed: {
+    heading: "Plus One is in a closed beta",
+    body: "New accounts need an invitation while we open one area at a time. Join the list and we will send you one when your area opens.",
+    join: "Join the list",
+    /**
+     * The half that is easy to leave out and strands somebody real: a member
+     * who already has an account and typed their number on the wrong screen.
+     * They do not need an invitation and must not be told they do.
+     */
+    already: "Already have an account?",
+    signIn: "Sign in",
+  },
+
   phone: {
     heading: "Your number",
     intro:
