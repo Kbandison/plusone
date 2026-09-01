@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { Wordmark } from "@/app/ui";
 import { LeaveForm } from "./leave-form";
+import { PublicShell } from "@/app/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +30,8 @@ export default async function LeavePage({
   const { t } = await searchParams;
 
   return (
-    <main
-      id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[453.6px] flex-col justify-center px-6 py-24"
-    >
-      <Wordmark className="text-[24.3px]" />
+    <PublicShell>
       <LeaveForm token={t ?? ""} />
-    </main>
+    </PublicShell>
   );
 }

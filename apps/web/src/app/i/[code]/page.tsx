@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { COPY } from "@plusone/config";
-import { Wordmark } from "@/app/ui";
-import { buttonClass } from "@/app/ui";
+import { buttonClass, PublicShell } from "@/app/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +38,7 @@ export default async function InvitePage() {
   // at which there is anyone to attribute it to.
 
   return (
-    <main
-      id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[453.6px] flex-col justify-center px-6 py-24"
-    >
-      <Wordmark className="text-[24.3px]" />
-
+    <PublicShell>
       <h1 className="mt-12 text-h1 text-balance">{COPY.referral.landingHeadline}</h1>
 
       <p className="mt-6 text-[13.8px] leading-[1.7] text-ink-2">{COPY.referral.landingSub}</p>
@@ -63,6 +57,6 @@ export default async function InvitePage() {
       <Link href="/waitlist" className={buttonClass("primary", "mt-10 self-start")}>
         {COPY.referral.landingButton}
       </Link>
-    </main>
+    </PublicShell>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { buttonClass, Card, Wordmark } from "@/app/ui";
+import { buttonClass, Card, PublicShell } from "@/app/ui";
 import { waitlistPreferences } from "@/lib/waitlist";
 import { ManageForm } from "./manage-form";
 
@@ -39,12 +39,7 @@ export default async function ManagePage({
   const prefs = await waitlistPreferences(token);
 
   return (
-    <main
-      id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[453.6px] flex-col justify-center px-6 py-24"
-    >
-      <Wordmark className="text-[24.3px]" />
-
+    <PublicShell variant="act">
       {prefs ? (
         <ManageForm
           token={token}
@@ -63,6 +58,6 @@ export default async function ManagePage({
           </Link>
         </Card>
       )}
-    </main>
+    </PublicShell>
   );
 }

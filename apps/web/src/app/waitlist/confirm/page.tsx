@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { buttonClass, Card, Wordmark } from "@/app/ui";
+import { buttonClass, Card, PublicShell } from "@/app/ui";
 import { confirmWaitlist } from "@/lib/waitlist";
 
 const C = DRAFT_COPY.waitlistConfirm;
@@ -45,12 +45,7 @@ export default async function ConfirmPage({
   const { ok, wantsBeta } = await confirmWaitlist(token);
 
   return (
-    <main
-      id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[453.6px] flex-col justify-center px-6 py-24"
-    >
-      <Wordmark className="text-[24.3px]" />
-
+    <PublicShell>
       <Card className="mt-12">
         {/* Two different people, told two different things. Somebody who ticked
             the testing box has done an extra step and is in a different queue;
@@ -80,6 +75,6 @@ export default async function ConfirmPage({
           </Link>
         )}
       </Card>
-    </main>
+    </PublicShell>
   );
 }

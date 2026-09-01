@@ -160,6 +160,54 @@ export function Card({
 }
 
 /**
+ * The shell every signed-out page shares.
+ *
+ * Five pages spelled the same class string by hand — /waitlist, its confirm,
+ * leave and manage screens, and the two invite landings — which is the
+ * duplication the "one definition per primitive" test at the top of this file
+ * exists to stop. It was only ever noticed because a spacing complaint would
+ * have had to be fixed five times.
+ *
+ * ── the two variants, and why it is not one ─────────────────────────────────
+ *
+ * `read` is for a page that says something and offers a way onward: a
+ * confirmation, an expired link, an invitation with nothing to fill in. Those
+ * are a few lines, and a few lines pinned to the top of a phone screen look
+ * abandoned, so they are centred.
+ *
+ * `act` is for a page with something to do — a form, a list of install steps.
+ * Centring those wastes the top third of the screen on a tall phone and pushes
+ * the first thing somebody has to read below where they are looking. They start
+ * near the top and scroll like any other document.
+ *
+ * The old shared value was `justify-center` with `py-24` on both, which on a
+ * tall phone left roughly 300px of nothing above an invitation and as much
+ * below it.
+ */
+export function PublicShell({
+  variant = "read",
+  wide = false,
+  children,
+}: {
+  variant?: "read" | "act";
+  /** The join form, which has more fields than the rest have sentences. */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <main
+      id="main"
+      className={`mx-auto flex min-h-[100dvh] flex-col px-6 ${
+        wide ? "max-w-[550.8px]" : "max-w-[453.6px]"
+      } ${variant === "read" ? "justify-center py-24" : "pt-10 pb-16"}`}
+    >
+      <Wordmark className="text-[24.3px]" />
+      {children}
+    </main>
+  );
+}
+
+/**
  * The wordmark: a raised plus set tight against a large One (§3.1).
  *
  * Four hand-written copies drifted in size and colour. `asLink` is the default

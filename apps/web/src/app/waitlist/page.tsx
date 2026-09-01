@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { SiteFooter } from "../site-footer";
-import { Wordmark } from "@/app/ui";
 import { WaitlistForm } from "./waitlist-form";
+import { PublicShell } from "@/app/ui";
 
 const C = DRAFT_COPY.waitlist;
 
@@ -28,17 +28,12 @@ export const metadata: Metadata = {
 export default function WaitlistPage() {
   return (
     <>
-      <main
-        id="main"
-        className="mx-auto flex min-h-[100dvh] max-w-[550.8px] flex-col justify-center px-6 py-24"
-      >
-        <Wordmark className="text-[24.3px]" />
-
+      <PublicShell variant="act" wide>
         <h1 className="mt-12 max-w-[18ch] text-h1 text-balance">{C.heading}</h1>
         <p className="mt-6 max-w-[46ch] text-body leading-[1.7] text-ink-2">{C.intro}</p>
 
         <WaitlistForm />
-      </main>
+      </PublicShell>
       <SiteFooter />
     </>
   );

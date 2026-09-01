@@ -400,3 +400,48 @@ describe("the invitation does not ask what signup already answered", () => {
     expect(install).toMatch(/platform === "android" && \(settled \|\| saved\)/);
   });
 });
+
+describe("the signed-out pages share one shell", () => {
+  /**
+   * Five pages spelled the same `<main>` class string by hand, which is what
+   * the "one definition per primitive" test guards against elsewhere — and it
+   * was only noticed because a complaint about wasted vertical space would
+   * otherwise have had to be fixed five times.
+   *
+   * The two variants are the point, not the deduplication: a page that says
+   * something is centred, a page with something to DO starts near the top,
+   * because centring a form wastes the top third of a tall phone and pushes the
+   * first thing to read below where somebody is looking.
+   */
+  const shells = [
+    ["app/waitlist/page.tsx", "act"],
+    ["app/waitlist/manage/page.tsx", "act"],
+    ["app/beta/[code]/page.tsx", "act"],
+    ["app/waitlist/confirm/page.tsx", "read"],
+    ["app/waitlist/leave/page.tsx", "read"],
+    ["app/i/[code]/page.tsx", "read"],
+  ] as const;
+
+  it("none of them spells the page shell by hand", () => {
+    for (const [file] of shells) {
+      const source = code(file);
+      expect(source, `${file} still hand-spells the shell`).not.toMatch(/min-h-\[100dvh\]/);
+      expect(source, `${file} does not use PublicShell`).toMatch(/<PublicShell/);
+    }
+  });
+
+  it("gives the pages with something to do the top-aligned variant", () => {
+    for (const [file, variant] of shells) {
+      const source = code(file);
+      const act = /<PublicShell[^>]*variant="act"/.test(source);
+      expect(act, `${file} should be ${variant}`).toBe(variant === "act");
+    }
+  });
+
+  it("only the act variant drops the centring", () => {
+    // The rule lives in one place now, so this checks the place rather than
+    // six call sites.
+    const ui = code("app/ui.tsx");
+    expect(ui).toMatch(/variant === "read" \? "justify-center py-24" : "pt-10 pb-16"/);
+  });
+});

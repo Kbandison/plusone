@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { DRAFT_COPY } from "@plusone/config";
 
-import { buttonClass, Card, Wordmark } from "@/app/ui";
+import { buttonClass, Card, PublicShell } from "@/app/ui";
 import { betaInviteIsOpen, storeAccountFor } from "@/lib/waitlist";
 import { Install } from "./install";
 
@@ -45,12 +45,7 @@ export default async function BetaInvitePage({ params }: { params: Promise<{ cod
   const known = open ? await storeAccountFor(code) : null;
 
   return (
-    <main
-      id="main"
-      className="mx-auto flex min-h-[100dvh] max-w-[453.6px] flex-col justify-center px-6 py-24"
-    >
-      <Wordmark className="text-[24.3px]" />
-
+    <PublicShell variant="act">
       <Card className="mt-12">
         <h1 className="text-h2">{open ? C.heading : C.expiredHeading}</h1>
         <p className="mt-3 text-body leading-[1.7] text-ink-2">{open ? C.body : C.expiredBody}</p>
@@ -72,6 +67,6 @@ export default async function BetaInvitePage({ params }: { params: Promise<{ cod
           </Link>
         )}
       </Card>
-    </main>
+    </PublicShell>
   );
 }
