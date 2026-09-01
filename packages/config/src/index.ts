@@ -21,6 +21,7 @@ export {
   DELETION,
   ROOMS,
   VERIFICATION,
+  OTP,
   RETENTION,
   MAX_DISPLAY_NAME,
 } from "./mechanics";

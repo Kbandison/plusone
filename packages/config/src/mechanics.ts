@@ -35,6 +35,25 @@ export const CONNECTS = {
   personalLineMaxChars: 140,
 } as const;
 
+/**
+ * One-time sign-in codes.
+ *
+ * The two channels do NOT agree on length and the input has to take the longer.
+ * SMS through Twilio Verify is six digits; Supabase's email OTP is EIGHT on this
+ * project — confirmed 2026-09-01 by reading an actual delivered email, after the
+ * sign-in box was hardcoded to `maxLength={6}` and silently truncated every
+ * email code to the first six characters. The member typed the code they were
+ * sent, the box held six of it, and Supabase refused a token that was never
+ * wrong. Nothing server-side ever checked a length, so nothing could catch it.
+ *
+ * A ceiling rather than an exact length, so this survives Supabase's Email OTP
+ * Length setting being changed either way.
+ */
+export const OTP = {
+  /** The longest code any channel may send. */
+  codeMaxLength: 8,
+} as const;
+
 export const RADIUS = {
   /** Decision #12 — default search radius in miles. */
   defaultMi: 50,

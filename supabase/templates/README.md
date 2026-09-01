@@ -21,6 +21,23 @@ only `{{ .ConfirmationURL }}`, and with no token in the body the member gets a
 link and the code screen has nothing to type. The link is kept as a fallback,
 but it is the second path, not the first.
 
+**The code is EIGHT digits on this project**, not six — Supabase's Email OTP
+Length, read off a delivered email on 2026-09-01. The sign-in box was hardcoded
+to `maxLength={6}` and silently truncated every emailed code, so nobody signing
+in by email could ever finish. It now sizes itself from `OTP.codeMaxLength`. If
+that setting is ever changed, change the constant, not the input.
+
+**No link.** The template had a "or open the app from this link" fallback and it
+signed nobody in — `{{ .ConfirmationURL }}` points at Site URL, which is still
+`http://localhost:3000` (Kevin item 6). A dead path beside a working one trains
+people to try the broken one first. If Site URL is ever fixed, the link is worth
+reconsidering; until then the code is the only route.
+
+**Dusk is included**, as a `prefers-color-scheme: dark` block using `!important`
+— inline styles otherwise win. Clients that strip `<style>` or ignore the query
+keep Linen, which is complete on its own. Verified in the iOS Simulator with the
+system appearance set to dark, which is the engine Apple Mail uses.
+
 **Suggested subject:** `Your ⁺One sign-in code` — and nothing more. §8 keeps
 condition words out of every payload because a preview is visible to whoever is
 holding the phone, and an auth email lands on a lock screen like any other

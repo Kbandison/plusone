@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { OTP } from "@plusone/config";
+
 /**
  * Two one-line properties, guarded at the surface.
  *
@@ -70,5 +72,35 @@ describe("the code screen does not echo the identifier back", () => {
     const visible = form.replace(/<input type="hidden"[\s\S]*?\/>/g, "");
     expect(visible).not.toMatch(/\{sent\.sentTo\?\.value\}/);
     expect(visible).not.toMatch(/\{sent\.sentTo\.value\}/);
+  });
+});
+
+/**
+ * The code box has to fit the longest code any channel sends.
+ *
+ * It was `maxLength={6}` while Supabase's email OTP is EIGHT digits, so the box
+ * silently truncated every emailed code to its first six characters. The member
+ * typed exactly what they were sent, the input kept six of it, and Supabase
+ * refused a token that was never wrong — with no error naming the real cause.
+ *
+ * Nothing server-side checks a length (`actions.ts` forwards the token to
+ * verifyOtp untouched), so there was no second place this could have been
+ * caught. Found 2026-09-01 by Kevin reading a delivered email, which no test
+ * here can do.
+ *
+ * Pinned as "not a literal" rather than "equals 8": the point is that the value
+ * tracks the config, so changing Supabase's Email OTP Length is a one-line
+ * change here instead of a silent truncation again.
+ */
+describe("the sign-in code box fits the code that was sent", () => {
+  const form = readFileSync(fileURLToPath(new URL("./sign-in-form.tsx", import.meta.url)), "utf8");
+
+  it("sizes itself from config rather than a literal", () => {
+    expect(form).toMatch(/maxLength=\{OTP\.codeMaxLength\}/);
+    expect(form).not.toMatch(/maxLength=\{\d+\}/);
+  });
+
+  it("allows at least the eight digits Supabase sends by email", () => {
+    expect(OTP.codeMaxLength).toBeGreaterThanOrEqual(8);
   });
 });

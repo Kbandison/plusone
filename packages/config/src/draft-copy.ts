@@ -297,7 +297,19 @@ export const DRAFT_COPY = {
     identifierHint: "Whichever you have on your account. Numbers need a country code, like +1.",
     sendLabel: "Send code",
     codeHeading: "Enter the code",
-    codeIntro: "We sent a six-digit code. It is good for ten minutes.",
+    /**
+     * Says neither the length nor the expiry, and both omissions are deliberate.
+     *
+     * This screen serves BOTH channels. An SMS code is six digits through Twilio
+     * Verify; an email code is eight through Supabase. It said "six-digit" while
+     * sending somebody eight, which is the app telling a member the code in their
+     * hand is the wrong shape.
+     *
+     * The expiry differs the same way and neither number was ever checked
+     * against a provider setting. The email states its own; a screen that
+     * guesses at somebody else's timer is a promise this app cannot keep.
+     */
+    codeIntro: "We sent you a code. Enter it below to sign in.",
     codeLabel: "Code",
     verifyLabel: "Sign in",
     resendLabel: "Send it again",

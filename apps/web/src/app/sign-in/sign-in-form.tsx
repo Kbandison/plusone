@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { DRAFT_COPY, OTP } from "@plusone/config";
 
 import { Field, RESEND_COOLDOWN_SECONDS, Submit } from "@/app/auth-fields";
 import { applyDialCode } from "@/lib/dial-code-input";
@@ -123,7 +123,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
           inputMode="numeric"
           autoComplete="one-time-code"
           pattern="[0-9]*"
-          maxLength={6}
+          maxLength={OTP.codeMaxLength}
           required
           autoFocus
           error={state.error}

@@ -3,84 +3,103 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light" />
-    <meta name="supported-color-schemes" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <!--
+      Dusk, for clients that ask.
+
+      Inline styles win over a stylesheet, so every dark rule needs !important —
+      that is not sloppiness, it is the only way a media query can reach an
+      inlined value. Clients that strip <style> or ignore prefers-color-scheme
+      simply keep Linen, which is the default and is complete on its own.
+
+      Both palettes are PALETTE.linen and PALETTE.dusk from packages/ui-tokens,
+      verbatim.
+    -->
+    <style>
+      @media (prefers-color-scheme: dark) {
+        .p1-ground { background-color: #14110f !important; }
+        .p1-card {
+          background-color: #1b1714 !important;
+          border-color: rgba(237, 231, 222, 0.12) !important;
+        }
+        .p1-mark { color: #ede7de !important; }
+        .p1-accent { color: #d69a4e !important; }
+        .p1-ink { color: #ede7de !important; }
+        .p1-ink2 { color: #a79c90 !important; }
+        .p1-ink3 { color: #8d8074 !important; }
+        .p1-chip { background-color: #241e1a !important; }
+        .p1-rule { border-top-color: rgba(237, 231, 222, 0.06) !important; }
+      }
+    </style>
   </head>
   <!--
     Pasted into Supabase → Authentication → Emails → Magic Link.
 
-    Colours are PALETTE.linen from packages/ui-tokens, verbatim. Instrument
-    Serif carries the wordmark on the web and cannot be loaded here, so Georgia
-    stands in — a high-contrast serif is the point of it, and Georgia is the one
-    that is on every machine.
+    Instrument Serif carries the wordmark on the web and cannot be loaded in
+    email, so Georgia stands in — high stroke contrast is the point of it and
+    Georgia is on every machine.
 
     Says nothing about what this app is, deliberately. §8 keeps condition words
     out of every payload because a preview is visible to whoever is holding the
-    phone, and an auth email lands on a lock screen like anything else. The
+    phone, and an auth email lands on a lock screen like any notification. The
     wordmark is the whole brand here.
 
+    NO {{ .ConfirmationURL }}. The link went to Site URL, which is still
+    localhost, so it signed nobody in — and a dead link beside a working code
+    trains people to try the broken path first. The code is the only route.
+
     Table layout and inline styles because email clients strip <style> blocks
-    and do not do flexbox. Locked to light: this palette IS the light one, and
-    email dark-mode inversion mangles it worse than it helps.
+    for layout and do not do flexbox. Padding lives on the <td>, never on a
+    width="100%" table: that combination computes wider than the viewport and
+    overflows.
   -->
-  <body style="margin:0; padding:0; background-color:#F4EFE7;">
-    <!-- Preheader: the line shown next to the subject in an inbox list. Content-blind. -->
+  <body class="p1-ground" style="margin:0; padding:0; background-color:#F4EFE7;">
     <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
-      Your sign-in code, good for one hour.
+      Your sign-in code.
     </div>
 
-    <!--
-      Padding lives on the TD, never on a width="100%" table. A table at 100%
-      plus horizontal padding computes WIDER than the viewport and overflows,
-      which is what this did at 375px before anybody looked at it rendered.
-    -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:#F4EFE7;">
+           class="p1-ground" style="background-color:#F4EFE7;">
       <tr>
         <td align="center" style="padding:40px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                 class="p1-card"
                  style="max-width:480px; background-color:#FBF8F3; border:1px solid rgba(28,25,23,0.13); border-radius:16px;">
             <tr>
               <td style="padding:36px 36px 28px 36px;">
 
-                <!-- Wordmark -->
-                <p style="margin:0 0 28px 0; font-family:Georgia,'Times New Roman',serif; font-size:26px; line-height:1; color:#1C1917;">
-                  <span style="color:#9F5B41;">&#8314;</span>One
+                <p class="p1-mark" style="margin:0 0 28px 0; font-family:Georgia,'Times New Roman',serif; font-size:26px; line-height:1; color:#1C1917;">
+                  <span class="p1-accent" style="color:#9F5B41;">&#8314;</span>One
                 </p>
 
-                <p style="margin:0 0 6px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#1C1917;">
+                <p class="p1-ink" style="margin:0 0 6px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#1C1917;">
                   Here is your sign-in code.
                 </p>
-                <p style="margin:0 0 24px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.65; color:#6B6259;">
+                <p class="p1-ink2" style="margin:0 0 24px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.65; color:#6B6259;">
                   Type it into the app to finish signing in.
                 </p>
 
-                <!-- The code. Big, spaced, and selectable as text. -->
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                   <tr>
-                    <td align="center"
+                    <td align="center" class="p1-chip"
                         style="background-color:#EFE8DC; border-radius:12px; padding:22px 8px; word-break:break-all;">
-                      <span style="font-family:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace; font-size:30px; letter-spacing:7px; color:#1C1917; font-weight:600;">{{ .Token }}</span>
+                      <span class="p1-ink" style="font-family:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace; font-size:28px; letter-spacing:6px; color:#1C1917; font-weight:600;">{{ .Token }}</span>
                     </td>
                   </tr>
                 </table>
 
-                <p style="margin:24px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.65; color:#6B6259;">
-                  Or <a href="{{ .ConfirmationURL }}" style="color:#9F5B41; text-decoration:underline;">open the app from this link</a>.
-                </p>
+                <hr class="p1-rule" style="border:none; border-top:1px solid rgba(28,25,23,0.07); margin:28px 0 0 0;" />
 
-                <hr style="border:none; border-top:1px solid rgba(28,25,23,0.07); margin:28px 0 0 0;" />
-
-                <p style="margin:20px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7; color:#766B60;">
-                  The code works once and expires in an hour.
-                  If you did not ask to sign in, nothing has happened to your account and you can ignore this.
+                <p class="p1-ink3" style="margin:20px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7; color:#766B60;">
+                  The code works once. If you did not ask to sign in, nothing has happened to your account and you can ignore this.
                 </p>
 
               </td>
             </tr>
           </table>
 
-          <p style="margin:20px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:11.5px; line-height:1.6; color:#766B60;">
+          <p class="p1-ink3" style="margin:20px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:11.5px; line-height:1.6; color:#766B60;">
             Sent by &#8314;One &middot; you are receiving this because someone asked for a sign-in code for this address.
           </p>
 
