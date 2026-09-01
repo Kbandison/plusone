@@ -213,6 +213,31 @@ export const DRAFT_COPY = {
     worksNow:
       "You can start right now, in this browser. The version in a store is the same app with the same account — installing it is about getting an icon and notifications, not about getting in.",
     start: "Start",
+
+    whichDevice: "Which will you use it on?",
+    becomeTester: "1 · Become a tester",
+    thenInstall: "2 · Then install from Google Play",
+    openTestFlight: "Open in TestFlight",
+    save: "Save",
+
+    /**
+     * Names the browser, because the button that used to sit here said "Start"
+     * and opened the web app — the most prominent control on an invitation to
+     * install something, taking you somewhere else without saying so.
+     */
+    openInBrowser: "Open Plus One in this browser",
+    browserNote:
+      "The same app and the same account as the installed one. Nothing is lost by starting here and installing later.",
+
+    /** Shown once the store account came from signup, so nothing is asked twice. */
+    accountOnFile: (email: string) =>
+      `We have ${email} for the store invitation. Nothing else to do here.`,
+    differentPhone: "Testing on a different phone?",
+
+    savedAndroid:
+      "Saved. Once we have added that account — usually within a day — the links above will work, in that order.",
+    savedIos:
+      "Saved. We will add that Apple ID to TestFlight, and Apple will email you an invitation to it. Install TestFlight from the App Store first if you have not.",
     expiredHeading: "That invitation has expired",
     expiredBody:
       "Invitations are good for 14 days. Ask us for another and we will send one — the list still has you on it.",

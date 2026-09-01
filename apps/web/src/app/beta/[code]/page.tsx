@@ -55,19 +55,22 @@ export default async function BetaInvitePage({ params }: { params: Promise<{ cod
         <h1 className="text-h2">{open ? C.heading : C.expiredHeading}</h1>
         <p className="mt-3 text-body leading-[1.7] text-ink-2">{open ? C.body : C.expiredBody}</p>
 
-        {/* Said before the store steps, not after them. A tester who thinks
-            they are blocked on an app store waits for one; the web app is the
-            same app, so nobody is blocked on anything. */}
-        {open ? <p className="mt-3 text-body leading-[1.7] text-ink-2">{C.worksNow}</p> : null}
-
-        <Link
-          href={open ? "/onboarding/phone" : "/waitlist"}
-          className={buttonClass(open ? "primary" : "secondary", "mt-8 self-start")}
-        >
-          {open ? C.start : DRAFT_COPY.waitlistConfirm.rejoin}
-        </Link>
+        {/* Only for somebody we have no install path for. A tester whose
+            platform came from signup gets the steps for their own phone
+            instead, and the browser option below them — telling them first that
+            the browser works reads as an apology for an install that has not
+            failed yet. */}
+        {open && !known ? (
+          <p className="mt-3 text-body leading-[1.7] text-ink-2">{C.worksNow}</p>
+        ) : null}
 
         {open ? <Install code={code} known={known} /> : null}
+
+        {open ? null : (
+          <Link href="/waitlist" className={buttonClass("secondary", "mt-8 self-start")}>
+            {DRAFT_COPY.waitlistConfirm.rejoin}
+          </Link>
+        )}
       </Card>
     </main>
   );

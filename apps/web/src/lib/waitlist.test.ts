@@ -178,7 +178,17 @@ describe("nothing offers a door that does not open", () => {
    * on the way.
    */
   it("no public page links to /onboarding/phone", () => {
-    const allowed = new Set(["app/beta/[code]/page.tsx"]);
+    /**
+     * Both files of the invite surface, which is the only place a link to
+     * signup is correct — an invited member arrives from /beta/<code>, which
+     * set the cookie the gate reads.
+     *
+     * `install.tsx` joined the list when the browser link moved into it from
+     * the page: it used to be a primary button labelled "Start" sitting ABOVE
+     * the install steps, so the most prominent control on an invitation to
+     * install an app opened the web app without saying so.
+     */
+    const allowed = new Set(["app/beta/[code]/page.tsx", "app/beta/[code]/install.tsx"]);
     const offenders = files.filter(
       (f) =>
         !allowed.has(f.replace(/^app\//, "app/")) && /href="\/onboarding\/phone"/.test(code(f)),
@@ -346,5 +356,47 @@ describe("the beta alert reaches admins and names nobody", () => {
     const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
     expect(fn).toMatch(/try \{/);
     expect(fn).toMatch(/catch/);
+  });
+});
+
+describe("the invitation does not ask what signup already answered", () => {
+  const install = code("app/beta/[code]/install.tsx");
+  const page = code("app/beta/[code]/page.tsx");
+
+  it("hides the platform picker once the account is settled", () => {
+    // The bug: the account FIELD was suppressed when we knew it, but the
+    // platform radios were unconditional — so an invited tester opened their
+    // email and met a form asking a question they had already answered on the
+    // join page. A second form is what moving the question to signup removed.
+    expect(install).toMatch(/settled \? null : \(\s*<fieldset/);
+    expect(install).toMatch(/const settled =/);
+  });
+
+  it("lets somebody say they are on a different phone", () => {
+    // The escape that makes hiding the picker safe: what we know can be wrong.
+    expect(install).toMatch(/setPicking\(true\)/);
+    expect(install).toMatch(/differentPhone/);
+  });
+
+  it("puts the browser link below the steps and names the browser", () => {
+    // It was a primary button labelled "Start" ABOVE them, so the most
+    // prominent control on an invitation to install an app opened the web app
+    // without saying where it went.
+    const stepsAt = install.indexOf("chosen.steps");
+    const browserAt = install.indexOf("openInBrowser");
+    expect(stepsAt).toBeGreaterThan(-1);
+    expect(browserAt).toBeGreaterThan(stepsAt);
+    expect(install).not.toMatch(/buttonClass\("primary"[^)]*\)[^<]*>\s*\{C\.start\}/);
+  });
+
+  it("the page no longer renders its own Start button", () => {
+    expect(page).not.toMatch(/C\.start/);
+  });
+
+  it("only offers the Android links once the account is settled", () => {
+    // The opt-in page tells an unlisted person the programme is unavailable and
+    // the store says the app cannot be found — two dead ends that look like our
+    // mistake.
+    expect(install).toMatch(/platform === "android" && \(settled \|\| saved\)/);
   });
 });
