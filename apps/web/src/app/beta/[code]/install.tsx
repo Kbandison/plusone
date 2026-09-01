@@ -2,7 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 
-import { BETA_INSTALL, BETA_LINKS, type BetaPlatform } from "@plusone/config";
+import { BETA_INSTALL, BETA_LINKS, betaInstallFor, type BetaPlatform } from "@plusone/config";
 
 import { Field } from "@/app/auth-fields";
 import { buttonClass } from "@/app/ui";
@@ -40,7 +40,9 @@ export function Install({ code }: { code: string }) {
   }, false);
   const emailId = useId();
 
-  const chosen = platform ? BETA_INSTALL[platform] : null;
+  // The resolver, not the record: with a TestFlight public link turned on, iOS
+  // stops asking for an Apple ID it no longer has any use for.
+  const chosen = platform ? betaInstallFor(platform) : null;
 
   return (
     <div className="mt-8 border-t border-line-2 pt-8">
@@ -122,6 +124,9 @@ export function Install({ code }: { code: string }) {
           {chosen.accountLabel ? (
             saved ? (
               <p className="mt-6 text-[11.7px] leading-[1.6] text-ink-2">
+                {/* Only reachable when an account was asked for, which is
+                    Android, or iOS on the invitation route. The public-link
+                    variant asks for nothing and never renders this. */}
                 {platform === "android"
                   ? "Saved. Once we have added that account — usually within a day — the two links below will work, in that order."
                   : "Saved. We will add that Apple ID to TestFlight, and Apple will email you an invitation to that address. Install TestFlight from the App Store first if you have not."}

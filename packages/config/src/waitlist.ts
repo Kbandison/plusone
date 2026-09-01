@@ -339,6 +339,10 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
     wait: "The links do nothing until we have added your account, and Play can take an hour or two to catch up after that — until it does, the store may say Plus One cannot be found. That is expected and it is not a dead link. You do not have to wait for any of it: signing in below works right now in your browser, and it is the same app with the same account.",
   },
 
+  /**
+   * The INVITATION variant. `betaInstallFor("ios")` picks between this and the
+   * public-link one below — do not read `BETA_INSTALL.ios` directly.
+   */
   ios: {
     id: "ios",
     label: "iPhone or iPad",
@@ -496,4 +500,82 @@ export const BETA_MANUAL_STEP: Record<"android" | "ios", string> = {
   android:
     "Add their Google account to the closed-testing list. The tester opts in themselves from the public link.",
   ios: "Add their Apple ID in App Store Connect, one at a time. A TestFlight public link would remove this entirely and needs an external group, which needs Beta App Review.",
+};
+
+/**
+ * The iOS variant used when a TestFlight PUBLIC LINK exists.
+ *
+ * ── this is not a cosmetic branch ───────────────────────────────────────────
+ *
+ * The two TestFlight routes differ in who does the adding, and that changes
+ * what we are allowed to ask for.
+ *
+ *   invitation   We add the Apple ID in App Store Connect, by hand, per person.
+ *                So we need the address, and asking is justified.
+ *   public link  TestFlight adds them when they tap Start Testing. NOBODY adds
+ *                them, and we never touch App Store Connect for that person —
+ *                so their Apple ID is an identifier we have no use for, and
+ *                asking for it would be collecting one for nothing.
+ *
+ * That second sentence is the whole reason this exists as a separate object
+ * rather than a conditional line of copy. `accountLabel: null` is load-bearing:
+ * it is what stops the form rendering, and `WAITLIST_NEVER`'s argument — that
+ * every field has a plausible-sounding reason and the answer is still no —
+ * applies to a field that USED to be justified just as much as to a new one.
+ *
+ * The distinction also answers the question that produced it: a Play opt-in
+ * link is an ACCEPTANCE step for somebody already on the list, and a TestFlight
+ * public link is a genuine self-serve JOIN. Only one of them removes work.
+ */
+const IOS_PUBLIC_LINK: BetaInstall = {
+  id: "ios",
+  label: "iPhone or iPad",
+  accountLabel: null,
+  accountHint: null,
+  heading: "Getting it on your phone",
+  steps: [
+    "Install TestFlight from the App Store first. The link below does nothing without it.",
+    "Open the TestFlight link below on the device itself.",
+    "Tap Start Testing, then install Plus One.",
+  ],
+  wait: "Nothing to wait for and nothing for us to do — the link adds you. Signing in below works in your browser too, and it is the same app with the same account.",
+};
+
+/**
+ * The install guidance that is actually true right now.
+ *
+ * Reads `BETA_LINKS` rather than trusting a constant, so the day a public
+ * TestFlight link is turned on, the page stops asking for an Apple ID it no
+ * longer has a use for — without anybody remembering to go and change the copy.
+ * The alternative is two facts that agree until they do not.
+ */
+export function betaInstallFor(platform: BetaPlatform): BetaInstall {
+  if (platform === "ios" && BETA_LINKS.ios.publicLink) return IOS_PUBLIC_LINK;
+  return BETA_INSTALL[platform];
+}
+
+/**
+ * Whether a link hands somebody a place on a tester list, or merely lets them
+ * accept one they were already given.
+ *
+ * Kevin asked this outright on 2026-08-31 — "do either link add their email or
+ * account to the respective beta lists?" — and the answer is not symmetric,
+ * which is exactly why it is worth a named constant rather than a paragraph.
+ *
+ *   Play opt-in       NO. It is an acceptance step. An address that is not
+ *                     already on the closed-testing list is told the programme
+ *                     is unavailable. Somebody still has to add them.
+ *   Play store page   NO. It is where the install happens, after the above.
+ *   TestFlight invite NO. We add them; Apple emails them.
+ *   TestFlight public NO ONE ADDS THEM — TestFlight does, on Start Testing.
+ *                     This is the only genuinely self-serve door of the four.
+ */
+export const LINK_ADDS_THE_TESTER: Record<
+  "playOptIn" | "playStore" | "testFlightInvite" | "testFlightPublicLink",
+  boolean
+> = {
+  playOptIn: false,
+  playStore: false,
+  testFlightInvite: false,
+  testFlightPublicLink: true,
 };

@@ -9,6 +9,8 @@ import {
   BETA_INSTALL,
   BETA_LINKS,
   BETA_MANUAL_STEP,
+  LINK_ADDS_THE_TESTER,
+  betaInstallFor,
   PLAY_TRACK,
   METROS,
   METRO_IDS,
@@ -400,5 +402,68 @@ describe("somebody already on the list can still change their mind", () => {
     // refuses a confirmed address, so somebody who wanted to move city or
     // start testing could do neither.
     expect(C.leaveHeading.toLowerCase()).toMatch(/^or /);
+  });
+});
+
+describe("which link actually puts somebody on a tester list", () => {
+  /**
+   * The question that produced this block, asked outright: "do either link add
+   * their email or account to the respective beta lists?" The answer is not
+   * symmetric, and the asymmetry decides how much manual work exists.
+   */
+  it("a Play opt-in link is acceptance, not joining", () => {
+    // An address not already on the closed-testing list is told the programme
+    // is unavailable. Somebody still has to add them.
+    expect(LINK_ADDS_THE_TESTER.playOptIn).toBe(false);
+    expect(LINK_ADDS_THE_TESTER.playStore).toBe(false);
+  });
+
+  it("a TestFlight public link is the only self-serve door of the four", () => {
+    expect(LINK_ADDS_THE_TESTER.testFlightInvite).toBe(false);
+    expect(LINK_ADDS_THE_TESTER.testFlightPublicLink).toBe(true);
+  });
+
+  it("the Android steps do not claim the link enrols anybody", () => {
+    const android = betaInstallFor("android");
+    // Being added comes first and the copy says nothing before it works.
+    expect(android.steps[0]?.toLowerCase()).toMatch(/we add it|tester list/);
+    expect(android.accountLabel).toMatch(/google/i);
+  });
+});
+
+describe("a TestFlight public link changes what we may ask for", () => {
+  /**
+   * The defect this pins. `BETA_INSTALL.ios` asks for an Apple ID
+   * unconditionally — correct on the invitation route, where we type that
+   * address into App Store Connect ourselves. On the public-link route NOBODY
+   * adds them, we never open App Store Connect for that person, and their Apple
+   * ID becomes an identifier we have no use for.
+   *
+   * Collecting one for nothing is the exact thing WAITLIST_NEVER exists to
+   * refuse, and a field that USED to be justified gets no exemption from it.
+   */
+  it("asks for an Apple ID only while we are the ones adding them", () => {
+    const ios = betaInstallFor("ios");
+    const usingPublicLink = BETA_LINKS.ios.publicLink !== null;
+
+    if (usingPublicLink) {
+      expect(
+        ios.accountLabel,
+        "a public link enrols the tester, so their Apple ID is an identifier collected for nothing",
+      ).toBeNull();
+      expect(ios.steps.join(" ").toLowerCase()).toMatch(/start testing/);
+    } else {
+      expect(ios.accountLabel).toMatch(/apple/i);
+      expect(ios.steps.join(" ").toLowerCase()).toMatch(/we add your apple id/);
+    }
+  });
+
+  it("resolves from the link rather than from a second constant", () => {
+    // Two facts that agree until they do not. The resolver reads BETA_LINKS, so
+    // turning the link on changes the copy without anybody remembering to.
+    const ios = betaInstallFor("ios");
+    expect(ios.id).toBe("ios");
+    expect(betaInstallFor("android").id).toBe("android");
+    expect(betaInstallFor("browser").accountLabel).toBeNull();
   });
 });
