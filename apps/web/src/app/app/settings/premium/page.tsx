@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
 
-import {
-  DRAFT_COPY,
-  PLANS,
-  PREMIUM_INCLUDES,
-  PREMIUM_NEVER,
-  formatPriceCents,
-  type PlanId,
-} from "@plusone/config";
+import { DRAFT_COPY, PLANS, PREMIUM_NEVER, formatPriceCents, type PlanId } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import {
@@ -21,6 +14,7 @@ import { ManageBilling, PlanChooser } from "./plan-buttons";
 import { ManageStoreSubscription } from "./manage-store";
 import { IncognitoToggle } from "./incognito-toggle";
 import { redirect } from "next/navigation";
+import { PremiumIncludes } from "@/app/premium-includes";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.premiumHeading };
 
@@ -227,16 +221,9 @@ export default async function PremiumPage() {
 
       <section className="mt-14">
         <h2 className="text-[0.972rem]">{C.premiumIncludesHeading}</h2>
-        <ul className="mt-5 flex flex-col gap-3">
-          {PREMIUM_INCLUDES.map((item) => (
-            <li
-              key={item}
-              className="border-l border-line-2 pl-5 text-[12.6px] leading-[1.65] text-ink-2"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
+        <div className="mt-5">
+          <PremiumIncludes />
+        </div>
       </section>
 
       {/* §3.3 — "No selling exemptions from mechanics. Never monetized. Ever."

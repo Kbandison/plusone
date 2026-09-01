@@ -87,7 +87,22 @@ export const HOW_IT_WORKS: readonly HowItWorksStep[] = [
  * against itself.
  */
 export const PRICING_INTRO =
-  "The free version is a real app: your profile, verification, the Drop, browse, real messaging, three connects a day, and every community room. Premium raises how far you can reach.";
+  "The free version is a real app: your profile, verification, the Drop, browse, real messaging, three connects a day, and every community room. Nothing here is a trial.";
+
+/**
+ * Why a subscription exists at all, said on the page that asks for one.
+ *
+ * Every claim is one this repo already holds elsewhere: there is no advertising
+ * SDK and no analytics SDK in the app (PLAY_NO_ADVERTISING, and the Apple
+ * tracking answer is false for the same reason), and nothing is sold or shared
+ * with data brokers (the privacy policy says so and the labels agree).
+ *
+ * It is here because on an app like this it is a genuine differentiator rather
+ * than a platitude — the usual way a free dating app pays for itself is the one
+ * thing this audience has most reason to fear.
+ */
+export const PRICING_FUNDING_NOTE =
+  "There are no ads in this app, no analytics, and nothing about you is sold or shared with anybody. Subscriptions are what pays for it.";
 
 export const PRICING_NEVER_NOTE =
   "Not at any price, and not later. These are the mechanics that make this place work, and selling exemptions from them would be selling the place itself.";

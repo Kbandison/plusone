@@ -32,9 +32,11 @@ export {
   getPlan,
   formatPriceCents,
   PREMIUM_INCLUDES,
+  PREMIUM_INCLUDE_TITLES,
+  PREMIUM_LEAD,
   PREMIUM_NEVER,
 } from "./pricing";
-export type { Plan, PlanId, PriceIdEnvKey } from "./pricing";
+export type { Plan, PlanId, PriceIdEnvKey, PremiumGroup } from "./pricing";
 
 export {
   MUTABLE_EVENTS,
@@ -155,7 +157,13 @@ export type { Hint } from "./hints";
 export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
 export type { Section, FaqEntry } from "./guidelines";
 
-export { HOW_IT_WORKS, HOW_IT_WORKS_INTRO, PRICING_INTRO, PRICING_NEVER_NOTE } from "./marketing";
+export {
+  HOW_IT_WORKS,
+  HOW_IT_WORKS_INTRO,
+  PRICING_INTRO,
+  PRICING_FUNDING_NOTE,
+  PRICING_NEVER_NOTE,
+} from "./marketing";
 export type { HowItWorksStep } from "./marketing";
 
 export { TERMS, TERMS_INTRO, TERMS_EFFECTIVE } from "./terms";

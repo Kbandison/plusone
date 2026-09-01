@@ -1505,7 +1505,7 @@ export const DRAFT_COPY = {
     premiumPlanUnknown: "An active subscription",
     premiumIntro:
       "The free version is a real app. Premium raises how far you can reach — and there are things it will never buy.",
-    premiumIncludesHeading: "What it gives you",
+    premiumIncludesHeading: "What it changes",
     premiumNeverHeading: "What it will never buy",
     premiumNeverNote:
       "Not at any price, not ever. These are the mechanics that make this place work, and selling exemptions from them would be selling the thing itself.",

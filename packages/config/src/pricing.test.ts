@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { PLANS } from "./pricing";
+import { CONNECTS } from "./mechanics";
+import { PLANS, PREMIUM_INCLUDES, PREMIUM_LEAD } from "./pricing";
 
 /**
  * The App Store product IDs, pinned to what is actually in App Store Connect.
@@ -117,5 +118,93 @@ describe("Play product IDs", () => {
     // Each is a literal. Neither reads the other.
     expect(plans).not.toMatch(/playProductId:(?!\s*")/);
     expect(plans).not.toMatch(/appleProductId:(?!\s*")/);
+  });
+});
+
+describe("what premium promises is what premium does", () => {
+  /**
+   * The tier is described on two PUBLIC pages, which makes every number in it a
+   * claim somebody can hold us to — and nothing held them. `PREMIUM_INCLUDES`
+   * was five free-text strings; a change to CONNECTS would have left a sales
+   * page quoting the old figure with no test anywhere to notice.
+   *
+   * So the copy names the numbers and this checks them against the constants
+   * they came from. Where a figure could NOT be checked against source — the
+   * filter counts — it was taken out of the copy instead of pinned to a
+   * comment, because a number nobody can verify is one that goes quietly wrong.
+   */
+  const everything = PREMIUM_INCLUDES.flatMap((g) => g.items)
+    .map((i) => `${i.title} ${i.body}`)
+    .join(" ");
+
+  it("finds the copy at all", () => {
+    // A silent zero makes every assertion below vacuous.
+    expect(PREMIUM_INCLUDES.length).toBeGreaterThanOrEqual(2);
+    expect(everything.length).toBeGreaterThan(400);
+  });
+
+  it("quotes the real connect budgets", () => {
+    const words = [
+      "zero",
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+      "nine",
+      "ten",
+    ];
+    expect(everything.toLowerCase()).toContain(
+      words[CONNECTS.premiumPerDay] ?? String(CONNECTS.premiumPerDay),
+    );
+    expect(everything.toLowerCase()).toContain(
+      words[CONNECTS.freePerDay] ?? String(CONNECTS.freePerDay),
+    );
+  });
+
+  it("is honest that a Drop connect is free on both tiers", () => {
+    // Only sayable because dropConnectCost is 0. If that ever changes, this
+    // sentence becomes a lie on a page that takes money.
+    expect(CONNECTS.dropConnectCost).toBe(0);
+    expect(everything.toLowerCase()).toMatch(
+      /drop still costs nothing|costs nothing, on either tier/,
+    );
+  });
+
+  it("promises nothing on the never list", () => {
+    // The lead says it outright, which is the sentence that stops "advanced
+    // filters" reading as pay-to-win one section above PREMIUM_NEVER.
+    expect(PREMIUM_LEAD.toLowerCase()).toMatch(/does not make you louder/);
+    expect(PREMIUM_LEAD.toLowerCase()).toMatch(/does not move you up/);
+
+    for (const banned of ["boost", "priority", "rank", "unlimited", "undo", "extra drop"]) {
+      expect(everything.toLowerCase(), `premium copy offers "${banned}"`).not.toContain(banned);
+    }
+  });
+
+  it("leads with being seen, which is this app's anxiety rather than reach", () => {
+    // On a dating app in general the exciting half is reach. Here the premise
+    // is that disclosure is hard, and the first group says so.
+    expect(PREMIUM_INCLUDES[0]?.id).toBe("seen");
+    expect(PREMIUM_INCLUDES[0]?.heading.toLowerCase()).toContain("see you");
+  });
+
+  it("keeps the free floors it claims", () => {
+    // Both are promises made in the copy AND rules held elsewhere: blurring
+    // everything is free (18b), and turning incognito off is never gated (18a).
+    expect(everything.toLowerCase()).toMatch(/blurring everything stays free/);
+    expect(everything.toLowerCase()).toMatch(/never gated/);
+  });
+
+  it("every title is a value rather than a feature name", () => {
+    // The whole point of the rewrite. A title that is a noun phrase naming a
+    // control — "Fine-grained photo privacy controls" — is a specification.
+    for (const item of PREMIUM_INCLUDES.flatMap((g) => g.items)) {
+      expect(item.title.length, item.title).toBeGreaterThan(12);
+      expect(item.body.length, item.title).toBeGreaterThan(60);
+    }
   });
 });

@@ -4,14 +4,15 @@ import { SiteFooter } from "../site-footer";
 
 import {
   PLANS,
-  PREMIUM_INCLUDES,
   PREMIUM_NEVER,
   PRICING_INTRO,
+  PRICING_FUNDING_NOTE,
   PRICING_NEVER_NOTE,
   formatPriceCents,
 } from "@plusone/config";
 
 import { SiteHeader } from "@/app/site-header";
+import { PremiumIncludes } from "@/app/premium-includes";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -46,18 +47,19 @@ export default function PricingPage() {
       </ul>
 
       <section className="mt-14">
-        <h2 className="text-[1.053rem]">What premium gives you</h2>
-        <ul className="mt-5 flex flex-col gap-3">
-          {PREMIUM_INCLUDES.map((item) => (
-            <li
-              key={item}
-              className="border-l border-line-2 pl-5 text-[13px] leading-[1.65] text-ink-2"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
+        <h2 className="text-[1.053rem]">What premium changes</h2>
+        <div className="mt-5">
+          <PremiumIncludes size="marketing" />
+        </div>
       </section>
+
+      {/* Why a subscription exists at all, on the page that asks for one.
+          The usual way a free dating app pays for itself is the one thing this
+          audience has most reason to fear, so saying it does not happen here is
+          a differentiator rather than a platitude. */}
+      <p className="mt-10 border-t border-line-2 pt-6 text-[12.2px] leading-[1.7] text-ink-3">
+        {PRICING_FUNDING_NOTE}
+      </p>
 
       {/* §3.3 — "No selling exemptions from mechanics. Never monetized. Ever."
           Given equal weight to what premium does buy, on the page that sells
