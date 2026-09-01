@@ -167,23 +167,31 @@ export function PhotoUploader({ count }: { count: number }) {
 export function PrivacyChoice({
   canContinue,
   privacy,
-  settings = false,
+  save,
 }: {
   canContinue: boolean;
   /** Remembered, so walking back does not silently reset a member to "clear". */
   privacy?: string | null;
   /**
-   * On the profile: no Continue, and the choice saves the moment it is made.
+   * The profile's action, which saves in place and stays put.
    *
-   * A settings screen with a Save button is a screen that can be left in a
-   * state the member believes they chose and the database has never heard of.
-   * A step is different — there, Continue is the thing that means "I have
-   * decided", and pressing it is the decision.
+   * Its presence is what says "this is a settings screen": no Continue, and the
+   * choice saves the moment it is made. A settings screen with a Save button is
+   * one that can be left in a state the member believes they chose and the
+   * database has never heard of. A step is different — there, Continue is the
+   * thing that means "I have decided", and pressing it is the decision.
+   *
+   * Passed in rather than selected by a flag, which is radius-form's rule and
+   * is here because the flag version had shipped a real bug: `settings` used to
+   * be a boolean while both callers still ran the ONBOARDING action, so
+   * choosing "blurred until we connect" on the profile saved the setting and
+   * then redirected the member into the radius step.
    */
-  settings?: boolean;
+  save?: typeof savePhotoPrivacy;
 }) {
+  const settings = save !== undefined;
   const blockedId = useId();
-  const [state, action, pending] = useActionState(savePhotoPrivacy, PHOTOS_INITIAL);
+  const [state, action, pending] = useActionState(save ?? savePhotoPrivacy, PHOTOS_INITIAL);
   const form = useRef<HTMLFormElement>(null);
   /**
    * Whether this member has changed anything yet.

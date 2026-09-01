@@ -231,3 +231,47 @@ describe("the library keeps its promises about what it returns", () => {
     expect(leave).not.toMatch(/update\(/);
   });
 });
+
+describe("a store identity is only held for somebody who asked to test", () => {
+  const lib = code("lib/waitlist.ts");
+
+  it("nulls both fields when the testing box is not ticked", () => {
+    // Untick and the reason for holding a Google account or an Apple ID has
+    // gone with it. Keeping the value because it is already in the row is how
+    // a table quietly outgrows its justification.
+    const helper = /function storeFields[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    expect(helper.length).toBeGreaterThan(100);
+    expect(helper).toMatch(
+      /if \(!wantsBeta\) return \{ store_platform: null, store_account_email: null \}/,
+    );
+  });
+
+  it("the join action reads them only when the box is ticked", () => {
+    // Reading them regardless would let a crafted POST store a Google account
+    // for somebody who never opted in — the one thing the conditional fields
+    // exist to prevent, and a form is not a wall.
+    const action = code("app/waitlist/actions.ts");
+    const guard = action.indexOf("if (wantsBeta) {");
+    const platformRead = action.indexOf('formData.get("platform")');
+    const emailRead = action.indexOf('formData.get("storeEmail")');
+    expect(guard).toBeGreaterThan(-1);
+    expect(platformRead).toBeGreaterThan(guard);
+    expect(emailRead).toBeGreaterThan(guard);
+  });
+
+  it("the tester list keys on invited, not accepted", () => {
+    // The point of asking at signup. Keyed on accepted, a tester could only be
+    // added to a store list after following their invitation and filling in a
+    // second form — which is the round trip being removed.
+    const fn = /export function testerList[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    expect(fn).toMatch(/r\.invited_at/);
+    expect(fn).not.toMatch(/r\.accepted_at/);
+  });
+
+  it("still refuses to list anybody uninvited", () => {
+    // Adding somebody to a Play track before they have an invitation lets them
+    // install an app they cannot sign into.
+    const fn = /export function testerList[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    expect(fn).toMatch(/wants_beta/);
+  });
+});

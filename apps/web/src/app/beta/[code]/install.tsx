@@ -32,8 +32,22 @@ import { saveStoreAccount } from "./actions";
  * it, so the web app IS the app. Saying that removes the store wait from the
  * critical path entirely.
  */
-export function Install({ code }: { code: string }) {
-  const [platform, setPlatform] = useState<BetaPlatform | null>(null);
+export function Install({
+  code,
+  known,
+}: {
+  code: string;
+  /**
+   * What the join form already collected.
+   *
+   * When it is here the platform is pre-selected and the address is not asked
+   * for again — the steps and the links are the whole job of this component
+   * now. Asking a second time for something somebody already typed reads as
+   * the first answer having been lost.
+   */
+  known?: { platform: "ios" | "android"; email: string } | null;
+}) {
+  const [platform, setPlatform] = useState<BetaPlatform | null>(known?.platform ?? null);
   const [saved, submit, pending] = useActionState(async (_prev: boolean, formData: FormData) => {
     await saveStoreAccount(formData);
     return true;
@@ -121,7 +135,14 @@ export function Install({ code }: { code: string }) {
             </a>
           ) : null}
 
-          {chosen.accountLabel ? (
+          {/* Known already: say so rather than asking again, and give them a
+              way to correct it if the wrong account got typed. */}
+          {known && platform === known.platform ? (
+            <p className="mt-6 text-[11.7px] leading-[1.6] text-ink-3">
+              We have {known.email} for this. If that is the wrong account, reply to the invitation
+              email and we will change it.
+            </p>
+          ) : chosen.accountLabel ? (
             saved ? (
               <p className="mt-6 text-[11.7px] leading-[1.6] text-ink-2">
                 {/* Only reachable when an account was asked for, which is

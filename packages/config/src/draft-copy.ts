@@ -87,6 +87,24 @@ export const DRAFT_COPY = {
     betaLabel: "I would try an early build",
     betaHelp:
       "Beta testers get in before their area opens. It means installing a pre-release app and telling us what breaks.",
+    /**
+     * Asked here rather than after the invitation, so an invitation and the
+     * store-list entry can happen in one go. Only shown to somebody who has
+     * ticked the box above — see TesterFields.
+     */
+    platformLabel: "Which phone will you test on?",
+    platformHint:
+      "You can also just use it in a browser, on anything — it is the same app. This is only so we can send you the installable build.",
+    storeEmailLabel: "The email on that phone's app store account",
+    /**
+     * The single most common reason a tester never finds the build, said before
+     * they type rather than after it fails. Both stores look up the account
+     * signed in ON THE DEVICE, and for most people that is not the address they
+     * use for mail — and the failure is silent: the store simply says the app
+     * is unavailable.
+     */
+    storeEmailHint:
+      "Your Google account on Android, or your Apple ID on iPhone. It is often not the address you gave above, and if they do not match the store will say Plus One is unavailable rather than telling you why.",
     submit: "Join the list",
     /**
      * The same answer whether the address was already on the list or not.
@@ -105,6 +123,9 @@ export const DRAFT_COPY = {
       emailInvalid: "That does not look like an email address.",
       metroRequired: "Choose an area.",
       metroInvalid: "Choose an area from the list.",
+      platformRequired: "Pick which phone you would test on.",
+      storeEmailRequired: "Enter the email on that phone's app store account.",
+      storeEmailInvalid: "That does not look like an email address.",
       rateLimited: "Too many tries. Give it a minute.",
       failed: "That did not go through. Try again in a moment.",
     },

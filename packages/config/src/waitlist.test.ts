@@ -467,3 +467,43 @@ describe("a TestFlight public link changes what we may ask for", () => {
     expect(betaInstallFor("browser").accountLabel).toBeNull();
   });
 });
+
+describe("the store account is asked for once, at signup", () => {
+  /**
+   * The round trip this removed, reported by Kevin 2026-09-01: the store
+   * account was asked for on `/beta/<code>`, AFTER an invitation, so nobody
+   * could be added to a Play or TestFlight list until they came back and filled
+   * in a second form. Every invitation became a wait that might never end.
+   *
+   * The privacy property it was protecting is kept by making the fields
+   * conditional rather than by deferring them — somebody who does not tick the
+   * testing box is asked nothing and has no store identity stored.
+   */
+  const C = DRAFT_COPY.waitlist;
+
+  it("asks which phone and which store account", () => {
+    expect(C.platformLabel.length).toBeGreaterThan(0);
+    expect(C.storeEmailLabel.length).toBeGreaterThan(0);
+  });
+
+  it("warns that it is probably not the address they just gave", () => {
+    // The single most common reason a tester never finds the build, and it
+    // fails silently — the store just says the app is unavailable.
+    const hint = C.storeEmailHint.toLowerCase();
+    expect(hint).toMatch(/google/);
+    expect(hint).toMatch(/apple/);
+    expect(hint).toMatch(/not the address|often not/);
+  });
+
+  it("says the browser is still an option, so the question is not a barrier", () => {
+    // Somebody who does not want to install anything should not feel pushed
+    // into naming a store account to be useful.
+    expect(C.platformHint.toLowerCase()).toMatch(/browser/);
+  });
+
+  it("has an error for each thing that can be missing", () => {
+    expect(C.errors.platformRequired.length).toBeGreaterThan(0);
+    expect(C.errors.storeEmailRequired.length).toBeGreaterThan(0);
+    expect(C.errors.storeEmailInvalid.length).toBeGreaterThan(0);
+  });
+});

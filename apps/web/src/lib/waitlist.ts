@@ -89,6 +89,23 @@ export interface JoinInput {
   readonly email: string;
   readonly metro: string;
   readonly wantsBeta: boolean;
+  /**
+   * Asked ON THE JOIN FORM now, and only of somebody who ticked the testing
+   * box.
+   *
+   * The first shape asked for these later, on `/beta/<code>`, so that a store
+   * identity was only ever held for somebody actually invited. The privacy
+   * instinct was right and the sequencing was wrong: nobody can be added to a
+   * Play or TestFlight list until they come back and fill in a SECOND form, so
+   * every invitation became a round trip that might take days or never happen —
+   * which is the exact delay the admin screen exists to remove.
+   *
+   * Conditional fields keep both. Somebody who does not tick the box is asked
+   * nothing extra and no store identity is stored for them; somebody who does
+   * has self-selected, and asking then is the one moment it is justified.
+   */
+  readonly storePlatform?: "ios" | "android" | null;
+  readonly storeEmail?: string | null;
 }
 
 /**
@@ -96,7 +113,13 @@ export interface JoinInput {
  *
  * Returns void deliberately. See the oracle rule above.
  */
-export async function joinWaitlist({ email, metro, wantsBeta }: JoinInput): Promise<void> {
+export async function joinWaitlist({
+  email,
+  metro,
+  wantsBeta,
+  storePlatform = null,
+  storeEmail = null,
+}: JoinInput): Promise<void> {
   const normalised = email.trim().toLowerCase();
   if (!normalised || !isMetro(metro)) return;
 
@@ -125,7 +148,12 @@ export async function joinWaitlist({ email, metro, wantsBeta }: JoinInput): Prom
     // row in every sense that matters.
     await supabase
       .from("waitlist")
-      .update({ metro, wants_beta: wantsBeta, confirm_sent_at: new Date().toISOString() })
+      .update({
+        metro,
+        wants_beta: wantsBeta,
+        ...storeFields(wantsBeta, storePlatform, storeEmail),
+        confirm_sent_at: new Date().toISOString(),
+      })
       .eq("id", existing.id);
 
     await sendConfirmation(normalised, existing.token);
@@ -137,6 +165,7 @@ export async function joinWaitlist({ email, metro, wantsBeta }: JoinInput): Prom
     email: normalised,
     metro,
     wants_beta: wantsBeta,
+    ...storeFields(wantsBeta, storePlatform, storeEmail),
     token,
     confirm_sent_at: new Date().toISOString(),
   });
@@ -152,6 +181,27 @@ export async function joinWaitlist({ email, metro, wantsBeta }: JoinInput): Prom
   }
 
   await sendConfirmation(normalised, token);
+}
+
+/**
+ * The store fields, and the clearing rule that goes with them.
+ *
+ * Untick the testing box and BOTH are nulled. Somebody who changes their mind
+ * about testing has withdrawn the only reason we had for holding their Google
+ * account or Apple ID, and keeping it because it is already in the row is how a
+ * table quietly outgrows its justification.
+ *
+ * The mirror of the per-photo lapse rule: the safe direction here is holding
+ * less, and it is the one that happens without anybody deciding.
+ */
+function storeFields(
+  wantsBeta: boolean,
+  platform: "ios" | "android" | null,
+  storeEmail: string | null,
+): { store_platform: string | null; store_account_email: string | null } {
+  if (!wantsBeta) return { store_platform: null, store_account_email: null };
+  const normalised = storeEmail?.trim().toLowerCase() || null;
+  return { store_platform: platform, store_account_email: normalised };
 }
 
 async function sendConfirmation(to: string, token: string): Promise<void> {
@@ -214,6 +264,8 @@ export interface Preferences {
   readonly wantsBeta: boolean;
   readonly confirmed: boolean;
   readonly invited: boolean;
+  readonly storePlatform: "ios" | "android" | null;
+  readonly storeEmail: string | null;
 }
 
 /** What we hold, for the person who holds the token. */
@@ -221,7 +273,7 @@ export async function waitlistPreferences(token: string): Promise<Preferences | 
   if (!token) return null;
   const { data } = await serviceClient()
     .from("waitlist")
-    .select("metro, wants_beta, confirmed_at, invited_at")
+    .select("metro, wants_beta, confirmed_at, invited_at, store_platform, store_account_email")
     .eq("token", token)
     .maybeSingle();
 
@@ -231,6 +283,8 @@ export async function waitlistPreferences(token: string): Promise<Preferences | 
     wantsBeta: Boolean(data.wants_beta),
     confirmed: Boolean(data.confirmed_at),
     invited: Boolean(data.invited_at),
+    storePlatform: (data.store_platform as "ios" | "android" | null) ?? null,
+    storeEmail: (data.store_account_email as string | null) ?? null,
   };
 }
 
@@ -251,13 +305,26 @@ export async function waitlistPreferences(token: string): Promise<Preferences | 
  */
 export async function updatePreferences(
   token: string,
-  changes: { metro?: string; wantsBeta?: boolean },
+  changes: {
+    metro?: string;
+    wantsBeta?: boolean;
+    storePlatform?: "ios" | "android" | null;
+    storeEmail?: string | null;
+  },
 ): Promise<void> {
   if (!token) return;
 
   const patch: Record<string, unknown> = {};
   if (changes.metro !== undefined && isMetro(changes.metro)) patch["metro"] = changes.metro;
-  if (changes.wantsBeta !== undefined) patch["wants_beta"] = changes.wantsBeta;
+  if (changes.wantsBeta !== undefined) {
+    patch["wants_beta"] = changes.wantsBeta;
+    // Same clearing rule as joining: untick and the store identity goes with
+    // it, because the reason for holding it has gone with it.
+    Object.assign(
+      patch,
+      storeFields(changes.wantsBeta, changes.storePlatform ?? null, changes.storeEmail ?? null),
+    );
+  }
   if (Object.keys(patch).length === 0) return;
 
   await serviceClient().from("waitlist").update(patch).eq("token", token);
@@ -421,6 +488,22 @@ export async function acceptBetaInvite(code: string | undefined): Promise<void> 
     .is("accepted_at", null);
 }
 
+/** What we already know, so the invite page does not ask twice. */
+export async function storeAccountFor(
+  code: string,
+): Promise<{ platform: "ios" | "android"; email: string } | null> {
+  const { data } = await serviceClient()
+    .from("waitlist")
+    .select("store_platform, store_account_email")
+    .eq("invite_code", code)
+    .maybeSingle();
+
+  const platform = data?.store_platform;
+  const email = data?.store_account_email;
+  if ((platform !== "ios" && platform !== "android") || !email) return null;
+  return { platform, email: email as string };
+}
+
 /** Record which store account a tester will install with. Their choice, after accepting. */
 export async function recordStoreAccount(
   code: string,
@@ -447,7 +530,20 @@ export function testerList(
   rows: readonly WaitlistRow[],
   platform: "ios" | "android",
 ): { addresses: string[]; missing: number } {
-  const wanted = rows.filter((r) => r.wants_beta && r.accepted_at && r.store_platform === platform);
+  /**
+   * Keyed on INVITED, not accepted — which is the whole point of asking for the
+   * store account at join.
+   *
+   * It used to require `accepted_at`, so somebody could only be added to a
+   * store list after they had followed their invitation, given us their Google
+   * account on a second form, and come back. Now the account arrives with the
+   * signup and the invitation is what gates this instead.
+   *
+   * Not looser than that. Adding somebody to a Play track BEFORE they have an
+   * invitation lets them install an app they cannot then sign into, which is a
+   * worse first impression than waiting.
+   */
+  const wanted = rows.filter((r) => r.wants_beta && r.invited_at && r.store_platform === platform);
   return {
     addresses: wanted.map((r) => r.store_account_email).filter((e): e is string => Boolean(e)),
     // Testers who accepted and never told us which account they install with.

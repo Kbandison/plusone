@@ -51,6 +51,8 @@ export default async function ManagePage({
           metro={prefs.metro}
           wantsBeta={prefs.wantsBeta}
           invited={prefs.invited}
+          storePlatform={prefs.storePlatform}
+          storeEmail={prefs.storeEmail}
         />
       ) : (
         <Card className="mt-12">

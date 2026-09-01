@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 
 import { DRAFT_COPY, METROS } from "@plusone/config";
 
-import { CheckField, Field, SelectField, Submit } from "@/app/auth-fields";
+import { Field, SelectField, Submit } from "@/app/auth-fields";
+import { TesterFields } from "./tester-fields";
 import { Card } from "@/app/ui";
 import { join } from "./actions";
 import { WAITLIST_INITIAL } from "./state";
@@ -16,7 +17,7 @@ export function WaitlistForm() {
   const [state, submit, pending] = useActionState(join, WAITLIST_INITIAL);
   const emailId = useId();
   const metroId = useId();
-  const betaId = useId();
+  const [wantsBeta, setWantsBeta] = useState(false);
 
   if (state.sent) {
     return (
@@ -50,7 +51,7 @@ export function WaitlistForm() {
         required
       />
 
-      <CheckField id={betaId} label={C.betaLabel} hint={C.betaHelp} name="beta" />
+      <TesterFields wantsBeta={wantsBeta} onWantsBetaChange={setWantsBeta} />
 
       {/* Above the button, not behind a link.
           An address on this list carries an inference about the person, and the

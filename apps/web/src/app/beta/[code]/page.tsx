@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { buttonClass, Card, Wordmark } from "@/app/ui";
-import { betaInviteIsOpen } from "@/lib/waitlist";
+import { betaInviteIsOpen, storeAccountFor } from "@/lib/waitlist";
 import { Install } from "./install";
 
 const C = DRAFT_COPY.betaInvite;
@@ -39,6 +39,10 @@ export const metadata: Metadata = {
 export default async function BetaInvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const open = await betaInviteIsOpen(code);
+  // Almost always known now: it is asked on the join form of anybody who ticked
+  // the testing box. The Install block falls back to asking only for rows that
+  // predate that, or somebody who signed up without ticking it.
+  const known = open ? await storeAccountFor(code) : null;
 
   return (
     <main
@@ -63,7 +67,7 @@ export default async function BetaInvitePage({ params }: { params: Promise<{ cod
           {open ? C.start : DRAFT_COPY.waitlistConfirm.rejoin}
         </Link>
 
-        {open ? <Install code={code} /> : null}
+        {open ? <Install code={code} known={known} /> : null}
       </Card>
     </main>
   );

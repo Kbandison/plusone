@@ -29,8 +29,24 @@ export async function join(_previous: WaitlistState, formData: FormData): Promis
 
   const wantsBeta = formData.get("beta") === "on";
 
+  // Only read when the box is ticked. Reading them regardless would let a
+  // crafted POST store a Google account for somebody who never opted into
+  // testing, which is the one thing the conditional fields exist to prevent.
+  let storePlatform: "ios" | "android" | null = null;
+  let storeEmail: string | null = null;
+
+  if (wantsBeta) {
+    const raw = String(formData.get("platform") ?? "");
+    if (raw !== "ios" && raw !== "android") return { error: E.platformRequired, sent: false };
+    storePlatform = raw;
+
+    storeEmail = String(formData.get("storeEmail") ?? "").trim();
+    if (!storeEmail) return { error: E.storeEmailRequired, sent: false };
+    if (!EMAIL.test(storeEmail)) return { error: E.storeEmailInvalid, sent: false };
+  }
+
   try {
-    await joinWaitlist({ email, metro, wantsBeta });
+    await joinWaitlist({ email, metro, wantsBeta, storePlatform, storeEmail });
   } catch (cause) {
     // The address must not reach a log — see the §9.6 note in lib/email.ts.
     console.error(

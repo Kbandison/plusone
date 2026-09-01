@@ -29,6 +29,7 @@ import { saveQuizSetting } from "./quiz-actions";
 import { CollapsibleSection } from "../collapsible-section";
 import { ownQuizAnswers } from "@/lib/own-profile";
 import { redirect } from "next/navigation";
+import { savePhotoPrivacySetting } from "./photo-privacy-actions";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.profileHeading };
 
@@ -143,7 +144,14 @@ export default async function ProfilePage() {
           {photoList.length < MAX_PHOTOS ? <PhotoUploader count={photoList.length} /> : null}
         </PhotoGallery>
 
-        <PrivacyChoice canContinue={photoList.length > 0} privacy={photoPrivacy} settings />
+        <PrivacyChoice
+          canContinue={photoList.length > 0}
+          privacy={photoPrivacy}
+          // The PROFILE's action. Passing the onboarding one — which is what a
+          // `settings` boolean silently did — saves the choice and then
+          // redirects the member into the radius step.
+          save={savePhotoPrivacySetting}
+        />
       </section>
 
       {/* Changeable, not just displayed. This is the answer that decides who is

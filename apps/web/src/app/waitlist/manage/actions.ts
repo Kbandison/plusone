@@ -14,11 +14,17 @@ import { leaveWaitlist, updatePreferences } from "@/lib/waitlist";
 export async function save(formData: FormData): Promise<void> {
   const token = String(formData.get("t") ?? "");
   const metro = String(formData.get("metro") ?? "");
+  const wantsBeta = formData.get("beta") === "on";
+  const rawPlatform = String(formData.get("platform") ?? "");
+
   await updatePreferences(token, {
     // Omitted rather than passed as undefined — exactOptionalPropertyTypes
     // treats those as different, and the second is a type error.
     ...(metro ? { metro } : {}),
-    wantsBeta: formData.get("beta") === "on",
+    wantsBeta,
+    // Read only when the box is ticked; updatePreferences nulls both otherwise.
+    storePlatform: rawPlatform === "ios" || rawPlatform === "android" ? rawPlatform : null,
+    storeEmail: String(formData.get("storeEmail") ?? "") || null,
   });
   revalidatePath("/waitlist/manage");
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 
 import { DRAFT_COPY, METROS } from "@plusone/config";
 
-import { CheckField, SelectField, Submit } from "@/app/auth-fields";
+import { SelectField, Submit } from "@/app/auth-fields";
+import { TesterFields } from "../tester-fields";
 import { buttonClass, Card } from "@/app/ui";
 import { leave, save } from "./actions";
 
@@ -15,12 +16,17 @@ export function ManageForm({
   metro,
   wantsBeta,
   invited,
+  storePlatform,
+  storeEmail,
 }: {
   token: string;
   metro: string;
   wantsBeta: boolean;
   invited: boolean;
+  storePlatform: "ios" | "android" | null;
+  storeEmail: string | null;
 }) {
+  const [beta, setBeta] = useState(wantsBeta);
   const [saved, submit, pending] = useActionState(async (_prev: boolean, formData: FormData) => {
     await save(formData);
     return true;
@@ -31,7 +37,6 @@ export function ManageForm({
   }, false);
 
   const metroId = useId();
-  const betaId = useId();
 
   if (gone) {
     return (
@@ -61,12 +66,15 @@ export function ManageForm({
             required
           />
 
-          <CheckField
-            id={betaId}
-            label={C.betaLabel}
-            hint={C.betaHelp}
-            name="beta"
-            defaultChecked={wantsBeta}
+          {/* The same block the join form uses. Somebody who ticks the box
+              here has to supply a store account too — otherwise "I changed my
+              mind, I will test" produces a row nobody can act on, which is the
+              round trip this whole change removes. */}
+          <TesterFields
+            wantsBeta={beta}
+            onWantsBetaChange={setBeta}
+            platform={storePlatform}
+            storeEmail={storeEmail}
           />
 
           {/* An invitation already sent is not revoked by unticking a box, and

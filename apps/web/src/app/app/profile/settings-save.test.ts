@@ -281,3 +281,49 @@ describe("the quiz can be taken after it was skipped", () => {
     expect(quizAction).toMatch(/onConflict: "user_id"/);
   });
 });
+
+describe("photo privacy saves on the profile instead of restarting onboarding", () => {
+  /**
+   * A live bug, reported 2026-09-01: choosing "Blurred until we connect" on the
+   * profile saved the setting and then dropped the member into the RADIUS step.
+   *
+   * `PrivacyChoice` took a `settings` boolean, so it knew not to draw a
+   * Continue button and to submit on change — but both callers still ran the
+   * ONBOARDING action, which ends in `redirect(nextRoute("photos"))` and opens
+   * with `requireStep("photos")` that a finished member fails.
+   *
+   * radius-actions.ts had already written down why a flag is the wrong shape:
+   * it puts a redirect and a requireStep in the same function as the branch
+   * that must do neither. This file tests the other editors for exactly that
+   * and photos was the one not covered.
+   */
+  const privacyAction = withoutComments(read("./photo-privacy-actions.ts"));
+
+  it("finds the profile's own action", () => {
+    // A silent zero makes everything below vacuous.
+    expect(privacyAction).toMatch(/savePhotoPrivacySetting/);
+    expect(privacyAction.length).toBeGreaterThan(200);
+  });
+
+  it("neither redirects onward nor demands an onboarding step", () => {
+    expect(privacyAction).not.toMatch(/nextRoute/);
+    expect(privacyAction).not.toMatch(/requireStep/);
+    // The one redirect it may have is the signed-out one.
+    const redirects = [...privacyAction.matchAll(/redirect\(([^)]*)\)/g)].map((m) => m[1]);
+    expect(redirects).toEqual(['"/sign-in"']);
+  });
+
+  it("revalidates, since nothing else re-renders the gallery", () => {
+    expect(privacyAction).toMatch(/revalidatePath\("\/app\/profile"\)/);
+  });
+
+  it("the profile passes it, rather than relying on a flag", () => {
+    // The bug was that `settings` said "draw it like a settings screen" while
+    // the action stayed onboarding's. The prop makes that impossible: there is
+    // no boolean to set and no default that redirects.
+    expect(page).toMatch(/save=\{savePhotoPrivacySetting\}/);
+    const form = withoutComments(read("../../onboarding/photos/photos-form.tsx"));
+    expect(form).toMatch(/save\?: typeof savePhotoPrivacy/);
+    expect(form).toMatch(/const settings = save !== undefined/);
+  });
+});
