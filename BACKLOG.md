@@ -1405,6 +1405,71 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     tabs and never in the one that wrote, so dismissing a hint would otherwise
     leave it on screen until a reload.
 
+26. **Chrome posts the TWA's notifications instead of delegating them, and
+    everything on our side is verified correct.** Found 2026-09-01 with a clean
+    experiment of Kevin's, which is what makes it worth recording.
+
+    ```
+    PlusOne notifications ON,  Chrome ON   ->  a CHROME notification appears
+    PlusOne notifications ON,  Chrome OFF  ->  nothing at all
+    ```
+
+    So the push arrives, Chrome renders it, and the DelegationService is never
+    asked. If delegation were working, Chrome's own notification setting would
+    be irrelevant — the TWA posts under its own package.
+
+    **PlusOne was blocked in Android's notification settings until this
+    session**, which is why nothing appeared for hours and why the app was
+    absent from the "recently sent" list. Granting it did not enable delegation;
+    it only made the app eligible.
+
+    ── what is confirmed correct, from the PACKAGED APK ────────────────────────
+
+    Read with `aapt2` off `app-release-signed.apk`, not from `twa-manifest.json`
+    — the same rule that settled `enableNotification` for billing:
+
+    ```
+    uses-permission  android.permission.POST_NOTIFICATIONS      declared
+    service          app.loveplusone.DelegationService
+                     android:enabled  -> @bool/enableNotification -> true
+                     android:exported -> @bool/enableNotification -> true
+    intent-filter    android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE
+                     + android.intent.category.DEFAULT
+    meta-data        ...trusted.SMALL_ICON -> drawable/ic_notification_icon
+                     (mdpi, hdpi, xhdpi, xxhdpi — all present)
+    activity         NotificationPermissionRequestActivity      declared
+    ```
+
+    A missing or unresolvable SMALL_ICON is the most-cited cause of delegated
+    notifications failing silently. Ours resolves at four densities.
+
+    ── what has NOT been tried ────────────────────────────────────────────────
+
+    - **Force-stop and relaunch the TWA.** POST_NOTIFICATIONS was granted
+      through system settings rather than through the app's own prompt, and the
+      TWA connection is pooled — Chrome may be holding a decision made while the
+      app was still blocked.
+    - **Uninstall, reinstall, and accept the prompt on first launch.**
+      `NotificationPermissionRequestActivity` is what android-browser-helper is
+      built around, and the settings route bypasses it entirely.
+    - **`adb logcat` during a push.** It named the DelegationService outright for
+      billing (`TWAConnectionPool: Found app.loveplusone.DelegationService`), so
+      it will say something here too. Needs Kevin and the phone — see Kevin 17.
+
+    ── does it block anything ─────────────────────────────────────────────────
+
+    **No, and that is worth saying before anybody spends a day on it.**
+    Notifications ARE being delivered; Chrome posts them. The admin alert this
+    was found through arrived correctly at 17:47.
+
+    What is lost is cosmetic and one small thing that is not: a Chrome-posted
+    notification shows the ORIGIN on the lock screen, where a delegated one
+    shows the app's own name and icon. Neither names a condition, so it is not
+    a §8 problem — but `loveplusone.app` on a lock screen is more than "⁺One"
+    is, and that difference is the kind this app usually spends effort on.
+
+    Worth solving before launch. Not worth solving before a metro opens.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
