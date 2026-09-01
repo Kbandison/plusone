@@ -128,7 +128,8 @@ export {
   WAITLIST_INVITE_TTL_DAYS,
   WAITLIST_METRO_TARGET,
   BETA_INSTALL,
-  BETA_OPT_IN_URL,
+  BETA_LINKS,
+  BETA_MANUAL_STEP,
   PLAY_TRACK,
 } from "./waitlist";
 export type { Metro, WaitlistEmail, BetaInstall, BetaPlatform } from "./waitlist";

@@ -2,7 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 
-import { BETA_INSTALL, BETA_OPT_IN_URL, type BetaPlatform } from "@plusone/config";
+import { BETA_INSTALL, BETA_LINKS, type BetaPlatform } from "@plusone/config";
 
 import { Field } from "@/app/auth-fields";
 import { buttonClass } from "@/app/ui";
@@ -41,7 +41,6 @@ export function Install({ code }: { code: string }) {
   const emailId = useId();
 
   const chosen = platform ? BETA_INSTALL[platform] : null;
-  const optIn = platform === "android" || platform === "ios" ? BETA_OPT_IN_URL[platform] : null;
 
   return (
     <div className="mt-8 border-t border-line-2 pt-8">
@@ -77,26 +76,55 @@ export function Install({ code }: { code: string }) {
             <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">{chosen.wait}</p>
           ) : null}
 
-          {/* Rendered only when we actually have one. A store opt-in link is
-              read off a console this repo cannot reach, so null is the normal
-              state and the steps above are written to be complete without it —
-              an invented URL would send a tester to somebody else's app with no
-              way to tell. */}
-          {optIn ? (
+          {/* Both Android links, in the order they work in, and only AFTER the
+              account has been saved.
+        
+              The opt-in page tells an unlisted person the programme is not
+              available and the store says the app cannot be found — so showing
+              these to somebody who has not given us their Google account yet is
+              handing them two dead ends that look like our mistake. They are
+              rendered here rather than in the invitation email for the same
+              reason: at invite time we do not know their platform. */}
+          {platform === "android" && saved ? (
+            <div className="mt-5 flex flex-col gap-3">
+              <a
+                href={BETA_LINKS.android.optIn}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClass("secondary", "self-start")}
+              >
+                1 · Become a tester
+              </a>
+              <a
+                href={BETA_LINKS.android.store}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 hover:text-ink"
+              >
+                2 · Then install from Google Play
+              </a>
+            </div>
+          ) : null}
+
+          {/* Null today: TestFlight is individual invitations, so there is no
+              URL to show and Apple's email is the thing to watch for. */}
+          {platform === "ios" && BETA_LINKS.ios.publicLink ? (
             <a
-              href={optIn}
+              href={BETA_LINKS.ios.publicLink}
               target="_blank"
               rel="noreferrer"
               className={buttonClass("secondary", "mt-5 self-start")}
             >
-              Open the tester link
+              Open in TestFlight
             </a>
           ) : null}
 
           {chosen.accountLabel ? (
             saved ? (
-              <p className="mt-6 text-[11.7px] text-ink-2">
-                Saved. We will add that account to the test group.
+              <p className="mt-6 text-[11.7px] leading-[1.6] text-ink-2">
+                {platform === "android"
+                  ? "Saved. Once we have added that account — usually within a day — the two links below will work, in that order."
+                  : "Saved. We will add that Apple ID to TestFlight, and Apple will email you an invitation to that address. Install TestFlight from the App Store first if you have not."}
               </p>
             ) : (
               <form action={submit} className="mt-6 flex flex-col gap-5">

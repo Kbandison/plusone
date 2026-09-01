@@ -325,12 +325,18 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
      * That makes BETA_OPT_IN_URL.android load-bearing rather than a nicety.
      */
     steps: [
-      "We add your Google account to the tester list.",
-      "Open the tester link — it is below, and in the email we sent you. Open it on the phone itself, signed in to that Google account.",
-      "Tap Become a tester, then Download it on Google Play.",
-      "Install Plus One the way you would install anything else.",
+      "Tell us your Google account below, and we add it to the tester list. Nothing before this works.",
+      "Open the tester link on that phone, signed in to that account, and tap Become a tester.",
+      "Follow Download it on Google Play from the same page, and install.",
     ],
-    wait: "It can take Play an hour or two to notice you have been added, and the store sometimes says the app is unavailable until it does. You do not have to wait for any of it — signing in below works right now in your browser, and it is the same app with the same account.",
+    /**
+     * The ordering above is a dependency, not a suggestion, and the wait note
+     * exists because the failure is indistinguishable from a broken link: the
+     * opt-in page tells an unlisted person the programme is not available, and
+     * the store listing tells them the app cannot be found. Somebody who tries
+     * the links before we have added them concludes we sent them a dead URL.
+     */
+    wait: "The links do nothing until we have added your account, and Play can take an hour or two to catch up after that — until it does, the store may say Plus One cannot be found. That is expected and it is not a dead link. You do not have to wait for any of it: signing in below works right now in your browser, and it is the same app with the same account.",
   },
 
   ios: {
@@ -387,9 +393,20 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
 };
 
 /**
- * Which Play track the beta runs on.
+ * Which Play track the beta runs on. **CLOSED**, confirmed by Kevin 2026-08-31.
  *
- * **HELD FOR KEVIN.** It changes the opt-in URL and nothing else in this file —
+ * The opt-in URL he supplied is `/apps/testing/app.loveplusone`, which is the
+ * closed-testing shape — internal testing is `/apps/internaltest/<id>` — so the
+ * track is not merely stated, it is legible from the artifact.
+ *
+ * **The 12-testers-for-14-days rule does not apply here.** Google requires that
+ * of PERSONAL developer accounts created after late 2023 before they can apply
+ * for production access. This account is LuxWeb Studio LLC, an organisation,
+ * and organisations are exempt. Recorded because it is the one fact that would
+ * otherwise put closed testing on the critical path to launching at all, and
+ * because it will be asked again.
+ *
+ * It changes the opt-in URL and nothing else in this file —
  * both tracks admit testers by email address and both need the tester to open
  * an opt-in link — but the two URLs are different and only one of them will
  * work.
@@ -405,30 +422,78 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
  * They are not exclusive and running both is the normal thing: internal for the
  * tight loop, closed for the cohort coming off the waitlist.
  */
-export const PLAY_TRACK: "internal" | "closed" | null = null;
+export const PLAY_TRACK: "internal" | "closed" = "closed";
 
 /**
- * The store opt-in links.
+ * The store links, which are TWO different things on Android and easy to
+ * confuse because both are play.google.com.
  *
- * **HELD FOR KEVIN**, and the Android one matters more than the first version
- * of this comment implied. A tester cannot join a Play track without opening
- * the opt-in URL, and waiting for Google to email it to them is the failure
- * mode where somebody sits quietly for three days assuming we forgot. So we
- * send it, which means we need it.
+ *   optIn   https://play.google.com/apps/testing/app.loveplusone
+ *           A web page with a "Become a tester" button. This is what makes
+ *           somebody a tester, and it only works for an address already on the
+ *           closed-testing list — an unlisted person opening it is told the
+ *           programme is not available, which reads exactly like a broken link.
  *
- *   android  Play Console -> Testing -> the track -> Testers -> "Copy link".
- *            Read it off the track named in PLAY_TRACK above; the internal and
- *            closed URLs differ and the wrong one silently does nothing useful.
- *   ios      App Store Connect -> TestFlight -> a public link, IF one is
- *            enabled for the group. Null here means we are using individual
- *            email invitations instead — which is a real and complete answer,
- *            NOT "the tester needs nothing". TestFlight admits people by
- *            invitation or by link and by no third way.
+ *   store   https://play.google.com/store/apps/details?id=app.loveplusone
+ *           The ordinary listing. Opens the Play Store app on a phone. This is
+ *           where the install happens, and it shows the test build ONLY after
+ *           the opt-in above — before that it is a page saying the app cannot
+ *           be found.
+ *
+ * So the order is not a matter of taste and the steps say so: on the list,
+ * then opt in, then install. Sending somebody the store link first produces a
+ * dead end that looks like our mistake.
+ *
+ * `ios.publicLink` is null and that is a real answer, not a gap — see the
+ * comment on BETA_MANUAL_STEP below. TestFlight admits people by invitation or
+ * by public link and by no third way.
  *
  * NOT INVENTED. A plausible-looking wrong URL here would send a tester to
  * somebody else's app, and they would have no way to tell that is what happened.
  */
-export const BETA_OPT_IN_URL: Record<"android" | "ios", string | null> = {
-  android: null,
-  ios: null,
+export const BETA_LINKS = {
+  android: {
+    optIn: "https://play.google.com/apps/testing/app.loveplusone",
+    store: "https://play.google.com/store/apps/details?id=app.loveplusone",
+  },
+  ios: {
+    publicLink: null as string | null,
+  },
+} as const;
+
+/**
+ * Where a human still has to do something, per platform.
+ *
+ * ── the question this answers ───────────────────────────────────────────────
+ *
+ * "When someone on iOS fills out the waitlist form, do I have to manually add
+ * them to App Store Connect?" — Kevin, 2026-08-31. Yes, today, and the shape of
+ * the answer is worth keeping because it is not symmetric between the stores.
+ *
+ *   android  ONE-TIME. The opt-in link is public and self-serve, so a tester
+ *            adds themselves. What is per-person is putting their Google
+ *            account on the closed-testing list, which is a paste into a Google
+ *            Group rather than a visit to a console.
+ *   ios      PER PERSON, unavoidably, unless a TestFlight PUBLIC LINK exists.
+ *            Individual invitations are added by hand in App Store Connect.
+ *
+ * ── and why the public link is safe here, which is unusual ──────────────────
+ *
+ * The normal objection to a public TestFlight link is that anybody can install
+ * the app. That objection is much weaker for Plus One, because installing is
+ * not joining: `/onboarding/phone` refuses to create an account without a beta
+ * invitation, so a stranger who follows a public link gets a shell they cannot
+ * sign into. The account gate is the real wall and the store track is not doing
+ * that work.
+ *
+ * The cost is Apple's: a public link needs an EXTERNAL testing group, and an
+ * external group needs the build to pass Beta App Review. That is a one-time
+ * gate rather than a per-tester one, which is exactly the right trade — but it
+ * is a gate, and with the current 2.1 correspondence unresolved its timing is
+ * unknown. Hence null, and hence this comment rather than a promise.
+ */
+export const BETA_MANUAL_STEP: Record<"android" | "ios", string> = {
+  android:
+    "Add their Google account to the closed-testing list. The tester opts in themselves from the public link.",
+  ios: "Add their Apple ID in App Store Connect, one at a time. A TestFlight public link would remove this entirely and needs an external group, which needs Beta App Review.",
 };

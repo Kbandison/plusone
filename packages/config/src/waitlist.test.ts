@@ -7,7 +7,8 @@ import { BANNED_COPY_TERMS } from "./brand";
 import { DRAFT_COPY } from "./draft-copy";
 import {
   BETA_INSTALL,
-  BETA_OPT_IN_URL,
+  BETA_LINKS,
+  BETA_MANUAL_STEP,
   PLAY_TRACK,
   METROS,
   METRO_IDS,
@@ -316,6 +317,17 @@ describe("a tester is told how to get the app", () => {
     expect(BETA_INSTALL.browser.wait ?? "").toMatch(/home screen/i);
   });
 
+  it("puts being added BEFORE the links, because that is a dependency", () => {
+    // An unlisted person opening either link is told the programme is not
+    // available or the app cannot be found — both read as a dead URL we sent.
+    const steps = BETA_INSTALL.android.steps;
+    const listedAt = steps.findIndex((x) => /tell us your google account/i.test(x));
+    const linkAt = steps.findIndex((x) => /tester link/i.test(x));
+    expect(listedAt).toBeGreaterThan(-1);
+    expect(linkAt).toBeGreaterThan(listedAt);
+    expect(BETA_INSTALL.android.wait ?? "").toMatch(/not a dead link/i);
+  });
+
   it("does not tell an Android tester to wait for an email from Google", () => {
     // The correction: a tester needs the OPT-IN LINK, and waiting for Google to
     // send it is how somebody sits quietly for three days assuming they were
@@ -333,20 +345,41 @@ describe("a tester is told how to get the app", () => {
     expect(steps).toMatch(/invitation|link/);
   });
 
-  it("names a Play track, or says plainly that it is undecided", () => {
-    // Null is allowed and is the honest state before Kevin picks. What is not
-    // allowed is a value that is neither — the opt-in URL shape differs per
-    // track and the wrong one silently does nothing useful.
-    expect(PLAY_TRACK === null || PLAY_TRACK === "internal" || PLAY_TRACK === "closed").toBe(true);
+  it("the opt-in link matches the track it claims to be on", () => {
+    // The two shapes are different and the wrong one silently does nothing
+    // useful. Closed is /apps/testing/<package>; internal is
+    // /apps/internaltest/<id>. Reading the track off the artifact rather than
+    // trusting the constant beside it.
+    expect(PLAY_TRACK).toBe("closed");
+    expect(BETA_LINKS.android.optIn).toContain("/apps/testing/");
+    expect(BETA_LINKS.android.optIn).not.toContain("/apps/internaltest/");
   });
 
-  it("invents no store link", () => {
-    // Null is the supported state: these are read off consoles this repo
-    // cannot reach, and a plausible wrong URL sends a tester to somebody
-    // else's app with no way to tell.
-    for (const value of Object.values(BETA_OPT_IN_URL)) {
-      expect(value === null || /^https:\/\//.test(value)).toBe(true);
+  it("keeps the opt-in and the store link apart", () => {
+    // Both are play.google.com and they do different jobs: one makes you a
+    // tester, the other is where you install. Sending the store link first is
+    // a dead end that looks like our mistake.
+    expect(BETA_LINKS.android.store).toContain("/store/apps/details");
+    expect(BETA_LINKS.android.optIn).not.toBe(BETA_LINKS.android.store);
+    // Same app, both of them.
+    for (const url of Object.values(BETA_LINKS.android)) {
+      expect(url).toContain("app.loveplusone");
+      expect(url.startsWith("https://play.google.com/")).toBe(true);
     }
+  });
+
+  it("invents no TestFlight link", () => {
+    // Null is a real answer — it means individual invitations — and a
+    // plausible wrong URL sends a tester to somebody else's app.
+    const link = BETA_LINKS.ios.publicLink;
+    expect(link === null || /^https:\/\/testflight\.apple\.com\//.test(link)).toBe(true);
+  });
+
+  it("says where a human still has to act, and does not claim iOS is automatic", () => {
+    // The asymmetry is the point: Android opt-in is self-serve, TestFlight
+    // invitations are added by hand until a public link exists.
+    expect(BETA_MANUAL_STEP.android.toLowerCase()).toMatch(/themselves|self/);
+    expect(BETA_MANUAL_STEP.ios.toLowerCase()).toMatch(/one at a time|by hand|individual/);
   });
 });
 

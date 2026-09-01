@@ -1281,6 +1281,37 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     it is the only thing that turns `COPY.drop.thin` from an apology into a
     plan.
 
+23. **Adding a tester is still two manual steps, and one of them need not be.**
+    Raised by Kevin 2026-08-31 asking the right question: "when someone on iOS
+    fills out the waitlist form, do I have to manually add them to App Store
+    Connect?" Today, yes.
+
+    What the admin screen already does: collects the store account, groups by
+    metro, and hands over paste-ready lists. What it cannot do is put anybody on
+    a track.
+
+    |         | today                                                                                                     | could be                                                                                       |
+    | ------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+    | Android | paste the Google account into the closed-testing list; the tester opts in themselves from the public link | Play Developer API can manage testers                                                          |
+    | iOS     | add each Apple ID by hand in App Store Connect                                                            | **a TestFlight public link removes it entirely**, or the App Store Connect API can add testers |
+
+    **The public link is the cheap answer and it is unusually safe here.** The
+    normal objection — anybody with the URL can install — barely applies,
+    because installing is not joining: `/onboarding/phone` refuses to create an
+    account without a beta invitation, so a stranger who follows the link gets a
+    shell they cannot sign into. The account gate is the real wall and the store
+    track was never doing that work.
+
+    Its cost is Apple's: a public link needs an EXTERNAL testing group, which
+    needs the build to pass Beta App Review. One-time rather than per-tester,
+    which is the right trade — but it is a gate, and with the 2.1 correspondence
+    unresolved its timing is unknown. That is why `BETA_LINKS.ios.publicLink` is
+    null rather than promised.
+
+    The API route on either store is real work and needs credentials that do not
+    exist yet. **Do not build it before the public link has been tried**, which
+    costs one console setting and makes the iOS half of this item disappear.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
