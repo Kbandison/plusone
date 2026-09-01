@@ -136,6 +136,15 @@ export {
 } from "./waitlist";
 export type { Metro, WaitlistEmail, BetaInstall, BetaPlatform } from "./waitlist";
 
+export {
+  FEEDBACK_KINDS,
+  FEEDBACK_STATUS_LABELS,
+  FEEDBACK_BODY_MAX,
+  FEEDBACK_CONTEXT_NOTE,
+  FEEDBACK_FALLBACK_EMAIL,
+} from "./feedback";
+export type { FeedbackKind, FeedbackStatus, FeedbackKindOption } from "./feedback";
+
 export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
 export type { Section, FaqEntry } from "./guidelines";
 

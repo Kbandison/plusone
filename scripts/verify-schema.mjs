@@ -86,7 +86,14 @@ if (!DB_URL) {
 //                                           and this one is granted to nobody by
 //                                           design. Read off the live database
 //                                           after applying, not inferred.
-const EXPECT = { tables: 34, views: 5, functions: 123, enums: 29, rooms: 7, config: 23 };
+// tables 34 -> 35, functions 123 -> 125, enums 29 -> 31
+//                                          20260831000300, server 24: `feedback`,
+//                                          submit_feedback and
+//                                          admin_set_feedback_status, plus
+//                                          feedback_kind and feedback_status.
+//                                          Read off the live database after
+//                                          applying, not added up.
+const EXPECT = { tables: 35, views: 5, functions: 125, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that

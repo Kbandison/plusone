@@ -1312,6 +1312,50 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     exist yet. **Do not build it before the public link has been tried**, which
     costs one console setting and makes the iOS half of this item disappear.
 
+24. ~~**Somewhere to report a bug or ask for something.**~~ — done and APPLIED
+    2026-08-31 at Kevin's ask, alongside the beta. Migration 20260831000300 is
+    live; ledger 84 of 99.
+
+    `/app/feedback` for members, `/admin/feedback` for triage, a fifth settings
+    tab, and `support@loveplusone.app` named on the form for the one report the
+    form cannot take — "I cannot sign in".
+
+    **Deliberately NOT `reports`.** That table is moderation: an accusation
+    about another member, read under a duty of care, whose subject must never
+    learn who filed it. Feedback is about the software, is attributed on purpose
+    so we can reply, and has no subject to protect. One table would mean one
+    queue and a permission shape satisfying both, which in practice is the
+    weaker of the two.
+
+    **Private, not a public board.** A roadmap with upvotes prioritises better
+    and was refused: a feature request carries a name, and a name on a board
+    belonging to an HSV and HIV app is a disclosure nobody set out to make. What
+    a board is actually FOR from the member's side — knowing it did not vanish —
+    is served by them seeing their own reports and status. `declined` is a real
+    status and shown as plainly as `done`, because being told no beats watching
+    something that will never move.
+
+    **The context is the part testers never include**, and one field earns its
+    keep more than the rest: `surface`. AGENTS.md's standing rule is that a fix
+    verified in one engine is not verified in the other, so a report that does
+    not say whether it came from Chrome, a TWA or WKWebView cannot be acted on
+    without asking. `inTwa()` is checked BEFORE `nativePlatform()` — a TWA has
+    no `window.Capacitor`, so the other order files every Android TWA report as
+    "browser" and loses exactly the distinction the field exists for. Pinned.
+
+    **`page` is the route SHAPE and never the path.** `/app/chats/[id]`, never
+    `/app/chats/3f2a…` — a chat id here resolves to two people and a diagnosis.
+    Query strings and fragments are dropped whole rather than filtered, since
+    that is where an id smuggles itself in. Stripped in `lib/feedback.ts`,
+    refused by `feedback_page_shape`, and pinned by a test that plants a uuid, a
+    token and a query string — plus a floor proving the stripper does not eat
+    ordinary route names, because a perfectly private one would be useless.
+
+    Three existing guards caught this on the way in and all three were right:
+    the privacy chain refused an unclassified table, `rpc-error.ts` refused two
+    unclassified raise messages, and the layout guard caught a duplicated top
+    margin.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they

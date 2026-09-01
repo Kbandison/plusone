@@ -41,6 +41,15 @@ const SAFE_PREFIXES: readonly string[] = [
   // openAppeal maps them to reviewed copy rather than passing them through raw.
   "an appeal is already open",
   "no review to appeal",
+  // Feedback (server 24). Both describe what the caller just did and both are
+  // actionable by them — the first is an empty textarea, the second is their
+  // own rate limit. Neither says anything about anybody else, and there is
+  // nothing more useful to substitute.
+  //
+  // The action maps 54000 to friendlier copy before this is reached, so these
+  // are the fallback for a caller that reached the RPC another way.
+  "feedback cannot be empty",
+  "too many reports, try later",
   "chat is ",
   "connect is already ",
   "connect: daily budget exhausted",

@@ -218,6 +218,35 @@ export const TABLE_CLASSIFICATION: Readonly<
     feeds: ["User Content → Other User Content"],
     note: "A member's own words describing what happened.",
   },
+
+  /**
+   * Bug reports and feature requests.
+   *
+   * Same label as `reports` and for the same reason — free text a member typed
+   * — but a different table, and the migration header for 20260831000300 says
+   * why they must not merge.
+   *
+   * ── the three context columns, and why none adds a category ────────────────
+   *
+   * `surface`, `page` and `app_version` are facts about the SOFTWARE. That is
+   * a claim the schema enforces rather than a description:
+   *
+   *   surface      one of four literals, by CHECK constraint.
+   *   app_version  a deploy sha.
+   *   page         the route SHAPE, never the path — `/app/chats/[id]` and
+   *                never `/app/chats/3f2a…`. Stripped in lib/feedback.ts,
+   *                refused by feedback_page_shape, and pinned by a test that
+   *                plants a uuid and a query string.
+   *
+   * That last one is the whole reason this entry does not also feed
+   * "Identifiers → User ID". A literal path would carry a chat id, and a chat
+   * id on this app resolves to two people and a diagnosis — so the stripping is
+   * not a nicety, it is what keeps this declaration true.
+   */
+  feedback: {
+    feeds: ["User Content → Other User Content"],
+    note: "A member's own words about the app, plus which screen shape, which shell and which build. No path, no ids.",
+  },
   consents: {
     feeds: ["Health & Fitness → Health"],
     note: "Records that health-data consent was given, and to which wording.",
