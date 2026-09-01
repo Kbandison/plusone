@@ -311,13 +311,26 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
     accountHint:
       "It has to be the Google account signed in on the phone. That is often not the address you gave us, and if they do not match the Play Store will say Plus One is unavailable rather than telling you why.",
     heading: "Getting it on your phone",
+    /**
+     * ── the opt-in link is step two, and that is a correction ────────────────
+     *
+     * This used to say "you get an email from Google Play with a link to join".
+     * That was written for the internal testing track and it is not reliably
+     * true of either track — what is ALWAYS true is that a tester needs the
+     * opt-in URL, and the dependable way for them to get it is from us.
+     *
+     * Waiting for an email Google may or may not send is the failure mode where
+     * a tester sits quietly for three days assuming we forgot them. So the link
+     * goes in the invitation we send, and it is named here as the step it is.
+     * That makes BETA_OPT_IN_URL.android load-bearing rather than a nicety.
+     */
     steps: [
-      "We add your Google account to the test group.",
-      "You get an email from Google Play with a link to join. Open it on the phone you will use.",
+      "We add your Google account to the tester list.",
+      "Open the tester link — it is below, and in the email we sent you. Open it on the phone itself, signed in to that Google account.",
       "Tap Become a tester, then Download it on Google Play.",
       "Install Plus One the way you would install anything else.",
     ],
-    wait: "Being added takes a day or so. You do not have to wait for it — signing in below works right now in your browser, and it is the same app with the same account.",
+    wait: "It can take Play an hour or two to notice you have been added, and the store sometimes says the app is unavailable until it does. You do not have to wait for any of it — signing in below works right now in your browser, and it is the same app with the same account.",
   },
 
   ios: {
@@ -327,10 +340,20 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
     accountHint:
       "It has to be the Apple ID signed in on the device. TestFlight sends the invitation to that address and nowhere else.",
     heading: "Getting it on your phone",
+    /**
+     * There is no third way in. TestFlight admits a tester by EMAIL INVITATION
+     * or by PUBLIC LINK and by nothing else, so `BETA_OPT_IN_URL.ios` being
+     * null does not mean "no link needed" — it means we are using invitations,
+     * and Apple's email is the thing to watch for.
+     *
+     * Written out because the first version of this comment said the null was
+     * because "individual invitations need no link at all", which is true and
+     * reads as though a tester might need neither.
+     */
     steps: [
       "Install TestFlight from the App Store first. Apple's invitation does nothing without it.",
       "We add your Apple ID to the test group.",
-      "Apple emails you an invitation. Open it on the device and it hands you to TestFlight.",
+      "Apple emails that address an invitation — or we send you a TestFlight link, if we are using one. Open it on the device and it hands you to TestFlight.",
       "Install Plus One from TestFlight.",
     ],
     /**
@@ -364,20 +387,43 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
 };
 
 /**
- * The store opt-in links, if we have them.
+ * Which Play track the beta runs on.
  *
- * **HELD FOR KEVIN.** Both are read off a console this repo cannot reach:
+ * **HELD FOR KEVIN.** It changes the opt-in URL and nothing else in this file —
+ * both tracks admit testers by email address and both need the tester to open
+ * an opt-in link — but the two URLs are different and only one of them will
+ * work.
  *
- *   android  Play Console -> Testing -> Internal testing -> Testers -> the
- *            "Copy link" opt-in URL, of the shape
- *            https://play.google.com/apps/internaltest/<id>
+ *   internal  Up to 100 testers. No review at all, so a build is installable
+ *             minutes after upload. URL shape:
+ *             https://play.google.com/apps/internaltest/<id>
+ *   closed    No practical cap, and accepts a Google Group as the tester list
+ *             rather than a pasted set of addresses. Releases ARE reviewed, so
+ *             each build waits. URL shape:
+ *             https://play.google.com/apps/testing/<package>
+ *
+ * They are not exclusive and running both is the normal thing: internal for the
+ * tight loop, closed for the cohort coming off the waitlist.
+ */
+export const PLAY_TRACK: "internal" | "closed" | null = null;
+
+/**
+ * The store opt-in links.
+ *
+ * **HELD FOR KEVIN**, and the Android one matters more than the first version
+ * of this comment implied. A tester cannot join a Play track without opening
+ * the opt-in URL, and waiting for Google to email it to them is the failure
+ * mode where somebody sits quietly for three days assuming we forgot. So we
+ * send it, which means we need it.
+ *
+ *   android  Play Console -> Testing -> the track -> Testers -> "Copy link".
+ *            Read it off the track named in PLAY_TRACK above; the internal and
+ *            closed URLs differ and the wrong one silently does nothing useful.
  *   ios      App Store Connect -> TestFlight -> a public link, IF one is
- *            enabled. Individual invitations need no link at all, which is why
- *            this one may legitimately stay null.
- *
- * Null is a supported state and not a broken one: the pages render the steps
- * without a link and say the invitation arrives by email, which is true either
- * way. A link only shortens it.
+ *            enabled for the group. Null here means we are using individual
+ *            email invitations instead — which is a real and complete answer,
+ *            NOT "the tester needs nothing". TestFlight admits people by
+ *            invitation or by link and by no third way.
  *
  * NOT INVENTED. A plausible-looking wrong URL here would send a tester to
  * somebody else's app, and they would have no way to tell that is what happened.

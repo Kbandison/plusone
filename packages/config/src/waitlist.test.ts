@@ -8,6 +8,7 @@ import { DRAFT_COPY } from "./draft-copy";
 import {
   BETA_INSTALL,
   BETA_OPT_IN_URL,
+  PLAY_TRACK,
   METROS,
   METRO_IDS,
   WAITLIST_EMAIL,
@@ -313,6 +314,30 @@ describe("a tester is told how to get the app", () => {
     // tester that is the difference between reporting a bug and never seeing
     // the feature.
     expect(BETA_INSTALL.browser.wait ?? "").toMatch(/home screen/i);
+  });
+
+  it("does not tell an Android tester to wait for an email from Google", () => {
+    // The correction: a tester needs the OPT-IN LINK, and waiting for Google to
+    // send it is how somebody sits quietly for three days assuming they were
+    // forgotten. We send it, so the steps name it.
+    const steps = BETA_INSTALL.android.steps.join(" ").toLowerCase();
+    expect(steps).toMatch(/tester link|opt-in|link/);
+    expect(steps).not.toMatch(/you get an email from google/);
+  });
+
+  it("does not imply a TestFlight tester needs neither an invite nor a link", () => {
+    // TestFlight admits people by invitation or by public link and by no third
+    // way. A null BETA_OPT_IN_URL.ios means "we use invitations", not "nothing
+    // is needed".
+    const steps = BETA_INSTALL.ios.steps.join(" ").toLowerCase();
+    expect(steps).toMatch(/invitation|link/);
+  });
+
+  it("names a Play track, or says plainly that it is undecided", () => {
+    // Null is allowed and is the honest state before Kevin picks. What is not
+    // allowed is a value that is neither — the opt-in URL shape differs per
+    // track and the wrong one silently does nothing useful.
+    expect(PLAY_TRACK === null || PLAY_TRACK === "internal" || PLAY_TRACK === "closed").toBe(true);
   });
 
   it("invents no store link", () => {
