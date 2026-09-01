@@ -121,3 +121,37 @@ describe("the write path is the only one", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("the sheet and the page cannot drift", () => {
+  /**
+   * The header icon opens feedback as a sheet over whatever you were looking
+   * at; `/app/feedback` is a real URL that still has to work on a hard load, a
+   * refresh or a shared link. Two copies of that markup would be two places to
+   * fix a bug in the form whose whole job is collecting bug reports.
+   */
+  it("both render the same panel", () => {
+    const page = code("app/app/feedback/page.tsx");
+    const modal = code("app/app/@modal/(.)feedback/page.tsx");
+    expect(page).toMatch(/FeedbackPanel/);
+    expect(modal).toMatch(/FeedbackPanel/);
+    // Neither may hold the form directly.
+    expect(page).not.toMatch(/<FeedbackForm/);
+    expect(modal).not.toMatch(/<FeedbackForm/);
+  });
+
+  it("the sheet keeps the referring screen", () => {
+    // The whole value of the header icon is not leaving the thing you are
+    // trying to describe — and `?from=` is what records it. A sheet that
+    // dropped the parameter would report every bug against no screen.
+    const modal = code("app/app/@modal/(.)feedback/page.tsx");
+    expect(modal).toMatch(/searchParams/);
+    expect(modal).toMatch(/from/);
+  });
+
+  it("settings no longer offers a second, worse door", () => {
+    // The tab recorded no screen: somebody who navigated to Settings and then
+    // to Feedback is no longer near the bug.
+    const tabs = code("app/app/settings/settings-tabs.tsx");
+    expect(tabs).not.toMatch(/\/app\/feedback/);
+  });
+});

@@ -467,35 +467,50 @@ export function PhotoGallery({
               dragging === photo.id ? "z-10 scale-105 cursor-grabbing shadow-lg" : "cursor-grab"
             }`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- signed
-                storage URLs expire in ten minutes, so the image optimiser would
-                cache a URL that outlives its own signature. */}
-            <img
-              src={photo.url}
-              alt=""
-              width={132}
-              height={132}
-              draggable={false}
-              className="size-[106.9px] rounded-xl border border-line-2 object-cover select-none"
-            />
+            {/* The overlays position against the IMAGE, not against the tile.
+              
+                This wrapper is load-bearing and is not decoration. The badge is
+                `absolute bottom-1.5`, and when the tile was the image alone
+                that put it on the picture. Server 18b then added the per-photo
+                privacy select INSIDE the tile, below the image — which grew the
+                containing block, so the badge moved down onto the select and
+                sat across the word it was truncating. Nothing failed; it just
+                looked broken, and it shipped that way because 18b was never
+                seen in a shell.
+              
+                Keeping the overlays in a box that only ever holds the image
+                means the next thing added below cannot do it again. */}
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed
+                  storage URLs expire in ten minutes, so the image optimiser
+                  would cache a URL that outlives its own signature. */}
+              <img
+                src={photo.url}
+                alt=""
+                width={132}
+                height={132}
+                draggable={false}
+                className="size-[106.9px] rounded-xl border border-line-2 object-cover select-none"
+              />
 
-            {index === 0 ? (
-              <Badge className="absolute bottom-1.5 left-1.5">{C.mainBadge}</Badge>
-            ) : null}
+              {index === 0 ? (
+                <Badge className="absolute bottom-1.5 left-1.5">{C.mainBadge}</Badge>
+              ) : null}
 
-            <form action={remove} data-no-drag className="absolute -top-2 -right-2">
-              <input type="hidden" name="photo_id" value={photo.id} />
-              <button
-                type="submit"
-                disabled={removing}
-                // Named, or a grid of identical bins is unusable by ear — every
-                // one of them reads the same out of context.
-                aria-label={C.removeNamed(index + 1)}
-                className="ease-brand flex size-8 items-center justify-center rounded-full border border-line-2 bg-surface text-ink-2 shadow-sm transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-40"
-              >
-                <TrashIcon />
-              </button>
-            </form>
+              <form action={remove} data-no-drag className="absolute -top-2 -right-2">
+                <input type="hidden" name="photo_id" value={photo.id} />
+                <button
+                  type="submit"
+                  disabled={removing}
+                  // Named, or a grid of identical bins is unusable by ear —
+                  // every one of them reads the same out of context.
+                  aria-label={C.removeNamed(index + 1)}
+                  className="ease-brand flex size-8 items-center justify-center rounded-full border border-line-2 bg-surface text-ink-2 shadow-sm transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-40"
+                >
+                  <TrashIcon />
+                </button>
+              </form>
+            </div>
 
             {/* Per-photo privacy (server 18b). Inside the tile, because a
                 separate list of six dropdowns somewhere else would make the

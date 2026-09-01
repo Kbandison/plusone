@@ -710,10 +710,27 @@ export const DRAFT_COPY = {
      */
     firstIsTheCard:
       "Your first photo is the one shown on every card — the Drop, Browse, connects and rooms. Its setting is how you appear across the app.",
-    perPhotoLabel: "This photo",
-    perPhotoFollow: "Follows your setting",
+    /**
+     * The select is 106.9px wide — the width of the photo above it — and the
+     * 16px floor cannot move, because iOS zooms the page on a smaller control
+     * and never zooms back. That leaves room for about eleven characters.
+     *
+     * "Follows your setting" rendered as "Follows yo" and "Blurred until
+     * connected" fared worse. A privacy control that truncates mid-word does
+     * not read as tight, it reads as broken — and this is the one control on
+     * the page where being unsure what it says matters most.
+     *
+     * So the options NAME the three states and the label carries the sentence:
+     * a screen reader says "Who sees this photo: Blurred". What each state
+     * actually means is spelled out in full by the profile-wide radio group
+     * directly below — "Blurred until we connect: people see that you have
+     * photos, and see them properly once you have both said yes" — so the
+     * meaning is on the same screen rather than lost with the words.
+     */
+    perPhotoLabel: "Who sees this photo",
+    perPhotoFollow: "As profile",
     perPhotoClear: "Clear",
-    perPhotoBlurred: "Blurred until connected",
+    perPhotoBlurred: "Blurred",
     perPhotoPremium: "Setting photos separately is part of Premium.",
     perPhotoPremiumLink: "See what's included",
     perPhotoSaveFailed: "That didn't save. Try again in a moment.",
@@ -1695,16 +1712,19 @@ export const DRAFT_COPY = {
     },
     navSettings: "Settings",
     /**
-     * "Feedback", not "Report".
+     * The header icon's accessible name, and the only door to reporting.
      *
-     * Kevin's call 2026-08-31, and it is the right one on this app
-     * specifically: "Report" is what a member taps to report a PERSON, and that
-     * control sits behind the overflow menu on every profile and every room
-     * post. Two things called Report, one about somebody's conduct and one
-     * about a scrolling bug, is a word doing two jobs on a surface where
-     * confusing them matters.
+     * There was a settings tab too until 2026-08-31. It is gone rather than
+     * kept: the icon sits on every screen and carries `?from=`, so the tab was
+     * a second, worse entrance — one that recorded no screen, because somebody
+     * who navigated to Settings is no longer near the bug.
+     *
+     * "Feedback", never "Report", and that matters more here than it looks:
+     * "Report" is what a member taps to report a PERSON, behind the overflow
+     * menu on every profile and every room post. Two controls called Report,
+     * one about somebody's conduct and one about a scrolling bug, is a word
+     * doing two jobs on a surface where confusing them matters.
      */
-    feedbackTab: "Feedback",
     feedbackLabel: "Send feedback",
     crossCommunityHeading: "Other communities",
     deleteHeading: "Delete your account",

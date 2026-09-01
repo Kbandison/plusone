@@ -365,3 +365,72 @@ describe("a reorder does not go through the router at all", () => {
     expect(form).toMatch(/setOrderError\(C\.errors\.uploadFailed\)/);
   });
 });
+
+describe("the overlays sit on the photo, not on whatever is added below it", () => {
+  /**
+   * A regression that shipped and was only found by looking at a phone.
+   *
+   * The Main badge is `absolute bottom-1.5`, and while the tile was the image
+   * alone that put it on the picture. Server 18b then added the per-photo
+   * privacy select INSIDE the tile, below the image — which grew the badge's
+   * containing block, so it slid down onto the select and sat across the word
+   * it was already truncating. Nothing errored. It just looked broken, and it
+   * shipped that way because 18b was never seen in a shell.
+   *
+   * The fix is structural: the overlays live in a wrapper that only ever holds
+   * the image, so the next thing added below cannot repeat it. This checks the
+   * wrapper is still doing that job.
+   */
+  const source = form;
+
+  it("finds the markup at all", () => {
+    // A silent zero would make the assertion below pass forever.
+    expect(source).toContain("<Badge");
+    expect(source).toContain("<select");
+  });
+
+  it("closes the badge's container before the privacy select opens", () => {
+    const badgeAt = source.indexOf("<Badge");
+    const selectAt = source.indexOf("<select");
+    expect(badgeAt).toBeGreaterThan(-1);
+    expect(selectAt).toBeGreaterThan(badgeAt);
+
+    // Not a parser, and it does not need to be: what broke was the two sharing
+    // one positioning context, and a `</div>` between them is what says they
+    // no longer do.
+    const between = source.slice(badgeAt, selectAt);
+    expect(
+      between,
+      "the Main badge and the privacy select share a positioning context again — the badge will render on top of the select",
+    ).toContain("</div>");
+  });
+});
+
+describe("the privacy options fit the control that shows them", () => {
+  /**
+   * The select is the width of the photo above it, and the 16px floor cannot
+   * move — iOS zooms the page on a smaller control and never zooms back. So
+   * roughly eleven characters is the whole budget.
+   *
+   * "Follows your setting" rendered as "Follows yo". A privacy control that
+   * truncates mid-word does not read as tight, it reads as broken, and this is
+   * the one control on the page where being unsure what it says matters most.
+   */
+  it("keeps every option short enough to render whole", () => {
+    const C = DRAFT_COPY.photos;
+    for (const label of [C.perPhotoFollow, C.perPhotoClear, C.perPhotoBlurred]) {
+      expect(
+        label.length,
+        `"${label}" will truncate in a 106.9px select at 16px`,
+      ).toBeLessThanOrEqual(11);
+    }
+  });
+
+  it("puts the meaning in the label, since the options cannot carry it", () => {
+    // A screen reader says "Who sees this photo: Blurred". The options name
+    // three states; what each one MEANS is spelled out by the profile-wide
+    // radio group on the same screen.
+    expect(DRAFT_COPY.photos.perPhotoLabel.toLowerCase()).toContain("photo");
+    expect(DRAFT_COPY.photos.perPhotoLabel.length).toBeGreaterThan(10);
+  });
+});

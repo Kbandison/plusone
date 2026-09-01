@@ -28,18 +28,6 @@ const TABS = [
   { href: "/app/settings/notifications", label: C.settingsNotifications },
   { href: "/app/settings/safety", label: C.settingsSafety },
   { href: "/app/settings/premium", label: C.premiumHeading },
-  /**
-   * A fifth tab, added for the closed beta, and the comment above already warns
-   * that four is where the horizontal scroll starts to matter on a narrow
-   * phone. That cost is accepted rather than unnoticed: during a beta the most
-   * valuable thing a member can do is tell us something is broken, and a route
-   * nobody can find collects nothing.
-   *
-   * It carries no `from` parameter, so a report filed from here records no
-   * screen — which is correct. They navigated to it, so wherever they were is
-   * not where the bug was.
-   */
-  { href: "/app/feedback", label: C.feedbackTab },
 ] as const;
 
 export function SettingsTabs() {
