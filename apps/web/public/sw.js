@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-8";
+const VERSION = "plusone-sw-9";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -81,10 +81,18 @@ function markIcon() {
 }
 
 /**
- * The events a push may make a sound for. Mirrors PUSH_MAY_ALERT in
- * packages/config/src/notifications.ts — see the note at the options below.
+ * The events that arrive SILENTLY. Everything else may make a sound.
+ *
+ * Mirrors PUSH_SILENT in packages/config/src/notifications.ts — see the note at
+ * the options below.
  */
-const MAY_ALERT = ["drop_ready", "beta_signup"];
+const SILENT = [
+  "like_received",
+  "nearby_joins",
+  "activity_nearby",
+  "premium_expiring",
+  "referral_converted",
+];
 
 self.addEventListener("push", (event) => {
   // A push with no data is legal and some services send one to test an
@@ -169,23 +177,22 @@ self.addEventListener("push", (event) => {
          * renotify only alongside a tag, and never alongside silent: both
          * combinations throw.
          *
-         * Silence is the default because §3.3 forbids the app nudging a member,
-         * and a buzz is the most literal nudge there is. Two events are not
-         * that:
+         * Sound is the default now, and silence the exception. A silent
+         * notification never peeks and never sounds — it goes to the tray and is
+         * found when the member next looks, which for a message is the same as
+         * not sending it.
          *
-         *   drop_ready   a scheduled moment the member opted into
-         *   beta_signup  not a member notification at all — it goes to the
-         *                admin roster, it is a request to ACT, and it was asked
-         *                for so that acting would not depend on refreshing a
-         *                screen. Silent, it arrived, was accepted by both push
-         *                services, and sat unnoticed in a tray. That is the
-         *                whole bug.
+         * §3.3 still holds, because the line it draws is narrower than "no
+         * sound": it forbids the APP manufacturing a reason to come back, not
+         * telling somebody a person acted. So the silent list is the events
+         * where nobody addressed the member — a like, new arrivals nearby, a
+         * subscription ending.
          *
-         * MUST MATCH PUSH_MAY_ALERT in packages/config/src/notifications.ts.
-         * This file is served as a static asset and cannot import it, so
+         * MUST MATCH PUSH_SILENT in packages/config/src/notifications.ts. This
+         * file is served as a static asset and cannot import it, so
          * push.test.ts reads this list back out and fails when they disagree.
          */
-        ...(MAY_ALERT.includes(payload.event) ? { renotify: true } : { silent: true }),
+        ...(SILENT.includes(payload.event) ? { silent: true } : { renotify: true }),
       })
       .catch(() => self.registration.showNotification(title, { body, data, tag })),
   );

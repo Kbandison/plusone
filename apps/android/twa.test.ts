@@ -103,3 +103,44 @@ describe("signing", () => {
     expect(manifest.signingKey.alias).toBe("");
   });
 });
+
+describe("the delegation service strips the origin", () => {
+  /**
+   * Chrome builds every web notification with the origin in `subText`, and it
+   * survives delegation — so a lock screen read "⁺One · www.loveplusone.app".
+   * The wordmark is deliberately non-obvious and the domain is not, which is
+   * the wrong half to print on an app whose premise is that disclosure belongs
+   * to the member.
+   *
+   * Bubblewrap REGENERATES DelegationService.java on `bubblewrap update`, which
+   * would silently drop this. That is what this test is for.
+   */
+  const service = readFileSync(
+    join(import.meta.dirname, "app/src/main/java/app/loveplusone/DelegationService.java"),
+    "utf8",
+  );
+
+  it("overrides the notification hook", () => {
+    expect(service).toMatch(/onNotifyNotificationWithChannel/);
+    expect(service).toMatch(/setSubText\(null\)/);
+  });
+
+  it("still registers the billing handler it was generated for", () => {
+    // The override is an addition, not a replacement. Losing this breaks Play
+    // Billing in a way that looks like the catalogue problem all over again.
+    expect(service).toMatch(/DigitalGoodsRequestHandler/);
+  });
+
+  it("falls back to Chrome's notification rather than losing it", () => {
+    // recoverBuilder can throw on a Notification it cannot reconstruct, and a
+    // throw inside the delegation path is silence — the exact failure mode this
+    // area has already produced twice.
+    expect(service).toMatch(/catch \(Throwable/);
+    expect(service).toMatch(/toPost = notification/);
+  });
+
+  it("guards the API level, since minSdk is below it", () => {
+    // recoverBuilder is API 24+; twa-manifest declares minSdkVersion 23.
+    expect(service).toMatch(/Build\.VERSION_CODES\.N/);
+  });
+});

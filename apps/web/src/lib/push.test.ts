@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { NOTIFICATIONS, PUSH_MAY_ALERT } from "@plusone/config";
+import { NOTIFICATIONS, PUSH_SILENT } from "@plusone/config";
 
 const WEB = join(import.meta.dirname, "../..");
 const read = (p: string) => readFileSync(join(WEB, p), "utf8");
@@ -136,9 +136,14 @@ describe("the service worker stores nothing", () => {
    * is checked separately, against PUSH_MAY_ALERT.
    */
   it("never sets silent and renotify at once", () => {
-    expect(sw).toMatch(/\?\s*\{ renotify: true \}\s*:\s*\{ silent: true \}/);
-    // Neither may appear anywhere else, which is the only way they could end
-    // up in one options object.
+    // Order-agnostic: which branch is which flipped on 2026-09-01 when silence
+    // became the exception rather than the default, and this failed on a
+    // correct change for the second time. What matters is that they are the two
+    // arms of ONE ternary and appear nowhere else — that is the only way they
+    // could end up in a single options object, which throws.
+    expect(sw).toMatch(
+      /\?\s*\{ (silent: true|renotify: true) \}\s*:\s*\{ (silent: true|renotify: true) \}/,
+    );
     expect(sw.match(/renotify/g)?.length).toBe(1);
     expect(sw.match(/silent: true/g)?.length).toBe(1);
   });
@@ -815,47 +820,77 @@ describe("the installed app", () => {
   });
 });
 
-describe("the two events that may make a sound", () => {
+describe("what arrives silently, and what may make a sound", () => {
   /**
-   * Silence is the default because §3.3 forbids the app nudging a member, and a
-   * buzz is the most literal nudge there is. Two events are not that, and one
-   * of them was silent by accident.
+   * The list was inverted on 2026-09-01. It used to name the two events that
+   * could alert and silence everything else, which meant a member was never
+   * told a person had written to them: a silent notification does not peek and
+   * does not sound, so it reaches the tray and is found whenever they next
+   * look. For a message that is the same as not sending it.
    *
-   * `beta_signup` goes to the admin roster and nobody else, it is a request to
-   * ACT rather than something that happened to the recipient, and it exists so
-   * that acting does not depend on refreshing a screen. Sent silent on
-   * 2026-09-01 it was accepted by both push services and sat unnoticed in a
-   * tray — every server-side check passed and the notification was invisible.
+   * §3.3 survives the inversion because the line it draws is narrower than "no
+   * sound" — it forbids the APP manufacturing a reason to come back, not
+   * telling somebody a person acted. The silent list is exactly the events
+   * where nobody addressed the member.
    */
   it("the service worker names the same events as the config", () => {
     // sw.js is served as a static asset and cannot import from a workspace
     // package, so the list is a literal there. This is what stops the copy
     // drifting — the failure it prevents is silent in the most literal sense.
-    const declared = /const MAY_ALERT = \[([^\]]*)\]/.exec(sw)?.[1] ?? "";
-    expect(declared.length, "MAY_ALERT not found in sw.js").toBeGreaterThan(0);
+    const declared = /const SILENT = \[([^\]]*)\]/.exec(sw)?.[1] ?? "";
+    expect(declared.length, "SILENT not found in sw.js").toBeGreaterThan(0);
 
     const inSw = [...declared.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]).sort();
-    expect(inSw).toEqual([...PUSH_MAY_ALERT].sort());
+    expect(inSw).toEqual([...PUSH_SILENT].sort());
   });
 
   it("every event it names is a real one", () => {
-    for (const event of PUSH_MAY_ALERT) {
+    for (const event of PUSH_SILENT) {
       expect(NOTIFICATIONS, `${event} is not a declared event`).toHaveProperty(event);
     }
   });
 
-  it("alerts and silence are mutually exclusive in the options", () => {
-    // `silent` and `renotify` throw when combined, and the throw happens inside
-    // a push handler — which is silence, so the failure mode of getting this
-    // wrong is the same as the bug it is fixing.
+  it("silence and renotify stay mutually exclusive", () => {
+    // Both combinations throw, and the throw happens inside a push handler —
+    // which is silence, so getting this wrong fails the way the bug did.
     expect(sw).toMatch(
-      /MAY_ALERT\.includes\(payload\.event\)\s*\?\s*\{ renotify: true \}\s*:\s*\{ silent: true \}/,
+      /SILENT\.includes\(payload\.event\)\s*\?\s*\{ silent: true \}\s*:\s*\{ renotify: true \}/,
     );
   });
 
-  it("keeps the list short, because the default is the rule", () => {
-    // A third entry needs an argument. "Worth a buzz" is exactly the judgement
-    // that expands until every event has it, at which point §3.3 is gone.
-    expect(PUSH_MAY_ALERT.length).toBeLessThanOrEqual(2);
+  it("never silences something a person did", () => {
+    // The whole point of the inversion. Somebody chose to reach this member;
+    // silencing that protects nobody and loses the message.
+    for (const event of [
+      "message_received",
+      "connect_received",
+      "connect_accepted",
+      "plan_proposed",
+      "plan_confirmed",
+      "reply_received",
+      "mention_received",
+    ] as const) {
+      expect(PUSH_SILENT, `${event} is somebody addressing the member`).not.toContain(event);
+    }
+  });
+
+  it("never silences a deadline", () => {
+    // Useless after the fact.
+    for (const event of [
+      "fuse_warning",
+      "chat_closed",
+      "connect_expiring",
+      "drop_ready",
+    ] as const) {
+      expect(PUSH_SILENT, `${event} is time-bound`).not.toContain(event);
+    }
+  });
+
+  it("keeps silencing the ones §3.3 is actually about", () => {
+    // claim_nearby_joins names this exact sentence as the engagement loop in
+    // its own migration. Nobody addressed the member in any of these.
+    for (const event of ["nearby_joins", "activity_nearby", "like_received"] as const) {
+      expect(PUSH_SILENT, `${event} is the app deciding you should come back`).toContain(event);
+    }
   });
 });

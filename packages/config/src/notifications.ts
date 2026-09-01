@@ -193,38 +193,49 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
 export const PUSH_APP_NAME = "⁺One" as const;
 
 /**
- * The events a push may make a sound for. Everything else arrives silent.
+ * The events that arrive SILENTLY. Everything else may make a sound.
  *
- * ── why silence is the default ──────────────────────────────────────────────
+ * ── this list was the other way round, and that was wrong ───────────────────
  *
- * §3.3 forbids the app nudging a member, and a buzz is the most literal form of
- * nudge there is. A message, a like, a connect — all of those are somebody
- * else's action arriving on a schedule the member did not choose, so they go
- * into the shade without a sound and are found when the member looks.
+ * It used to name the two events that could alert, and silence everything else
+ * on the reading that §3.3 forbids the app nudging a member. Kevin's call
+ * 2026-09-01 inverts it, and the argument is his: a member has to know somebody
+ * wrote to them. A notification that never peeks and never sounds goes to the
+ * tray and is found when they next look — which for a message is the same as
+ * not sending it.
  *
- * ── and why these two are not that ──────────────────────────────────────────
+ * §3.3 is intact, because the line it draws is narrower than "no sound". It
+ * forbids the APP manufacturing a reason to come back. It does not forbid
+ * telling somebody that a person acted:
  *
- *   drop_ready   A scheduled moment the member opted into. It is the one thing
- *                the app promises to do at a time, so it is the one thing worth
- *                announcing.
- *   beta_signup  Not a member notification at all. It goes to the admin roster
- *                and nobody else, it is a request TO ACT rather than something
- *                that happened to the recipient, and it was asked for
- *                explicitly so that acting would not depend on refreshing a
- *                screen. A silent one defeats the entire reason it exists —
- *                which is how it behaved on 2026-09-01: sent, accepted by both
- *                push services, and sitting unnoticed in a tray.
+ *   a person acted        a message, a connect, a reply, a plan. Somebody chose
+ *                         to reach the member. That is not the app nudging
+ *                         anybody, and silencing it protects nobody.
+ *   a deadline moved      the fuse warning, a chat closing. Time-bound, and
+ *                         useless after the fact.
+ *   the app decided       "new members joined near you", "somebody liked your
+ *                         post", "your premium is ending". Nobody addressed the
+ *                         member. These are exactly what §3.3 is about and they
+ *                         stay silent.
+ *
+ * `nearby_joins` is the clearest case: `claim_nearby_joins` already names it as
+ * the §3.3 engagement loop in its own migration. It arrives in the tray and
+ * makes no sound, forever.
  *
  * ── this list is duplicated in sw.js, and has to be ─────────────────────────
  *
- * `public/sw.js` is plain JavaScript served as a static file; it cannot import
- * from a workspace package. So the same two names are literals there, and
- * `push.test.ts` reads the file and fails when the two stop agreeing. That is
- * the same shape as every other guard in this repo that has to survive a copy.
- *
- * `silent` and `renotify` throw when combined, so an event is one or the other.
+ * `public/sw.js` is plain JavaScript served as a static file and cannot import
+ * from a workspace package, so the same names are literals there and
+ * `push.test.ts` fails when the two stop agreeing. `silent` and `renotify`
+ * throw when combined, so an event is one or the other.
  */
-export const PUSH_MAY_ALERT: readonly NotificationEvent[] = ["drop_ready", "beta_signup"];
+export const PUSH_SILENT: readonly NotificationEvent[] = [
+  "like_received",
+  "nearby_joins",
+  "activity_nearby",
+  "premium_expiring",
+  "referral_converted",
+];
 
 /** Every transactional email uses this subject. Content lives behind the login. */
 export const EMAIL_SUBJECT = "⁺One — you have an update" as const;
