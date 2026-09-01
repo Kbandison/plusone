@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-7";
+const VERSION = "plusone-sw-8";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -79,6 +79,12 @@ function markIcon() {
   // must never be able to cost the member the notification.
   return self.navigator.setAppBadge().catch(() => {});
 }
+
+/**
+ * The events a push may make a sound for. Mirrors PUSH_MAY_ALERT in
+ * packages/config/src/notifications.ts — see the note at the options below.
+ */
+const MAY_ALERT = ["drop_ready", "beta_signup"];
 
 self.addEventListener("push", (event) => {
   // A push with no data is legal and some services send one to test an
@@ -159,15 +165,29 @@ self.addEventListener("push", (event) => {
          * that is safe to use as a key, because it carries no identity.
          */
         tag,
-        // renotify only alongside a tag, and never alongside silent: both
-        // combinations throw. The drop is the one event worth a buzz — it is a
-        // scheduled moment the member opted into — so it is the one that is
-        // not silent, and therefore the only one that may re-alert.
-        ...(payload.event === "drop_ready" ? { renotify: true } : { silent: true }),
+        /**
+         * renotify only alongside a tag, and never alongside silent: both
+         * combinations throw.
+         *
+         * Silence is the default because §3.3 forbids the app nudging a member,
+         * and a buzz is the most literal nudge there is. Two events are not
+         * that:
+         *
+         *   drop_ready   a scheduled moment the member opted into
+         *   beta_signup  not a member notification at all — it goes to the
+         *                admin roster, it is a request to ACT, and it was asked
+         *                for so that acting would not depend on refreshing a
+         *                screen. Silent, it arrived, was accepted by both push
+         *                services, and sat unnoticed in a tray. That is the
+         *                whole bug.
+         *
+         * MUST MATCH PUSH_MAY_ALERT in packages/config/src/notifications.ts.
+         * This file is served as a static asset and cannot import it, so
+         * push.test.ts reads this list back out and fails when they disagree.
+         */
+        ...(MAY_ALERT.includes(payload.event) ? { renotify: true } : { silent: true }),
       })
-      .catch(() =>
-        self.registration.showNotification(title, { body, data, tag }),
-      ),
+      .catch(() => self.registration.showNotification(title, { body, data, tag })),
   );
 });
 

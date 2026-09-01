@@ -192,6 +192,40 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
 /** App name shown in push payloads. */
 export const PUSH_APP_NAME = "⁺One" as const;
 
+/**
+ * The events a push may make a sound for. Everything else arrives silent.
+ *
+ * ── why silence is the default ──────────────────────────────────────────────
+ *
+ * §3.3 forbids the app nudging a member, and a buzz is the most literal form of
+ * nudge there is. A message, a like, a connect — all of those are somebody
+ * else's action arriving on a schedule the member did not choose, so they go
+ * into the shade without a sound and are found when the member looks.
+ *
+ * ── and why these two are not that ──────────────────────────────────────────
+ *
+ *   drop_ready   A scheduled moment the member opted into. It is the one thing
+ *                the app promises to do at a time, so it is the one thing worth
+ *                announcing.
+ *   beta_signup  Not a member notification at all. It goes to the admin roster
+ *                and nobody else, it is a request TO ACT rather than something
+ *                that happened to the recipient, and it was asked for
+ *                explicitly so that acting would not depend on refreshing a
+ *                screen. A silent one defeats the entire reason it exists —
+ *                which is how it behaved on 2026-09-01: sent, accepted by both
+ *                push services, and sitting unnoticed in a tray.
+ *
+ * ── this list is duplicated in sw.js, and has to be ─────────────────────────
+ *
+ * `public/sw.js` is plain JavaScript served as a static file; it cannot import
+ * from a workspace package. So the same two names are literals there, and
+ * `push.test.ts` reads the file and fails when the two stop agreeing. That is
+ * the same shape as every other guard in this repo that has to survive a copy.
+ *
+ * `silent` and `renotify` throw when combined, so an event is one or the other.
+ */
+export const PUSH_MAY_ALERT: readonly NotificationEvent[] = ["drop_ready", "beta_signup"];
+
 /** Every transactional email uses this subject. Content lives behind the login. */
 export const EMAIL_SUBJECT = "⁺One — you have an update" as const;
 

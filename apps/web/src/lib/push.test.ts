@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { NOTIFICATIONS } from "@plusone/config";
+import { NOTIFICATIONS, PUSH_MAY_ALERT } from "@plusone/config";
 
 const WEB = join(import.meta.dirname, "../..");
 const read = (p: string) => readFileSync(join(WEB, p), "utf8");
@@ -126,11 +126,21 @@ describe("the service worker stores nothing", () => {
     );
   });
 
-  /** Both combinations throw, so they are never sent together. */
+  /**
+   * Both combinations throw, so they are never sent together.
+   *
+   * Pinned to the SHAPE rather than to the condition. This spelled out
+   * `payload.event === "drop_ready"` and so failed the moment a second event
+   * was allowed to alert — a correct change caught by a test that was
+   * describing the implementation instead of the rule. Which events may alert
+   * is checked separately, against PUSH_MAY_ALERT.
+   */
   it("never sets silent and renotify at once", () => {
-    expect(sw).toMatch(
-      /\.\.\.\(payload\.event === "drop_ready" \? \{ renotify: true \} : \{ silent: true \}\)/,
-    );
+    expect(sw).toMatch(/\?\s*\{ renotify: true \}\s*:\s*\{ silent: true \}/);
+    // Neither may appear anywhere else, which is the only way they could end
+    // up in one options object.
+    expect(sw.match(/renotify/g)?.length).toBe(1);
+    expect(sw.match(/silent: true/g)?.length).toBe(1);
   });
 
   it("reuses the open window rather than opening a second app", () => {
@@ -802,5 +812,50 @@ describe("the installed app", () => {
     const badge = read("src/app/app/app-badge.tsx");
     expect(badge).toMatch(/inNativeShell\(\)/);
     expect(badge).toMatch(/"PlusOneShell", "setBadge"/);
+  });
+});
+
+describe("the two events that may make a sound", () => {
+  /**
+   * Silence is the default because §3.3 forbids the app nudging a member, and a
+   * buzz is the most literal nudge there is. Two events are not that, and one
+   * of them was silent by accident.
+   *
+   * `beta_signup` goes to the admin roster and nobody else, it is a request to
+   * ACT rather than something that happened to the recipient, and it exists so
+   * that acting does not depend on refreshing a screen. Sent silent on
+   * 2026-09-01 it was accepted by both push services and sat unnoticed in a
+   * tray — every server-side check passed and the notification was invisible.
+   */
+  it("the service worker names the same events as the config", () => {
+    // sw.js is served as a static asset and cannot import from a workspace
+    // package, so the list is a literal there. This is what stops the copy
+    // drifting — the failure it prevents is silent in the most literal sense.
+    const declared = /const MAY_ALERT = \[([^\]]*)\]/.exec(sw)?.[1] ?? "";
+    expect(declared.length, "MAY_ALERT not found in sw.js").toBeGreaterThan(0);
+
+    const inSw = [...declared.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]).sort();
+    expect(inSw).toEqual([...PUSH_MAY_ALERT].sort());
+  });
+
+  it("every event it names is a real one", () => {
+    for (const event of PUSH_MAY_ALERT) {
+      expect(NOTIFICATIONS, `${event} is not a declared event`).toHaveProperty(event);
+    }
+  });
+
+  it("alerts and silence are mutually exclusive in the options", () => {
+    // `silent` and `renotify` throw when combined, and the throw happens inside
+    // a push handler — which is silence, so the failure mode of getting this
+    // wrong is the same as the bug it is fixing.
+    expect(sw).toMatch(
+      /MAY_ALERT\.includes\(payload\.event\)\s*\?\s*\{ renotify: true \}\s*:\s*\{ silent: true \}/,
+    );
+  });
+
+  it("keeps the list short, because the default is the rule", () => {
+    // A third entry needs an argument. "Worth a buzz" is exactly the judgement
+    // that expands until every event has it, at which point §3.3 is gone.
+    expect(PUSH_MAY_ALERT.length).toBeLessThanOrEqual(2);
   });
 });
