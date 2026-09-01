@@ -10,6 +10,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
 import { AppBadge } from "./app-badge";
 import { LiveRefresh } from "./live-refresh";
+import { FeedbackLink } from "./feedback-link";
 import { NavLinks } from "./nav-links";
 import { PublishHeight } from "./publish-height";
 import { NativeIapRecovery } from "./native-iap-recovery";
@@ -181,6 +182,8 @@ export default async function AppLayout({
               />
             ) : null}
           </Link>
+
+          <FeedbackLink />
 
           {/* Labelled, because a gear on its own is a shape. The 44px box is
               the LAYOUT.minTapTarget floor — an 18px icon is not a target. */}

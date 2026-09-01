@@ -1694,6 +1694,18 @@ export const DRAFT_COPY = {
       failed: "We could not save that just now. Try again in a moment.",
     },
     navSettings: "Settings",
+    /**
+     * "Feedback", not "Report".
+     *
+     * Kevin's call 2026-08-31, and it is the right one on this app
+     * specifically: "Report" is what a member taps to report a PERSON, and that
+     * control sits behind the overflow menu on every profile and every room
+     * post. Two things called Report, one about somebody's conduct and one
+     * about a scrolling bug, is a word doing two jobs on a surface where
+     * confusing them matters.
+     */
+    feedbackTab: "Feedback",
+    feedbackLabel: "Send feedback",
     crossCommunityHeading: "Other communities",
     deleteHeading: "Delete your account",
     deleteConfirmLabel: "Type DELETE to confirm",

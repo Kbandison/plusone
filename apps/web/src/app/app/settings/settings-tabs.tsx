@@ -39,7 +39,7 @@ const TABS = [
    * screen — which is correct. They navigated to it, so wherever they were is
    * not where the bug was.
    */
-  { href: "/app/feedback", label: "Report" },
+  { href: "/app/feedback", label: C.feedbackTab },
 ] as const;
 
 export function SettingsTabs() {
