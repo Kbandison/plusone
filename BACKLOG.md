@@ -1418,6 +1418,34 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     asked. If delegation were working, Chrome's own notification setting would
     be irrelevant — the TWA posts under its own package.
 
+    **CORRECTED 2026-09-01, and the correction is the useful part.** This entry
+    was written believing delegation was why nothing appeared. It was not.
+    Chrome had been posting all along and ANDROID was throwing the notification
+    away one layer below, because Chrome's **"Sites" notification channel group
+    was blocked**:
+
+    ```
+    NotificationChannelGroup{mId='sites', mName=Sites, mBlocked=true, mUserLockedFields=1}
+    NotificationService: isRecordBlocked = true
+    NotificationService: Suppressing notification from package com.android.chrome by user request.
+    ```
+
+    Unblocking it fixed everything with no code change: the same push now lands
+    in the shade, `pkg=com.android.chrome`, zero suppression lines. Confirmed
+    over adb end to end.
+
+    `mUserLockedFields=1` means it was set deliberately — almost certainly while
+    turning Chrome's notifications off to run the experiment above. The
+    app-level toggle does NOT restore the group, which is what made the
+    experiment misleading: it looked like "PlusOne on, Chrome off, nothing" was
+    about delegation when the second half had silently disabled every web
+    notification on the device.
+
+    **Everything below about delegation remains true and remains unsolved** —
+    Chrome posts rather than delegating, so the lock screen shows the origin
+    instead of the app's name. It is just not why anybody saw nothing, and
+    anybody picking this up should not start from that premise.
+
     **PlusOne was blocked in Android's notification settings until this
     session**, which is why nothing appeared for hours and why the app was
     absent from the "recently sent" list. Granting it did not enable delegation;
