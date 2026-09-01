@@ -211,7 +211,11 @@ export function PrivacyChoice({
   };
 
   return (
-    <form ref={form} action={action} className="mt-12 flex flex-col gap-8">
+    <form
+      ref={form}
+      action={action}
+      className={`${settings ? "mt-8" : "mt-12"} flex flex-col gap-8`}
+    >
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-3 text-[12.2px]">{C.privacyLabel}</legend>
 
@@ -293,8 +297,18 @@ export function PhotoGallery({
   photos,
   settings = false,
   premium = false,
+  profilePrivacy,
   children,
 }: {
+  /**
+   * The profile-wide setting, so a tile can show what actually happens to that
+   * photo rather than only whether it carries an override.
+   *
+   * With three states and one small control, "follows your profile" has no
+   * icon of its own that anybody could read — so the icon is the EFFECT (open
+   * eye or crossed-out eye) and the emphasis is whether it was chosen here.
+   */
+  profilePrivacy?: string | null;
   /**
    * On the profile rather than in onboarding.
    *
@@ -401,11 +415,14 @@ export function PhotoGallery({
   }
 
   if (order.length === 0) {
-    return <div className="mt-10 flex justify-center">{children}</div>;
+    return <div className={`${settings ? "mt-4" : "mt-10"} flex justify-center`}>{children}</div>;
   }
 
   return (
-    <section className="mt-10">
+    // Tighter on the profile, where nothing sits between this and the member's
+    // own name — the step keeps its room because it has a heading and a line of
+    // instruction above the grid. No sizes change either way; this is margin.
+    <section className={settings ? "mt-4" : "mt-10"}>
       {settings ? null : (
         <>
           <h2 className="text-center text-[12.2px]">{C.yoursHeading}</h2>
@@ -415,7 +432,7 @@ export function PhotoGallery({
         </>
       )}
 
-      <ul className="mt-6 flex flex-wrap justify-center gap-4">
+      <ul className={`${settings ? "mt-3" : "mt-6"} flex flex-wrap justify-center gap-4`}>
         {order.map((photo, index) => (
           <li
             key={photo.id}
@@ -505,6 +522,43 @@ export function PhotoGallery({
                 <Badge className="absolute bottom-1.5 left-1.5">{C.mainBadge}</Badge>
               ) : null}
 
+              {/* Per-photo privacy, upper-left, opposite the delete button.
+                
+                  It was a full-width dropdown UNDER each photo — six of them
+                  stacked below a grid, each wider than the picture it belonged
+                  to, and each truncating its own longest option. The grid read
+                  as a form rather than as photographs.
+                
+                  ── the icon is the EFFECT, the emphasis is the override ─────
+                
+                  Three states and one small control, and "follows your profile"
+                  has no glyph anybody could read. So the eye says what actually
+                  happens to THIS photo — open or crossed out, resolved against
+                  the profile-wide setting — and a solid accent ring says the
+                  choice was made here rather than inherited. A member scanning
+                  the grid sees which photos are blurred, which is the question
+                  they actually have; whether it was set per-photo is the
+                  second question and it is answered by the ring.
+                
+                  ── a real <select>, made invisible over a drawn button ──────
+                
+                  Not a button that cycles. Cycling hides two of the three
+                  options behind a tap and gives a screen reader nothing to
+                  choose from, and on a phone this way opens the native picker
+                  with all three named. The 16px size is on the select even
+                  though nothing can see it: iOS zooms the page on a focused
+                  control under 16px whether or not it is visible, and never
+                  zooms back. */}
+              <PhotoPrivacyControl
+                photoId={photo.id}
+                index={index}
+                override={photo.photoPrivacy ?? null}
+                profilePrivacy={profilePrivacy ?? null}
+                premium={premium}
+                onError={() => setPrivacyError(C.perPhotoSaveFailed)}
+                onClear={() => setPrivacyError(null)}
+              />
+
               <form action={remove} data-no-drag className="absolute -top-2 -right-2">
                 <input type="hidden" name="photo_id" value={photo.id} />
                 <button
@@ -518,36 +572,6 @@ export function PhotoGallery({
                   <TrashIcon />
                 </button>
               </form>
-            </div>
-
-            {/* Per-photo privacy (server 18b). Inside the tile, because a
-                separate list of six dropdowns somewhere else would make the
-                member match names to pictures. */}
-            <div data-no-drag className="mt-1.5">
-              <label className="sr-only" htmlFor={`privacy-${photo.id}`}>
-                {C.perPhotoLabel}
-              </label>
-              <select
-                id={`privacy-${photo.id}`}
-                defaultValue={photo.photoPrivacy ?? ""}
-                disabled={!premium}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setPrivacyError(null);
-                  void setPhotoPrivacy(
-                    photo.id,
-                    value === "" ? null : (value as "clear" | "blurred_until_connected"),
-                  ).then((result) => {
-                    if (!result.ok) setPrivacyError(C.perPhotoSaveFailed);
-                  });
-                }}
-                // 16px, or iOS zooms the page on focus and never zooms back.
-                className="w-[106.9px] rounded-lg border border-line-2 bg-surface px-1.5 py-1 text-[16px] disabled:opacity-50"
-              >
-                <option value="">{C.perPhotoFollow}</option>
-                <option value="clear">{C.perPhotoClear}</option>
-                <option value="blurred_until_connected">{C.perPhotoBlurred}</option>
-              </select>
             </div>
           </li>
         ))}
@@ -602,6 +626,128 @@ function TrashIcon() {
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The three-state privacy control that sits on a photo.
+ *
+ * States, and what each means to the member:
+ *
+ *   null                     follow the profile-wide setting
+ *   "clear"                  this one is always clear
+ *   "blurred_until_connected" this one is always blurred until you connect
+ *
+ * The eye is drawn from the RESOLVED state — override if there is one,
+ * otherwise the profile setting — so it always answers "what happens to this
+ * photo". The ring answers the second question: solid accent when the choice
+ * was made here, quiet dashed when it is inherited.
+ */
+function PhotoPrivacyControl({
+  photoId,
+  index,
+  override,
+  profilePrivacy,
+  premium,
+  onError,
+  onClear,
+}: {
+  photoId: string;
+  index: number;
+  override: string | null;
+  profilePrivacy: string | null;
+  premium: boolean;
+  onError: () => void;
+  onClear: () => void;
+}) {
+  const effective = override ?? profilePrivacy;
+  const blurred = effective === "blurred_until_connected";
+  const inherited = override === null;
+
+  const stateLabel = blurred ? C.perPhotoBlurred : C.perPhotoClear;
+  const label = inherited
+    ? C.perPhotoStateInherited(index + 1, stateLabel)
+    : C.perPhotoStateSet(index + 1, stateLabel);
+
+  return (
+    <div
+      data-no-drag
+      className={`ease-brand absolute top-1.5 left-1.5 flex size-8 items-center justify-center rounded-full border bg-ground/85 transition-colors duration-200 ${
+        inherited ? "border-dashed border-line-control text-ink-3" : "border-accent text-ink"
+      } ${premium ? "" : "cursor-not-allowed opacity-55"}`}
+    >
+      {blurred ? <EyeOffIcon /> : <EyeIcon />}
+
+      {/* Transparent over the drawn button, so the control looks like this and
+          behaves like a select: native picker on a phone, a real listbox to a
+          screen reader, and every option reachable without discovering that
+          tapping cycles.
+
+          Not rendered at all without premium — an invisible disabled select
+          over a live-looking button is the failure 5172fa2 fixed elsewhere,
+          where a locked control was pixel-identical to an unlocked one. The
+          opacity and the cursor above are what say it is locked. */}
+      {premium ? (
+        <select
+          aria-label={label}
+          defaultValue={override ?? ""}
+          onChange={(event) => {
+            const value = event.target.value;
+            onClear();
+            void setPhotoPrivacy(
+              photoId,
+              value === "" ? null : (value as "clear" | "blurred_until_connected"),
+            ).then((result) => {
+              if (!result.ok) onError();
+            });
+          }}
+          // 16px even though nothing can see it — iOS zooms the page on a
+          // focused control under 16px whether or not it is visible.
+          className="absolute inset-0 size-full cursor-pointer text-[16px] opacity-0"
+        >
+          <option value="">{C.perPhotoFollow}</option>
+          <option value="clear">{C.perPhotoClear}</option>
+          <option value="blurred_until_connected">{C.perPhotoBlurred}</option>
+        </select>
+      ) : null}
+    </div>
+  );
+}
+
+/** Drawn rather than imported, like every other icon in this app. */
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[15px]">
+      <path
+        d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.75" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="size-[15px]">
+      <path
+        d="M2.5 12S6 5.5 12 5.5c1.5 0 2.8.4 4 1M21.5 12S18 18.5 12 18.5c-1.5 0-2.8-.4-4-1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="m4 4 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
       />
     </svg>
   );

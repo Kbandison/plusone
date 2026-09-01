@@ -46,6 +46,17 @@ const C = DRAFT_COPY.app;
  */
 const SECTION = "mt-14 border-t-2 border-line-2 pt-10";
 
+/**
+ * The photos section, which is first and needs no rule above it.
+ *
+ * SECTION's border and padding separate one block of settings from the next.
+ * The first block has the member's own name and face above it instead, which
+ * already says where the page begins — so the rule was drawing a line under a
+ * heading nobody needed and holding ~96px of empty screen above the thing the
+ * page is mostly for.
+ */
+const FIRST_SECTION = "mt-6";
+
 export default async function ProfilePage() {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
@@ -137,10 +148,23 @@ export default async function ProfilePage() {
           which a finished member can reach and would never look for. A link
           was better than nothing and still asked somebody to go somewhere to
           do the most ordinary thing on this page. */}
-      <section className={SECTION}>
-        <h2 className="text-[0.972rem]">{C.profilePhotosHeading}</h2>
-
-        <PhotoGallery photos={photoList} settings premium={Boolean(isPremium)}>
+      {/* No heading, and less room above it than every other section gets.
+        
+          "Photos" over a grid of the member's own photographs is a label for
+          something already unmistakable, and removing it takes its margin with
+          it. FIRST_SECTION drops the rule and most of the padding for the same
+          reason: this sits directly under the member's own name and face, which
+          is enough of a boundary on its own. Nothing here changes a text or
+          image size — it is margin and a heading. */}
+      <section className={FIRST_SECTION}>
+        <PhotoGallery
+          photos={photoList}
+          settings
+          premium={Boolean(isPremium)}
+          // So each tile can show what actually happens to that photo, rather
+          // than only whether it carries an override.
+          profilePrivacy={photoPrivacy}
+        >
           {photoList.length < MAX_PHOTOS ? <PhotoUploader count={photoList.length} /> : null}
         </PhotoGallery>
 

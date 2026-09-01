@@ -760,7 +760,17 @@ export const DRAFT_COPY = {
      * photos, and see them properly once you have both said yes" — so the
      * meaning is on the same screen rather than lost with the words.
      */
-    perPhotoLabel: "Who sees this photo",
+    /**
+     * The control moved onto the photo, so its accessible name has to carry
+     * everything the old label and dropdown said between them: which photo,
+     * what happens to it, and whether that was chosen here or inherited.
+     *
+     * Sighted members get the same three facts from the eye and the ring.
+     */
+    perPhotoStateInherited: (n: number, state: string) =>
+      `Photo ${n}: ${state.toLowerCase()}, following your profile setting. Change who sees it.`,
+    perPhotoStateSet: (n: number, state: string) =>
+      `Photo ${n}: ${state.toLowerCase()}, set for this photo. Change who sees it.`,
     perPhotoFollow: "As profile",
     perPhotoClear: "Clear",
     perPhotoBlurred: "Blurred",
@@ -1663,7 +1673,6 @@ export const DRAFT_COPY = {
     profileLookingFor: "Looking for",
     profileNotSet: "Not set",
     profileRadius: "Search radius",
-    profilePhotosHeading: "Photos",
     profileNameLabel: "Your name",
     profileNameSaved: "Name saved.",
     /**

@@ -131,12 +131,7 @@ describe("the sections are told apart", () => {
  */
 describe("the page has no words of its own", () => {
   it("reads its labels from the copy file", () => {
-    for (const key of [
-      "profileLookingFor",
-      "profileRadius",
-      "profilePhotosHeading",
-      "profileModeHeading",
-    ]) {
+    for (const key of ["profileLookingFor", "profileRadius", "profileModeHeading"]) {
       expect(page, key).toMatch(new RegExp(`C\\.${key}\\b`));
     }
     // The intention moved out of the page and into a control that can change

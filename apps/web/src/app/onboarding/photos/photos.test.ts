@@ -372,37 +372,49 @@ describe("the overlays sit on the photo, not on whatever is added below it", () 
    *
    * The Main badge is `absolute bottom-1.5`, and while the tile was the image
    * alone that put it on the picture. Server 18b then added the per-photo
-   * privacy select INSIDE the tile, below the image — which grew the badge's
-   * containing block, so it slid down onto the select and sat across the word
-   * it was already truncating. Nothing errored. It just looked broken, and it
-   * shipped that way because 18b was never seen in a shell.
+   * privacy select INSIDE the tile, below the image, IN NORMAL FLOW — which
+   * grew the badge's containing block, so it slid down onto the select. Nothing
+   * errored; it just looked broken.
    *
-   * The fix is structural: the overlays live in a wrapper that only ever holds
-   * the image, so the next thing added below cannot repeat it. This checks the
-   * wrapper is still doing that job.
+   * The rule that prevents it is not "no select here" — the control now lives
+   * on the photo too, and that is fine because it is absolutely positioned. The
+   * rule is that the badge's positioning context contains NOTHING IN FLOW
+   * except the image. A flow margin inside it is the exact shape that broke it.
    */
   const source = form;
 
   it("finds the markup at all", () => {
-    // A silent zero would make the assertion below pass forever.
+    // A silent zero would make every assertion below pass forever.
     expect(source).toContain("<Badge");
-    expect(source).toContain("<select");
+    expect(source).toContain('className="relative"');
+    expect(source).toContain("PhotoPrivacyControl");
   });
 
-  it("closes the badge's container before the privacy select opens", () => {
-    const badgeAt = source.indexOf("<Badge");
-    const selectAt = source.indexOf("<select");
-    expect(badgeAt).toBeGreaterThan(-1);
-    expect(selectAt).toBeGreaterThan(badgeAt);
-
-    // Not a parser, and it does not need to be: what broke was the two sharing
-    // one positioning context, and a `</div>` between them is what says they
-    // no longer do.
-    const between = source.slice(badgeAt, selectAt);
+  it("keeps the image wrapper free of anything laid out below the image", () => {
+    // The wrapper runs from its own `relative` div to the close before the
+    // drag-handle list item ends. A `mt-`/`mb-` inside it is something placed
+    // in flow, which is what moves the badge.
+    const start = source.indexOf('<div className="relative">');
+    expect(start).toBeGreaterThan(-1);
+    const region = source.slice(start, source.indexOf("</li>", start));
+    expect(region.length).toBeGreaterThan(400);
+    const flowMargins = [...region.matchAll(/className="[^"]*\bm[tb]-\d/g)].map((m) => m[0]);
     expect(
-      between,
-      "the Main badge and the privacy select share a positioning context again — the badge will render on top of the select",
-    ).toContain("</div>");
+      flowMargins,
+      "something is laid out inside the badge's positioning context — the badge will move onto it",
+    ).toEqual([]);
+  });
+
+  it("positions the privacy control absolutely, rather than under the photo", () => {
+    // Sliced to the next top-level declaration rather than to the first
+    // `\n}` — the destructured props close with one, so a lazy match stopped
+    // after 115 characters and the assertion below passed on nothing.
+    const start = source.indexOf("function PhotoPrivacyControl");
+    expect(start).toBeGreaterThan(-1);
+    const next = source.indexOf("\nfunction ", start + 1);
+    const control = source.slice(start, next === -1 ? undefined : next);
+    expect(control.length).toBeGreaterThan(400);
+    expect(control).toMatch(/absolute top-1\.5 left-1\.5/);
   });
 });
 
@@ -426,11 +438,26 @@ describe("the privacy options fit the control that shows them", () => {
     }
   });
 
-  it("puts the meaning in the label, since the options cannot carry it", () => {
-    // A screen reader says "Who sees this photo: Blurred". The options name
-    // three states; what each one MEANS is spelled out by the profile-wide
-    // radio group on the same screen.
-    expect(DRAFT_COPY.photos.perPhotoLabel.toLowerCase()).toContain("photo");
-    expect(DRAFT_COPY.photos.perPhotoLabel.length).toBeGreaterThan(10);
+  it("puts everything the eye and the ring say into the accessible name", () => {
+    /**
+     * The control is now an icon on the photo, so there is no visible label and
+     * no visible option text — a sighted member reads the state off the eye and
+     * whether it was chosen here off the ring. The accessible name has to carry
+     * all three facts instead: which photo, what happens to it, and whether it
+     * is inherited.
+     */
+    const C = DRAFT_COPY.photos;
+    const inherited = C.perPhotoStateInherited(1, C.perPhotoBlurred).toLowerCase();
+    const set = C.perPhotoStateSet(2, C.perPhotoClear).toLowerCase();
+
+    expect(inherited).toContain("photo 1");
+    expect(inherited).toContain("blurred");
+    expect(inherited).toMatch(/following your profile/);
+
+    expect(set).toContain("photo 2");
+    expect(set).toContain("clear");
+    // The distinction is the whole reason there are two of these.
+    expect(set).not.toMatch(/following your profile/);
+    expect(set).toMatch(/for this photo/);
   });
 });
