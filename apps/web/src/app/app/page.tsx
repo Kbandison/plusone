@@ -8,6 +8,7 @@ import { photosFor, previewPhotosFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { FullCard, PreviewDropCard } from "./drop-card";
 import { redirect } from "next/navigation";
+import { Hint } from "./hint";
 
 // COPY.drop.header is spec copy (§3.4). DRAFT_COPY must never shadow it.
 export const metadata: Metadata = { title: COPY.drop.header };
@@ -69,6 +70,10 @@ export default async function TonightPage() {
   return (
     <main id="main">
       <h1 className="text-h2">{COPY.drop.header}</h1>
+
+      {/* The one thing about the Drop that every other app in this
+          category trains people out of expecting. */}
+      <Hint id="tonight-is-three" />
 
       {/* §6.1 step 2 — the honesty line, shown whenever the search went wider
           than the member asked for. Quietly widening is how apps pretend to be

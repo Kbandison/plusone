@@ -1356,6 +1356,55 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     unclassified raise messages, and the layout guard caught a duplicated top
     margin.
 
+25. ~~**Teaching a new member what this app does differently.**~~ — done
+    2026-08-31 at Kevin's ask. No migration: see below.
+
+    **Not a tour, deliberately.** The obvious build is a spotlight on first
+    launch — dim the screen, point at a button, Next, Next, Done. It is shown
+    BEFORE anybody has a question, so it reads as an obstacle to the app rather
+    than help with it, and none of it is on screen at the moment it becomes
+    relevant. Four inline notes instead, each on the one screen where its
+    mechanic is met.
+
+    **Four, because most of it was already written.** `dropConnectsFree` already
+    says replying costs nothing; `chatEmptyBody` already says no clever opener
+    is needed; `browseEmpty` already says what to do about an empty grid. A hint
+    repeating any of that is noise and a second copy that will drift. The rule
+    for adding one is that **it must teach something no screen says**, each
+    entry records the misunderstanding it prevents, and a test refuses a body
+    that duplicates existing copy.
+
+    What is covered: the Drop is three and does not grow; there is no like
+    button; the chat has seven days and a plan removes the timer; rooms are not
+    for dating.
+
+    **Nothing about this reaches the database, and that is the interesting
+    part.** Which tips somebody dismissed is behavioural data about how a
+    particular person uses an HSV and HIV app — server-side it would live in a
+    table, in every backup, and in any subject access request, for the sake of
+    not showing a four-line note twice. A cookie was the other candidate and is
+    worse: it is sent with every request, so it lands in access logs.
+    `localStorage` never leaves the browser.
+
+    The cost, stated rather than discovered: hints reappear on a new device,
+    after clearing site data, and once per shell — the TWA shares Chrome's
+    storage and the iOS WebView has its own. All three are a note somebody reads
+    again. A test greps every migration to keep it that way.
+
+    **The content is the disposable half.** `/app/feedback` shipped the same day
+    and is what should decide this list. After a few weeks of real reports
+    expect it to be wrong in ways nobody can predict from the inside — the
+    mechanism is the durable part, and changing the list costs one edit.
+
+    Two things worth keeping about the build. The lint rule
+    `react-hooks/set-state-in-effect` refused the obvious implementation and was
+    right: reading external storage is `useSyncExternalStore`, and the snapshot
+    has to be the RAW STRING rather than a parsed array, because snapshots are
+    compared by identity and a fresh array every call is an infinite loop. And
+    the store keeps its own listener set — the `storage` event fires in other
+    tabs and never in the one that wrote, so dismissing a hint would otherwise
+    leave it on screen until a reload.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they

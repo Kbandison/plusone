@@ -19,6 +19,7 @@ import { MemberPhotoFrame } from "../member-photo";
 import { MemberTraitChips } from "../member-traits";
 import { Badge } from "@/app/ui";
 import { BrowseFilters } from "./browse-filters";
+import { Hint } from "../hint";
 import {
   ARRAY_FILTER_PARAMS,
   ENUM_FILTERS,
@@ -296,6 +297,10 @@ export default async function BrowsePage({
   return (
     <main id="main">
       <h1 className="text-h2">{C.navBrowse}</h1>
+
+      {/* Browse is where somebody looks for a like button hardest: a grid
+          of faces and nineteen filters, and no swipe anywhere. */}
+      <Hint id="connect-is-a-reply" />
 
       {/* §3.4, verbatim — real counts only, never inflated. */}
       <p className="mt-4 text-[12.2px] text-ink-2">

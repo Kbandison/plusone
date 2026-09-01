@@ -145,6 +145,9 @@ export {
 } from "./feedback";
 export type { FeedbackKind, FeedbackStatus, FeedbackKindOption } from "./feedback";
 
+export { HINTS, HINT_IDS, HINTS_STORAGE_KEY } from "./hints";
+export type { Hint } from "./hints";
+
 export { COMMUNITY_GUIDELINES, GUIDELINES_INTRO, FAQ } from "./guidelines";
 export type { Section, FaqEntry } from "./guidelines";
 

@@ -28,6 +28,7 @@ import { MemberPhotoFrame } from "../../member-photo";
 import { photosFor } from "@/lib/photo-urls";
 import { BlockButton, ReportControl } from "@/app/app/safety/safety-controls";
 import { EmptyState } from "@/app/ui";
+import { Hint } from "../../hint";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navChats };
 
@@ -236,6 +237,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           <p className="mt-3 text-[10.5px] text-ink-3">{C.chatOriginNote}</p>
         </figure>
       ) : null}
+
+      {/* Above the conversation rather than beside the countdown.
+        
+          The countdown itself lives against the composer, which is a cramped
+          fixed bar — and a brand-new chat is exactly when somebody needs to
+          know what the number counts down TO, before it has moved at all. */}
+      <Hint id="the-fuse" />
 
       <ul className="mt-6 flex flex-col gap-3">
         {(messages ?? []).length === 0 ? (

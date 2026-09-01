@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { signOut } from "./sign-out";
 import { CrossCommunityToggle, DeleteAccount, SignInEmail } from "./settings-forms";
 import { InstallApp } from "./install-app";
+import { ResetHints } from "../hint";
 import { buttonClass } from "@/app/ui";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -75,6 +76,20 @@ export default async function SettingsPage() {
           lock screen shows the web address whether or not the app is
           installed, is in pushPrivacyNote as well. */}
       <InstallApp />
+
+      {/* Bringing the tips back.
+        
+          A one-line control rather than a card, and here rather than anywhere
+          else, because it is the only place somebody would go looking for it.
+          It exists at all because the tips are dismissed with a tap and there
+          is otherwise no way back — a member who cleared one by accident, or
+          who wants to re-read what the seven days mean, would have no route to
+          it and no reason to think one exists.
+        
+          Clearing them is purely local: the dismissals live in localStorage and
+          never reach the database, so this touches nothing but this browser.
+          See the storage note in packages/config/src/hints.ts. */}
+      <ResetHints />
 
       <SignInEmail
         email={auth.user?.email ?? null}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
+import { Hint } from "../hint";
 
 export const metadata: Metadata = { title: DRAFT_COPY.app.navRooms };
 
@@ -40,6 +41,8 @@ export default async function RoomsPage() {
   return (
     <main id="main">
       <h1 className="text-h2">{C.roomsHeading}</h1>
+
+      <Hint id="rooms-are-not-dating" />
       <p className="mt-8 text-[13px] text-ink-2">{C.roomsEmpty}</p>
     </main>
   );
