@@ -163,6 +163,23 @@ export const PUSH_APP_NAME = "⁺One" as const;
 export const EMAIL_SUBJECT = "⁺One — you have an update" as const;
 
 /**
+ * The two lines the branded email adds around a payload, and nothing else.
+ *
+ * Kept here rather than in the mailer so they are checked by the same tests as
+ * the rest of the matrix: both are content-blind, and the action label has to
+ * say where somebody is going without saying what they will find.
+ *
+ * The footers differ because the senders do. A notification can be turned off
+ * and saying so is honest; the waitlist confirmation has no member behind it,
+ * no preference to respect and no Settings to reach, so pointing that recipient
+ * at a switch they do not have would invent a relationship that does not exist.
+ */
+export const EMAIL_ACTION_LABEL = "Open ⁺One" as const;
+export const EMAIL_NOTIFICATION_FOOTER = "You can turn these off in Settings." as const;
+export const EMAIL_DIRECT_FOOTER =
+  "You are receiving this because this address was entered on loveplusone.app." as const;
+
+/**
  * §8 — "count granularity < 5". Nearby-join counts are bucketed so a small local
  * pool can't be used to infer who joined.
  */

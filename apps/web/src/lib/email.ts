@@ -1,9 +1,15 @@
 import "server-only";
 
-import { parseClientEnv } from "@plusone/config";
+import {
+  EMAIL_ACTION_LABEL,
+  EMAIL_DIRECT_FOOTER,
+  EMAIL_NOTIFICATION_FOOTER,
+  parseClientEnv,
+} from "@plusone/config";
 import { notify } from "@plusone/logic";
 
 import { serviceClient } from "./cron";
+import { brandEmailHtml } from "./email-brand";
 
 /** What `emails_for` returns. Confirmed addresses only — see the migration. */
 interface Recipient {
@@ -23,15 +29,28 @@ const BATCH = 100;
  * cohort, and returned early when it was empty. Their switches said email and
  * nothing read them.
  *
- * ── plain text, and no HTML ──────────────────────────────────────────────────
+ * ── branded HTML, and still no remote resource ───────────────────────────────
  *
- * Every other transactional mail on the internet is HTML with a remote image in
- * it, because a remote image is how you learn the mail was opened. That is
- * precisely the reason not to: a request for a pixel tells a server that this
- * address read a message from ⁺One, at a time, from an IP — and mail clients
- * that proxy images do not remove the signal, they only move who sees it. There
- * is nothing here worth laying out, so text costs nothing and carries none of
- * that.
+ * This said "plain text, and no HTML" until 2026-09-01, and the reason it gave
+ * was right about the wrong thing. It was this: every other transactional mail
+ * is HTML with a remote image in it, because a remote image is how you learn a
+ * mail was opened — a pixel request tells a server that this address read a
+ * message from ⁺One, at a time, from an IP, and clients that proxy images move
+ * who sees that signal rather than removing it.
+ *
+ * All of which is an argument against REMOTE RESOURCES, not against markup. It
+ * was doing duty as an argument against both, and the second one was never
+ * examined: two designed auth emails and a bare line of text is not a decision,
+ * it is an omission with a rationale attached.
+ *
+ * So: branded now (Kevin, 2026-09-01), with the actual reason kept intact.
+ * `email-brand.ts` emits no image, no stylesheet, no font and no URL that is
+ * not the member's own destination, and `email-brand.test.ts` fails on any of
+ * them. Styled while asking for nothing is the whole point.
+ *
+ * BOTH parts go, always. The text is not a fallback nobody sees — it is what a
+ * client with HTML off renders, what a screen reader handles most reliably, and
+ * what keeps this out of a spam folder.
  *
  * ── content-blindness reaches this file too ──────────────────────────────────
  *
@@ -75,7 +94,13 @@ export async function sendDirectEmail(message: {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, ...message }),
+      // Text AND html. Its own footer, because this recipient is not a member:
+      // there is no switch to point them at and no account behind the address.
+      body: JSON.stringify({
+        from,
+        ...message,
+        html: brandEmailHtml({ body: message.text, footer: EMAIL_DIRECT_FOOTER }),
+      }),
     });
     if (!response.ok) {
       // Status only. Resend echoes the request back in an error body, and both
@@ -141,7 +166,7 @@ export function emailNotifier(): notify.Notifier {
        */
       const { NEXT_PUBLIC_APP_URL: appUrl } = parseClientEnv(process.env);
 
-      const messages: { to: string; subject: string; text: string }[] = [];
+      const messages: { to: string; subject: string; text: string; html: string }[] = [];
       let unreachable = 0;
 
       for (const delivery of wanted) {
@@ -156,10 +181,22 @@ export function emailNotifier(): notify.Notifier {
         }
 
         notify.assertContentBlind(delivery.payload);
+        const url = `${appUrl}${delivery.payload.path}`;
         messages.push({
           to,
           subject: delivery.payload.emailSubject,
-          text: `${delivery.payload.body}\n\n${appUrl}${delivery.payload.path}\n`,
+          // BOTH parts, always. The text is not a fallback nobody sees — it is
+          // what a client with images or HTML off renders, what a screen reader
+          // reads most reliably, and what keeps this out of a spam folder.
+          // Dropping it to send only HTML would be a regression dressed as a
+          // redesign.
+          text: `${delivery.payload.body}\n\n${url}\n`,
+          html: brandEmailHtml({
+            body: delivery.payload.body,
+            url,
+            action: EMAIL_ACTION_LABEL,
+            footer: EMAIL_NOTIFICATION_FOOTER,
+          }),
         });
       }
 
