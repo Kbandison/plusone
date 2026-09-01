@@ -292,9 +292,32 @@ export interface BetaInstall {
   readonly accountLabel: string | null;
   readonly accountHint: string | null;
   readonly heading: string;
+  /**
+   * For somebody ALREADY on the tester list — which is the normal case.
+   *
+   * The store account is collected at signup, so an invitation is only sent
+   * after it exists, and the person sending it adds them to the track in the
+   * same sitting. By the time the invitation is opened, being added has already
+   * happened.
+   *
+   * The first version of these steps said "we add your Google account" at step
+   * two, in the future tense, on a page opened after we had. That broke the
+   * rule this file states two paragraphs up — every step is what the PERSON
+   * does, not what we do — and it told a tester to wait for something that was
+   * already finished.
+   */
   readonly steps: readonly string[];
   /** Said before they start waiting, not after they ask. */
   readonly wait: string | null;
+  /**
+   * For the exception: somebody who supplied their store account on the
+   * invitation page rather than at signup, so nobody has added them yet.
+   *
+   * Reachable two ways — a row that predates the join-form field, and anybody
+   * who says they are testing on a different phone than they told us.
+   */
+  readonly pendingSteps: readonly string[];
+  readonly pendingWait: string | null;
 }
 
 export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
@@ -325,18 +348,24 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
      * That makes BETA_OPT_IN_URL.android load-bearing rather than a nicety.
      */
     steps: [
+      "Open the tester link below on that phone, signed in to the Google account you gave us.",
+      "Tap Become a tester.",
+      "Follow Download it on Google Play from the same page, and install.",
+    ],
+    /**
+     * Still a wait note, but about PLAY catching up rather than about us. The
+     * failure is indistinguishable from a broken link — the store says the app
+     * cannot be found — so somebody who taps straight through concludes we sent
+     * a dead URL.
+     */
+    wait: "Your account is already on the list. Play can take an hour or two to notice, and until it does the store may say Plus One cannot be found — that is expected and it is not a dead link. Nothing is lost by opening it in a browser meanwhile; it is the same app with the same account.",
+    pendingSteps: [
       "Tell us your Google account below, and we add it to the tester list. Nothing before this works.",
       "Open the tester link on that phone, signed in to that account, and tap Become a tester.",
       "Follow Download it on Google Play from the same page, and install.",
     ],
-    /**
-     * The ordering above is a dependency, not a suggestion, and the wait note
-     * exists because the failure is indistinguishable from a broken link: the
-     * opt-in page tells an unlisted person the programme is not available, and
-     * the store listing tells them the app cannot be found. Somebody who tries
-     * the links before we have added them concludes we sent them a dead URL.
-     */
-    wait: "The links do nothing until we have added your account, and Play can take an hour or two to catch up after that — until it does, the store may say Plus One cannot be found. That is expected and it is not a dead link. You do not have to wait for any of it: signing in below works right now in your browser, and it is the same app with the same account.",
+    pendingWait:
+      "The links do nothing until we have added your account, which usually takes a day. You do not have to wait for it: opening Plus One in a browser works right now, and it is the same app with the same account.",
   },
 
   /**
@@ -362,17 +391,24 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
      */
     steps: [
       "Install TestFlight from the App Store first. Apple's invitation does nothing without it.",
-      "We add your Apple ID to the test group.",
-      "Apple emails that address an invitation — or we send you a TestFlight link, if we are using one. Open it on the device and it hands you to TestFlight.",
+      "Watch for an email from Apple, sent to the Apple ID you gave us. Open it on the device and it hands you to TestFlight.",
       "Install Plus One from TestFlight.",
     ],
+    pendingSteps: [
+      "Install TestFlight from the App Store first. Apple's invitation does nothing without it.",
+      "Tell us your Apple ID below, and we add it to the test group.",
+      "Apple emails that address an invitation. Open it on the device and it hands you to TestFlight.",
+      "Install Plus One from TestFlight.",
+    ],
+    pendingWait:
+      "Apple reviews builds before they reach testers, and we cannot predict how long that takes. Opening Plus One in a browser works right now meanwhile — it is the same app.",
     /**
      * Deliberately vaguer than Android's, and honestly so. An iOS build reaches
      * external testers only after Apple's Beta App Review, which is a queue we
      * do not control and cannot predict — and a promised date we miss is worse
      * than no date. Do not add one here without a reason to believe it.
      */
-    wait: "Apple reviews builds before they reach testers, and we cannot predict how long that takes. Signing in below works right now in your browser meanwhile — it is the same app.",
+    wait: "Your Apple ID is already on the test group. Apple reviews builds before they reach testers and we cannot predict how long that takes, so the invitation may not be immediate. Opening Plus One in a browser works right now meanwhile — it is the same app with the same account.",
   },
 
   browser: {
@@ -393,6 +429,12 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
      * a bug and never seeing the feature.
      */
     wait: "On an iPhone, Add to Home Screen is also what lets Plus One send you notifications at all — Safari will not deliver them to a tab.",
+    // Nothing to be added to and nothing to wait for, so the two are the same.
+    pendingSteps: [
+      "Sign in below. That is the whole thing — the app in a browser is the same app.",
+      "On a phone, Add to Home Screen gives it an icon and its own window.",
+    ],
+    pendingWait: null,
   },
 };
 
@@ -538,7 +580,15 @@ const IOS_PUBLIC_LINK: BetaInstall = {
     "Open the TestFlight link below on the device itself.",
     "Tap Start Testing, then install Plus One.",
   ],
-  wait: "Nothing to wait for and nothing for us to do — the link adds you. Signing in below works in your browser too, and it is the same app with the same account.",
+  wait: "Nothing to wait for and nothing for us to do — the link adds you. Opening Plus One in a browser works too, and it is the same app with the same account.",
+  // A public link enrols the tester, so there is no state in which somebody is
+  // waiting to be added.
+  pendingSteps: [
+    "Install TestFlight from the App Store first. The link below does nothing without it.",
+    "Open the TestFlight link below on the device itself.",
+    "Tap Start Testing, then install Plus One.",
+  ],
+  pendingWait: null,
 };
 
 /**

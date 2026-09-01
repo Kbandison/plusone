@@ -231,7 +231,7 @@ export const DRAFT_COPY = {
 
     /** Shown once the store account came from signup, so nothing is asked twice. */
     accountOnFile: (email: string) =>
-      `We have ${email} for the store invitation. Nothing else to do here.`,
+      `You have already been added, using ${email}. Nothing else to do here.`,
     differentPhone: "Testing on a different phone?",
 
     savedAndroid:

@@ -282,9 +282,15 @@ describe("a tester is told how to get the app", () => {
   });
 
   for (const [id, install] of Object.entries(BETA_INSTALL)) {
-    it(`${id}: has real steps rather than a promise`, () => {
-      expect(install.steps.length).toBeGreaterThanOrEqual(2);
-      for (const step of install.steps) expect(step.length).toBeGreaterThan(20);
+    it(`${id}: has real steps rather than a promise, in both sets`, () => {
+      for (const set of [install.steps, install.pendingSteps]) {
+        expect(set.length).toBeGreaterThanOrEqual(2);
+        // On the joined text, not per step. "Tap Become a tester." is a real
+        // instruction and twenty characters, and the per-step floor was
+        // failing it for being short rather than for being vague.
+        expect(set.join(" ").length).toBeGreaterThan(120);
+        for (const step of set) expect(step.length).toBeGreaterThan(10);
+      }
     });
   }
 
@@ -319,10 +325,12 @@ describe("a tester is told how to get the app", () => {
     expect(BETA_INSTALL.browser.wait ?? "").toMatch(/home screen/i);
   });
 
-  it("puts being added BEFORE the links, because that is a dependency", () => {
+  it("puts being added BEFORE the links, for anybody not yet on the list", () => {
     // An unlisted person opening either link is told the programme is not
     // available or the app cannot be found — both read as a dead URL we sent.
-    const steps = BETA_INSTALL.android.steps;
+    // This is the PENDING set: somebody who supplied their account here rather
+    // than at signup, so nobody has added them yet.
+    const steps = BETA_INSTALL.android.pendingSteps;
     const listedAt = steps.findIndex((x) => /tell us your google account/i.test(x));
     const linkAt = steps.findIndex((x) => /tester link/i.test(x));
     expect(listedAt).toBeGreaterThan(-1);
@@ -425,8 +433,9 @@ describe("which link actually puts somebody on a tester list", () => {
 
   it("the Android steps do not claim the link enrols anybody", () => {
     const android = betaInstallFor("android");
-    // Being added comes first and the copy says nothing before it works.
-    expect(android.steps[0]?.toLowerCase()).toMatch(/we add it|tester list/);
+    // Being added comes first in the pending set, and the copy says nothing
+    // before it works.
+    expect(android.pendingSteps[0]?.toLowerCase()).toMatch(/we add it|tester list/);
     expect(android.accountLabel).toMatch(/google/i);
   });
 });
@@ -454,7 +463,14 @@ describe("a TestFlight public link changes what we may ask for", () => {
       expect(ios.steps.join(" ").toLowerCase()).toMatch(/start testing/);
     } else {
       expect(ios.accountLabel).toMatch(/apple/i);
-      expect(ios.steps.join(" ").toLowerCase()).toMatch(/we add your apple id/);
+      // In the PENDING set — the one shown to somebody we are still waiting on
+      // an Apple ID from. Matched on the intent rather than one phrasing: the
+      // step reads "Tell us your Apple ID below, and we add it to the test
+      // group", and pinning the exact words made this fail on a rewrite that
+      // said the same thing.
+      const pending = ios.pendingSteps.join(" ").toLowerCase();
+      expect(pending).toMatch(/apple id/);
+      expect(pending).toMatch(/we add/);
     }
   });
 
@@ -506,4 +522,37 @@ describe("the store account is asked for once, at signup", () => {
     expect(C.errors.storeEmailRequired.length).toBeGreaterThan(0);
     expect(C.errors.storeEmailInvalid.length).toBeGreaterThan(0);
   });
+});
+
+describe("the normal steps do not describe work that is already done", () => {
+  /**
+   * The rule this file already stated and the steps then broke: every step is
+   * what the PERSON does, not what we do.
+   *
+   * A store account is collected at signup, so an invitation is only sent once
+   * it exists — and whoever sends it adds them to the track in the same
+   * sitting. By the time the invitation is opened, being added has happened.
+   * Step two saying "we add your Apple ID" describes a finished action in the
+   * future tense and reads as a delay that is not there.
+   */
+  for (const id of ["android", "ios"] as const) {
+    it(`${id}: the settled steps promise nothing on our part`, () => {
+      const settled = BETA_INSTALL[id].steps.join(" ").toLowerCase();
+      for (const phrase of ["we add", "we will add", "tell us your"]) {
+        expect(settled, `"${phrase}" describes something already done`).not.toContain(phrase);
+      }
+    });
+
+    it(`${id}: says plainly that they are already on the list`, () => {
+      // The difference between the two sets has to be visible to the reader,
+      // not only to the code choosing between them.
+      const wait = (BETA_INSTALL[id].wait ?? "").toLowerCase();
+      expect(wait).toMatch(/already/);
+    });
+
+    it(`${id}: the pending set is the one that says we still have to act`, () => {
+      const pending = BETA_INSTALL[id].pendingSteps.join(" ").toLowerCase();
+      expect(pending).toMatch(/we add|tell us your/);
+    });
+  }
 });

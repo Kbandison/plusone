@@ -88,15 +88,30 @@ export function Install({
 
       {chosen ? (
         <div className={settled ? "" : "mt-8"}>
+          {/* Which set of steps depends on whether somebody has already been
+              added to the track.
+            
+              `settled` means the store account came from the JOIN form, which
+              is the normal case: an invitation is only sent once that exists,
+              and whoever sends it adds them to the track in the same sitting.
+              So by the time this page is open, being added has happened — and
+              telling them "we add your Apple ID" in the future tense describes
+              a step that is finished and reads as a delay that is not there.
+            
+              The pending set is for the exception: a row that predates the join
+              form, or somebody who has just said they are on a different phone
+              than they told us. Nobody has added those yet. */}
           <h3 className="text-[13.8px]">{chosen.heading}</h3>
           <ol className="mt-3 flex list-decimal flex-col gap-2 pl-5 text-[12.6px] leading-[1.6] text-ink-2">
-            {chosen.steps.map((step) => (
+            {(settled ? chosen.steps : chosen.pendingSteps).map((step) => (
               <li key={step}>{step}</li>
             ))}
           </ol>
 
-          {chosen.wait ? (
-            <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">{chosen.wait}</p>
+          {(settled ? chosen.wait : chosen.pendingWait) ? (
+            <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">
+              {settled ? chosen.wait : chosen.pendingWait}
+            </p>
           ) : null}
 
           {/* Both Android links, in the order they work in. The opt-in page
