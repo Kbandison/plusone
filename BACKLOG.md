@@ -1405,9 +1405,38 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     tabs and never in the one that wrote, so dismissing a hint would otherwise
     leave it on screen until a reload.
 
-26. **Chrome posts the TWA's notifications instead of delegating them, and
-    everything on our side is verified correct.** Found 2026-09-01 with a clean
-    experiment of Kevin's, which is what makes it worth recording.
+26. ~~**Chrome posts the TWA's notifications instead of delegating them.**~~ —
+    **RESOLVED 2026-09-01, and the cause is a cache nobody would guess at.**
+
+    Chrome evaluates whether the TWA can post notifications and REMEMBERS the
+    answer. `POST_NOTIFICATIONS` was denied on the app, so Chrome checked once,
+    found the app could not post, and fell back to posting under its own package
+    — correctly. Granting the permission afterwards changed nothing, because
+    Chrome never asked again.
+
+    Force-stopping Chrome makes it re-evaluate. Immediately after:
+
+    ```
+    TWAConnectionPool: Found app.loveplusone.DelegationService to handle
+                       request for https://www.loveplusone.app/
+    pkg=app.loveplusone   channel=general_channel_id
+    ```
+
+    Posted by the APP, on the app's own channel, with the app's name and icon —
+    which is what a member sees on a lock screen instead of the origin.
+
+    **So the order matters and nothing says so.** Grant the permission BEFORE
+    Chrome first tries to post for that origin, or force-stop Chrome afterwards.
+    On a fresh install the app's own prompt does this correctly; granting
+    through system settings later does not, because by then Chrome has already
+    decided.
+
+    Everything below was verified along the way and none of it was ever wrong —
+    kept because it is the elimination that made the cache the only thing left.
+
+    ── the original finding ───────────────────────────────────────────────────
+
+    Found 2026-09-01 with a clean experiment of Kevin's.
 
     ```
     PlusOne notifications ON,  Chrome ON   ->  a CHROME notification appears
