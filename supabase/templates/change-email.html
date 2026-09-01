@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <style>
+      @media (prefers-color-scheme: dark) {
+        .p1-ground { background-color: #14110f !important; }
+        .p1-card {
+          background-color: #1b1714 !important;
+          border-color: rgba(237, 231, 222, 0.12) !important;
+        }
+        .p1-mark { color: #ede7de !important; }
+        .p1-accent { color: #d69a4e !important; }
+        .p1-ink { color: #ede7de !important; }
+        .p1-ink2 { color: #a79c90 !important; }
+        .p1-ink3 { color: #8d8074 !important; }
+        .p1-btn { background-color: #d69a4e !important; }
+        .p1-btn-ink { color: #14110f !important; }
+        .p1-rule { border-top-color: rgba(237, 231, 222, 0.06) !important; }
+      }
+    </style>
+  </head>
+  <!--
+    Pasted into Supabase → Authentication → Emails → Change Email Address.
+
+    Shares its shell with magic-link.html deliberately, and there is no build
+    step to share it FOR us — these are pasted by hand. email-templates.test.ts
+    pins the palette and the wordmark across both files so the two cannot drift
+    into different brands unnoticed.
+
+    THIS one is a link and cannot be a code: the app has no screen to type an
+    email-change token into, so `/auth/callback` handling `?token_hash=&type=`
+    is the whole mechanism. That makes it depend on Site URL being correct — see
+    Kevin item 6 — in a way the sign-in email deliberately does not.
+  -->
+  <body class="p1-ground" style="margin:0; padding:0; background-color:#F4EFE7;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+      Confirm this address to finish the change.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           class="p1-ground" style="background-color:#F4EFE7;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                 class="p1-card"
+                 style="max-width:480px; background-color:#FBF8F3; border:1px solid rgba(28,25,23,0.13); border-radius:16px;">
+            <tr>
+              <td style="padding:36px 36px 28px 36px;">
+
+                <p class="p1-mark" style="margin:0 0 28px 0; font-family:Georgia,'Times New Roman',serif; font-size:26px; line-height:1; color:#1C1917;">
+                  <span class="p1-accent" style="color:#9F5B41;">&#8314;</span>One
+                </p>
+
+                <p class="p1-ink" style="margin:0 0 6px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#1C1917;">
+                  Confirm this email address.
+                </p>
+                <p class="p1-ink2" style="margin:0 0 24px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:1.65; color:#6B6259;">
+                  Somebody asked to use this address for their account. It will not be used until you confirm it here.
+                </p>
+
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td class="p1-btn" align="center"
+                        style="background-color:#9F5B41; border-radius:999px;">
+                      <a href="{{ .ConfirmationURL }}" class="p1-btn-ink"
+                         style="display:inline-block; padding:13px 26px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:14px; line-height:1; color:#FBF8F3; text-decoration:none;">
+                        Confirm this address
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <hr class="p1-rule" style="border:none; border-top:1px solid rgba(28,25,23,0.07); margin:28px 0 0 0;" />
+
+                <p class="p1-ink3" style="margin:20px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7; color:#766B60;">
+                  If you did not ask for this, ignore it. The address is not attached to anything until this link is used, and nothing has changed on your account.
+                </p>
+
+              </td>
+            </tr>
+          </table>
+
+          <p class="p1-ink3" style="margin:20px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:11.5px; line-height:1.6; color:#766B60;">
+            Sent by &#8314;One &middot; you are receiving this because this address was entered on an account.
+          </p>
+
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -5,9 +5,29 @@ in this project, so nothing here is applied by a script or checked by CI. They
 live in the repo so the markup is reviewable and so the next person does not
 rebuild it from a screenshot.
 
-| file              | dashboard location                   |
-| ----------------- | ------------------------------------ |
-| `magic-link.html` | Authentication → Emails → Magic Link |
+| file                | dashboard location                             | mechanism |
+| ------------------- | ---------------------------------------------- | --------- |
+| `magic-link.html`   | Authentication → Emails → Magic Link           | a code    |
+| `change-email.html` | Authentication → Emails → Change Email Address | a link    |
+
+Those are the only two Supabase sends for this app. Sign-in is `signInWithOtp`
+(Magic Link) and Settings is `updateUser({ email })` (Change Email Address);
+`shouldCreateUser: false` means Confirm Signup never fires, and there are no
+passwords, so there is no reset.
+
+**The app's OWN emails are not here and are not HTML.** Notifications and the
+waitlist confirmation go through Resend as plain text, deliberately — see the
+docblock in `apps/web/src/lib/email.ts`. The reason is not taste: an HTML mail
+with a remote image is how open-tracking works, and a pixel request tells a
+server that this address opened a message from ⁺One, at a time, from an IP.
+These two templates are styled and still request nothing remote, which
+`email-templates.test.ts` pins.
+
+**`change-email.html` is a LINK and cannot be a code.** The app has no screen to
+type an email-change token into, so `/auth/callback` handling
+`?token_hash=&type=` is the whole mechanism — which means it depends on Site URL
+being right, in a way the sign-in email deliberately does not. While Site URL is
+`http://localhost:3000` (Kevin item 6), **this email is broken**.
 
 ## magic-link.html
 
