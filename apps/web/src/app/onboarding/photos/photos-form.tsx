@@ -674,8 +674,17 @@ function PhotoPrivacyControl({
   return (
     <div
       data-no-drag
-      className={`ease-brand absolute top-1.5 left-1.5 flex size-8 items-center justify-center rounded-full border bg-ground/85 transition-colors duration-200 ${
-        inherited ? "border-dashed border-line-control text-ink-3" : "border-accent text-ink"
+      /* Mirrors the delete button exactly: same size, same overhang, same
+         surface and shadow, opposite corner. They are the two controls that act
+         on one photo, so anything that differs between them — an inset instead
+         of an overhang, a translucent fill instead of the card surface — reads
+         as one of them being a different KIND of thing.
+      
+         What differs is only the border, which is the one distinction being
+         drawn: dashed and quiet while this photo follows the profile setting,
+         solid accent once a choice has been made here. */
+      className={`ease-brand absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full border bg-surface shadow-sm transition-colors duration-200 ${
+        inherited ? "border-dashed border-line-2 text-ink-2" : "border-accent text-ink"
       } ${premium ? "" : "cursor-not-allowed opacity-55"}`}
     >
       {blurred ? <EyeOffIcon /> : <EyeIcon />}

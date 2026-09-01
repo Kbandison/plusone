@@ -1919,6 +1919,14 @@ export const NOTIFICATION_LINES: Record<NotificationEvent, NotificationLine> = {
    */
   activity_nearby: () => "People are active near you.",
   referral_converted: () => "Someone you invited joined and was verified.",
+  /**
+   * Operational, and shown only to whoever runs the beta — it is not in
+   * MUTABLE_EVENTS, so no member ever meets it in their settings.
+   *
+   * Names nobody, exactly like the push. The in-app list is read on the same
+   * phone the lock screen is on.
+   */
+  beta_signup: () => "Someone joined the beta.",
 };
 
 /**
@@ -1946,6 +1954,7 @@ export const NOTIFICATION_EVENT_LABELS: Record<NotificationEvent, string> = {
   nearby_joins: "New members near you",
   activity_nearby: "People are active near you",
   referral_converted: "Someone you invited joins",
+  beta_signup: "Someone joins the beta",
 };
 
 /** DRAFT — Claude's words. The three columns, named for the header row. */

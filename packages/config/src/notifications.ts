@@ -23,7 +23,16 @@ export type NotificationEvent =
   | "premium_expiring"
   | "nearby_joins"
   | "activity_nearby"
-  | "referral_converted";
+  | "referral_converted"
+  /**
+   * Operational, and the only event here that is not about the recipient.
+   *
+   * Everything else in this union happened TO the person receiving it. This one
+   * tells whoever runs the beta that somebody joined it, which is a different
+   * kind of thing — so it is deliberately kept out of MUTABLE_EVENTS, the way
+   * `verification_decided` is, and never appears among a member's switches.
+   */
+  | "beta_signup";
 
 export interface NotificationTemplate {
   readonly event: NotificationEvent;
@@ -135,6 +144,30 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     event: "premium_expiring",
     body: "Your premium is ending soon",
     path: "/app/settings/premium",
+  },
+  /**
+   * A new beta tester, to whoever runs the beta.
+   *
+   * ── it names nobody, and that is not merely §8 compliance ───────────────────
+   *
+   * Content-blindness exists because a notification lands on a lock screen, and
+   * an admin's lock screen is still a lock screen — read over a shoulder, on a
+   * shared desk, in front of whoever is in the room. "Someone joined the beta"
+   * on a phone says nothing about anybody; the same line carrying an email
+   * address is a member of an HSV and HIV app named on a screen the person it
+   * names never agreed to appear on.
+   *
+   * The address is one tap away in /admin/waitlist, behind a session and a
+   * roster check, which is where it belongs.
+   *
+   * No count either, for the reason §8 gives about count granularity: "3 people
+   * joined" is a figure about a real population, and this list is small enough
+   * early on that the number is close to naming individuals.
+   */
+  beta_signup: {
+    event: "beta_signup",
+    body: "Someone joined the beta",
+    path: "/admin/waitlist",
   },
   nearby_joins: { event: "nearby_joins", body: "New members joined near you", path: "/app/browse" },
   /**
@@ -308,6 +341,16 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly Notificat
    */
   activity_nearby: ["in_app"],
   referral_converted: ["in_app"],
+  /**
+   * Push and in-app, never email.
+   *
+   * Kevin asked for push, and the in-app row comes with it for free through
+   * notify() — worth keeping rather than suppressing, because it is the record
+   * that survives a push nobody saw. Email is left off deliberately: this fires
+   * once per signup and an inbox is the wrong place for something already on a
+   * lock screen and already listed on /admin/waitlist.
+   */
+  beta_signup: ["push", "in_app"],
 };
 
 /**

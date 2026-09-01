@@ -414,7 +414,16 @@ describe("the overlays sit on the photo, not on whatever is added below it", () 
     const next = source.indexOf("\nfunction ", start + 1);
     const control = source.slice(start, next === -1 ? undefined : next);
     expect(control.length).toBeGreaterThan(400);
-    expect(control).toMatch(/absolute top-1\.5 left-1\.5/);
+    expect(control).toMatch(/absolute -top-2 -left-2/);
+
+    // And it matches the delete button it sits opposite. The two act on one
+    // photo, so a difference in size or overhang reads as a difference in kind.
+    const trash = /<form action=\{remove\}[\s\S]*?<\/form>/.exec(source)?.[0] ?? "";
+    expect(trash).toMatch(/absolute -top-2 -right-2/);
+    for (const shared of ["size-8", "rounded-full", "bg-surface", "shadow-sm"]) {
+      expect(control, `the control drops ${shared}`).toContain(shared);
+      expect(trash, `the delete button drops ${shared}`).toContain(shared);
+    }
   });
 });
 

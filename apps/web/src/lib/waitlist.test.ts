@@ -35,6 +35,27 @@ function tsx(dir: string, acc: string[] = []): string[] {
 
 const files = tsx("app");
 
+/**
+ * A function body, sliced to the next top-level declaration.
+ *
+ * NOT `/function name[\s\S]*?\n}/`. A destructured parameter list closes with
+ * its own `\n}`, so a lazy match stops there and returns a hundred characters
+ * of signature — and every assertion made against it then passes on nothing.
+ * That has now cost two guards in this file and one in photos.test.ts.
+ */
+function fnBody(source: string, declaration: string): string {
+  const start = source.indexOf(declaration);
+  if (start === -1) return "";
+  // Stops at ANY top-level declaration, not just the next function. Stopping
+  // only at `function` overshot past an intervening `export interface` and
+  // pulled its fields into the slice — which made an assertion about what this
+  // function does fail on a word in a type two declarations away.
+  const next = source
+    .slice(start + 1)
+    .search(/\n(export )?(async )?(function|interface|const|type|class) /);
+  return next === -1 ? source.slice(start) : source.slice(start, start + 1 + next);
+}
+
 describe("the closed beta has exactly one door", () => {
   it("finds the source at all", () => {
     // A silent zero would make every scan below pass forever.
@@ -214,19 +235,19 @@ describe("the library keeps its promises about what it returns", () => {
   });
 
   it("never invites an unconfirmed address", () => {
-    const invite = /export async function inviteFromWaitlist[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    const invite = fnBody(lib, "export async function inviteFromWaitlist");
     expect(invite.length).toBeGreaterThan(200);
     expect(invite).toMatch(/if \(!row\.confirmed_at\) continue/);
   });
 
   it("spends an invitation atomically", () => {
-    const accept = /export async function acceptBetaInvite[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    const accept = fnBody(lib, "export async function acceptBetaInvite");
     // Two devices racing the same link must produce one account.
     expect(accept).toMatch(/\.is\("accepted_at", null\)/);
   });
 
   it("deletes on leaving rather than flagging", () => {
-    const leave = /export async function leaveWaitlist[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    const leave = fnBody(lib, "export async function leaveWaitlist");
     expect(leave).toMatch(/\.delete\(\)/);
     expect(leave).not.toMatch(/update\(/);
   });
@@ -239,7 +260,7 @@ describe("a store identity is only held for somebody who asked to test", () => {
     // Untick and the reason for holding a Google account or an Apple ID has
     // gone with it. Keeping the value because it is already in the row is how
     // a table quietly outgrows its justification.
-    const helper = /function storeFields[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    const helper = fnBody(lib, "function storeFields");
     expect(helper.length).toBeGreaterThan(100);
     expect(helper).toMatch(
       /if \(!wantsBeta\) return \{ store_platform: null, store_account_email: null \}/,
@@ -263,7 +284,7 @@ describe("a store identity is only held for somebody who asked to test", () => {
     // The point of asking at signup. Keyed on accepted, a tester could only be
     // added to a store list after following their invitation and filling in a
     // second form — which is the round trip being removed.
-    const fn = /export function testerList[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    const fn = fnBody(lib, "export function testerList");
     expect(fn).toMatch(/r\.invited_at/);
     expect(fn).not.toMatch(/r\.accepted_at/);
   });
@@ -271,7 +292,59 @@ describe("a store identity is only held for somebody who asked to test", () => {
   it("still refuses to list anybody uninvited", () => {
     // Adding somebody to a Play track before they have an invitation lets them
     // install an app they cannot sign into.
-    const fn = /export function testerList[\s\S]*?\n}/.exec(lib)?.[0] ?? "";
+    const fn = fnBody(lib, "export function testerList");
     expect(fn).toMatch(/wants_beta/);
+  });
+});
+
+describe("the beta alert reaches admins and names nobody", () => {
+  const lib = code("lib/waitlist.ts");
+
+  it("fires on confirmation, not on join", () => {
+    // An unconfirmed row is somebody who never asked — possibly somebody else's
+    // address typed by a stranger. Alerting on join makes this endpoint a
+    // nuisance generator aimed at whoever runs the beta.
+    const join = fnBody(lib, "export async function joinWaitlist");
+    expect(join.length).toBeGreaterThan(400);
+    expect(join).not.toMatch(/alertAdminsOfBetaSignup/);
+
+    const confirm = fnBody(lib, "export async function confirmWaitlist");
+    expect(confirm).toMatch(/alertAdminsOfBetaSignup/);
+  });
+
+  it("fires only for a beta signup, not for every waitlist row", () => {
+    const confirm = fnBody(lib, "export async function confirmWaitlist");
+    expect(confirm).toMatch(/if \(wantsBeta\) await alertAdminsOfBetaSignup\(\)/);
+  });
+
+  it("sends to the admin roster and to nobody else", () => {
+    const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
+    expect(fn.length).toBeGreaterThan(200);
+    expect(fn).toMatch(/from\("admin_users"\)/);
+    expect(fn).toMatch(/notify\("beta_signup", admins\)/);
+  });
+
+  it("passes no address, id or count to the notification", () => {
+    // An admin's lock screen is still a lock screen: read over a shoulder, on a
+    // shared desk, in front of whoever is in the room. The address is one tap
+    // away in /admin/waitlist, behind a session and a roster check.
+    const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
+
+    // notify() takes (event, recipients, refs). Exactly two arguments means no
+    // actor and no subject travel with it — and the template itself carries no
+    // interpolation, so there is nothing for one to fill.
+    expect(fn).toMatch(/notify\("beta_signup", admins\);/);
+
+    // The roster read takes the id and nothing else. Selecting the row would
+    // put an address in scope one edit away from the payload.
+    expect(fn).toMatch(/\.select\("user_id"\)/);
+    expect(fn).not.toMatch(/select\("\*"\)/);
+  });
+
+  it("cannot turn a confirmed signup into an error", () => {
+    // A courtesy attached to something that already succeeded.
+    const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
+    expect(fn).toMatch(/try \{/);
+    expect(fn).toMatch(/catch/);
   });
 });

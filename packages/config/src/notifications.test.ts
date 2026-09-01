@@ -62,15 +62,26 @@ describe("notification payloads are content-blind", () => {
   });
 
   /**
-   * Every mutable event must be a real one, and the one that is NOT mutable is
-   * deliberate: verification_decided is the answer to a question the member
-   * cannot proceed without, and a switch for it is a switch for stranding
-   * yourself.
+   * Every mutable event must be a real one, and the two that are NOT mutable
+   * are deliberate — for different reasons, which is why they are listed rather
+   * than counted:
+   *
+   *   verification_decided  The answer to a question the member cannot proceed
+   *                         without. A switch for it is a switch for stranding
+   *                         yourself.
+   *   beta_signup           Not about the recipient at all. It is operational,
+   *                         it only ever goes to the admin roster, and a member
+   *                         never receives one — so there is no switch being
+   *                         withheld from anybody.
+   *
+   * A third entry here needs its own sentence. "Not switchable" is the kind of
+   * exception that accumulates quietly once there is more than one.
    */
-  it("offers a switch for every event but the one nobody should silence", () => {
+  it("offers a switch for every event but the two nobody should silence", () => {
     for (const event of MUTABLE_EVENTS) expect(NOTIFICATIONS).toHaveProperty(event);
     const all = Object.keys(NOTIFICATION_DEFAULTS);
-    expect(all.filter((e) => !MUTABLE_EVENTS.includes(e as never))).toEqual([
+    expect(all.filter((e) => !MUTABLE_EVENTS.includes(e as never)).sort()).toEqual([
+      "beta_signup",
       "verification_decided",
     ]);
   });
@@ -251,11 +262,15 @@ describe("every switch is a switch for something that happens", () => {
    * nothing to do but check, and a switch for it is a switch for stranding
    * themselves. set_notification_mute refuses it in the database too.
    */
-  it("withholds exactly one switch, and says which", () => {
+  it("withholds exactly two switches, and says which", () => {
+    // Named, never counted. The two are unswitchable for different reasons —
+    // verification_decided because silencing it strands the member, beta_signup
+    // because it is operational and never reaches one — and a third would need
+    // its own sentence rather than a bumped number.
     const missing = Object.keys(NOTIFICATION_DEFAULTS).filter(
       (event) => !(MUTABLE_EVENTS as readonly string[]).includes(event),
     );
-    expect(missing).toEqual(["verification_decided"]);
+    expect(missing.sort()).toEqual(["beta_signup", "verification_decided"]);
   });
 
   it("keeps every notification in the app even when the phone is silenced", () => {

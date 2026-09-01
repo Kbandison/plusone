@@ -15,6 +15,7 @@ import {
 
 import { serviceClient } from "./cron";
 import { sendDirectEmail } from "./email";
+import { notify } from "./notify";
 
 /**
  * Everything that touches `public.waitlist`.
@@ -243,7 +244,14 @@ export async function confirmWaitlist(token: string): Promise<Confirmation> {
     .select("wants_beta")
     .maybeSingle();
 
-  if (data) return { ok: true, wantsBeta: Boolean(data.wants_beta) };
+  if (data) {
+    const wantsBeta = Boolean(data.wants_beta);
+    // Only on the transition, and only for a beta signup. This branch is the
+    // one that just moved confirmed_at from null, so a second tap on the same
+    // link — or a mail client prefetching it — cannot fire it again.
+    if (wantsBeta) await alertAdminsOfBetaSignup();
+    return { ok: true, wantsBeta };
+  }
 
   // Already confirmed reads as success, not as a broken link. Somebody who taps
   // the same link twice — or whose mail client prefetched it — has not done
@@ -257,6 +265,47 @@ export async function confirmWaitlist(token: string): Promise<Confirmation> {
   return already
     ? { ok: true, wantsBeta: Boolean(already.wants_beta) }
     : { ok: false, wantsBeta: null };
+}
+
+/**
+ * Tell whoever runs the beta that somebody joined it.
+ *
+ * ── on CONFIRMATION, and only for a beta signup ─────────────────────────────
+ *
+ * Not at join. An unconfirmed row is somebody who never asked — possibly
+ * somebody else's address typed by a stranger — and an alert on that is both
+ * noise and a way to make this endpoint a nuisance generator. Confirmation is
+ * the first moment a real person with a real mailbox has said yes.
+ *
+ * And only when `wants_beta`. Kevin asked for the beta specifically: a plain
+ * waitlist signup is a number on a screen he looks at when he chooses to, where
+ * a tester is somebody waiting on him to act.
+ *
+ * ── it names nobody ─────────────────────────────────────────────────────────
+ *
+ * See the template. The address is one tap away in /admin/waitlist, behind a
+ * session and a roster check, which is where it belongs — an admin's lock
+ * screen is still a lock screen.
+ *
+ * Never throws, like everything else that notifies: a courtesy attached to
+ * something that already succeeded must not turn a confirmed signup into an
+ * error the member sees. `notify()` already swallows, and the roster read is
+ * wrapped for the same reason.
+ */
+async function alertAdminsOfBetaSignup(): Promise<void> {
+  try {
+    const { data } = await serviceClient().from("admin_users").select("user_id");
+    const admins = (data ?? []).map((row) => row.user_id as string).filter(Boolean);
+    if (admins.length === 0) return;
+    await notify("beta_signup", admins);
+  } catch (cause) {
+    console.error(
+      JSON.stringify({
+        at: "waitlist.betaAlert",
+        problem: cause instanceof Error ? cause.message : "unknown",
+      }),
+    );
+  }
 }
 
 export interface Preferences {
