@@ -21,11 +21,16 @@ only `{{ .ConfirmationURL }}`, and with no token in the body the member gets a
 link and the code screen has nothing to type. The link is kept as a fallback,
 but it is the second path, not the first.
 
-**The code is EIGHT digits on this project**, not six — Supabase's Email OTP
-Length, read off a delivered email on 2026-09-01. The sign-in box was hardcoded
-to `maxLength={6}` and silently truncated every emailed code, so nobody signing
-in by email could ever finish. It now sizes itself from `OTP.codeMaxLength`. If
-that setting is ever changed, change the constant, not the input.
+**The code length is a dashboard setting and it has already moved once.**
+Authentication → Providers → Email → Email OTP Length. It was eight on
+2026-09-01 and Kevin changed it the same day; the app does not read it and
+cannot, so nothing here should assert what it is today.
+
+What matters is that the sign-in box is a CEILING — `OTP.codeMaxLength`, wide
+enough for either value. It was hardcoded `maxLength={6}` while the emails
+carried eight, and silently truncated every code a member typed correctly, with
+Supabase refusing a token that was never wrong. Do not tighten it to match
+whatever the setting happens to say.
 
 **No link.** The template had a "or open the app from this link" fallback and it
 signed nobody in — `{{ .ConfirmationURL }}` points at Site URL, which is still
