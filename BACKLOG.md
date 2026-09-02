@@ -593,6 +593,13 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     account on the internal testing list, or reading it from a member who is not
     premium. Neither is worth doing for a number that arrives by itself.
 
+    **And read the track the reading came from.** Kevin is an INTERNAL tester and
+    the waitlist cohort goes to CLOSED (`PLAY_TRACK`), so the re-read above will
+    come from internal while every real tester is on the other track. Same shape
+    as the two-engines rule: a catalogue that resolves on one track is not
+    evidence about the other, in either direction. Say which track any future
+    reading came from — none of the readings so far do.
+
     ── and then the bridge broke again, which is the real finding ──────────────
 
     **`clientAppUnavailable` IS TRANSIENT, AND IT CAN BE REPRODUCED ON DEMAND.**
