@@ -82,14 +82,47 @@ export function assertContentBlind(payload: NotificationPayload): void {
  * could pass a name, a message preview or a profile field, which is the first
  * half of content-blindness; the output check is the second.
  */
-export function buildPayload(event: NotificationEvent): NotificationPayload {
+export function buildPayload(
+  event: NotificationEvent,
+  /**
+   * Which row it is about, when that determines a route.
+   *
+   * Still no parameter through which a caller could pass a name, a preview or a
+   * profile field — an id is not one, and `assertContentBlind` checks the path
+   * it produces exactly as it checks a static one.
+   */
+  subjectId?: string,
+): NotificationPayload {
   const template = NOTIFICATIONS[event];
+
+  /**
+   * The second parameter can carry an id and nothing else.
+   *
+   * The guard this replaces was "buildPayload accepts exactly one argument",
+   * and its reason was the first half of content-blindness: there is no
+   * parameter through which a name, a preview or a profile field could arrive.
+   * Adding one puts that at risk — `assertContentBlind` would catch a display
+   * name containing a condition word, and would happily pass "Sam".
+   *
+   * So the shape is checked rather than trusted. A value that is not a uuid
+   * cannot become part of a path, which means no name can travel this way
+   * whatever a caller does.
+   *
+   * Ignored rather than thrown on. A malformed id is a bug on our side, and the
+   * two ways to fail it are losing the notification entirely or sending it to
+   * the section instead of the thing. The second is the one a member can still
+   * act on.
+   */
+  const usable =
+    subjectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subjectId)
+      ? subjectId
+      : null;
 
   const payload: NotificationPayload = {
     event,
     title: PUSH_APP_NAME,
     body: template.body,
-    path: template.path,
+    path: usable && template.pathFor ? template.pathFor(usable) : template.path,
     emailSubject: EMAIL_SUBJECT,
   };
 
@@ -130,8 +163,9 @@ export function planDeliveries(
   event: NotificationEvent,
   recipientIds: readonly string[],
   channels: readonly Channel[] = ["push"],
+  subjectId?: string,
 ): readonly NotificationDelivery[] {
-  const payload = buildPayload(event);
+  const payload = buildPayload(event, subjectId);
   return recipientIds.flatMap((recipientId) =>
     channels.map((channel) => ({ recipientId, channel, payload })),
   );

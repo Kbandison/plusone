@@ -37,8 +37,40 @@ export type NotificationEvent =
 export interface NotificationTemplate {
   readonly event: NotificationEvent;
   readonly body: string;
-  /** Deep link path. Must never encode identity or condition in the URL. */
+  /**
+   * Where the notification goes when there is nothing to be specific about.
+   *
+   * Must never encode identity or condition. This one is a constant, so it
+   * cannot.
+   */
   readonly path: string;
+  /**
+   * Where it goes when we know WHICH thing it is about.
+   *
+   * ── why an id in the path is allowed and a word is not ──────────────────
+   *
+   * The rule this sits under is §8 content-blindness, and its subject is what
+   * a notification DISPLAYS: a lock screen shows the title and the body, and
+   * those may never carry a name, a message or a condition. The path is not
+   * displayed anywhere — the service worker reads it out of `data` when the
+   * member taps, and Chrome keeps `data` to itself rather than putting it in
+   * the Android notification's extras. `assertContentBlind` still checks it,
+   * so a path that ever gained a word would be refused.
+   *
+   * What travels is an opaque uuid. It says which row, to somebody who can
+   * already read that row, and nothing to anybody else. The payload carrying
+   * it is encrypted end to end with the subscription's own keys, so no push
+   * service sees it either.
+   *
+   * Kevin asked for this on 2026-09-01: "the notification should take you to
+   * where the notification comes from" — a message should open the chat rather
+   * than the inbox, with the id "as secure as possible".
+   *
+   * Only where the subject id DETERMINES a route. A room like or a reply has
+   * the message id, and a message id alone does not name a room — so those
+   * keep their static path rather than guessing.
+   */
+  readonly pathFor?: (subjectId: string) => string;
 }
 
 /**
@@ -73,6 +105,7 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     event: "message_received",
     body: "You have a new message",
     path: "/app/inbox",
+    pathFor: (id) => `/app/chats/${id}`,
   },
   fuse_warning: {
     event: "fuse_warning",
@@ -83,6 +116,7 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     event: "chat_closed",
     body: "A chat has closed — a note is waiting",
     path: "/app/inbox",
+    pathFor: (id) => `/app/chats/${id}`,
   },
   /**
    * §6.3 — a connect expires kindly after seven days rather than lingering.
@@ -98,8 +132,18 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
    * §6.2 — a plan is the point. These two were missing entirely, which meant
    * the most consequential thing that can happen in a chat happened silently.
    */
-  plan_proposed: { event: "plan_proposed", body: "Someone proposed a plan", path: "/app/inbox" },
-  plan_confirmed: { event: "plan_confirmed", body: "A plan is confirmed", path: "/app/inbox" },
+  plan_proposed: {
+    event: "plan_proposed",
+    body: "Someone proposed a plan",
+    path: "/app/inbox",
+    pathFor: (id) => `/app/chats/${id}`,
+  },
+  plan_confirmed: {
+    event: "plan_confirmed",
+    body: "A plan is confirmed",
+    path: "/app/inbox",
+    pathFor: (id) => `/app/chats/${id}`,
+  },
   like_received: { event: "like_received", body: "Someone liked your post", path: "/app/rooms" },
   /**
    * "to you", not "to your post".

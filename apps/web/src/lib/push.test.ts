@@ -301,7 +301,10 @@ describe("the transport forgets only what is really gone", () => {
    */
   it("sends to the email cohort as well as the push one", () => {
     expect(fanout).toMatch(/channels\.includes\("email"\)/);
-    expect(fanout).toMatch(/planDeliveries\(event, email, \["email"\]\)/);
+    // Not pinned to the argument list — a fourth argument was added on
+    // 2026-09-01 to carry the subject id and this failed on a correct change.
+    // What matters is that the email cohort gets its own call.
+    expect(fanout).toMatch(/planDeliveries\(event, email, \["email"\]/);
   });
 
   it("only gives up when neither cohort wants anything", () => {
@@ -685,18 +688,32 @@ describe("what the phone actually draws", () => {
   });
 
   /**
-   * Android draws a large icon on the right and will not leave it empty: with
-   * no `icon` it synthesises a monogram from the notification's source, which
-   * here is the origin — a grey circle with a "W" in it, for "www". The app's
-   * mark repeated is the better of the two outcomes, and there is no third.
-   * Determined on a real phone, in both directions.
+   * The large icon is gone, and this guard changed direction with it.
+   *
+   * It used to assert the opposite, for a reason that was measured and correct:
+   * Android would not leave the right-hand icon empty, and with no `icon` it
+   * synthesised a monogram from the notification's SOURCE — which was the
+   * origin, so a grey circle with a "W" in it, for "www".
+   *
+   * The source changed. Chrome used to post these; the app posts them now, so
+   * the fallback is the app's own mark rather than a letter from the domain,
+   * and the mark drawn twice in one notification stopped being the better of
+   * two bad outcomes.
+   *
+   * The badge stays: it is the SMALL icon, it is a different slot, and nothing
+   * about it was in question.
    */
-  it("sends the icon, because the platform invents a worse one otherwise", () => {
-    expect(sw).toMatch(/icon: "\/icons\/icon-192\.png"/);
+  it("keeps the badge and no longer sends a large icon", () => {
     expect(sw).toMatch(/badge: "\/icons\/badge-96\.png"/);
-    // And the test control draws exactly what a real one draws.
+    expect(sw).not.toMatch(/icon: "\/icons\/icon-192\.png"/);
+  });
+
+  it("the in-app test still draws what a real notification draws", () => {
+    // A test control that looks different from the thing it tests answers a
+    // different question — so it loses the large icon at the same time.
     const toggleRaw = read("src/app/app/settings/push-toggle.tsx");
-    expect(toggleRaw).toMatch(/icon: "\/icons\/icon-192\.png"/);
+    expect(toggleRaw).toMatch(/badge: "\/icons\/badge-96\.png"/);
+    expect(toggleRaw).not.toMatch(/icon: "\/icons\/icon-192\.png"/);
   });
 
   /**

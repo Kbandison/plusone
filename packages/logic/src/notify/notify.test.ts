@@ -107,10 +107,44 @@ describe("the dispatcher refuses to carry a condition word", () => {
 });
 
 describe("buildPayload takes an event, not a body", () => {
-  // The first half of content-blindness: there is no parameter through which a
-  // name, preview or profile field could arrive.
-  it("accepts exactly one argument", () => {
-    expect(buildPayload.length).toBe(1);
+  /**
+   * The first half of content-blindness: there is no parameter through which a
+   * name, preview or profile field could arrive.
+   *
+   * This used to be "accepts exactly one argument", which was the cheapest way
+   * to say it while there was only an event. A second one was added on
+   * 2026-09-01 so a notification can open the chat rather than the inbox, and
+   * counting arguments stopped expressing the rule.
+   *
+   * What replaces it is stronger, not weaker: the new parameter is checked to
+   * be a uuid, so it cannot carry a name whatever a caller passes. The old
+   * guard would have been satisfied by a one-argument signature that took a
+   * string body; this one would not.
+   */
+  it("takes an event and an id, and nothing that could be a name", () => {
+    expect(buildPayload.length).toBe(2);
+  });
+
+  it("refuses to put a non-id in the path", () => {
+    // assertContentBlind would catch "Sam's hiv update". It would pass "Sam".
+    // The shape check is what stops a display name reaching a URL at all.
+    const chat = "3f2a8c1e-9b4d-4f7a-8c2e-1d5b6a9f0e3c";
+    expect(buildPayload("message_received", chat).path).toBe(`/app/chats/${chat}`);
+
+    for (const notAnId of ["Sam", "../admin", "sam@example.com", "", "12345"]) {
+      expect(buildPayload("message_received", notAnId).path, `"${notAnId}" reached the path`).toBe(
+        NOTIFICATIONS.message_received.path,
+      );
+    }
+  });
+
+  it("falls back to the section when there is no subject", () => {
+    // Every event still works without one, which is what makes passing it
+    // always safe at the call site.
+    expect(buildPayload("message_received").path).toBe(NOTIFICATIONS.message_received.path);
+    expect(buildPayload("nearby_joins", "3f2a8c1e-9b4d-4f7a-8c2e-1d5b6a9f0e3c").path).toBe(
+      NOTIFICATIONS.nearby_joins.path,
+    );
   });
 
   it("gives the same payload for the same event every time", () => {

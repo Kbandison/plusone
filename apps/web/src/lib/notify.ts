@@ -86,8 +86,12 @@ export async function notify(
     // serves, so routing stays where the knowledge is.
     const send = notifier();
     await send.send([
-      ...notifyLogic.planDeliveries(event, push, ["push"]),
-      ...notifyLogic.planDeliveries(event, email, ["email"]),
+      // The subject travels so the notification opens the THING rather than the
+      // section — a message goes to the chat, not the inbox. Only where the id
+      // determines a route; buildPayload falls back to the static path
+      // otherwise, so passing it is always safe.
+      ...notifyLogic.planDeliveries(event, push, ["push"], refs.subjectId),
+      ...notifyLogic.planDeliveries(event, email, ["email"], refs.subjectId),
     ]);
   } catch (cause) {
     console.error(

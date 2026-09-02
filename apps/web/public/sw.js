@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-9";
+const VERSION = "plusone-sw-10";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -139,20 +139,30 @@ self.addEventListener("push", (event) => {
       .showNotification(title, {
         body,
         /**
-         * The mark appears twice on Android and that is the better of the two
-         * available outcomes.
+         * No large icon, since 2026-09-01 — and the reason it was here has
+         * expired rather than been overruled.
          *
-         * Android draws the app's icon on the left AND a large icon on the
-         * right, and it will not leave the right one empty: with no `icon` it
-         * synthesises a monogram from the notification's source, which here is
-         * the origin — so removing this produced a grey circle with a "W" in
-         * it, for "www". A letter taken from the domain is a worse thing to put
-         * beside a private notification than the app's own mark repeated.
+         * It used to read: "Android draws the app's icon on the left AND a
+         * large icon on the right, and it will not leave the right one empty:
+         * with no `icon` it synthesises a monogram from the notification's
+         * SOURCE, which here is the origin — so removing this produced a grey
+         * circle with a 'W' in it, for 'www'."
          *
-         * Determined on a real phone, in both directions. There is no option
-         * that suppresses the large icon.
+         * That was measured on a real phone and it was correct at the time.
+         * What has changed underneath it is who posts: Chrome used to, so the
+         * source was www.loveplusone.app and the monogram came from the domain.
+         * The app posts now — TWA notification delegation started working once
+         * POST_NOTIFICATIONS was granted before Chrome cached its answer — so
+         * the source is the app, and the mark it would fall back to is the
+         * app's own.
+         *
+         * The cost of keeping it was the mark drawn twice in one notification,
+         * once each side. Kevin asked for the right-hand one to go.
+         *
+         * MEASURE IT AGAIN rather than trusting this. The note above was right
+         * on the evidence it had and is now wrong; there is no reason this one
+         * is different, and it is one push and one screenshot to check.
          */
-        icon: "/icons/icon-192.png",
         /**
          * The status-bar mark, which Android draws from the ALPHA CHANNEL
          * alone: every opaque pixel becomes solid white, every transparent one
