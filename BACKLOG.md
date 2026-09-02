@@ -563,6 +563,36 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
     because it is known to matter, but because it is the last variable left and
     is required before launch regardless.
 
+    ── 2026-09-01: the diagnostic is UNREACHABLE, and server 19 closed it ─────
+
+    **Nobody can re-read this from Kevin's account, and that is why the
+    instruction above has gone unfollowed rather than unnoticed.** Connected to
+    the phone at 23:18 and launched the premium page with `?diag=1`. No
+    `TwaBilling.DG` lines at all — `getDetails` is never called.
+
+    The premium page is `{isPremium ? <manage> : <PlanChooser>}`, and
+    `PlanChooser` is what renders `play-purchase.tsx` and the panel inside it.
+    Kevin is premium — "Active until 9/2/2026, bought through the App Store" —
+    so he gets the manage state and there is nothing to sell, so nothing asks
+    Play anything.
+
+    **The readings on the 27th and 29th happened because `is_premium` was
+    BROKEN.** It resolved null on permission denied, so every paying member read
+    as free — which put Kevin on the buy screen and ran the probe. `bfdd23a`
+    fixed that on the 29th, correctly, and closed the only instrument this item
+    has. Two backlog items, same day, opposite directions, and neither entry
+    mentions the other.
+
+    **It reopens on its own tomorrow.** That subscription is the sandbox one, and
+    server 4 predicts sandbox auto-renews six times then stops around
+    2026-09-01. "Active until 9/2/2026" is that. When it lapses Kevin returns to
+    the buy screen and the diagnostic is reachable again — no code change, no
+    console setting. Re-read it then.
+
+    Anybody who cannot wait has two options and both are worse: a second Play
+    account on the internal testing list, or reading it from a member who is not
+    premium. Neither is worth doing for a number that arrives by itself.
+
     ── and then the bridge broke again, which is the real finding ──────────────
 
     **`clientAppUnavailable` IS TRANSIENT, AND IT CAN BE REPRODUCED ON DEMAND.**
@@ -1893,27 +1923,25 @@ unblock other work.
     app on the developer account. If LuxWeb will ever ship a second app, that
     project is being chosen once for all of them.
 
-17. **The Play catalogue cannot be re-read, and the instruction to re-read it is
-    the top of server 13.** Found 2026-08-29.
+17. ~~**The Play catalogue cannot be re-read**~~ — **the phone is connected, and
+    the blocker turned out to be something else entirely.** Kevin paired it
+    2026-09-01 and the session read the device directly.
 
-    Server 13 ends by saying to leave the catalogue overnight and re-read the
-    diagnostic before doing anything else. Nobody can: the phone is not
-    reachable from WSL. `adb connect 192.168.50.94:44687` gives "No route to
-    host" and `adb devices` is empty, which means wireless debugging has been
-    switched off — Android does not keep it on across reboots.
+    The catalogue could still not be read, and not for want of a phone: the
+    diagnostic lives on the buy screen, and Kevin is premium, so he never sees
+    it. Full reasoning is in server 13. **It reopens by itself when the sandbox
+    subscription lapses — "Active until 9/2/2026" — with nothing to do but look
+    again afterwards.**
 
-    It needs you with the phone in hand, and it is a two-minute job that
-    unblocks a diagnosis nobody else can make. Developer options → Wireless
-    debugging → on, then **Pair device with pairing code**, and send both
-    numbers over. Two traps already paid for: the **pairing port is not the
-    connect port**, and both change every time the dialog is opened; and the
-    dialog **expires in under a minute**, so the code has to be used
-    immediately.
+    Kept rather than deleted because the shape is worth recognising: this item
+    said the obstacle was access to hardware, was written by somebody who could
+    not test that, and stayed true-sounding for three days. The obstacle was a
+    conditional render.
 
-    Worth doing before anything else on Android. Everything under our control
-    has been verified correct and Play still returns an empty catalogue, so the
-    next reading is the only new information available — and the last one is
-    from the 27th.
+    The pairing technique is now a machine note, since it worked and will be
+    wanted again. Two traps, both still real: the pairing port is not the
+    connect port, both rotate every time the dialog opens, and the dialog
+    expires in under a minute.
 
 18. **Two things about the iOS build are unread, and both need App Store
     Connect — which is you.** Found 2026-08-29 by auditing this lane the way
