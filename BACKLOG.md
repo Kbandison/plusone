@@ -1575,45 +1575,49 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     decide what may be shown, so this is a read and a render rather than new
     policy.
 
-28. **The other half of the iOS invitation, and a redirect worth questioning.**
-    Raised 2026-09-01 by `274cd11`, which fixed the tester-facing symptom in copy
-    and deliberately left the mechanism alone.
+28. **The beta invitation across two engines — built, and unverified in both.**
+    Found and fixed 2026-09-01 across `274cd11`, `9c98984` and `9711c63`, by both
+    sessions in turn. Kept because what is left is a real question and because
+    the shape of the mistake repeated itself once.
 
-    **The finding, so it is not re-derived.** An invitation is carried by one
-    thing — the `plusone_beta` cookie `proxy.ts` sets on `/beta/<code>`. The
-    association file claims `/app/*`, `/i/*` and `/auth/*` and NOT `/beta/*`, so
-    an invitation link opens Safari, and the installed app is WKWebView with its
-    own cookie jar. A signed-out `/app` redirects to `/onboarding/phone`, the
-    gate finds no cookie, and a tester holding a valid invitation is told the
-    beta is closed and offered the waitlist they are already on. Android is
-    unaffected because a TWA shares Chrome's jar, and that asymmetry is the whole
-    diagnosis.
+    **What was wrong.** An invitation is carried by one thing — the
+    `plusone_beta` cookie `proxy.ts` sets on `/beta/<code>`. The association file
+    did not claim `/beta/*`, so the link opened Safari and the cookie landed in a
+    jar WKWebView cannot read. A signed-out `/app` redirects to
+    `/onboarding/phone`, the gate found no cookie, and a tester holding a valid
+    invitation was told the beta was closed and offered the waitlist they were
+    already on. Android never had it: a TWA shares Chrome's jar, and that
+    asymmetry is what identified it.
 
-    Two things are left, and neither is urgent now that the copy tells a tester
-    what to do.
+    **What was built.** The path is claimed; the iOS steps install FIRST and
+    re-open the invitation LAST, because iOS cannot open an app that is not
+    installed and installing afterwards does not move the cookie; and the Install
+    block detects the shell, since claiming the path alone would have shown an
+    installed tester how to install.
 
-    - **Claiming `/beta/*` in the components.** Needs NO iOS build — the
-      entitlement is domain-level (`applinks:www.loveplusone.app`), so the
-      components are served from `apps/web`. It only helps a tester who re-taps
-      the invitation AFTER installing, which is the reverse of the order the
-      steps give, so it is an improvement rather than the fix. It wants
-      verifying in WKWebView, which is the shells lane.
+    **The mistake worth keeping is that the block asked `inNativeShell()`.** That
+    cannot see a TWA and should not — a TWA is real Chrome. But the Android
+    intent filter has NO path constraint (zero `android:path` attributes in the
+    generated manifest), so every path on the host opens in the app, and an
+    Android tester who had already installed was shown how to install it. The
+    same screen the fix exists to prevent, one engine over, through the trap
+    `AGENTS.md` puts in bold. It is now `inTwa() || inNativeShell()`, with a
+    floor asserting the manifest still has no path filter — the branch is only
+    right while that holds.
 
-      `waitlist.test.ts` asserts `/beta/*` is absent AND that the iOS copy
-      carries the account-first step, so whoever adds the first gets a failure
-      pointing at the second. That coupling is the point — do not delete the
-      assertion to make the change pass.
+    **UNVERIFIED IN EITHER SHELL, and that is what is actually outstanding.** The
+    iOS branch was watched in WKWebView before the TWA half existed; nothing has
+    been looked at since, and the Android half has never been seen at all. It
+    needs Kevin and the device (Kevin 17).
 
-    - **Where a signed-out `/app` should land during a closed beta.** It goes to
-      `STEP_ROUTES.phone` — the sign-up door, which is the one door the gate
-      refuses. Everyone who can actually get through from there arrives with a
-      cookie they cannot have in the shell. The population hitting that redirect
-      is expired-session members and store reviewers, and `/sign-in` serves both.
-
-      Not changed mid-review, on purpose: `aa6f434` put a `/sign-in` link on the
-      form, so nobody is stranded, and moving where every signed-out person
-      lands while Apple has the build in front of them is not a drive-by. Worth
-      settling once 2.1 is answered.
+    **And one thing not changed, deliberately.** A signed-out `/app` lands on
+    `STEP_ROUTES.phone` — the sign-up door, which is the one door the gate
+    refuses. Everyone who gets through from there arrives with a cookie, and the
+    population actually hitting that redirect is expired-session members and
+    store reviewers, both of whom want `/sign-in`. Not moved while Apple has the
+    build in front of them: `aa6f434` put a `/sign-in` link on the form so nobody
+    is stranded, and changing where every signed-out person lands mid-review is
+    not a drive-by. Worth settling once 2.1 is answered.
 
 ## Lane: Kevin
 
