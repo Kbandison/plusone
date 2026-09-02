@@ -428,17 +428,34 @@ export interface MetroCount {
 
 /** Every metro, including the empty ones — a zero is the answer to "not here yet". */
 export function countByMetro(rows: readonly WaitlistRow[]): MetroCount[] {
-  return METROS.map((m) => {
-    const mine = rows.filter((r) => r.metro === m.id);
-    return {
-      metro: m.id,
-      label: m.label,
-      confirmed: mine.length,
-      wantsBeta: mine.filter((r) => r.wants_beta).length,
-      invited: mine.filter((r) => r.invited_at).length,
-      accepted: mine.filter((r) => r.accepted_at).length,
-    };
-  });
+  /**
+   * One pass over the rows, then one over the metros.
+   *
+   * It was METROS.map(rows.filter(...)) with four more filters inside, so every
+   * row was walked 5 times for each of 43 metros. Correct and fine at this size;
+   * replaced because the shape is the kind that stops being fine quietly, and
+   * the result is also simpler to read.
+   *
+   * Still returns EVERY metro, including the empty ones — the caller decides
+   * what to hide, and a metro missing from this list would read as zero anyway.
+   */
+  // Mutable on purpose: MetroCount's fields are readonly, which is right for the
+  // value handed out and wrong for the accumulator building it.
+  type Tally = { confirmed: number; wantsBeta: number; invited: number; accepted: number };
+  const tally = new Map<string, Tally>();
+  for (const r of rows) {
+    const t = tally.get(r.metro) ?? { confirmed: 0, wantsBeta: 0, invited: 0, accepted: 0 };
+    t.confirmed += 1;
+    if (r.wants_beta) t.wantsBeta += 1;
+    if (r.invited_at) t.invited += 1;
+    if (r.accepted_at) t.accepted += 1;
+    tally.set(r.metro, t);
+  }
+  return METROS.map((m) => ({
+    metro: m.id,
+    label: m.label,
+    ...(tally.get(m.id) ?? { confirmed: 0, wantsBeta: 0, invited: 0, accepted: 0 }),
+  }));
 }
 
 /**

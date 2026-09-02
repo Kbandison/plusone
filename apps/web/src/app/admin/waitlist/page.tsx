@@ -123,7 +123,11 @@ export default async function AdminWaitlistPage() {
         rows={uninvited.map((r) => ({
           id: r.id,
           email: r.email,
-          metro: metroLabel(r.metro) ?? r.metro,
+          // Both, because the form GROUPS on the id and DISPLAYS the label.
+          // Passing only the label made the metro id the group key by accident,
+          // which works until two ids share a label.
+          metro: r.metro,
+          label: metroLabel(r.metro) ?? r.metro,
           wantsBeta: r.wants_beta,
         }))}
       />

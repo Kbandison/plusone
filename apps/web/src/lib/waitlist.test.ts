@@ -3,9 +3,9 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { type WaitlistRow, testerList } from "./waitlist";
+import { type WaitlistRow, countByMetro, testerList } from "./waitlist";
 
-import { BETA_INSTALL, BETA_LINKS, PLAY_TESTER_PASTE, PLAY_TRACK } from "@plusone/config";
+import { BETA_INSTALL, BETA_LINKS, METROS, PLAY_TESTER_PASTE, PLAY_TRACK } from "@plusone/config";
 
 const SRC = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(SRC, p), "utf8");
@@ -574,7 +574,7 @@ describe("a tester can be added to a store list before their invitation goes out
     ({
       id: "r",
       email: "a@example.com",
-      metro: "houston_tx",
+      metro: "houston",
       wants_beta: true,
       confirmed_at: "2026-09-01T00:00:00Z",
       invited_at: null,
@@ -631,5 +631,50 @@ describe("a tester can be added to a store list before their invitation goes out
     const { addresses, missing } = testerList([row({ store_account_email: null })], "android");
     expect(addresses).toEqual([]);
     expect(missing).toBe(1);
+  });
+});
+
+describe("countByMetro totals what it is given, whatever shape it walks in", () => {
+  const r = (over: Partial<WaitlistRow>): WaitlistRow =>
+    ({
+      id: "x",
+      email: "e@example.com",
+      metro: "houston",
+      wants_beta: false,
+      confirmed_at: "2026-09-01T00:00:00Z",
+      invited_at: null,
+      accepted_at: null,
+      store_platform: null,
+      store_account_email: null,
+      created_at: "2026-09-01T00:00:00Z",
+      ...over,
+    }) as WaitlistRow;
+
+  it("counts each column independently", () => {
+    const counts = countByMetro([
+      r({ metro: "houston", wants_beta: true }),
+      r({ metro: "houston", wants_beta: true, invited_at: "2026-09-01T01:00:00Z" }),
+      r({
+        metro: "houston",
+        invited_at: "2026-09-01T01:00:00Z",
+        accepted_at: "2026-09-01T02:00:00Z",
+      }),
+      r({ metro: "atlanta", wants_beta: true }),
+    ]);
+    const houston = counts.find((c) => c.metro === "houston");
+    expect(houston).toMatchObject({ confirmed: 3, wantsBeta: 2, invited: 2, accepted: 1 });
+    expect(counts.find((c) => c.metro === "atlanta")).toMatchObject({
+      confirmed: 1,
+      wantsBeta: 1,
+    });
+  });
+
+  it("still returns every metro, including the empty ones", () => {
+    // The caller hides the zeroes. A metro missing from the list would read as
+    // zero anyway, so this is about the contract rather than the display —
+    // rewriting it as a single pass is exactly the change that would drop them.
+    const counts = countByMetro([]);
+    expect(counts.length).toBe(METROS.length);
+    expect(counts.every((c) => c.confirmed === 0)).toBe(true);
   });
 });
