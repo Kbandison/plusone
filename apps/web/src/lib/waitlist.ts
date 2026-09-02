@@ -578,6 +578,7 @@ export async function recordStoreAccount(
 export function testerList(
   rows: readonly WaitlistRow[],
   platform: "ios" | "android",
+  stage: "to_add" | "invited" = "to_add",
 ): { addresses: string[]; missing: number } {
   /**
    * Keyed on CONFIRMED — every row here is, since `confirmedWaitlist` selects
@@ -605,7 +606,17 @@ export function testerList(
    * Still not open: confirmed, `wants_beta`, and a store account they gave us.
    * Nobody reaches a store list without having asked to test.
    */
-  const wanted = rows.filter((r) => r.wants_beta && r.store_platform === platform);
+  const wanted = rows.filter(
+    (r) =>
+      r.wants_beta &&
+      r.store_platform === platform &&
+      // `to_add` is a WORK QUEUE and shrinks as it is worked; `invited` is the
+      // roster of who is already on the track. Splitting them is what stops the
+      // paste box redisplaying people every time, but it also means the box is
+      // now a PARTIAL list — see the note on the screen about adding rather
+      // than replacing, which is a hazard this split introduced.
+      (stage === "invited" ? Boolean(r.invited_at) : !r.invited_at),
+  );
   return {
     addresses: wanted.map((r) => r.store_account_email).filter((e): e is string => Boolean(e)),
     // Testers who accepted and never told us which account they install with.

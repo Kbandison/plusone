@@ -34,8 +34,12 @@ export default async function AdminWaitlistPage() {
   const counts = countByMetro(rows).filter((c) => c.confirmed > 0);
 
   const uninvited = rows.filter((r) => !r.invited_at);
-  const ios = testerList(rows, "ios");
-  const android = testerList(rows, "android");
+  const toAdd = { ios: testerList(rows, "ios"), android: testerList(rows, "android") };
+  const roster = {
+    ios: testerList(rows, "ios", "invited"),
+    android: testerList(rows, "android", "invited"),
+  };
+  const rosterCount = roster.ios.addresses.length + roster.android.addresses.length;
 
   return (
     <main id="main">
@@ -86,6 +90,35 @@ export default async function AdminWaitlistPage() {
         )}
       </Card>
 
+      {/* STEP ONE, and it is above the Invite form because that is the order it
+          has to happen in. The invitation email tells somebody to go and
+          install, and a store answers an account it has never heard of with
+          "unavailable" and no reason — so the track has to be populated first.
+          The screen used to run the other way round and read as though invites
+          came first. */}
+      <Card className="mt-8">
+        <h2 className="text-h3">1 · Add these to the stores</h2>
+        <p className="mt-2 text-[11.7px] leading-[1.6] text-ink-3">
+          People who asked to test, are not invited yet, and told us which store account they
+          install with. That address is often not the one they signed up with, which is why this is
+          a separate list from the one below. Do this before inviting them.
+        </p>
+
+        <TesterBlock
+          heading={PLAY_TESTER_PASTE.heading}
+          note={`ADD to ${PLAY_TESTER_PASTE.path} — do not replace what is there, this list is only the people not yet added. Comma-separated; these must be Google account addresses.`}
+          value={toAdd.android.addresses.join(", ")}
+          missing={toAdd.android.missing}
+        />
+        <TesterBlock
+          heading="TestFlight"
+          note="ADD to App Store Connect → TestFlight → Testers — do not replace the group, this list is only the people not yet added. One per line; these must be Apple ID addresses."
+          value={toAdd.ios.addresses.join("\n")}
+          missing={toAdd.ios.missing}
+        />
+      </Card>
+
+      <h2 className="mt-12 text-h3">2 · Send the invitations</h2>
       <InviteForm
         rows={uninvited.map((r) => ({
           id: r.id,
@@ -95,26 +128,34 @@ export default async function AdminWaitlistPage() {
         }))}
       />
 
+      {/* The roster, so nobody vanishes. Inviting moves somebody out of the box
+          above, and without this they would leave the screen entirely — which
+          would hide the one person who most needs finding: invited, and never
+          actually added to a track. */}
       <Card className="mt-8">
-        <h2 className="text-h3">Tester lists</h2>
+        <h2 className="text-h3">Beta testers</h2>
         <p className="mt-2 text-[11.7px] leading-[1.6] text-ink-3">
-          Only people who accepted an invitation AND told us which store account they install with.
-          The address they gave us is not necessarily their Google or Apple one, which is why this
-          is a separate list from the one above.
+          {rosterCount === 0
+            ? "Nobody invited yet. People move here once their invitation is sent."
+            : `${rosterCount} invited. These should already be on the tracks — if somebody says the store cannot find Plus One, check they are.`}
         </p>
 
-        <TesterBlock
-          heading={PLAY_TESTER_PASTE.heading}
-          note={`Paste into ${PLAY_TESTER_PASTE.path} BEFORE sending invitations — the email tells them to install, and Play says "unavailable" until they are on the list. Comma-separated; these must be Google account addresses.`}
-          value={android.addresses.join(", ")}
-          missing={android.missing}
-        />
-        <TesterBlock
-          heading="TestFlight"
-          note="Paste into App Store Connect → TestFlight → Testers BEFORE sending invitations — Apple emails the invitation to the Apple ID, and nothing reaches them until they are on the group. One per line; these must be Apple ID addresses."
-          value={ios.addresses.join("\n")}
-          missing={ios.missing}
-        />
+        {rosterCount === 0 ? null : (
+          <>
+            <TesterBlock
+              heading={PLAY_TESTER_PASTE.heading}
+              note="Already invited. Here to check against the console, not to paste again."
+              value={roster.android.addresses.join(", ")}
+              missing={roster.android.missing}
+            />
+            <TesterBlock
+              heading="TestFlight"
+              note="Already invited. Here to check against the console, not to paste again."
+              value={roster.ios.addresses.join("\n")}
+              missing={roster.ios.missing}
+            />
+          </>
+        )}
       </Card>
     </main>
   );

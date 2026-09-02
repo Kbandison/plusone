@@ -294,18 +294,18 @@ describe("a store identity is only held for somebody who asked to test", () => {
     expect(emailRead).toBeGreaterThan(guard);
   });
 
-  it("the tester list waits on NEITHER invited nor accepted", () => {
-    // It required accepted_at once, then invited_at, and both were the wrong way
-    // round for the order the operator works in: the store list has to be filled
-    // BEFORE the invitation email, because that email is what tells somebody to
-    // go and install. Gating on invited_at meant the addresses could only be
-    // copied after it had already been sent.
+  it("never waits on the tester having ACCEPTED", () => {
+    // The oldest version required accepted_at, so somebody could be added to a
+    // store list only after following their invitation and filling in a second
+    // form. The account arrives with the signup now, so nothing here should ever
+    // consult it again.
     //
-    // Kept as a source scan because it is about what the filter must NOT
-    // consult; the positive behaviour is covered by real rows further down,
-    // which is the stronger half.
+    // This used to assert `invited_at` was absent too. It is legitimately back —
+    // the function partitions ON it, into a queue and a roster, rather than
+    // gating on it. That distinction is invisible to a source scan, which is why
+    // the rule it was protecting moved to the behavioural tests below: they pass
+    // real rows and cannot be fooled by where a field appears.
     const fn = fnBody(lib, "export function testerList");
-    expect(fn).not.toMatch(/r\.invited_at/);
     expect(fn).not.toMatch(/r\.accepted_at/);
   });
 
@@ -593,9 +593,27 @@ describe("a tester can be added to a store list before their invitation goes out
     expect(addresses).toEqual(["a@gmail.com"]);
   });
 
-  it("still includes somebody already invited", () => {
-    const { addresses } = testerList([row({ invited_at: "2026-09-01T01:00:00Z" })], "android");
-    expect(addresses).toEqual(["a@gmail.com"]);
+  it("moves them out of the queue once invited, into the roster", () => {
+    // The box is a work queue: inviting is what marks the job done, so an
+    // invited tester must not keep reappearing in the list of people to add.
+    const invited = [row({ invited_at: "2026-09-01T01:00:00Z" })];
+    expect(testerList(invited, "android").addresses).toEqual([]);
+    expect(testerList(invited, "android", "invited").addresses).toEqual(["a@gmail.com"]);
+  });
+
+  it("loses nobody in the split", () => {
+    // The property the two-box design rests on. Somebody invited but never
+    // actually added to a track is the one person who most needs finding, and
+    // a queue that only shrinks would hide exactly them.
+    const rows = [
+      row({ id: "a", invited_at: null, store_account_email: "a@gmail.com" }),
+      row({ id: "b", invited_at: "2026-09-01T01:00:00Z", store_account_email: "b@gmail.com" }),
+    ];
+    const queue = testerList(rows, "android").addresses;
+    const roster = testerList(rows, "android", "invited").addresses;
+    expect([...queue, ...roster].sort()).toEqual(["a@gmail.com", "b@gmail.com"]);
+    // And in exactly one each — a row in both would be pasted twice.
+    expect(queue.filter((e) => roster.includes(e))).toEqual([]);
   });
 
   it("excludes anybody who did not ask to test", () => {
