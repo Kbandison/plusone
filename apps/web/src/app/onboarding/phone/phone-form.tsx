@@ -115,6 +115,31 @@ export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: stri
       </p>
 
       <Submit label={C.sendLabel} pending={sending} />
+
+      {/* The way back in, BEFORE being refused rather than only after.
+       *
+       * The closed-beta card below already carries this link, with a comment
+       * saying it "is the half that is easy to leave out and strands somebody
+       * real: a member who already has an account and typed their number on the
+       * wrong screen". That was true and the link was in the wrong place: it
+       * only appeared once the beta gate had already turned somebody away.
+       *
+       * In a browser that costs a returning member one confusing refusal. In
+       * the iOS shell it is worse and it is why this moved: `server.url` is
+       * `/app` since 137d358, a signed-out launch redirects here, and a shell
+       * has NO ADDRESS BAR — so this screen was the only screen, and the only
+       * route to sign-in was to type a number and be rejected. An App Review
+       * reviewer meeting that files a 2.1 rather than guessing.
+       */}
+      <p className="text-[11.7px] text-ink-2">
+        {B.already}{" "}
+        <Link
+          href="/sign-in"
+          className="underline decoration-line-2 underline-offset-4 hover:text-ink"
+        >
+          {B.signIn}
+        </Link>
+      </p>
     </form>
   );
 }
