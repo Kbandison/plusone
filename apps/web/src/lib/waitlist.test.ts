@@ -467,27 +467,28 @@ describe("an invitation has to survive the jump between two engines", () => {
     expect(components.length).toBeGreaterThan(80);
   });
 
-  it("does not claim /beta/*, so an invitation link opens Safari", () => {
-    // Not a defect to fix here — claiming it is a real option, and it needs no
-    // iOS build because the entitlement is domain-level
-    // (`applinks:www.loveplusone.app`) and the components are served from here.
-    //
-    // It is pinned because the iOS COPY below is written for this being false.
-    // Whoever adds `/beta/*` gets this failure and, with it, the reason to go
-    // and shorten those steps.
-    expect(components).not.toMatch(/\/beta/);
+  it("claims /beta/*, so an invitation reaches the shell's cookie jar", () => {
+    // Inverted rather than deleted, together with the copy assertion below —
+    // they were written as a coupled pair and they still are, pointing the
+    // other way. The cookie proxy.ts sets is the whole invitation, and where
+    // the link opens decides which engine holds it.
+    expect(components).toMatch(/\/beta\/\*/);
   });
 
-  it("tells an iOS tester to make the account before installing", () => {
-    // The cookie proxy.ts sets lands in Safari's jar. The installed app is
-    // WKWebView with its own, so the gate in /onboarding/phone finds nothing
-    // and refuses somebody who is genuinely invited. An ACCOUNT crosses that
-    // boundary where a cookie does not, because signing in needs no invitation.
+  it("tells an iOS tester to install FIRST and re-open the invitation last", () => {
+    // Claiming the path does not help somebody who taps the link before the app
+    // exists: iOS cannot open an app that is not installed, so they get Safari
+    // and installing afterwards does not move the cookie across. The order is
+    // the fix, not the claim on its own.
     for (const steps of [ios.steps, ios.pendingSteps]) {
-      expect(steps[0]).toMatch(/browser/i);
-      expect(steps[0]).toMatch(/account/i);
-      // Before the install instructions, not buried under them.
-      expect(steps.slice(1).join(" ")).toMatch(/TestFlight/);
+      const all = steps.join(" ");
+      expect(all).toMatch(/TestFlight/);
+      // The last step is the one that puts the invitation in the right jar.
+      expect(steps[steps.length - 1]).toMatch(/invitation link again/i);
+      // And it comes AFTER installing, which is the property that matters.
+      const install = steps.findIndex((step) => /Install Plus One/i.test(step));
+      expect(install).toBeGreaterThan(-1);
+      expect(steps.length - 1).toBeGreaterThan(install);
     }
   });
 

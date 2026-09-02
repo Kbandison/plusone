@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
 
 import {
   BETA_INSTALL,
@@ -12,6 +12,7 @@ import {
 } from "@plusone/config";
 
 import { Field } from "@/app/auth-fields";
+import { inNativeShell } from "@/lib/native-shell";
 import { buttonClass } from "@/app/ui";
 import { saveStoreAccount } from "./actions";
 
@@ -50,6 +51,27 @@ export function Install({
   /** What the join form already collected, when it did. */
   known?: { platform: "ios" | "android"; email: string } | null;
 }) {
+  /**
+   * Inside the app, none of the install steps below apply.
+   *
+   * This page can only be reached in the shell because `/beta/*` is claimed in
+   * the association file, and being reached there is the entire point of
+   * claiming it: fetching the page is what sets the `plusone_beta` cookie, and
+   * WKWebView has its own jar. So by the time this renders in the app the work
+   * is done and the only useful thing left is a way onward.
+   *
+   * Read in an effect rather than during render, with the same disable and the
+   * same reasoning as `push-toggle.tsx` and `install-app.tsx`: `inNativeShell`
+   * asks the window, the server has no window, and a useState initializer would
+   * return false there and true on hydration — a hydration error rather than a
+   * wrong button. The install block is the correct answer for everybody the
+   * server renders for, so the browser case is never wrong and only the app
+   * corrects itself.
+   */
+  const [inShell, setInShell] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor, which does not exist during a server render
+  useEffect(() => setInShell(inNativeShell()), []);
+
   const [picking, setPicking] = useState(false);
   const [platform, setPlatform] = useState<BetaPlatform | null>(known?.platform ?? null);
   const [saved, submit, pending] = useActionState(async (_prev: boolean, formData: FormData) => {
@@ -59,6 +81,18 @@ export function Install({
   const emailId = useId();
 
   const chosen = platform ? betaInstallFor(platform) : null;
+
+  if (inShell) {
+    return (
+      <div className="mt-8">
+        <h2 className="text-h3">{C.inAppHeading}</h2>
+        <p className="mt-3 text-body leading-[1.7] text-ink-2">{C.inAppBody}</p>
+        <Link href="/onboarding/phone" className={buttonClass("primary", "mt-6 self-start")}>
+          {C.inAppContinue}
+        </Link>
+      </div>
+    );
+  }
   // The account is settled if it came from signup and they have not since said
   // they are on a different phone.
   const settled = Boolean(known) && !picking && platform === known?.platform;

@@ -62,6 +62,18 @@ const APP_ID = `${TEAM_ID}.${BUNDLE_ID}`;
  * app, because a session that lands in Safari is a session the shell cannot
  * see, which is the exact failure 6c60f63 describes.
  *
+ * `/beta/*` is the newest and the one with a cost behind it. An invitation is
+ * carried by exactly one thing — the `plusone_beta` cookie `proxy.ts` sets when
+ * that page is fetched — and WKWebView has its own jar. While this path was
+ * unclaimed the link opened Safari, the cookie landed there, and a tester who
+ * had already installed from TestFlight was told the closed beta was closed and
+ * offered the waitlist they were already on. Android never had it: a TWA is
+ * real Chrome and shares its jar, which is the asymmetry that identified it.
+ *
+ * Claiming it only helps somebody who taps the invitation with the app already
+ * installed — which on iOS is the normal order, because TestFlight is how they
+ * get the app in the first place.
+ *
  * Marketing stays out on purpose. Somebody sharing /faq or /how-it-works is
  * usually sharing it with a person who does not have the app, and a link that
  * opens an app they do not have is a link that does nothing useful — while the
@@ -76,6 +88,10 @@ const COMPONENTS = [
   {
     "/": "/auth/*",
     comment: "Sign-in return. In Safari the session lands where the shell cannot see it.",
+  },
+  {
+    "/": "/beta/*",
+    comment: "A beta invitation. The cookie it sets has to land in the shell's jar, not Safari's.",
   },
 ];
 

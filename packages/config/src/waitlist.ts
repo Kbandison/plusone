@@ -390,37 +390,38 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
      * reads as though a tester might need neither.
      */
     /**
-     * Step one is ACCOUNT, not install, and only on iOS. This is the two-engine
-     * rule in `AGENTS.md` charging rent.
+     * The last step is OPEN THE LINK AGAIN, and only on iOS. This is the
+     * two-engine rule in `AGENTS.md` charging rent.
      *
      * An invitation is carried by one thing: the `plusone_beta` cookie that
-     * `proxy.ts` sets when this page is fetched. `/beta/*` is not in the
-     * association file (`/app/*`, `/i/*`, `/auth/*` are), so tapping an
-     * invitation opens SAFARI — and the installed app is WKWebView, which has
-     * its own cookie jar and cannot see Safari's. The shell launches at `/app`,
-     * a signed-out `/app` redirects to this phone step, and the gate there finds
-     * no cookie. A tester holding a valid invitation is told the beta is closed
-     * and offered the waitlist they are already on.
+     * `proxy.ts` sets when this page is fetched. WKWebView has its own jar and
+     * cannot see Safari's, so where the link is opened decides which app holds
+     * the invitation. Android needs no such step and does not have one — a TWA
+     * is real Chrome and shares its jar.
      *
-     * Android needs no such step and does not have one: a TWA is real Chrome and
-     * shares its jar, so the cookie set here is the same cookie the app reads.
+     * `/beta/*` is claimed in the association file now, so tapping the link
+     * with the app installed opens it INSIDE the app and the cookie lands in
+     * the right jar. But iOS cannot open an app that is not there yet: a tester
+     * who taps the invitation before installing gets Safari, and installing
+     * afterwards does not move the cookie across.
      *
-     * The account is what crosses the boundary — a session is established by
-     * signing in, which needs no invitation. So make the account in the browser
-     * that holds the invitation, and sign in wherever you like afterwards.
+     * Which is why the order is install first and re-open the link last, rather
+     * than the steps simply getting shorter. The previous version had them make
+     * the account in the browser instead — correct, and one context switch more
+     * than this needs now that the link can reach the app.
      */
     steps: [
-      "Create your account here in this browser first, with the button below. Your invitation is held by this browser and the installed app cannot read it — once the account exists you sign in inside the app with the same number.",
       "Install TestFlight from the App Store. Apple's invitation does nothing without it.",
       "Watch for an email from Apple, sent to the Apple ID you gave us. Open it on the device and it hands you to TestFlight.",
-      "Install Plus One from TestFlight, and sign in with the account you just made.",
+      "Install Plus One from TestFlight.",
+      "Then open your invitation link again on that phone. Now the app is there it opens inside it, and you can make your account.",
     ],
     pendingSteps: [
-      "Create your account here in this browser first, with the button below. Your invitation is held by this browser and the installed app cannot read it — once the account exists you sign in inside the app with the same number.",
-      "Install TestFlight from the App Store. Apple's invitation does nothing without it.",
       "Tell us your Apple ID below, and we add it to the test group.",
+      "Install TestFlight from the App Store. Apple's invitation does nothing without it.",
       "Apple emails that address an invitation. Open it on the device and it hands you to TestFlight.",
-      "Install Plus One from TestFlight, and sign in with the account you just made.",
+      "Install Plus One from TestFlight.",
+      "Then open your invitation link again on that phone. Now the app is there it opens inside it, and you can make your account.",
     ],
     pendingWait:
       "Apple reviews builds before they reach testers, and we cannot predict how long that takes. Opening Plus One in a browser works right now meanwhile — it is the same app.",

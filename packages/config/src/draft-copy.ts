@@ -225,6 +225,20 @@ export const DRAFT_COPY = {
      * and opened the web app — the most prominent control on an invitation to
      * install something, taking you somewhere else without saying so.
      */
+    /**
+     * Shown when this page is opened INSIDE the installed app, which is only
+     * possible since `/beta/*` was claimed in the association file.
+     *
+     * The install steps are the wrong thing to show somebody who has already
+     * installed it, and the work is done by then: fetching this page is what
+     * sets the `plusone_beta` cookie, and opening it in the app is what puts
+     * that cookie in the shell's jar rather than Safari's. All that is left is
+     * to send them to signup.
+     */
+    inAppHeading: "You are all set",
+    inAppBody:
+      "You already have the app, and your invitation is now attached to it. Carry on and make your account.",
+    inAppContinue: "Create your account",
     openInBrowser: "Open Plus One in this browser",
     browserNote:
       "The same app and the same account as the installed one. Nothing is lost by starting here and installing later.",
