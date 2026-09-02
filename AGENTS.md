@@ -25,6 +25,11 @@ against both:
   TWA.** A TWA has no `window.Capacitor`; it is real Chrome. Detect it from
   `document.referrer` beginning `android-app://`, or a marker on the start URL.
 - session and cookies: the TWA shares Chrome's jar, WKWebView has its own
+- which URLs open IN the app, where **only one engine enumerates**. iOS claims
+  paths explicitly in the association file, so an unclaimed one opens Safari;
+  Android's intent filter carries no path constraint at all, so once assetlinks
+  verifies, EVERY path on the host opens in the TWA. Reasoning about the second
+  as though it had an allowlist too cost a bug on 2026-09-01, in both lanes.
 - payment paths, which differ by store and by region
 - anything reading `env(safe-area-inset-*)`
 

@@ -429,6 +429,45 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
 
+### 2026-09-01 · WSL · Android v5, and an invitation that could not cross engines
+
+**Left off:** tree clean, in sync, nothing claimed, nothing in flight. Forced run
+of 15 tasks — test, typecheck, lint — nothing cached, plus format:check.
+
+Android **v5 is signed and with Kevin**; `PlusOne-v5-signed.aab` is staged in
+Downloads. It carries the redrawn status-bar mark, verified from inside the built
+APK at all five densities rather than from the source that generates it — v4
+shipped the retired logo because the mark changed on 08-28 and `badgeSvg` never
+followed, so no rebuild alone was ever going to fix it.
+
+**The one thing that is genuinely outstanding is a device.** The whole beta
+invitation path — claimed `/beta/*`, the reordered iOS steps, the shell branch —
+is verified in WKWebView by macOS and in NO Android shell at all. `adb` cannot
+reach the phone from here, same blocker as the Play catalogue re-read, Kevin 17.
+Backlog server 28 has the honest split.
+
+**A shell-detection branch is not verified until both engines have been asked,
+and tonight both of us skipped that in the same hour.** macOS wrote one, checked
+it in WKWebView, and shipped it — and it showed an Android tester who already had
+the app installed a screen explaining how to install it. The asymmetry that made
+it wrong was the same one whose iOS half we had just spent the evening fixing.
+The specific gap is now a bullet in `AGENTS.md`: only one of the two engines
+enumerates its deep-link paths, and reasoning about Android as though it had an
+allowlist is what did it.
+
+**Put the floor UNDER the claim, not beside it.** A floor beside a
+source-scanning test asks "did this read anything" and catches a blinded scan. It
+cannot tell you the claim stopped being the RIGHT claim. `inTwa()` is only the
+right question while the Android manifest has no path filter — so the test reads
+the manifest, and whoever adds one is sent to reread the reasoning instead of
+watching it quietly outlive its premise.
+
+**When two sessions write the same file, the one that LOOKED wins.** We both
+rewrote `APP_REVIEW_NOTES.md` within three minutes, neither having claimed it. I
+dropped mine: same conclusion, but theirs was read off the Simulator against the
+build being submitted and mine was inferred from the layout. Better tiebreak than
+seniority or timestamp, and it cost one commit to learn.
+
 ### 2026-08-31 · WSL · the waitlist, and a gate that had to not lock anybody out
 
 **Server 21 is done, applied and pushed.** Kevin asked for a beta-tester page
@@ -585,46 +624,3 @@ the phone is unreachable from both machines.
 This paragraph previously said two things were waiting on Kevin that he had
 decided hours earlier. It was rewritten rather than appended to, which is the
 whole point of this file being a whiteboard.
-
-### 2026-08-29 · WSL · the filters, the premium tier, and one technique
-
-**Server 16, 17, 18a, 18d and 19 are done, applied and pushed.** Browse went
-from three filters to nineteen with a paid split; the profile gained eleven
-columns including religion, politics and weight; incognito browse exists. Four
-migrations are LIVE — 20260829000100, 000200, 000300, 000400 — ledger re-run,
-`check:db` green. **All five `PREMIUM_INCLUDES` promises are now built**, from
-one this morning.
-
-Detail is in the commits and in BACKLOG 16–20. The standing rules this session
-produced have moved into the machine notes above, where they are not on a
-three-entry countdown — the deploy-order/PostgREST trap, `--dry-run` versus
-`check:sql`, the `git checkout` sabotage trap, and the failing-versus-passing
-sabotage asymmetry. What is left here is only where I stopped.
-
-**Read the artifact, not the claim — now a machine note above, once.** It was
-in both session blocks and nowhere durable, which made the one rule every
-finding today came from the only one on a delete date. macOS caught that; the
-copy that was here is gone rather than summarised, because a summary beside the
-real thing is two records that will disagree.
-
-Worth keeping only as the shape to recognise: a labels suite that had never seen
-a column added by `alter table`; a 16px scan blinded twice by refactors, once by
-me; an `is_premium` RPC resolving to null on permission denied, so every paying
-member would have read as free; a backlog entry calling finished work blocked; a
-removal note with a delete date on it; and a locked filter pixel-identical to a
-live one. All had been passing for days or weeks, and every one failed silently
-in the comfortable direction.
-
-**And once in the other direction, which is the expensive one.** Checking
-macOS's fix five minutes ago, my grep was case-sensitive against a capitalised
-heading and returned nothing. I was a sentence from telling them the rule was
-missing and re-adding a duplicate — inventing the exact defect I was checking
-for. A false negative costs a bug; a false positive costs a day and leaves the
-tree worse.
-
-**Left off clean.** Full forced run — `turbo run test --concurrency=1 --force`,
-6 tasks, nothing cached, 3040 tests — plus typecheck, lint, format:check,
-check:sql and check:db. Nothing claimed. `adb` is NOT connected; the phone drops
-off and both ports rotate every time the dialog opens, so the TWA screenshot and
-the Play re-read both need Kevin with the device. The Play diagnostic now needs
-`?diag=1` on the URL.
