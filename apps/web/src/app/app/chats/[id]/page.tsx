@@ -16,6 +16,7 @@ import {
   PhotoButton,
   ProposePlan,
 } from "./chat-forms";
+import { UnsendButton } from "./unsend-button";
 import { VoiceRecorder } from "./voice-recorder";
 import { OverflowMenu } from "../../overflow-menu";
 import { TextBubble } from "./text-bubble";
@@ -111,6 +112,26 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .select("id, sender_id, body, image_path, voice_note_path, voice_note_seconds, created_at")
     .eq("chat_id", id)
     .order("created_at", { ascending: true });
+
+  /**
+   * Which messages have been unsent, in a request ALLOWED TO FAIL.
+   *
+   * `deleted_at` arrives in 20260902000300 and this deploys before it. Adding
+   * the column to the select above would not have degraded to "no tombstones" —
+   * PostgREST fails the WHOLE request on an unknown column, so the chat would
+   * have rendered with NO MESSAGES until the migration ran. One line, every
+   * conversation in the app, and nothing in the build can see it.
+   *
+   * A Set of ids rather than a merge: the redacted row already carries no body,
+   * image or voice path, so a message in this set has nothing left to render
+   * either way and the marker is the only thing that changes.
+   */
+  const { data: redacted } = await supabase
+    .from("messages")
+    .select("id, deleted_at")
+    .eq("chat_id", id)
+    .not("deleted_at", "is", null);
+  const unsent = new Set((redacted ?? []).map((r) => r.id as string));
 
   /**
    * When they last read this chat, in a request that is ALLOWED TO FAIL.
@@ -299,7 +320,27 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 </li>
               ) : null}
 
-              {message.image_path ? (
+              {unsent.has(message.id as string) ? (
+                /* The tombstone, and it is not optional.
+                 *
+                 * A message that simply vanishes is a gaslighting vector: the
+                 * recipient remembers something that is no longer there and has
+                 * nothing to point at. Worse, `reports.reported_message_id`
+                 * needs a row to reference, so a silent disappearance would
+                 * take away the ability to report what was said as well as the
+                 * evidence of it. Leaving a marker keeps both.
+                 *
+                 * Both sides see one. Showing it only to the recipient would
+                 * let a sender believe it had gone without trace. */
+                <li
+                  className={`max-w-[85%] rounded-xl border border-dashed px-4 py-3 text-[12.6px] leading-[1.6] text-ink-3 ${
+                    mine ? "self-end border-line-2" : "border-line-2"
+                  }`}
+                >
+                  {who ? <span className="sr-only">{who}: </span> : null}
+                  {mine ? C.unsendTombstoneMine : C.unsendTombstoneTheirs}
+                </li>
+              ) : message.image_path ? (
                 // Not a TextBubble either, and for the same reason the voice
                 // note is not: the picture opens full screen, and a button
                 // inside a button is invalid and stops working. So the bubble
@@ -335,6 +376,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                   >
                     {chatLogic.messageTimeLabel(sentAt, now, zone)}
                   </time>
+                  {/* Openly here, unlike the text bubble, because these two
+                      already show their time without a press — there is no
+                      reveal to hang it off, and a picture or a voice note is
+                      the thing somebody most wants back. */}
+                  {mine && !isTerminal ? (
+                    <UnsendButton messageId={message.id as string} chatId={id} />
+                  ) : null}
                 </li>
               ) : message.voice_note_path ? (
                 // Not a TextBubble: an <audio controls> inside a button is
@@ -359,6 +407,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                   >
                     {chatLogic.messageTimeLabel(sentAt, now, zone)}
                   </time>
+                  {/* Openly here, unlike the text bubble, because these two
+                      already show their time without a press — there is no
+                      reveal to hang it off, and a picture or a voice note is
+                      the thing somebody most wants back. */}
+                  {mine && !isTerminal ? (
+                    <UnsendButton messageId={message.id as string} chatId={id} />
+                  ) : null}
                 </li>
               ) : (
                 <TextBubble
@@ -368,6 +423,14 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                   label={chatLogic.messageTimeLabel(sentAt, now, zone)}
                   exact={chatLogic.messageTimeExact(sentAt, zone)}
                   iso={new Date(sentAt).toISOString()}
+                  // Yours only, and only while the conversation is live —
+                  // unsend_message() refuses a closed chat, so offering it there
+                  // would be a control that always fails.
+                  action={
+                    mine && !isTerminal ? (
+                      <UnsendButton messageId={message.id as string} chatId={id} />
+                    ) : null
+                  }
                 />
               )}
             </Fragment>

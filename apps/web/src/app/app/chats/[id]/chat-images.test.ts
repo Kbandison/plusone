@@ -217,15 +217,30 @@ describe("the lightbox is not written twice", () => {
   });
 
   /** A button inside a button is invalid and stops working. */
+  /**
+   * Anchored WITHOUT the leading brace.
+   *
+   * It was `{message.image_path ? (`, which stopped existing the moment a
+   * branch was added before it — the tombstone in 20260902000300's UI made it
+   * `) : message.image_path ? (`. indexOf then returned -1 and `slice(-1)` gave
+   * the last character of the file, so both assertions below were running
+   * against one character rather than failing loudly.
+   */
+  const imageBranchAt = (src: string) => {
+    const at = src.indexOf("message.image_path ? (");
+    expect(at, "the image branch has moved or been renamed").toBeGreaterThan(0);
+    return at;
+  };
+
   it("keeps the picture out of a TextBubble", () => {
-    const branch = page.slice(page.indexOf("{message.image_path ? ("));
+    const branch = page.slice(imageBranchAt(page));
     expect(branch.slice(0, branch.indexOf("</li>"))).not.toMatch(/<TextBubble/);
     expect(branch).toMatch(/<ChatImage/);
   });
 
   /** A caption when there was one, and nothing when there was not. */
   it("renders a body beside the image only if one was sent", () => {
-    const branch = page.slice(page.indexOf("{message.image_path ? ("));
+    const branch = page.slice(imageBranchAt(page));
     expect(branch).toMatch(/\{message\.body \? \(/);
   });
 });

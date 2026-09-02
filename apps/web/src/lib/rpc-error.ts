@@ -41,6 +41,11 @@ const SAFE_PREFIXES: readonly string[] = [
   // would be stranded holding a setting they can neither keep deliberately nor
   // undo — the mirror of the incognito note above.
   "hiding read receipts requires premium",
+  // Unsend, when the chat closed between the page rendering and the button
+  // being pressed. About the member's own conversation, actionable by them
+  // (there is nothing to do, and knowing why is the useful part), and it names
+  // nobody.
+  "this conversation has ended",
   // Slow mode. Tells the member exactly how long is left, which is the whole
   // point of raising it rather than silently dropping the post.
   "slow mode: wait ",
@@ -134,6 +139,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // The pinned resource card, which only an admin can set. Every one of these
   // is a malformed write from the admin screen, and that screen has its own
   // copy for them — a member never reaches this RPC at all.
+  // Unsend, on a message that is not the caller's — or does not exist, which
+  // is deliberately the same answer so this cannot be used to discover whether
+  // an id is real. Unreachable through the UI: the control is rendered only on
+  // your own messages, so either one means a forged request.
+  "that message is not yours to unsend",
   "not permitted",
   "no such room",
   "a pinned card is an object",

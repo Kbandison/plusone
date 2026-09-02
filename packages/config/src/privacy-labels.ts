@@ -220,6 +220,27 @@ export const TABLE_CLASSIFICATION: Readonly<
   },
 
   /**
+   * The content of unsent messages, kept for moderation.
+   *
+   * The SAME label as `messages`, and it has to be: this is the identical
+   * content, moved rather than transformed, so a member who unsends has not
+   * changed what the store forms must declare about it. Declaring less because
+   * it is now in a table nobody can read would be answering a question about
+   * access with a claim about collection.
+   *
+   * Audio Data is on the list because a voice note can be unsent, and its path
+   * comes here with everything else.
+   *
+   * Why it is retained at all is in 20260902000300:
+   * `reports.reported_message_id` is `on delete set null`, so a real delete
+   * leaves a moderator holding an accusation with nothing attached.
+   */
+  message_redactions: {
+    feeds: ["User Content → Other User Content", "User Content → Audio Data"],
+    note: "Unsent message content, readable by no member. Retained so a report keeps its subject.",
+  },
+
+  /**
    * Bug reports and feature requests.
    *
    * Same label as `reports` and for the same reason — free text a member typed

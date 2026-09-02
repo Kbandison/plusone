@@ -25,6 +25,7 @@ export function TextBubble({
   label,
   exact,
   iso,
+  action,
 }: {
   mine: boolean;
   who: string | null;
@@ -33,6 +34,15 @@ export function TextBubble({
   label: string;
   exact: string;
   iso: string;
+  /**
+   * Revealed with the time, on your own messages.
+   *
+   * A node rather than a boolean, so this component keeps knowing nothing about
+   * unsending. It already owns the one press that opens a message up, and a
+   * second interaction INSIDE the bubble would be a button within a button —
+   * invalid, and it stops working.
+   */
+  action?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -73,6 +83,12 @@ export function TextBubble({
       >
         {label}
       </time>
+
+      {/* Only once the bubble is open. Visible on every message of yours, it
+          would put an irreversible control on every line of the conversation —
+          and this is already the gesture that means "tell me more about this
+          one". */}
+      {open ? action : null}
     </li>
   );
 }

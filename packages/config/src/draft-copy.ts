@@ -1036,6 +1036,23 @@ export const DRAFT_COPY = {
      * rather than as a person. This says what actually happened.
      */
     chatReadAt: (time: string) => `Read ${time}`,
+    unsendLabel: "Unsend",
+    unsendConfirm: "Unsend it",
+    unsendCancel: "Keep it",
+    /**
+     * "Removed", never "deleted".
+     *
+     * The content moves to message_redactions and stays there for moderation,
+     * because a report referencing a deleted message is an accusation with
+     * nothing attached. So a claim of deletion would be false, and this product
+     * makes one real claim of deletion — the account-deletion copy that says
+     * "we mean actually deleted" — which is the standard this has to not
+     * undercut.
+     */
+    unsendTombstoneMine: "You removed this",
+    unsendTombstoneTheirs: "This was removed",
+    unsendRefused: "That message cannot be unsent.",
+    unsendFailed: "That did not work. Try again.",
     chatEmptyHeading: "Say the first thing",
     chatEmptyBody:
       "Nobody has written yet. There is no clever opener needed here — the hard part is already behind both of you.",
