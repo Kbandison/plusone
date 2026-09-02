@@ -113,6 +113,34 @@ into the app rather than a magic link — so no SMS and no working redirect URL 
 needed. The code length is a Supabase dashboard setting; the input is a ceiling
 (`OTP.codeMaxLength`) and fits whatever it is set to.
 
+**Kevin said "supabase is done" on 2026-09-01, and that is NOT the same as
+checked.** Relayed through WSL, who flagged it as a relay rather than a
+confirmation — correctly, because this is the one claim in this document that
+the reply actively promises. What could be checked from a session was checked
+and it does not reach the important half:
+
+```
+auth settings endpoint   exposes no template and no Site URL — not knowable here
+auth.users               25 of 28 accounts carry a confirmed email
+                         (counts only; an address in a log beside this app's
+                         name is the disclosure §9.6 exists to prevent)
+```
+
+So an email on SOME account is plausible and an email on the REVIEWER'S account
+is not established, and whether the template carries `{{ .Token }}` cannot be
+read by any credential this repo holds. Neither can be taken from a message.
+
+**One test settles both, and only Kevin can run it.** Sign out, enter the
+reviewer's address on `/sign-in`, and finish signing in with the code that
+arrives. If a six-or-eight digit code arrives and works, the account has an
+email, the template carries the token, and the rate limit is not in the way — all
+three, in about a minute. If a link arrives instead of a code, the template is
+still the default and the reply must not go.
+
+Do it before replying. A reviewer who gets a link pointing at
+`http://localhost:3000` and a code screen with nothing to type files the same
+2.1 again, and that would be the third round on one question.
+
 **Two things must be true and BOTH are dashboard work, not code:**
 
 1. **The reviewer account needs an email address on it.** Set it in Supabase →
