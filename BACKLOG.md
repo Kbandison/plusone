@@ -1673,6 +1673,39 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     is stranded, and changing where every signed-out person lands mid-review is
     not a drive-by. Worth settling once 2.1 is answered.
 
+29. **Thanking the beta testers, and the window that closes when signup reopens.**
+    Kevin raised it 2026-09-01 and the mechanism is trivial; the reason it is an
+    item is that half of it EXPIRES.
+
+    **The grant is a row.** `is_premium()` unions `subscriptions`,
+    `iap_entitlements` and `premium_grants`, so thanking a tester with premium is
+    an insert into the third — no store involved, nothing to reconcile with Apple
+    or Google, and it lapses on its own if it carries a date.
+
+    **What expires is knowing WHO.** `waitlist.accepted_at` marks somebody who
+    came in through a beta invitation, and that is the only thing separating this
+    cohort from everybody else. Once `shouldCreateUser` goes back to `true`
+    (backlog 22) new members arrive by a door that leaves no such mark, and the
+    distinction stops being recoverable. **Stamp the cohort before the beta ends
+    even if the grant itself is deferred** — that costs one query now and is
+    impossible later.
+
+    **Start it when their metro opens, not when they join.** Premium is reach and
+    filters; a tester whose area holds four people gets nothing from either, so a
+    grant running from signup is spent while it cannot be used. Kevin's own
+    framing on 2026-09-01 is the argument — testers are there to test, and the
+    thank-you should land when the app is worth using.
+
+    **Permanent is more expensive than it reads.** A lifetime grant on a cohort
+    of unknown size is an open liability against a model that assumes recurring
+    revenue, and Kevin has said he will take as many testers as sign up. A dated
+    grant is the same gesture with a known cost.
+
+    **Whatever it is, it clears `PREMIUM_NEVER`** — no ranking or visibility
+    boost, no extra drops, no undo. A "founding member" badge is the obvious
+    thank-you and is exactly the banned shape: it makes somebody more visible,
+    and on this app it would mark the earliest and most identifiable cohort.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
