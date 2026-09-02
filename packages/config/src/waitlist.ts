@@ -67,51 +67,66 @@
 export interface Metro {
   readonly id: string;
   readonly label: string;
+  /**
+   * Approximate centroid. Absent for `elsewhere`, which is not a place.
+   *
+   * These exist for ONE question — which metros fall inside `RADIUS.ladderMi`'s
+   * last rung of each other — so a city-hall coordinate is far finer than the
+   * job needs: being ten miles out cannot move a pair across a 250-mile line
+   * unless it was within ten miles of it already. `metroClusters` names any
+   * pair inside 15 miles of the boundary rather than pretending otherwise.
+   *
+   * They are NOT used for matching. Distance between members comes from their
+   * own coarse location, and a metro centroid standing in for a person would be
+   * both wrong and a worse disclosure than the one this app already makes.
+   */
+  readonly lat?: number;
+  readonly lng?: number;
 }
 
 export const METROS: readonly Metro[] = [
-  { id: "atlanta", label: "Atlanta, GA" },
-  { id: "austin", label: "Austin, TX" },
-  { id: "baltimore", label: "Baltimore, MD" },
-  { id: "birmingham", label: "Birmingham, AL" },
-  { id: "boston", label: "Boston, MA" },
-  { id: "charlotte", label: "Charlotte, NC" },
-  { id: "chicago", label: "Chicago, IL" },
-  { id: "cleveland", label: "Cleveland, OH" },
-  { id: "columbus", label: "Columbus, OH" },
-  { id: "dallas", label: "Dallas–Fort Worth, TX" },
-  { id: "denver", label: "Denver, CO" },
-  { id: "detroit", label: "Detroit, MI" },
-  { id: "houston", label: "Houston, TX" },
-  { id: "indianapolis", label: "Indianapolis, IN" },
-  { id: "jacksonville", label: "Jacksonville, FL" },
-  { id: "kansas-city", label: "Kansas City, MO" },
-  { id: "las-vegas", label: "Las Vegas, NV" },
-  { id: "los-angeles", label: "Los Angeles, CA" },
-  { id: "memphis", label: "Memphis, TN" },
-  { id: "miami", label: "Miami–Fort Lauderdale, FL" },
-  { id: "milwaukee", label: "Milwaukee, WI" },
-  { id: "minneapolis", label: "Minneapolis–St Paul, MN" },
-  { id: "nashville", label: "Nashville, TN" },
-  { id: "new-orleans", label: "New Orleans, LA" },
-  { id: "new-york", label: "New York, NY" },
-  { id: "oklahoma-city", label: "Oklahoma City, OK" },
-  { id: "orlando", label: "Orlando, FL" },
-  { id: "philadelphia", label: "Philadelphia, PA" },
-  { id: "phoenix", label: "Phoenix, AZ" },
-  { id: "pittsburgh", label: "Pittsburgh, PA" },
-  { id: "portland", label: "Portland, OR" },
-  { id: "raleigh", label: "Raleigh–Durham, NC" },
-  { id: "richmond", label: "Richmond, VA" },
-  { id: "sacramento", label: "Sacramento, CA" },
-  { id: "salt-lake-city", label: "Salt Lake City, UT" },
-  { id: "san-antonio", label: "San Antonio, TX" },
-  { id: "san-diego", label: "San Diego, CA" },
-  { id: "san-francisco", label: "San Francisco Bay Area, CA" },
-  { id: "seattle", label: "Seattle, WA" },
-  { id: "st-louis", label: "St Louis, MO" },
-  { id: "tampa", label: "Tampa–St Petersburg, FL" },
-  { id: "washington", label: "Washington, DC" },
+  { id: "atlanta", label: "Atlanta, GA", lat: 33.75, lng: -84.39 },
+  { id: "austin", label: "Austin, TX", lat: 30.27, lng: -97.74 },
+  { id: "baltimore", label: "Baltimore, MD", lat: 39.29, lng: -76.61 },
+  { id: "birmingham", label: "Birmingham, AL", lat: 33.52, lng: -86.8 },
+  { id: "boston", label: "Boston, MA", lat: 42.36, lng: -71.06 },
+  { id: "charlotte", label: "Charlotte, NC", lat: 35.23, lng: -80.84 },
+  { id: "chicago", label: "Chicago, IL", lat: 41.88, lng: -87.63 },
+  { id: "cleveland", label: "Cleveland, OH", lat: 41.5, lng: -81.69 },
+  { id: "columbus", label: "Columbus, OH", lat: 39.96, lng: -82.99 },
+  { id: "dallas", label: "Dallas–Fort Worth, TX", lat: 32.78, lng: -96.8 },
+  { id: "denver", label: "Denver, CO", lat: 39.74, lng: -104.99 },
+  { id: "detroit", label: "Detroit, MI", lat: 42.33, lng: -83.05 },
+  { id: "houston", label: "Houston, TX", lat: 29.76, lng: -95.37 },
+  { id: "indianapolis", label: "Indianapolis, IN", lat: 39.77, lng: -86.16 },
+  { id: "jacksonville", label: "Jacksonville, FL", lat: 30.33, lng: -81.66 },
+  { id: "kansas-city", label: "Kansas City, MO", lat: 39.1, lng: -94.58 },
+  { id: "las-vegas", label: "Las Vegas, NV", lat: 36.17, lng: -115.14 },
+  { id: "los-angeles", label: "Los Angeles, CA", lat: 34.05, lng: -118.24 },
+  { id: "memphis", label: "Memphis, TN", lat: 35.15, lng: -90.05 },
+  { id: "miami", label: "Miami–Fort Lauderdale, FL", lat: 25.76, lng: -80.19 },
+  { id: "milwaukee", label: "Milwaukee, WI", lat: 43.04, lng: -87.91 },
+  { id: "minneapolis", label: "Minneapolis–St Paul, MN", lat: 44.98, lng: -93.27 },
+  { id: "nashville", label: "Nashville, TN", lat: 36.16, lng: -86.78 },
+  { id: "new-orleans", label: "New Orleans, LA", lat: 29.95, lng: -90.07 },
+  { id: "new-york", label: "New York, NY", lat: 40.71, lng: -74.01 },
+  { id: "oklahoma-city", label: "Oklahoma City, OK", lat: 35.47, lng: -97.52 },
+  { id: "orlando", label: "Orlando, FL", lat: 28.54, lng: -81.38 },
+  { id: "philadelphia", label: "Philadelphia, PA", lat: 39.95, lng: -75.17 },
+  { id: "phoenix", label: "Phoenix, AZ", lat: 33.45, lng: -112.07 },
+  { id: "pittsburgh", label: "Pittsburgh, PA", lat: 40.44, lng: -80.0 },
+  { id: "portland", label: "Portland, OR", lat: 45.52, lng: -122.68 },
+  { id: "raleigh", label: "Raleigh–Durham, NC", lat: 35.78, lng: -78.64 },
+  { id: "richmond", label: "Richmond, VA", lat: 37.54, lng: -77.44 },
+  { id: "sacramento", label: "Sacramento, CA", lat: 38.58, lng: -121.49 },
+  { id: "salt-lake-city", label: "Salt Lake City, UT", lat: 40.76, lng: -111.89 },
+  { id: "san-antonio", label: "San Antonio, TX", lat: 29.42, lng: -98.49 },
+  { id: "san-diego", label: "San Diego, CA", lat: 32.72, lng: -117.16 },
+  { id: "san-francisco", label: "San Francisco Bay Area, CA", lat: 37.77, lng: -122.42 },
+  { id: "seattle", label: "Seattle, WA", lat: 47.61, lng: -122.33 },
+  { id: "st-louis", label: "St Louis, MO", lat: 38.63, lng: -90.2 },
+  { id: "tampa", label: "Tampa–St Petersburg, FL", lat: 27.95, lng: -82.46 },
+  { id: "washington", label: "Washington, DC", lat: 38.91, lng: -77.04 },
   { id: "elsewhere", label: "Somewhere else" },
 ];
 
@@ -257,6 +272,78 @@ export const WAITLIST_INVITE_TTL_DAYS = 14;
  * is roughly the point at which a first week has somebody new in it most
  * nights, allowing for the ones who never sign up.
  */
+/**
+ * Great-circle miles between two metro centroids.
+ *
+ * Spherical, not ellipsoidal. The error against WGS84 is under 0.5% over these
+ * distances — about a mile at 250 — and everything this feeds reports a
+ * borderline band far wider than that.
+ */
+function haversineMi(a: Metro, b: Metro): number | null {
+  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return null;
+  const R = 3958.8;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * How close to the edge counts as "do not rely on this".
+ *
+ * Sized to the DOMINANT error, which is not the coordinates. A centroid is good
+ * to a mile or two and the spherical model to about one at this range — but a
+ * member sits anywhere in their metro, and a large one is 40 to 60 miles
+ * across. So the distance between two PEOPLE can differ from the distance
+ * between their two city centres by roughly ±30 miles, in either direction.
+ *
+ * Set at 15 first, which is the accuracy of the numbers rather than the
+ * accuracy of the answer, and it called Dallas–Houston (~225 against a 250
+ * rung) a settled fact. Two members at unfavourable edges of those two metros
+ * are comfortably past 250 and would never see each other, so "settled" was
+ * wrong in exactly the direction that produces confident bad advice.
+ */
+export const METRO_BORDERLINE_MI = 40;
+
+/**
+ * Which metros are near enough to share a pool, and which are too close to call.
+ *
+ * The question this exists for: a member sees nobody beyond `RADIUS.ladderMi`'s
+ * last rung, so inviting one person per metro leaves every one of them looking
+ * at `COPY.drop.thin` for ever. Deciding where to concentrate means knowing
+ * which areas COMBINE, and a list of city names cannot answer that.
+ *
+ * Two things it deliberately does not claim. A centroid is not a member —
+ * people sit anywhere in a metro, so a pair listed here can still be out of
+ * range for two individuals at opposite edges, and a pair just outside can be
+ * in range. And `borderline` is not decoration: within
+ * `METRO_BORDERLINE_MI` of the cut, treat membership as a coin toss rather
+ * than a fact, because the centroid error and the member's own position both
+ * exceed the margin.
+ *
+ * `elsewhere` has no centroid, so it is near nothing and nothing is near it.
+ * That is correct rather than a gap — it is not a place.
+ */
+export function metrosWithin(
+  metroId: string,
+  withinMi: number,
+): { readonly near: readonly string[]; readonly borderline: readonly string[] } {
+  const from = METROS.find((m) => m.id === metroId);
+  if (!from) return { near: [], borderline: [] };
+  const near: string[] = [];
+  const borderline: string[] = [];
+  for (const to of METROS) {
+    if (to.id === metroId) continue;
+    const mi = haversineMi(from, to);
+    if (mi == null) continue;
+    if (mi <= withinMi) near.push(to.id);
+    if (Math.abs(mi - withinMi) <= METRO_BORDERLINE_MI) borderline.push(to.id);
+  }
+  return { near, borderline };
+}
+
 export const WAITLIST_METRO_TARGET = 30;
 
 /**

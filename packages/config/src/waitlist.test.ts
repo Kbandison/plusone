@@ -14,6 +14,7 @@ import {
   PLAY_TRACK,
   METROS,
   METRO_IDS,
+  metrosWithin,
   WAITLIST_EMAIL,
   WAITLIST_INVITE_TTL_DAYS,
   WAITLIST_NEVER,
@@ -555,4 +556,93 @@ describe("the normal steps do not describe work that is already done", () => {
       expect(pending).toMatch(/we add|tell us your/);
     });
   }
+});
+
+describe("metro coordinates are data somebody typed, so they are checked against known distances", () => {
+  /**
+   * These were written from memory to answer one question — which metros fall
+   * inside RADIUS.ladderMi's last rung of each other — and invented data that
+   * nothing checks is exactly the kind this repo keeps getting caught by. A
+   * transposed pair or a dropped minus sign passes every other test in this
+   * file and silently produces the wrong advice about where to open a metro.
+   *
+   * Real great-circle distances, tolerance 25mi, which is far tighter than a
+   * mistake would be and far looser than the centroid choice matters.
+   */
+  const KNOWN: [string, string, number][] = [
+    ["dallas", "houston", 225],
+    ["dallas", "austin", 183],
+    ["houston", "austin", 146],
+    ["new-york", "philadelphia", 80],
+    ["los-angeles", "san-diego", 111],
+    ["san-francisco", "sacramento", 75],
+    ["atlanta", "birmingham", 135],
+    ["miami", "orlando", 194],
+    ["seattle", "portland", 145],
+    ["new-york", "los-angeles", 2451],
+    ["boston", "washington", 393],
+  ];
+
+  const at = (id: string) => {
+    const m = METROS.find((x) => x.id === id);
+    if (!m?.lat || !m?.lng) throw new Error(`no coordinates for ${id}`);
+    return m;
+  };
+
+  const miles = (a: string, b: string) => {
+    const [p, q] = [at(a), at(b)];
+    const R = 3958.8;
+    const rad = (d: number) => (d * Math.PI) / 180;
+    const h =
+      Math.sin(rad(q.lat! - p.lat!) / 2) ** 2 +
+      Math.cos(rad(p.lat!)) * Math.cos(rad(q.lat!)) * Math.sin(rad(q.lng! - p.lng!) / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  };
+
+  it.each(KNOWN)("%s to %s is about %i miles", (a, b, expected) => {
+    expect(Math.abs(miles(a, b) - expected)).toBeLessThan(25);
+  });
+
+  it("every metro except elsewhere has a coordinate", () => {
+    // The floor. Every distance assertion above skips a metro it cannot read,
+    // so a missing pair would go unnoticed by all of them.
+    const without = METROS.filter((m) => m.id !== "elsewhere" && (m.lat == null || m.lng == null));
+    expect(without.map((m) => m.id)).toEqual([]);
+    expect(METROS.length).toBeGreaterThan(40);
+  });
+
+  it("elsewhere has none, because it is not a place", () => {
+    const e = METROS.find((m) => m.id === "elsewhere");
+    expect(e?.lat).toBeUndefined();
+    expect(metrosWithin("elsewhere", 250).near).toEqual([]);
+  });
+
+  it("nothing sits outside the continental US, which is what a sign error looks like", () => {
+    // A dropped minus on longitude lands a US city in China and still passes a
+    // pairwise check between two cities that were BOTH flipped.
+    for (const m of METROS) {
+      if (m.lat == null || m.lng == null) continue;
+      expect(m.lat, m.id).toBeGreaterThan(24);
+      expect(m.lat, m.id).toBeLessThan(49);
+      expect(m.lng, m.id).toBeLessThan(-66);
+      expect(m.lng, m.id).toBeGreaterThan(-125);
+    }
+  });
+
+  it("clusters Texas together and does not reach California", () => {
+    // The finding that produced all of this: Kevin's first testers landed one
+    // per metro, and Houston/Dallas were the only pair inside the last rung.
+    const texas = metrosWithin("dallas", 250).near;
+    expect(texas).toContain("houston");
+    expect(texas).toContain("austin");
+    expect(texas).not.toContain("san-francisco");
+    expect(metrosWithin("san-francisco", 250).near).not.toContain("dallas");
+  });
+
+  it("names the pairs too close to the line to trust", () => {
+    // Houston-Dallas is ~225 against a 250 rung, so it must be flagged: the
+    // centroid error and the member's own position across a metro both exceed
+    // the 25-mile margin, and reporting it as a fact would be overclaiming.
+    expect(metrosWithin("dallas", 250).borderline).toContain("houston");
+  });
 });

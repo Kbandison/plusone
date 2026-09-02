@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 
-import { PLAY_TESTER_PASTE, WAITLIST_METRO_TARGET, metroLabel } from "@plusone/config";
+import {
+  PLAY_TESTER_PASTE,
+  RADIUS,
+  WAITLIST_METRO_TARGET,
+  metroLabel,
+  metrosWithin,
+} from "@plusone/config";
+
+/** The furthest the Drop will ever look — see widenToPool. */
+const LAST_RUNG_MI = RADIUS.ladderMi[RADIUS.ladderMi.length - 1] ?? 250;
 
 import { Card } from "@/app/ui";
 import { confirmedWaitlist, countByMetro, testerList } from "@/lib/waitlist";
@@ -32,6 +41,29 @@ export const dynamic = "force-dynamic";
 export default async function AdminWaitlistPage() {
   const rows = await confirmedWaitlist();
   const counts = countByMetro(rows).filter((c) => c.confirmed > 0);
+
+  /**
+   * How many people a member in this metro could actually reach.
+   *
+   * The column that answers the question the rest of the table cannot: a member
+   * sees nobody past RADIUS.ladderMi's last rung, so "Houston 4" and
+   * "Dallas 3" are not two thin areas — they are one pool of seven, because
+   * those two combine. Deciding where to concentrate without this means doing
+   * it from a mental map of the United States.
+   */
+  const confirmedIn = new Map(counts.map((c) => [c.metro, c.confirmed]));
+  const reach = new Map(
+    counts.map((c) => {
+      const { near, borderline } = metrosWithin(c.metro, LAST_RUNG_MI);
+      const combined = near.reduce((n, id) => n + (confirmedIn.get(id) ?? 0), c.confirmed);
+      // Only the ones that actually hold somebody are worth naming.
+      const withPeople = near.filter((id) => confirmedIn.get(id));
+      return [
+        c.metro,
+        { combined, withPeople, unsure: borderline.filter((id) => confirmedIn.get(id)) },
+      ] as const;
+    }),
+  );
 
   const uninvited = rows.filter((r) => !r.invited_at);
   const toAdd = { ios: testerList(rows, "ios"), android: testerList(rows, "android") };
@@ -66,6 +98,7 @@ export default async function AdminWaitlistPage() {
                 <tr>
                   <th className="py-2 pr-4 font-normal">Area</th>
                   <th className="py-2 pr-4 font-normal">Confirmed</th>
+                  <th className="py-2 pr-4 font-normal">Within {LAST_RUNG_MI} mi</th>
                   <th className="py-2 pr-4 font-normal">Would test</th>
                   <th className="py-2 pr-4 font-normal">Invited</th>
                   <th className="py-2 font-normal">Joined</th>
@@ -78,6 +111,35 @@ export default async function AdminWaitlistPage() {
                     <td className="py-2 pr-4">
                       {c.confirmed}
                       <span className="text-ink-3"> / {WAITLIST_METRO_TARGET}</span>
+                    </td>
+                    <td className="py-2 pr-4">
+                      {reach.get(c.metro)?.combined ?? c.confirmed}
+                      {(reach.get(c.metro)?.withPeople.length ?? 0) > 0 ? (
+                        <span className="text-ink-3">
+                          {" "}
+                          · with{" "}
+                          {reach
+                            .get(c.metro)!
+                            .withPeople.map((id) => metroLabel(id) ?? id)
+                            .join(", ")}
+                        </span>
+                      ) : null}
+                      {(reach.get(c.metro)?.unsure.length ?? 0) > 0 ? (
+                        // Named, not hidden: within METRO_BORDERLINE_MI of the
+                        // cut, whether two PEOPLE are in range depends on where
+                        // they each sit in their own metro, which no centroid
+                        // knows. Presenting that as settled is how a confident
+                        // wrong answer gets made.
+                        <span className="text-ink-3">
+                          {" "}
+                          (
+                          {reach
+                            .get(c.metro)!
+                            .unsure.map((id) => metroLabel(id) ?? id)
+                            .join(", ")}{" "}
+                          is borderline)
+                        </span>
+                      ) : null}
                     </td>
                     <td className="py-2 pr-4">{c.wantsBeta}</td>
                     <td className="py-2 pr-4">{c.invited}</td>
