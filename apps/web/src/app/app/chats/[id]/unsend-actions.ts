@@ -48,10 +48,7 @@ export async function unsendMessage(
   const { error } = await supabase.rpc("unsend_message", { p_message_id: messageId });
   if (error) {
     return {
-      error:
-        error.code === "42501"
-          ? DRAFT_COPY.app.unsendRefused
-          : DRAFT_COPY.app.unsendFailed,
+      error: error.code === "42501" ? DRAFT_COPY.app.unsendRefused : DRAFT_COPY.app.unsendFailed,
     };
   }
 
