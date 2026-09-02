@@ -492,6 +492,29 @@ describe("an invitation has to survive the jump between two engines", () => {
     }
   });
 
+  it("asks about the TWA too, because the invitation opens in it", () => {
+    // inNativeShell cannot see a TWA and should not — a TWA is real Chrome.
+    // But the Android intent filter carries no path constraint, so once
+    // assetlinks is verified every path on the host opens in the app, and an
+    // Android tester who had already installed was shown how to install it.
+    // The same screen this block exists to prevent, one engine over.
+    const install = code("app/beta/[code]/install.tsx");
+    expect(install).toMatch(/inTwa\(\)/);
+    expect(install).toMatch(/inTwa\(\)\s*\|\|\s*inNativeShell\(\)/);
+  });
+
+  it("and the Android manifest still has no path constraint, which is why", () => {
+    // The floor under the assertion above: it is only true while every path on
+    // the host opens in the app. If a path filter is ever added, the reasoning
+    // in install.tsx needs rereading rather than the check quietly outliving it.
+    const manifest = readFileSync(
+      join(SRC, "../../../apps/android/app/src/main/AndroidManifest.xml"),
+      "utf8",
+    );
+    expect(manifest).toMatch(/android:host/);
+    expect(manifest).not.toMatch(/android:path/);
+  });
+
   it("does not tell an Android tester the same thing, because a TWA shares Chrome's jar", () => {
     // The mirror, and the reason this suite is not vacuous: if the assertion
     // above passed for both platforms it would be matching something generic

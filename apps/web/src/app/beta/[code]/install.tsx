@@ -12,7 +12,7 @@ import {
 } from "@plusone/config";
 
 import { Field } from "@/app/auth-fields";
-import { inNativeShell } from "@/lib/native-shell";
+import { inNativeShell, inTwa } from "@/lib/native-shell";
 import { buttonClass } from "@/app/ui";
 import { saveStoreAccount } from "./actions";
 
@@ -67,10 +67,31 @@ export function Install({
    * wrong button. The install block is the correct answer for everybody the
    * server renders for, so the browser case is never wrong and only the app
    * corrects itself.
+   *
+   * ── and `inNativeShell` alone is not the question ──────────────────────────
+   *
+   * It cannot see a TWA and is not meant to: a TWA is real Chrome, so
+   * `window.Capacitor` is absent and answering no is correct. But the Android
+   * intent filter carries NO path constraint — checked in the generated
+   * manifest, which has zero `android:path` attributes — so once assetlinks is
+   * verified EVERY path on the host opens in the app, invitation links
+   * included. An Android tester who had already installed would have been shown
+   * how to install it, which is the same screen this block exists to prevent,
+   * one engine over.
+   *
+   * `inTwa()` is the right question and its own docblock names this case:
+   * "anything that should not offer to install an app the member has already
+   * installed." It is first because it is the cheaper check and because a tap
+   * on an invitation IS the launch navigation, which is when the referrer it
+   * reads is present.
+   *
+   * The cookie was never at risk on Android — Chrome's jar is shared, which is
+   * the asymmetry that found the iOS bug in the first place. This is the copy
+   * being wrong, not the invitation failing.
    */
   const [inShell, setInShell] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor, which does not exist during a server render
-  useEffect(() => setInShell(inNativeShell()), []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.Capacitor and document.referrer, neither of which exists during a server render
+  useEffect(() => setInShell(inTwa() || inNativeShell()), []);
 
   const [picking, setPicking] = useState(false);
   const [platform, setPlatform] = useState<BetaPlatform | null>(known?.platform ?? null);
