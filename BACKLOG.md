@@ -1706,6 +1706,51 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     thank-you and is exactly the banned shape: it makes somebody more visible,
     and on this app it would mark the earliest and most identifiable cohort.
 
+30. **Read receipts, on by default, hideable only with premium.** Kevin's ask
+    2026-09-01, and his framing settled the design after mine was wrong.
+
+    **The data already exists.** `chat_reads` (20260819000100) holds
+    `last_read_at` per chat per member, for the unread badges. Its policy is
+    `user_id = auth.uid() and i_am_in_chat(chat_id)` — private to you. So this is
+    exposing an existing marker to the other person in the chat, not collecting
+    anything new.
+
+    **On for everyone; premium buys the ability to turn YOURS off.** I proposed
+    the opposite — premium buys SEEING receipts — and Kevin was right to reject
+    it on two counts. It leaves free members no reason to pay, and it does not
+    fit `PREMIUM_LEAD`, which promises "who can see you, and how far you can
+    reach". Seeing other people is a third thing the tier does not claim.
+    Controlling what others see of you is precisely incognito browse and
+    per-photo privacy again.
+
+    **Checked against the never-list and it clears, but only just, so the
+    reasoning matters.** "Nobody gets ghosted" is the BRAND TAGLINE
+    (`brand.ts`), and `PREMIUM_NEVER` bans "exemptions from closure notes" —
+    accountability is not for sale. Paying to hide a receipt sounds like paying
+    to ghost quietly. It is not: ghosting is handled by the seven-day fuse and
+    the closure note, and this touches neither. A premium member who hides
+    receipts still meets the fuse and still owes the note. If that ever stops
+    being true, this entry is where to come back to.
+
+    **The lapse rule is not a choice.** A hidden flag is RETAINED for ever;
+    premium gates only the setting of it. The safe direction never makes a
+    member more visible than they chose, which is the rule 18b settled for
+    photos and 19 settled for filters — and a lapse silently un-hiding somebody
+    is the exact failure it exists to stop. Pin it by test, not by comment.
+
+    **The gate belongs in a definer function, because of how `profiles` is
+    granted.** No whole-table update grant, column-level only — so per 18a, do
+    NOT grant `update (hide_read_receipts)` to `authenticated` at all and write
+    it through `security definer`. A member then has no path to the column
+    rather than a checked one. Read `information_schema.role_table_grants`
+    before building, not the creating migration.
+
+    **A `profiles` column is never one file.** It reaches `privacy-labels.ts`
+    and `play-data-safety.ts` through the chain that has a test, so it lands on
+    two store data-safety forms. Expect that, and run `packages/config` — the
+    machine note about `pnpm test --concurrency=1` being the only complete gate
+    exists because a `profiles` column was added without it.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
