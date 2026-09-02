@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { BETA_INSTALL } from "@plusone/config";
+
 const SRC = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(SRC, p), "utf8");
 
@@ -443,5 +445,56 @@ describe("the signed-out pages share one shell", () => {
     // six call sites.
     const ui = code("app/ui.tsx");
     expect(ui).toMatch(/variant === "read" \? "justify-center py-24" : "pt-10 pb-16"/);
+  });
+});
+
+describe("an invitation has to survive the jump between two engines", () => {
+  /**
+   * Read directly rather than through `betaInstallFor`, which picks between the
+   * invitation variant and the public-link one. The invitation variant is the
+   * one this is about: it is the path that carries a cookie.
+   */
+  const ios = BETA_INSTALL.ios;
+  const android = BETA_INSTALL.android;
+
+  const aasa = code("app/.well-known/apple-app-site-association/route.ts");
+  const components = /const COMPONENTS[\s\S]*?\n\];/.exec(aasa)?.[0] ?? "";
+
+  it("finds the association file's components at all", () => {
+    // The floor. Every assertion below is about what this list does NOT
+    // contain, and an empty string satisfies all of them silently.
+    expect(components).toMatch(/\/app\/\*/);
+    expect(components.length).toBeGreaterThan(80);
+  });
+
+  it("does not claim /beta/*, so an invitation link opens Safari", () => {
+    // Not a defect to fix here — claiming it is a real option, and it needs no
+    // iOS build because the entitlement is domain-level
+    // (`applinks:www.loveplusone.app`) and the components are served from here.
+    //
+    // It is pinned because the iOS COPY below is written for this being false.
+    // Whoever adds `/beta/*` gets this failure and, with it, the reason to go
+    // and shorten those steps.
+    expect(components).not.toMatch(/\/beta/);
+  });
+
+  it("tells an iOS tester to make the account before installing", () => {
+    // The cookie proxy.ts sets lands in Safari's jar. The installed app is
+    // WKWebView with its own, so the gate in /onboarding/phone finds nothing
+    // and refuses somebody who is genuinely invited. An ACCOUNT crosses that
+    // boundary where a cookie does not, because signing in needs no invitation.
+    for (const steps of [ios.steps, ios.pendingSteps]) {
+      expect(steps[0]).toMatch(/browser/i);
+      expect(steps[0]).toMatch(/account/i);
+      // Before the install instructions, not buried under them.
+      expect(steps.slice(1).join(" ")).toMatch(/TestFlight/);
+    }
+  });
+
+  it("does not tell an Android tester the same thing, because a TWA shares Chrome's jar", () => {
+    // The mirror, and the reason this suite is not vacuous: if the assertion
+    // above passed for both platforms it would be matching something generic
+    // rather than the instruction that was added for one engine.
+    expect(android.steps[0]).not.toMatch(/browser/i);
   });
 });

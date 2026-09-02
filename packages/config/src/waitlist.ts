@@ -389,16 +389,38 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
      * because "individual invitations need no link at all", which is true and
      * reads as though a tester might need neither.
      */
+    /**
+     * Step one is ACCOUNT, not install, and only on iOS. This is the two-engine
+     * rule in `AGENTS.md` charging rent.
+     *
+     * An invitation is carried by one thing: the `plusone_beta` cookie that
+     * `proxy.ts` sets when this page is fetched. `/beta/*` is not in the
+     * association file (`/app/*`, `/i/*`, `/auth/*` are), so tapping an
+     * invitation opens SAFARI — and the installed app is WKWebView, which has
+     * its own cookie jar and cannot see Safari's. The shell launches at `/app`,
+     * a signed-out `/app` redirects to this phone step, and the gate there finds
+     * no cookie. A tester holding a valid invitation is told the beta is closed
+     * and offered the waitlist they are already on.
+     *
+     * Android needs no such step and does not have one: a TWA is real Chrome and
+     * shares its jar, so the cookie set here is the same cookie the app reads.
+     *
+     * The account is what crosses the boundary — a session is established by
+     * signing in, which needs no invitation. So make the account in the browser
+     * that holds the invitation, and sign in wherever you like afterwards.
+     */
     steps: [
-      "Install TestFlight from the App Store first. Apple's invitation does nothing without it.",
+      "Create your account here in this browser first, with the button below. Your invitation is held by this browser and the installed app cannot read it — once the account exists you sign in inside the app with the same number.",
+      "Install TestFlight from the App Store. Apple's invitation does nothing without it.",
       "Watch for an email from Apple, sent to the Apple ID you gave us. Open it on the device and it hands you to TestFlight.",
-      "Install Plus One from TestFlight.",
+      "Install Plus One from TestFlight, and sign in with the account you just made.",
     ],
     pendingSteps: [
-      "Install TestFlight from the App Store first. Apple's invitation does nothing without it.",
+      "Create your account here in this browser first, with the button below. Your invitation is held by this browser and the installed app cannot read it — once the account exists you sign in inside the app with the same number.",
+      "Install TestFlight from the App Store. Apple's invitation does nothing without it.",
       "Tell us your Apple ID below, and we add it to the test group.",
       "Apple emails that address an invitation. Open it on the device and it hands you to TestFlight.",
-      "Install Plus One from TestFlight.",
+      "Install Plus One from TestFlight, and sign in with the account you just made.",
     ],
     pendingWait:
       "Apple reviews builds before they reach testers, and we cannot predict how long that takes. Opening Plus One in a browser works right now meanwhile — it is the same app.",
