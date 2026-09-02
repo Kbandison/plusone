@@ -1575,6 +1575,46 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     decide what may be shown, so this is a read and a render rather than new
     policy.
 
+28. **The other half of the iOS invitation, and a redirect worth questioning.**
+    Raised 2026-09-01 by `274cd11`, which fixed the tester-facing symptom in copy
+    and deliberately left the mechanism alone.
+
+    **The finding, so it is not re-derived.** An invitation is carried by one
+    thing — the `plusone_beta` cookie `proxy.ts` sets on `/beta/<code>`. The
+    association file claims `/app/*`, `/i/*` and `/auth/*` and NOT `/beta/*`, so
+    an invitation link opens Safari, and the installed app is WKWebView with its
+    own cookie jar. A signed-out `/app` redirects to `/onboarding/phone`, the
+    gate finds no cookie, and a tester holding a valid invitation is told the
+    beta is closed and offered the waitlist they are already on. Android is
+    unaffected because a TWA shares Chrome's jar, and that asymmetry is the whole
+    diagnosis.
+
+    Two things are left, and neither is urgent now that the copy tells a tester
+    what to do.
+
+    - **Claiming `/beta/*` in the components.** Needs NO iOS build — the
+      entitlement is domain-level (`applinks:www.loveplusone.app`), so the
+      components are served from `apps/web`. It only helps a tester who re-taps
+      the invitation AFTER installing, which is the reverse of the order the
+      steps give, so it is an improvement rather than the fix. It wants
+      verifying in WKWebView, which is the shells lane.
+
+      `waitlist.test.ts` asserts `/beta/*` is absent AND that the iOS copy
+      carries the account-first step, so whoever adds the first gets a failure
+      pointing at the second. That coupling is the point — do not delete the
+      assertion to make the change pass.
+
+    - **Where a signed-out `/app` should land during a closed beta.** It goes to
+      `STEP_ROUTES.phone` — the sign-up door, which is the one door the gate
+      refuses. Everyone who can actually get through from there arrives with a
+      cookie they cannot have in the shell. The population hitting that redirect
+      is expired-session members and store reviewers, and `/sign-in` serves both.
+
+      Not changed mid-review, on purpose: `aa6f434` put a `/sign-in` link on the
+      form, so nobody is stranded, and moving where every signed-out person
+      lands while Apple has the build in front of them is not a drive-by. Worth
+      settling once 2.1 is answered.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
