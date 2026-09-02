@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { type WaitlistRow, testerList } from "./waitlist";
+
 import { BETA_INSTALL, BETA_LINKS, PLAY_TESTER_PASTE, PLAY_TRACK } from "@plusone/config";
 
 const SRC = join(import.meta.dirname, "..");
@@ -292,18 +294,26 @@ describe("a store identity is only held for somebody who asked to test", () => {
     expect(emailRead).toBeGreaterThan(guard);
   });
 
-  it("the tester list keys on invited, not accepted", () => {
-    // The point of asking at signup. Keyed on accepted, a tester could only be
-    // added to a store list after following their invitation and filling in a
-    // second form — which is the round trip being removed.
+  it("the tester list waits on NEITHER invited nor accepted", () => {
+    // It required accepted_at once, then invited_at, and both were the wrong way
+    // round for the order the operator works in: the store list has to be filled
+    // BEFORE the invitation email, because that email is what tells somebody to
+    // go and install. Gating on invited_at meant the addresses could only be
+    // copied after it had already been sent.
+    //
+    // Kept as a source scan because it is about what the filter must NOT
+    // consult; the positive behaviour is covered by real rows further down,
+    // which is the stronger half.
     const fn = fnBody(lib, "export function testerList");
-    expect(fn).toMatch(/r\.invited_at/);
+    expect(fn).not.toMatch(/r\.invited_at/);
     expect(fn).not.toMatch(/r\.accepted_at/);
   });
 
-  it("still refuses to list anybody uninvited", () => {
-    // Adding somebody to a Play track before they have an invitation lets them
-    // install an app they cannot sign into.
+  it("still refuses to list anybody who did not ask to test", () => {
+    // Renamed rather than deleted: it used to say "uninvited" and now lists
+    // exactly those, so the old name asserted the opposite of the rule. What it
+    // was really protecting is that nobody reaches a store list without having
+    // asked — which survives, and is the only gate left on this function.
     const fn = fnBody(lib, "export function testerList");
     expect(fn).toMatch(/wants_beta/);
   });
@@ -555,5 +565,53 @@ describe("the track testers are pasted into is the track their link opts them in
     // the wrong half of the map, so check the resolved value, not its shape.
     expect(PLAY_TESTER_PASTE.heading.toLowerCase()).toContain(PLAY_TRACK);
     expect(PLAY_TESTER_PASTE.path.toLowerCase()).toContain(PLAY_TRACK);
+  });
+});
+
+describe("a tester can be added to a store list before their invitation goes out", () => {
+  /** Only the fields testerList reads; the rest of WaitlistRow is irrelevant here. */
+  const row = (over: Partial<WaitlistRow>): WaitlistRow =>
+    ({
+      id: "r",
+      email: "a@example.com",
+      metro: "houston_tx",
+      wants_beta: true,
+      confirmed_at: "2026-09-01T00:00:00Z",
+      invited_at: null,
+      accepted_at: null,
+      store_platform: "android",
+      store_account_email: "a@gmail.com",
+      created_at: "2026-09-01T00:00:00Z",
+      ...over,
+    }) as WaitlistRow;
+
+  it("includes somebody confirmed and NOT yet invited", () => {
+    // The whole point. The store list has to be populated before the invitation
+    // email goes, because that email is what tells them to install, and Play
+    // answers an unlisted account with "unavailable" and no reason.
+    const { addresses } = testerList([row({ invited_at: null })], "android");
+    expect(addresses).toEqual(["a@gmail.com"]);
+  });
+
+  it("still includes somebody already invited", () => {
+    const { addresses } = testerList([row({ invited_at: "2026-09-01T01:00:00Z" })], "android");
+    expect(addresses).toEqual(["a@gmail.com"]);
+  });
+
+  it("excludes anybody who did not ask to test", () => {
+    // The floor on how wide this got. Confirmed is enforced upstream by
+    // confirmedWaitlist; wants_beta is enforced here, and without it a plain
+    // waitlist signup would be handed to a store.
+    expect(testerList([row({ wants_beta: false })], "android").addresses).toEqual([]);
+  });
+
+  it("keeps the platforms apart", () => {
+    expect(testerList([row({ store_platform: "ios" })], "android").addresses).toEqual([]);
+  });
+
+  it("counts somebody with no store account as missing rather than dropping them silently", () => {
+    const { addresses, missing } = testerList([row({ store_account_email: null })], "android");
+    expect(addresses).toEqual([]);
+    expect(missing).toBe(1);
   });
 });

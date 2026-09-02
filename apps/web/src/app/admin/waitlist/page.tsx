@@ -105,13 +105,13 @@ export default async function AdminWaitlistPage() {
 
         <TesterBlock
           heading={PLAY_TESTER_PASTE.heading}
-          note={`Paste into ${PLAY_TESTER_PASTE.path}. Comma-separated; these must be Google account addresses.`}
+          note={`Paste into ${PLAY_TESTER_PASTE.path} BEFORE sending invitations — the email tells them to install, and Play says "unavailable" until they are on the list. Comma-separated; these must be Google account addresses.`}
           value={android.addresses.join(", ")}
           missing={android.missing}
         />
         <TesterBlock
           heading="TestFlight"
-          note="Paste into App Store Connect → TestFlight → Testers. One per line; these must be Apple ID addresses."
+          note="Paste into App Store Connect → TestFlight → Testers BEFORE sending invitations — Apple emails the invitation to the Apple ID, and nothing reaches them until they are on the group. One per line; these must be Apple ID addresses."
           value={ios.addresses.join("\n")}
           missing={ios.missing}
         />

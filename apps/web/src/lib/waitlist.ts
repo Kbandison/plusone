@@ -580,19 +580,32 @@ export function testerList(
   platform: "ios" | "android",
 ): { addresses: string[]; missing: number } {
   /**
-   * Keyed on INVITED, not accepted — which is the whole point of asking for the
-   * store account at join.
+   * Keyed on CONFIRMED — every row here is, since `confirmedWaitlist` selects
+   * on it — and deliberately NOT on invited.
    *
-   * It used to require `accepted_at`, so somebody could only be added to a
-   * store list after they had followed their invitation, given us their Google
-   * account on a second form, and come back. Now the account arrives with the
-   * signup and the invitation is what gates this instead.
+   * It required `accepted_at` once, then `invited_at`, and both were the wrong
+   * way round for the order the operator actually works in. The store list has
+   * to be populated BEFORE the invitation goes out: `BETA_INSTALL.android`
+   * opens with "Nothing before this works", and the invitation email is what
+   * tells somebody to go and install. Gating this on `invited_at` meant the
+   * addresses could only be copied AFTER that email had been sent — so every
+   * tester was told to install during the window before they were added, and
+   * Play answers that with "unavailable" rather than a reason. Kevin hit it
+   * with six people waiting.
    *
-   * Not looser than that. Adding somebody to a Play track BEFORE they have an
-   * invitation lets them install an app they cannot then sign into, which is a
-   * worse first impression than waiting.
+   * The old comment argued the other way: adding somebody to a Play track
+   * before they have an invitation "lets them install an app they cannot then
+   * sign into, which is a worse first impression than waiting." BACKLOG 23
+   * settles that and was written later about this exact question — installing
+   * is not joining, `/onboarding/phone` refuses to create an account without an
+   * invitation, and "the account gate is the real wall and the store track was
+   * never doing that work." So the cost it avoided is not a cost, and the one
+   * it created is real.
+   *
+   * Still not open: confirmed, `wants_beta`, and a store account they gave us.
+   * Nobody reaches a store list without having asked to test.
    */
-  const wanted = rows.filter((r) => r.wants_beta && r.invited_at && r.store_platform === platform);
+  const wanted = rows.filter((r) => r.wants_beta && r.store_platform === platform);
   return {
     addresses: wanted.map((r) => r.store_account_email).filter((e): e is string => Boolean(e)),
     // Testers who accepted and never told us which account they install with.
