@@ -215,7 +215,13 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
              it now lives in is chrome that sits over the conversation, where
              every pixel it does not need is a line of the conversation it
              covers. */
-          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-2 text-[16px] focus:border-accent"
+          /* No focus:border-accent. The accent border was a SECOND focus
+             indicator on top of the one globals.css already draws, so a focused
+             box changed colour and grew a ring at once — louder than any other
+             control in the app, on the one a member looks at most. The keyboard
+             ring is untouched, which is the part the accessibility gate is
+             about; this only drops the colour change. */
+          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-4 py-2 text-[16px]"
         />
         <button type="submit" disabled={pending || preparing} className={buttonClass("primary")}>
           {C.sendLabel}

@@ -146,3 +146,66 @@ describe("it is sold as what the tier actually promises", () => {
     }
   });
 });
+
+describe("the receipt is live, and stops meaning anything once they reply", () => {
+  const page = read("../../chats/[id]/page.tsx");
+  const migrations = code;
+
+  it("keys on the LAST message, not on my last message", () => {
+    // Keyed on mine, the receipt survived their reply — "Read 01:41" pinned
+    // under a conversation that had moved on. A reply is a stronger
+    // acknowledgement than a receipt, so the receipt has nothing left to say.
+    expect(page).toMatch(/const last = \(messages \?\? \[\]\)\.at\(-1\);/);
+    expect(page).toMatch(/last\.sender_id !== me/);
+    expect(page).not.toMatch(/reverse\(\)\.find\(\(m\) => m\.sender_id === me\)/);
+  });
+
+  it("marks read only when the marker is actually behind something", () => {
+    // THE LOOP GUARD. The chat page calls mark_chat_read on every render, so
+    // while it wrote unconditionally every render was an event and every event
+    // a render. Watching chat_reads without this is an infinite loop, not a
+    // slow page — which is why the condition is pinned rather than trusted.
+    // The LAST definition wins, because there are two: the original
+    // `create function` and 20260902000200's `create or replace`. Matching the
+    // first would assert against the version this replaced — passing for ever
+    // while the live one quietly lost its guard.
+    const all = [
+      ...migrations.matchAll(
+        /create (?:or replace )?function public\.mark_chat_read[\s\S]*?\$\$;/g,
+      ),
+    ];
+    expect(all.length).toBeGreaterThan(1);
+    const fn = all[all.length - 1]![0];
+    expect(fn.length).toBeGreaterThan(100);
+    expect(fn).toMatch(/where[\s\S]*?last_read_at\s*<\s*\(/);
+    expect(fn).toMatch(/max\(m\.created_at\)/);
+  });
+
+  it("lets a participant read the other marker, and only if it is not hidden", () => {
+    // Realtime evaluates RLS per subscriber, so the widened SELECT policy is
+    // what makes the event deliverable at all — and putting the hide flag in
+    // the policy rather than only in chat_read_at() means Realtime honours it
+    // too. A hidden member generates no event the other side may receive, so
+    // there is nothing to filter client-side and nothing to leak.
+    expect(migrations).toMatch(/create policy "read markers in your own chats"[\s\S]*?for select/);
+    expect(migrations).toMatch(
+      /create policy "read markers in your own chats"[\s\S]*?hide_read_receipts/,
+    );
+  });
+
+  it("still refuses to let anybody write somebody else's marker", () => {
+    // The difference between "you can see that I read it" and "you can decide
+    // that I read it". Splitting one FOR ALL policy into three is exactly the
+    // change that could widen writes by accident.
+    expect(migrations).toMatch(
+      /create policy "write only your own read marker"[\s\S]*?with check \(user_id = \(select auth\.uid\(\)\)/,
+    );
+    expect(migrations).toMatch(
+      /create policy "move only your own read marker"[\s\S]*?using \(user_id = \(select auth\.uid\(\)\)/,
+    );
+  });
+
+  it("is published, or none of the above delivers anything", () => {
+    expect(migrations).toMatch(/alter publication supabase_realtime add table public\.chat_reads/);
+  });
+});

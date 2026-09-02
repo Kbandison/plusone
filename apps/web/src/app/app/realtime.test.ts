@@ -114,7 +114,11 @@ describe("what is allowed on the wire", () => {
 
 describe("each screen watches the right thing", () => {
   it("the chat watches its own row", () => {
-    expect(chat).toMatch(/watch=\{\[\{ table: "chats", filter: `id=eq\.\$\{id\}` \}\]\}/);
+    // Both watches are FILTERED to this chat. Without a filter every member of
+    // every chat is woken by every other chat they are in — the property this
+    // asserts, and the reason it survives chat_reads being added beside chats.
+    expect(chat).toMatch(/\{ table: "chats", filter: `id=eq\.\$\{id\}` \}/);
+    expect(chat).toMatch(/\{ table: "chat_reads", filter: `chat_id=eq\.\$\{id\}` \}/);
     expect(chatSql).toMatch(
       /update public\.chats set updated_at = now\(\) where id = new\.chat_id/,
     );

@@ -182,7 +182,12 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   const isTerminal = ["closed_fuse", "closed_by_member", "graduated"].includes(chat.status);
 
   return (
-    <main id="main">
+    // A column, so the thread can sit at the bottom of it. The layout's wrapper
+    // is `flex-1` inside a `min-h-[100dvh]` column, so its height resolves and
+    // `min-h-full` here has something to be full OF. Degrades harmlessly: if it
+    // ever stops resolving, `mt-auto` on the list does nothing and the page
+    // looks exactly as it did before.
+    <main id="main" className="flex min-h-full flex-col">
       {/* The h1 this page needs, and no longer sr-only. It was hidden because
           nothing else identified the chat; now it is the identification —
           a member navigating by heading lands on whose conversation this is,
@@ -261,7 +266,18 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           know what the number counts down TO, before it has moved at all. */}
       <Hint id="the-fuse" />
 
-      <ul className="mt-6 flex flex-col gap-3">
+      {/* Bottom-anchored, so the newest line sits against the composer.
+       *
+       * `mt-auto` inside the column this page is: a short conversation used to
+       * begin at the top with the whole screen empty beneath it and the last
+       * message stranded halfway up, which reads as a thread that has scrolled
+       * away rather than one that is short. Every chat client anchors down, and
+       * the reason is that the composer is where the eye already is.
+       *
+       * `min-h-0` because a flex child's default min-height is `auto`, which
+       * refuses to shrink below its content and would push the composer's
+       * reserved space off the bottom on a long thread. */}
+      <ul className="mt-auto flex min-h-0 flex-col gap-3 pt-6">
         {(messages ?? []).length === 0 ? (
           <EmptyState heading={C.chatEmptyHeading} body={C.chatEmptyBody} />
         ) : null}
@@ -372,10 +388,16 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
        * could would be probing for the flag. */}
       {(() => {
         if (!theyReadAt) return null;
-        const lastMine = [...(messages ?? [])].reverse().find((m) => m.sender_id === me);
-        if (!lastMine) return null;
+        // The LAST message, not my last message.
+        //
+        // Keying it on mine meant the receipt survived their reply: they read,
+        // they answered, and "Read 01:41" stayed pinned under a conversation
+        // that had moved on. A reply is a stronger acknowledgement than a
+        // receipt, so once one arrives the receipt has nothing left to say.
+        const last = (messages ?? []).at(-1);
+        if (!last || last.sender_id !== me) return null;
         const readMs = Date.parse(theyReadAt as string);
-        if (!(readMs >= Date.parse(lastMine.created_at as string))) return null;
+        if (!(readMs >= Date.parse(last.created_at as string))) return null;
         return (
           <p className="mt-2 text-right text-[11px] text-ink-3">
             {C.chatReadAt(chatLogic.messageTimeLabel(readMs, now, zone))}
@@ -389,7 +411,24 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
       {/* Renders nothing. ring_chat() touches this chat's row when a message
           lands; this notices and asks the page to re-render, which is a normal
           server render, so every wall applies as on a cold load. */}
-      <LiveRefresh watch={[{ table: "chats", filter: `id=eq.${id}` }]} />
+      {/* chat_reads as well as chats, so the receipt arrives on its own rather
+          than waiting for the next message to re-render the page.
+       *
+       * Safe to watch only because 20260902000200 made mark_chat_read
+       * conditional. This page calls it on every render, so while it wrote
+       * unconditionally every render produced an event and every event a
+       * render — the loop this file's own LiveRefresh docblock warns about.
+       * It now writes only when the marker is actually behind a message.
+       *
+       * No client-side filtering of the member's own events is needed for
+       * correctness: the widened SELECT policy honours hide_read_receipts, so
+       * Realtime never carries a hidden member's row at all. */}
+      <LiveRefresh
+        watch={[
+          { table: "chats", filter: `id=eq.${id}` },
+          { table: "chat_reads", filter: `chat_id=eq.${id}` },
+        ]}
+      />
 
       <ScrollToLatest token={`${(messages ?? []).length}:${(messages ?? []).at(-1)?.id ?? ""}`} />
 
@@ -470,7 +509,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
             id={COMPOSER_ID}
             className="ease-brand fixed inset-x-0 bottom-[var(--nav-h)] z-20 border-t border-line bg-ground/95 backdrop-blur"
           >
-            <div className="mx-auto w-full max-w-[550.8px] px-6 pt-2.5 pb-2">
+            <div className="group mx-auto w-full max-w-[550.8px] px-6 pt-2.5 pb-2">
               {/* The fuse, still visible (§7.2), but next to the thing it is a
                 deadline for. At the top of the screen it was a number a member
                 scrolled past on the way to the conversation; above the box they
@@ -498,7 +537,20 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 Composer's form — see PhotoButton. A form cannot contain another
                 form, and VoiceRecorder is one, so the two things that belong
                 side by side on screen cannot be siblings in the markup. */}
-              <div className="mt-2 flex flex-wrap items-center gap-3">
+              {/* Hidden until the box is focused, and done in CSS.
+               *
+               * `group-focus-within` rather than React state, for two reasons.
+               * Tracking blur in JS hides the row on the way to the button being
+               * pressed — the pointer leaves the input, focus moves, the row
+               * unmounts, and the click lands on nothing. focus-within stays
+               * true while focus is anywhere inside the group, including on
+               * these controls, so the race does not exist.
+               *
+               * And it keeps the three siblings adjacent in this file, which
+               * chat-layout.test.ts requires: moving them into a client wrapper
+               * to hold the state would have broken the guard that stops them
+               * being stacked again. */}
+              <div className="mt-2 hidden flex-wrap items-center gap-3 group-focus-within:flex">
                 <PhotoButton pickerId={PICKER_ID} />
                 <VoiceRecorder chatId={id} />
                 {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}

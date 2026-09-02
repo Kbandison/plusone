@@ -412,7 +412,16 @@ describe("the header and the composer are pinned", () => {
     expect(forms).toMatch(/px-4 py-2 text-\[16px\]/);
     // The gap under the box, and the one over it, were spacing under a thread.
     expect(forms).toMatch(/className="mt-2 flex flex-col gap-2"/);
-    expect(page).toMatch(/className="mt-2 flex flex-wrap items-center gap-3"/);
+    // Hidden until the box is focused, which spends none of it until there is
+    // a reason to. Still `flex-wrap items-center gap-3` when shown, so the row
+    // the test above pins is the row that appears.
+    expect(page).toMatch(
+      /className="mt-2 hidden flex-wrap items-center gap-3 group-focus-within:flex"/,
+    );
+    // The group the reveal hangs off. Without it the row is hidden for ever,
+    // which is a worse bug than the one being prevented and would not be
+    // visible to any assertion about the row itself.
+    expect(page).toMatch(/className="group mx-auto/);
     expect(page).toMatch(/max-w-\[550\.8px\] px-6 pt-2\.5 pb-2/);
   });
 
