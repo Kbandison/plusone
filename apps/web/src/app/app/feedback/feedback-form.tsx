@@ -99,7 +99,7 @@ export function FeedbackForm({ from }: { from: string }) {
           required
           rows={6}
           maxLength={FEEDBACK_BODY_MAX}
-          className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent"
+          className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-300 focus:border-accent"
           aria-describedby={state.error ? `${bodyId}-error` : undefined}
           aria-invalid={state.error ? true : undefined}
         />

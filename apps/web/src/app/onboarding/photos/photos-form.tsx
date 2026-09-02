@@ -122,7 +122,7 @@ export function PhotoUploader({ count }: { count: number }) {
         // focus-within, because the real input is sr-only. A keyboard user
         // tabbed to it and NOTHING on screen changed — the only visible thing
         // is this label, and the focus ring was on the clipped input.
-        className="ease-brand flex size-[106.9px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-control bg-surface text-center text-[11px] text-ink-2 transition-colors duration-200 hover:border-accent hover:text-ink focus-within:border-accent focus-within:text-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]"
+        className="ease-brand flex size-[106.9px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-control bg-surface text-center text-[11px] text-ink-2 transition-colors duration-300 hover:border-accent hover:text-ink focus-within:border-accent focus-within:text-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]"
       >
         <span aria-hidden="true" className="text-[17.8px] leading-none">
           +
@@ -219,7 +219,7 @@ export function PrivacyChoice({
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-3 text-[12.2px]">{C.privacyLabel}</legend>
 
-        <label className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent">
+        <label className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-300 has-checked:border-accent">
           <input
             type="radio"
             name="photo_privacy"
@@ -231,7 +231,7 @@ export function PrivacyChoice({
           {C.clearLabel}
         </label>
 
-        <label className="ease-brand flex cursor-pointer items-start gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent">
+        <label className="ease-brand flex cursor-pointer items-start gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-300 has-checked:border-accent">
           <input
             type="radio"
             name="photo_privacy"
@@ -488,7 +488,7 @@ export function PhotoGallery({
                 moveTo(photo.id, index + 1);
               }
             }}
-            className={`ease-brand relative touch-none transition-[transform,box-shadow] duration-150 ${
+            className={`ease-brand relative touch-none transition-[transform,box-shadow] duration-[var(--duration-fast)] ${
               dragging === photo.id ? "z-10 scale-105 cursor-grabbing shadow-lg" : "cursor-grab"
             }`}
           >
@@ -567,7 +567,7 @@ export function PhotoGallery({
                   // Named, or a grid of identical bins is unusable by ear —
                   // every one of them reads the same out of context.
                   aria-label={C.removeNamed(index + 1)}
-                  className="ease-brand flex size-8 items-center justify-center rounded-full border border-line-2 bg-surface text-ink-2 shadow-sm transition-colors duration-200 hover:border-critical hover:text-critical disabled:opacity-40"
+                  className="ease-brand flex size-8 items-center justify-center rounded-full border border-line-2 bg-surface text-ink-2 shadow-sm transition-colors duration-300 hover:border-critical hover:text-critical disabled:opacity-40"
                 >
                   <TrashIcon />
                 </button>
@@ -683,7 +683,7 @@ function PhotoPrivacyControl({
          What differs is only the border, which is the one distinction being
          drawn: dashed and quiet while this photo follows the profile setting,
          solid accent once a choice has been made here. */
-      className={`ease-brand absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full border bg-surface shadow-sm transition-colors duration-200 ${
+      className={`ease-brand absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full border bg-surface shadow-sm transition-colors duration-300 ${
         inherited ? "border-dashed border-line-2 text-ink-2" : "border-accent text-ink"
       } ${premium ? "" : "cursor-not-allowed opacity-55"}`}
     >

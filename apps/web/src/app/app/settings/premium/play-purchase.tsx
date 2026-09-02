@@ -315,7 +315,7 @@ export function PlayPlanChooser({ alreadyPayingStripe }: { alreadyPayingStripe: 
                handler rather than by anything a screen reader can see. This is
                the page where the wrong choice costs money. */
             aria-labelledby={`${plan.id}-label ${plan.id}-price`}
-            className={`ease-brand mt-5 rounded-lg px-5 py-2.5 text-[12.2px] transition-opacity duration-200 hover:opacity-90 disabled:opacity-55 ${
+            className={`ease-brand mt-5 rounded-lg px-5 py-2.5 text-[12.2px] transition-opacity duration-300 hover:opacity-90 disabled:opacity-55 ${
               plan.highlighted ? "bg-accent text-accent-ink" : "border border-line-2 text-ink"
             }`}
           >

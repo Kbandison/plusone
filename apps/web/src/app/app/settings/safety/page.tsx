@@ -127,7 +127,7 @@ export default async function SafetySettingsPage() {
                 <li key={thread.id} className="border-b border-line pb-3 last:border-0">
                   <Link
                     href={`/app/chats/${thread.id}`}
-                    className="ease-brand flex flex-col gap-0.5 transition-opacity duration-200 hover:opacity-80"
+                    className="ease-brand flex flex-col gap-0.5 transition-opacity duration-300 hover:opacity-80"
                   >
                     <span className="text-[12.2px]">{thread.name}</span>
                     <span className="text-[11px] text-ink-3">

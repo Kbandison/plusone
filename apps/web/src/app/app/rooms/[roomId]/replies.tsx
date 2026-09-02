@@ -48,11 +48,11 @@ export function Replies({
         type="button"
         onClick={() => setOpen((was) => !was)}
         aria-expanded={showing}
-        className="ease-brand flex min-h-tap items-center gap-2 text-[11.5px] text-ink-2 transition-colors duration-200 hover:text-ink"
+        className="ease-brand flex min-h-tap items-center gap-2 text-[11.5px] text-ink-2 transition-colors duration-300 hover:text-ink"
       >
         <span
           aria-hidden="true"
-          className={`ease-brand inline-block text-ink-3 transition-transform duration-200 ${showing ? "rotate-90" : ""}`}
+          className={`ease-brand inline-block text-ink-3 transition-transform duration-300 ${showing ? "rotate-90" : ""}`}
         >
           ›
         </span>

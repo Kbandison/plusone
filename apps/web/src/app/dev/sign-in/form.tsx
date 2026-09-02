@@ -32,7 +32,7 @@ export function DevSignInForm() {
         {PRESETS.map((preset, index) => (
           <label
             key={preset.phone}
-            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-300 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -75,7 +75,7 @@ export function DevSignInForm() {
             reset(formData);
           }}
           disabled={pending || resetting}
-          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink disabled:opacity-55"
         >
           {resetting ? "Resetting…" : "Reset this member's verification"}
         </button>

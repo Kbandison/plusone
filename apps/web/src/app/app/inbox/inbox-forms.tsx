@@ -86,7 +86,7 @@ export function DeclineForm({
           {CLOSURE_TEMPLATES.map((template, index) => (
             <label
               key={template}
-              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[11.7px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[11.7px] transition-colors duration-300 has-checked:border-accent"
             >
               <input
                 type="radio"

@@ -53,11 +53,11 @@ export function CollapsibleSection({
              gives h1..h4 Instrument Serif, which is what makes these read as
              sections rather than as three more controls. The chevron and the
              count are sized off this one, not chosen separately. */
-          className="ease-brand flex w-full items-center gap-2.5 text-left text-[20px] text-ink transition-colors duration-200 hover:opacity-80"
+          className="ease-brand flex w-full items-center gap-2.5 text-left text-[20px] text-ink transition-colors duration-300 hover:opacity-80"
         >
           <span
             aria-hidden="true"
-            className={`ease-brand inline-block text-[16px] text-ink-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+            className={`ease-brand inline-block text-[16px] text-ink-3 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
           >
             ›
           </span>

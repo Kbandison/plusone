@@ -51,7 +51,7 @@ export function Field({
         /* line-control, not line-2: WCAG 1.4.11 wants 3:1 for the boundary of a
            control, and line-2 is about 1.15:1 against its own fill — fine on a
            decorative card edge, invisible as the edge of a field. */
-        className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[243px]"
+        className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-300 focus:border-accent sm:w-[243px]"
         {...props}
       />
       {hint ? (
@@ -106,7 +106,7 @@ export function SelectField({
           [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined
         }
         aria-invalid={error ? true : undefined}
-        className="ease-brand min-h-tap w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[243px]"
+        className="ease-brand min-h-tap w-full rounded-lg border border-line-control bg-surface px-4 py-3 text-[16px] transition-colors duration-300 focus:border-accent sm:w-[243px]"
         defaultValue=""
         {...props}
       >

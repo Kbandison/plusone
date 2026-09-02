@@ -42,7 +42,7 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
       <button
         type="button"
         onClick={() => dialog.current?.showModal()}
-        className="ease-brand flex w-[66px] flex-col items-center gap-2 transition-opacity duration-200 hover:opacity-80"
+        className="ease-brand flex w-[66px] flex-col items-center gap-2 transition-opacity duration-300 hover:opacity-80"
       >
         <span className="relative inline-flex">
           <MemberPhotoFrame photo={decision.photo} size={58} />
@@ -85,7 +85,7 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
             <button
               type="submit"
               aria-label={C.decisionDismiss}
-              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-300 hover:text-ink"
             >
               <CloseIcon />
             </button>

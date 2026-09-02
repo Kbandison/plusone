@@ -59,7 +59,7 @@ export function CrossCommunityToggle({ optIn }: { optIn: boolean }) {
 
 /** The one red button in the app, and both spellings of it. */
 const DANGER =
-  "ease-brand min-h-tap rounded-lg border border-critical px-5 py-2.5 text-[12.2px] text-critical transition-colors duration-200 hover:bg-critical hover:text-ground disabled:opacity-55";
+  "ease-brand min-h-tap rounded-lg border border-critical px-5 py-2.5 text-[12.2px] text-critical transition-colors duration-300 hover:bg-critical hover:text-ground disabled:opacity-55";
 
 /**
  * Deleting (§9.3, §3.4).
@@ -166,7 +166,7 @@ export function SignInEmail({ email, confirmed }: { email: string | null; confir
             defaultValue={email ?? ""}
             aria-describedby={state.error ? "sign_in_email-error" : undefined}
             aria-invalid={state.error ? true : undefined}
-            className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] transition-colors duration-200 focus:border-accent sm:w-[243px]"
+            className="ease-brand w-full rounded-lg border border-line-control bg-surface px-4 py-2.5 text-[16px] transition-colors duration-300 focus:border-accent sm:w-[243px]"
           />
         </div>
         <button type="submit" disabled={pending} className={buttonClass("secondary")}>

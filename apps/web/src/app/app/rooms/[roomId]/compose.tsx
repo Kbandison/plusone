@@ -29,7 +29,7 @@ export function RoomCompose({ roomId }: { roomId: string }) {
   return (
     <Modal
       heading={C.roomComposeHeading}
-      triggerClassName="ease-brand mt-4 w-full rounded-xl border border-line-control bg-surface px-4 py-3.5 text-left text-[13px] text-ink-3 transition-colors duration-200 hover:border-ink-3"
+      triggerClassName="ease-brand mt-4 w-full rounded-xl border border-line-control bg-surface px-4 py-3.5 text-left text-[13px] text-ink-3 transition-colors duration-300 hover:border-ink-3"
       trigger={C.roomComposeOpen}
     >
       {(close) => <ComposeForm roomId={roomId} onPosted={close} />}
@@ -184,7 +184,7 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
             <button
               type="button"
               onClick={clearImage}
-              className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+              className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
             >
               {C.postImageRemove}
             </button>
@@ -195,7 +195,7 @@ function ComposeForm({ roomId, onPosted }: { roomId: string; onPosted: () => voi
       {/* A label wrapping a hidden input rather than a bare file control: the
           browser's own renders differently everywhere. The input keeps its
           name, so the form still carries the file. */}
-      <label className="ease-brand inline-flex min-h-tap cursor-pointer items-center gap-2 self-start text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink">
+      <label className="ease-brand inline-flex min-h-tap cursor-pointer items-center gap-2 self-start text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink">
         <input
           ref={picker}
           type="file"

@@ -110,7 +110,7 @@ export default async function NotificationsPage() {
               <li key={row.id}>
                 <Link
                   href={href}
-                  className={`ease-brand -mx-3 flex min-h-tap items-center gap-3 rounded-lg px-3 py-3.5 transition-colors duration-200 hover:bg-surface ${
+                  className={`ease-brand -mx-3 flex min-h-tap items-center gap-3 rounded-lg px-3 py-3.5 transition-colors duration-300 hover:bg-surface ${
                     unread ? "" : "text-ink-2"
                   }`}
                 >

@@ -168,7 +168,7 @@ export default async function AppLayout({
           <Link
             href="/app/notifications"
             aria-label={DRAFT_COPY.app.notificationsBellLabel(unread)}
-            className="ease-brand relative flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+            className="ease-brand relative flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-300 hover:text-ink"
           >
             <BellIcon />
             {unread > 0 ? (
@@ -190,7 +190,7 @@ export default async function AppLayout({
           <Link
             href="/app/settings"
             aria-label={DRAFT_COPY.app.navSettings}
-            className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+            className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-300 hover:text-ink"
           >
             <GearIcon />
           </Link>

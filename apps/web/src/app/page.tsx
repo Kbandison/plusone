@@ -53,7 +53,7 @@ export default function Home() {
 
         <Link
           href="/sign-in"
-          className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+          className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink hover:decoration-accent"
         >
           {DRAFT_COPY.home.signIn}
         </Link>
@@ -66,7 +66,7 @@ export default function Home() {
         {process.env.NODE_ENV !== "production" && process.env["OTP_PROVIDER"] === "stub" ? (
           <Link
             href="/dev/sign-in"
-            className="ease-brand rounded-lg border border-dashed border-line-2 px-4 py-2 text-[11.3px] text-ink-3 transition-colors duration-200 hover:text-ink"
+            className="ease-brand rounded-lg border border-dashed border-line-2 px-4 py-2 text-[11.3px] text-ink-3 transition-colors duration-300 hover:text-ink"
           >
             Dev sign-in
           </Link>
@@ -74,7 +74,7 @@ export default function Home() {
 
         <Link
           href="/how-it-works"
-          className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+          className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink hover:decoration-accent"
         >
           How it works
         </Link>

@@ -141,7 +141,7 @@ export function Modal({
             <button
               type="submit"
               aria-label={C.decisionDismiss}
-              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-300 hover:text-ink"
             >
               <CloseIcon />
             </button>

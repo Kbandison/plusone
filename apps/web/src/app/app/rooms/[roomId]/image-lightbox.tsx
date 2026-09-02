@@ -30,7 +30,7 @@ export function ImageLightbox({
   alt,
   footer,
   label = C.postImageOpen,
-  triggerClassName = "ease-brand relative z-20 mt-2 block w-full cursor-zoom-in transition-opacity duration-200 hover:opacity-95",
+  triggerClassName = "ease-brand relative z-20 mt-2 block w-full cursor-zoom-in transition-opacity duration-300 hover:opacity-95",
   imageClassName = "h-auto max-h-[420px] w-full rounded-xl border border-line-2 object-cover",
 }: {
   src: string;
@@ -96,7 +96,7 @@ export function ImageLightbox({
               type="button"
               onClick={() => setOpen(false)}
               aria-label={C.decisionDismiss}
-              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+              className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-300 hover:text-ink"
             >
               <CloseIcon />
             </button>

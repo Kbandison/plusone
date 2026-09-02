@@ -69,7 +69,7 @@ export default async function ConsentPage() {
           href={`/privacy#${HEALTH_DATA_ANCHOR}`}
           target="_blank"
           rel="noreferrer"
-          className="ease-brand text-[12.6px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+          className="ease-brand text-[12.6px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:decoration-accent"
         >
           {COPY.consent.policyLinkLabel}
         </Link>

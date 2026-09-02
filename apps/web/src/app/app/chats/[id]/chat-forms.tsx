@@ -158,7 +158,7 @@ export function Composer({ chatId, pickerId }: { chatId: string; pickerId: strin
             <button
               type="button"
               onClick={clearImage}
-              className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+              className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
             >
               {C.postImageRemove}
             </button>
@@ -292,7 +292,7 @@ export function ProposePlan({ chatId }: { chatId: string }) {
           type="button"
           onClick={() => setOpen(false)}
           aria-label={C.decisionDismiss}
-          className="ease-brand -mt-1 -mr-1 flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+          className="ease-brand -mt-1 -mr-1 flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-300 hover:text-ink"
         >
           <CloseIcon />
         </button>
@@ -384,7 +384,7 @@ export function CancelPlan({ chatId }: { chatId: string }) {
         onClick={() => setConfirmingCancel((open) => !open)}
         aria-expanded={confirmingCancel}
         aria-controls={confirmId}
-        className="ease-brand self-start text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+        className="ease-brand self-start text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
       >
         {C.cancelPlanLabel}
       </button>
@@ -404,7 +404,7 @@ export function CancelPlan({ chatId }: { chatId: string }) {
             <button
               type="button"
               onClick={() => setConfirmingCancel(false)}
-              className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+              className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
             >
               {C.cancelPlanKeepLabel}
             </button>
@@ -437,7 +437,7 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
     <Modal
       heading={C.closeHeading}
       trigger={C.closeHeading}
-      triggerClassName="ease-brand text-left text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      triggerClassName="ease-brand text-left text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
     >
       <form action={act} className="mt-4 flex flex-col gap-5">
         <input type="hidden" name="chat_id" value={chatId} />
@@ -447,7 +447,7 @@ export function CloseChat({ chatId, senderName }: { chatId: string; senderName: 
           {CLOSURE_TEMPLATES.map((text, index) => (
             <label
               key={text}
-              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[11.7px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-3 text-[11.7px] transition-colors duration-300 has-checked:border-accent"
             >
               <input
                 type="radio"

@@ -110,7 +110,7 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
               });
               setReplyTo(null);
             }}
-            className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
           >
             {C.postReplyCancel}
           </button>
@@ -146,7 +146,7 @@ export function CommentComposer({ roomId, parentId }: { roomId: string; parentId
           type="button"
           onClick={closeComposer}
           aria-label={C.decisionDismiss}
-          className="ease-brand flex size-tap shrink-0 items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+          className="ease-brand flex size-tap shrink-0 items-center justify-center rounded-lg text-ink-3 transition-colors duration-300 hover:text-ink"
         >
           <CloseIcon />
         </button>

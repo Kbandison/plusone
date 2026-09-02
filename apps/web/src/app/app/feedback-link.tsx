@@ -35,7 +35,7 @@ export function FeedbackLink() {
     <Link
       href={`/app/feedback?from=${encodeURIComponent(pathname)}`}
       aria-label={DRAFT_COPY.app.feedbackLabel}
-      className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-200 hover:text-ink"
+      className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-300 hover:text-ink"
     >
       <SpeechIcon />
     </Link>

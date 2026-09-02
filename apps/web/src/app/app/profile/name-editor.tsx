@@ -125,7 +125,7 @@ export function NameEditor({ name }: { name: string }) {
              is the one control on this page where the browser's own outline
              would be a worse signal than the thing already blinking inside it.
              The underline on hover is all that says it can be typed in. */
-          className={`ease-brand max-w-full min-w-0 cursor-text border-b bg-transparent px-0 py-1 text-h2 transition-colors duration-200 outline-none ${
+          className={`ease-brand max-w-full min-w-0 cursor-text border-b bg-transparent px-0 py-1 text-h2 transition-colors duration-300 outline-none ${
             editing ? "border-line-2" : "border-transparent hover:border-line-2"
           }`}
         />

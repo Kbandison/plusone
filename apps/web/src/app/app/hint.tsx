@@ -62,7 +62,7 @@ export function Hint({ id }: { id: string }) {
           // A word, not an ×. The glyph is a small target that reads as "close
           // the app" to somebody who has not met it before, and the 44px floor
           // applies to this as much as to anything else.
-          className="ease-brand -my-2 -mr-2 flex min-h-tap shrink-0 items-center px-2 text-[11.7px] text-ink-3 transition-colors duration-200 hover:text-ink"
+          className="ease-brand -my-2 -mr-2 flex min-h-tap shrink-0 items-center px-2 text-[11.7px] text-ink-3 transition-colors duration-300 hover:text-ink"
         >
           Got it
         </button>
@@ -84,7 +84,7 @@ export function ResetHints() {
         write(null);
         setDone(true);
       }}
-      className="ease-brand min-h-tap text-[12.6px] text-ink-2 underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:text-ink"
+      className="ease-brand min-h-tap text-[12.6px] text-ink-2 underline decoration-line-control underline-offset-4 transition-colors duration-300 hover:text-ink"
     >
       {done ? "The tips will show again" : "Show the tips again"}
     </button>

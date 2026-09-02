@@ -378,7 +378,7 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
               type="button"
               onClick={disable}
               disabled={pending}
-              className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+              className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink disabled:opacity-55"
             >
               {C.pushDisableLabel}
             </button>

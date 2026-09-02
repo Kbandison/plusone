@@ -206,7 +206,7 @@ export function VoiceRecorder({ chatId }: { chatId: string }) {
             // member landed back on review with no audio and a Send button that
             // silently did nothing.
             disabled={state === "sending"}
-            className="ease-brand text-[11.7px] text-ink-3 disabled:opacity-55 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+            className="ease-brand text-[11.7px] text-ink-3 disabled:opacity-55 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
           >
             {C.voiceDiscardLabel}
           </button>

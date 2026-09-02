@@ -87,7 +87,7 @@ const DISABLED = "disabled:cursor-not-allowed";
  */
 export const FIELD_DISABLED = `${DISABLED} disabled:opacity-55`;
 
-const SHAPE_BASE = `ease-brand inline-flex min-h-tap items-center justify-center rounded-lg text-body-sm transition-[opacity,transform,border-color,color] duration-200 ${DISABLED}`;
+const SHAPE_BASE = `ease-brand inline-flex min-h-tap items-center justify-center rounded-lg text-body-sm transition-[opacity,transform,border-color,color] duration-300 ${DISABLED}`;
 
 const SHAPE = `${SHAPE_BASE} px-5`;
 
@@ -110,7 +110,7 @@ export function iconButtonClass(tone: ButtonTone = "secondary", extra = ""): str
 export function buttonClass(tone: ButtonTone = "primary", extra = ""): string {
   const shape =
     tone === "quiet"
-      ? `ease-brand inline-flex min-h-tap items-center text-body-sm transition-colors duration-200 ${DISABLED}`
+      ? `ease-brand inline-flex min-h-tap items-center text-body-sm transition-colors duration-300 ${DISABLED}`
       : SHAPE;
   return `${shape} ${TONE[tone]} ${extra}`.trim();
 }

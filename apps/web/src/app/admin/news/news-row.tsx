@@ -54,7 +54,7 @@ export function NewsItemRow({ item }: { item: NewsRow }) {
         // Same reason as everywhere else an outside link exists here: the
         // destination does not need to be told where the reader came from.
         rel="noopener noreferrer"
-        className="ease-brand mt-1 block text-[14px] leading-[1.4] underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+        className="ease-brand mt-1 block text-[14px] leading-[1.4] underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:decoration-accent"
       >
         {item.article_title}
       </a>
@@ -68,7 +68,7 @@ export function NewsItemRow({ item }: { item: NewsRow }) {
           type="button"
           onClick={() => setOpen((was) => !was)}
           aria-expanded={open}
-          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
         >
           Edit
         </button>
@@ -78,7 +78,7 @@ export function NewsItemRow({ item }: { item: NewsRow }) {
           <button
             type="submit"
             disabled={removing}
-            className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical disabled:opacity-55"
+            className="ease-brand text-[11.7px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-critical disabled:opacity-55"
           >
             Delete
           </button>

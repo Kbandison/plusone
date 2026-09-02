@@ -176,7 +176,7 @@ export default async function RoomPage({
                * edit.
                */
               rel="noopener noreferrer"
-              className="ease-brand mt-4 inline-flex min-h-tap items-center text-[11.7px] text-accent underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+              className="ease-brand mt-4 inline-flex min-h-tap items-center text-[11.7px] text-accent underline decoration-line-control underline-offset-4 transition-colors duration-300 hover:decoration-accent"
             >
               {pinned.urlLabel ?? pinned.url}
             </a>
@@ -230,7 +230,7 @@ export default async function RoomPage({
         {posts.map((post) => (
           <li
             key={post.id}
-            className="ease-brand relative border-b border-line px-6 py-4 transition-colors duration-200 hover:bg-surface"
+            className="ease-brand relative border-b border-line px-6 py-4 transition-colors duration-300 hover:bg-surface"
           >
             {/* The whole row opens the thread, and the comment count still
                 does too — one is where a member reaches for it and the other

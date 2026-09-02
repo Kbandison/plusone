@@ -61,7 +61,7 @@ export default async function AdminHomePage() {
           <li key={queue.href}>
             <Link
               href={queue.href}
-              className="ease-brand flex items-baseline justify-between gap-6 rounded-xl border border-line-2 bg-surface p-6 transition-colors duration-200 hover:border-line-control"
+              className="ease-brand flex items-baseline justify-between gap-6 rounded-xl border border-line-2 bg-surface p-6 transition-colors duration-300 hover:border-line-control"
             >
               <span className="flex flex-col gap-1.5">
                 <span className="text-[0.972rem]">{queue.label}</span>

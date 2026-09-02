@@ -31,7 +31,7 @@ export function ReplyButton({
     <button
       type="button"
       onClick={() => (name ? setReplyTo(name, parentId ?? null) : openComposer())}
-      className="ease-brand flex min-h-tap items-center text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
+      className="ease-brand flex min-h-tap items-center text-[11.5px] text-ink-3 transition-colors duration-300 hover:text-ink"
     >
       {C.postReplyToLabel}
     </button>

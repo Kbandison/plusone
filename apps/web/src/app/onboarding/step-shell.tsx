@@ -60,7 +60,7 @@ export function StepShell({
       <form action={signOut} className="mt-16 border-t border-line pt-6">
         <button
           type="submit"
-          className="ease-brand text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          className="ease-brand text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
         >
           {DRAFT_COPY.app.signOutLabel}
         </button>

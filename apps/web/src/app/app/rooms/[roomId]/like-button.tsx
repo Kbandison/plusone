@@ -80,7 +80,7 @@ export function LikeButton({
         });
       }}
       aria-pressed={view.liked}
-      className={`ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] transition-colors duration-200 ${
+      className={`ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] transition-colors duration-300 ${
         view.liked ? "text-accent" : "text-ink-3 hover:text-ink"
       }`}
     >

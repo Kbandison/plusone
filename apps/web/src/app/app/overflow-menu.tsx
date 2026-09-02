@@ -73,7 +73,7 @@ export function OverflowMenu({
         /* Still a 44px target when compact — the icon shrinks, the box does
            not. LAYOUT.minTapTarget is a floor and a feed is the surface most
            likely to be used one-handed in a hurry. */
-        className={`ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink ${compact ? "-mr-2.5 scale-90" : ""}`}
+        className={`ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-300 hover:text-ink ${compact ? "-mr-2.5 scale-90" : ""}`}
       >
         {trigger ?? <MoreIcon />}
       </button>

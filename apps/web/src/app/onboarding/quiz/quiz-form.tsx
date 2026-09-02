@@ -72,7 +72,7 @@ export function QuizForm({
           {question.options.map((option) => (
             <label
               key={option.id}
-              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-300 has-checked:border-accent"
             >
               <input
                 type="radio"
@@ -152,7 +152,7 @@ export function QuizForm({
               name="skip"
               value="1"
               disabled={pending}
-              className="ease-brand text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+              className="ease-brand text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink disabled:opacity-55"
             >
               {C.skipLabel}
             </button>

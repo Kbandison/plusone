@@ -142,7 +142,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
           <button
             type="submit"
             disabled={resending || cooldown > 0}
-            className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink disabled:opacity-55"
+            className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink disabled:opacity-55"
           >
             {cooldown > 0 ? C.resendWait(cooldown) : C.resendLabel}
           </button>
@@ -151,7 +151,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
         <button
           type="button"
           onClick={onChange}
-          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+          className="ease-brand text-[11.7px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
         >
           {C.changeLabel}
         </button>

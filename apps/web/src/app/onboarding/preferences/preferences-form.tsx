@@ -109,7 +109,7 @@ function Choice({
         {Object.entries(options).map(([value, label]) => (
           <label
             key={value}
-            className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-300 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -124,7 +124,7 @@ function Choice({
         {/* Not-stated has to be reachable AFTER something was chosen, or the
             first tap on any of these is permanent for the life of the page. */}
         {optional ? (
-          <label className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] text-ink-3 transition-colors duration-200 has-checked:border-accent has-checked:text-ink">
+          <label className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] text-ink-3 transition-colors duration-300 has-checked:border-accent has-checked:text-ink">
             <input
               type="radio"
               name={name}
@@ -195,7 +195,7 @@ export function PreferencesForm({
           {Object.entries(GENDER_LABELS).map(([value, label]) => (
             <label
               key={value}
-              className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-300 has-checked:border-accent"
             >
               <input
                 type="checkbox"
@@ -322,7 +322,7 @@ export function PreferencesForm({
                 {Object.entries(LANGUAGE_LABELS).map(([value, label]) => (
                   <label
                     key={value}
-                    className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-200 has-checked:border-accent"
+                    className="ease-brand flex min-h-tap cursor-pointer items-center gap-2.5 rounded-lg border border-line-control bg-surface px-4 py-3 text-[12.6px] transition-colors duration-300 has-checked:border-accent"
                   >
                     <input
                       type="checkbox"

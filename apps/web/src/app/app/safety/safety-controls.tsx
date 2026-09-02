@@ -57,7 +57,7 @@ export function BlockButton({
       // On the trigger, not the confirm button: the post it names sits behind
       // an open modal, and inert content is out of the accessibility tree.
       triggerDescribedBy={describedBy}
-      triggerClassName="ease-brand text-left text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-critical"
+      triggerClassName="ease-brand text-left text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-critical"
     >
       {/* blockConfirm was written, then knowingly left unwired for a reason
           recorded in copy-is-wired.test.ts: a member reaching for this is
@@ -104,7 +104,7 @@ export function UnblockButton({
         type="submit"
         disabled={pending}
         aria-describedby={describedBy}
-        className="ease-brand text-[11.3px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent disabled:opacity-55"
+        className="ease-brand text-[11.3px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:decoration-accent disabled:opacity-55"
       >
         {C.unblockLabel}
       </button>
@@ -153,7 +153,7 @@ export function ReportControl({
       heading={C.reportHeading}
       trigger={C.reportLabel}
       triggerDescribedBy={describedBy}
-      triggerClassName="ease-brand text-left text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+      triggerClassName="ease-brand text-left text-[11.3px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
     >
       <form action={act} className="mt-4 flex flex-col gap-4">
         <p className="text-[11.3px] leading-[1.6] text-ink-2">{C.reportIntro}</p>
@@ -169,7 +169,7 @@ export function ReportControl({
           {(Object.keys(REPORT_REASONS) as ReportReason[]).map((reason) => (
             <label
               key={reason}
-              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[11.7px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3 rounded-lg border border-line-2 bg-ground px-3.5 py-2.5 text-[11.7px] transition-colors duration-300 has-checked:border-accent"
             >
               <input
                 type="radio"

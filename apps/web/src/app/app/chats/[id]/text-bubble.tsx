@@ -59,7 +59,7 @@ export function TextBubble({
            largest fill in the app and it makes every real control on the screen
            compete with the conversation. Alignment and the edge carry the same
            distinction more quietly. */
-        className={`ease-brand max-w-[85%] cursor-default rounded-xl px-4 py-3 text-left text-[12.6px] leading-[1.6] transition-colors duration-200 select-text ${
+        className={`ease-brand max-w-[85%] cursor-default rounded-xl px-4 py-3 text-left text-[12.6px] leading-[1.6] transition-colors duration-300 select-text ${
           mine
             ? "border-r-2 border-accent bg-surface-2 text-ink"
             : "border-l-2 border-line-2 bg-surface text-ink"

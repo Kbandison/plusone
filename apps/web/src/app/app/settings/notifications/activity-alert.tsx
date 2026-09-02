@@ -123,7 +123,7 @@ export function ActivityAlert({
             type="button"
             onClick={save}
             disabled={pending}
-            className="ease-brand mt-5 rounded-lg border border-line-2 px-4 py-2 text-[12.5px] transition-colors duration-200 hover:border-accent disabled:opacity-60"
+            className="ease-brand mt-5 rounded-lg border border-line-2 px-4 py-2 text-[12.5px] transition-colors duration-300 hover:border-accent disabled:opacity-60"
           >
             {C.activityAlertSave}
           </button>

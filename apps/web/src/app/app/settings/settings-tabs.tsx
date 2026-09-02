@@ -49,7 +49,7 @@ export function SettingsTabs() {
               <Link
                 href={tab.href}
                 aria-current={current ? "page" : undefined}
-                className={`ease-brand flex min-h-tap items-center whitespace-nowrap border-b-2 px-3 text-[13px] transition-colors duration-200 ${
+                className={`ease-brand flex min-h-tap items-center whitespace-nowrap border-b-2 px-3 text-[13px] transition-colors duration-300 ${
                   current
                     ? "border-accent text-ink"
                     : "border-transparent text-ink-2 hover:text-ink"

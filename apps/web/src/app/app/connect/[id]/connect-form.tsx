@@ -39,7 +39,7 @@ export function ConnectForm({
         {prompts.map((prompt) => (
           <label
             key={prompt.id}
-            className="ease-brand flex cursor-pointer flex-col gap-1.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer flex-col gap-1.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 transition-colors duration-300 has-checked:border-accent"
           >
             <span className="flex items-center gap-3">
               <input

@@ -110,7 +110,7 @@ export function ThreadRow({ thread }: { thread: ThreadView }) {
         <button
           type="button"
           onClick={() => dialog.current?.showModal()}
-          className="ease-brand flex w-full items-start gap-3.5 rounded-xl border border-line-2 bg-surface p-4 text-left transition-colors duration-200 hover:border-ink-3"
+          className="ease-brand flex w-full items-start gap-3.5 rounded-xl border border-line-2 bg-surface p-4 text-left transition-colors duration-300 hover:border-ink-3"
         >
           {body}
         </button>
@@ -136,7 +136,7 @@ export function ThreadRow({ thread }: { thread: ThreadView }) {
               <button
                 type="submit"
                 aria-label={C.decisionDismiss}
-                className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-200 hover:text-ink"
+                className="ease-brand flex size-tap items-center justify-center rounded-lg text-ink-3 transition-colors duration-300 hover:text-ink"
               >
                 <CloseIcon />
               </button>
@@ -175,7 +175,7 @@ export function ThreadRow({ thread }: { thread: ThreadView }) {
     <li>
       <Link
         href={thread.href ?? "/app/inbox"}
-        className="ease-brand flex items-start gap-3.5 rounded-xl border border-line-2 bg-surface p-4 transition-colors duration-200 hover:border-ink-3"
+        className="ease-brand flex items-start gap-3.5 rounded-xl border border-line-2 bg-surface p-4 transition-colors duration-300 hover:border-ink-3"
       >
         {body}
       </Link>

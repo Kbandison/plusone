@@ -46,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link
             key={href}
             href={href}
-            className="ease-brand text-[11px] tracking-[0.04em] text-ink-3 uppercase transition-colors duration-200 hover:text-ink"
+            className="ease-brand text-[11px] tracking-[0.04em] text-ink-3 uppercase transition-colors duration-300 hover:text-ink"
           >
             {label}
           </Link>

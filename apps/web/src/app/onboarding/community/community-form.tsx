@@ -50,7 +50,7 @@ export function CommunityForm({
         {(Object.keys(COMMUNITY_LABELS) as Community[]).map((value) => (
           <label
             key={value}
-            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
+            className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-300 has-checked:border-accent"
           >
             <input
               type="radio"
@@ -76,7 +76,7 @@ export function CommunityForm({
           {conditions.map((value) => (
             <label
               key={value}
-              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-200 has-checked:border-accent"
+              className="ease-brand flex cursor-pointer items-center min-h-tap gap-3.5 rounded-lg border border-line-control bg-surface px-4 py-3.5 text-[13px] transition-colors duration-300 has-checked:border-accent"
             >
               <input
                 type="radio"

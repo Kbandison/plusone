@@ -47,7 +47,7 @@ export default function PrivacyPage() {
             <li key={section.id}>
               <a
                 href={`#${section.id}`}
-                className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent"
+                className="ease-brand text-[12.6px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink hover:decoration-accent"
               >
                 {section.title}
               </a>

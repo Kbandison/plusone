@@ -140,16 +140,38 @@ export const RADII = {
 } as const;
 
 /**
- * MOTION 6 — scroll-fade entrances and staggered reveals, transform/opacity only,
- * fired once. Never bounce or elastic on content (anti-slop #25).
+ * MOTION 6 — transform and opacity only, fired once. Never bounce or elastic on
+ * content (anti-slop #25).
+ *
+ * ── these numbers were fiction until 2026-09-02 ─────────────────────────────
+ *
+ * This block used to say 250 / 420 / 740 with a stagger step, and NOTHING read
+ * it. Not one import, not one CSS variable, no test. Meanwhile 108 components
+ * had typed `duration-200` — Tailwind's default, and the only thing reachable,
+ * because the durations were never exposed as custom properties. Two motion
+ * vocabularies: the one written down that nobody used, and the one in use that
+ * nobody wrote down.
+ *
+ * So the scale below is three values that everything actually lands on, and
+ * `tokens.css` exposes each as a custom property. `motion.test.ts` fails if the
+ * two disagree, or if a component reaches for a duration off the scale.
+ *
+ *   fast   a control answering a finger — the sticky header, a drag handle
+ *   base   the standard, and the answer when unsure: hovers, colours, backdrops
+ *   slow   something arriving or leaving: entrances, sheets, reveals
+ *
+ * `staggerStep` is gone rather than kept for later. It described a stagger the
+ * Drop deliberately does not have — globals.css argues that a list dealing
+ * itself in draws the eye to the animation rather than to what arrived, and it
+ * is the same three faces every night. A token for a rejected idea is an
+ * invitation to build it.
  */
 export const MOTION = {
   ease: "cubic-bezier(0.22, 0.61, 0.24, 1)",
   easeOut: "cubic-bezier(0.2, 0.6, 0.2, 1)",
-  durationFast: "250ms",
-  durationBase: "420ms",
-  durationReveal: "740ms",
-  staggerStep: "90ms",
+  durationFast: "180ms",
+  durationBase: "300ms",
+  durationSlow: "420ms",
   revealOffset: "16px",
 } as const;
 

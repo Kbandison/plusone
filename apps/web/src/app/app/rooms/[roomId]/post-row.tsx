@@ -165,7 +165,7 @@ export function PostRow({
         <Link
           href={commentHref}
           aria-label={C.postCommentCount(post.comment_count)}
-          className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
+          className="ease-brand flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-300 hover:text-ink"
         >
           <CommentIcon />
           {/* Nought shown, like the like count beside it. A row where one
@@ -335,7 +335,7 @@ export function PostRow({
               href={post.article_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] break-words underline decoration-line-control underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+              className="ease-brand relative z-20 mt-0.5 block text-[15px] leading-[1.4] break-words underline decoration-line-control underline-offset-4 transition-colors duration-300 hover:decoration-accent"
             >
               {post.article_title}
             </a>

@@ -28,7 +28,7 @@ export default async function PostPage({
     <main id="main">
       <Link
         href={`/app/rooms/${roomId}`}
-        className="ease-brand inline-flex min-h-tap items-center text-[11.7px] text-ink-3 transition-colors duration-200 hover:text-ink"
+        className="ease-brand inline-flex min-h-tap items-center text-[11.7px] text-ink-3 transition-colors duration-300 hover:text-ink"
       >
         ← {C.postBackToRoom}
       </Link>

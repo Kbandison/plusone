@@ -157,7 +157,7 @@ export function PreviewDropCard({
       <Link
         href="/app/profile"
         aria-label={DRAFT_COPY.app.previewCtaAria}
-        className="ease-brand mt-5 inline-block text-[11.7px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+        className="ease-brand mt-5 inline-block text-[11.7px] text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:decoration-accent"
       >
         {COPY.supportOnly.previewCta}
       </Link>

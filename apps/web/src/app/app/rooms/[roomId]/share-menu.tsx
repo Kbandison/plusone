@@ -62,7 +62,7 @@ export function ShareMenu({
     <Modal
       heading={C.postShareLabel}
       trigger={<ShareIcon />}
-      triggerClassName="ease-brand relative z-20 flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-200 hover:text-ink"
+      triggerClassName="ease-brand relative z-20 flex min-h-tap items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors duration-300 hover:text-ink"
       /* A sheet above the nav, not a dropdown.
        *
        * As a dropdown it was wrong three ways at once, and all three were the
@@ -95,7 +95,7 @@ export function ShareMenu({
                 });
                 close();
               }}
-              className="ease-brand min-h-tap border-b border-line text-left text-[13px] transition-colors duration-200 hover:text-accent"
+              className="ease-brand min-h-tap border-b border-line text-left text-[13px] transition-colors duration-300 hover:text-accent"
             >
               {C.postShareExternal}
             </button>
@@ -106,7 +106,7 @@ export function ShareMenu({
             onClick={() => {
               void navigator.clipboard.writeText(url).then(() => setCopied(true));
             }}
-            className="ease-brand min-h-tap border-b border-line text-left text-[13px] transition-colors duration-200 hover:text-accent"
+            className="ease-brand min-h-tap border-b border-line text-left text-[13px] transition-colors duration-300 hover:text-accent"
           >
             {copied ? C.postShareCopied : C.postShareCopy}
           </button>
@@ -125,7 +125,7 @@ export function ShareMenu({
                       <button
                         type="submit"
                         disabled={sharing}
-                        className="ease-brand min-h-tap w-full border-b border-line text-left text-[13px] transition-colors duration-200 hover:text-accent disabled:opacity-55"
+                        className="ease-brand min-h-tap w-full border-b border-line text-left text-[13px] transition-colors duration-300 hover:text-accent disabled:opacity-55"
                       >
                         {room.title}
                       </button>

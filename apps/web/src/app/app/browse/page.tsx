@@ -324,7 +324,7 @@ export default async function BrowsePage({
           {filtered ? (
             <Link
               href="/app/browse"
-              className="ease-brand mt-4 inline-block text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+              className="ease-brand mt-4 inline-block text-[12.2px] text-ink-2 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
             >
               {C.browseClearFilters}
             </Link>

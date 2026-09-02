@@ -31,7 +31,7 @@ export async function ChatImage({ path, footer }: { path: string; footer: React.
       footer={footer}
       // A bubble, not a row: no z-20 (nothing is covering it), and sized to the
       // picture rather than stretched to the width of the thread.
-      triggerClassName="ease-brand block cursor-zoom-in transition-opacity duration-200 hover:opacity-95"
+      triggerClassName="ease-brand block cursor-zoom-in transition-opacity duration-300 hover:opacity-95"
       imageClassName="max-h-[280px] w-auto max-w-full rounded-lg object-contain"
     />
   );

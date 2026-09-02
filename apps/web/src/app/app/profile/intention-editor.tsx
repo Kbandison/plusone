@@ -44,7 +44,7 @@ export function IntentionEditor({
           disabled={locked || pending}
           onChange={(event) => setChoice(event.target.value)}
           aria-label={C.profileLookingFor}
-          className="ease-brand min-h-tap rounded-lg border border-line-control bg-surface px-3.5 py-2 text-[16px] transition-colors duration-200 focus:border-accent disabled:cursor-not-allowed disabled:text-ink-3 disabled:opacity-60"
+          className="ease-brand min-h-tap rounded-lg border border-line-control bg-surface px-3.5 py-2 text-[16px] transition-colors duration-300 focus:border-accent disabled:cursor-not-allowed disabled:text-ink-3 disabled:opacity-60"
         >
           {intention ? null : <option value="">{C.profileNotSet}</option>}
           {(Object.keys(INTENTION_LABELS) as Intention[]).map((value) => (

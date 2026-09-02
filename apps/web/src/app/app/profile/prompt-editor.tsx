@@ -85,7 +85,7 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
               <button
                 type="button"
                 onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
-                className="ease-brand self-start text-[11px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-200 hover:text-ink"
+                className="ease-brand self-start text-[11px] text-ink-3 underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink"
               >
                 {C.promptRemoveLabel}
               </button>

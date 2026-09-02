@@ -137,6 +137,14 @@
   --radius-lg: 16px;
   --radius-xl: 18px;
 
+  /* Durations, exposed so a component can reach them. Until 2026-09-02 only
+     the easings were here, which is why 108 places typed Tailwind's default
+     instead — the scale existed and was unreachable. Tailwind's duration-300
+     IS --duration-base; the class is used where a class reads better, and they
+     are kept equal by motion.test.ts. */
+  --duration-fast: 180ms;
+  --duration-base: 300ms;
+  --duration-slow: 420ms;
   --ease-brand: cubic-bezier(0.22, 0.61, 0.24, 1);
   --ease-brand-out: cubic-bezier(0.2, 0.6, 0.2, 1);
 
