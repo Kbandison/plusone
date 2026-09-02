@@ -34,7 +34,7 @@
  * file changes; the browser diffs the bytes, not the number, but a human
  * reading two versions of this cannot.
  */
-const VERSION = "plusone-sw-10";
+const VERSION = "plusone-sw-11";
 
 self.addEventListener("install", () => {
   // Take over immediately rather than waiting for every tab to close. There is
@@ -139,29 +139,29 @@ self.addEventListener("push", (event) => {
       .showNotification(title, {
         body,
         /**
-         * No large icon, since 2026-09-01 — and the reason it was here has
-         * expired rather than been overruled.
+         * The glyph for this KIND of notification, chosen by the server.
          *
-         * It used to read: "Android draws the app's icon on the left AND a
-         * large icon on the right, and it will not leave the right one empty:
-         * with no `icon` it synthesises a monogram from the notification's
-         * SOURCE, which here is the origin — so removing this produced a grey
-         * circle with a 'W' in it, for 'www'."
+         * ── the slot cannot be left empty, measured twice ───────────────────
          *
-         * That was measured on a real phone and it was correct at the time.
-         * What has changed underneath it is who posts: Chrome used to, so the
-         * source was www.loveplusone.app and the monogram came from the domain.
-         * The app posts now — TWA notification delegation started working once
-         * POST_NOTIFICATIONS was granted before Chrome cached its answer — so
-         * the source is the app, and the mark it would fall back to is the
-         * app's own.
+         * Android draws a large icon on the right and will not leave it blank:
+         * with none it synthesises a monogram from the origin — a grey circle
+         * with a "W" in it, for "www". That was found when the icon was first
+         * added, and confirmed again on 2026-09-01 after it was removed on the
+         * theory that TWA delegation had changed the fallback. It had not, and
+         * the W came back.
          *
-         * The cost of keeping it was the mark drawn twice in one notification,
-         * once each side. Kevin asked for the right-hand one to go.
+         * So the only question is what fills it. It used to be the app's own
+         * mark, which drew the mark twice in one notification, once each side.
+         * A glyph that matches the sentence is the better use of a space that
+         * is going to be occupied regardless.
          *
-         * MEASURE IT AGAIN rather than trusting this. The note above was right
-         * on the evidence it had and is now wrong; there is no reason this one
-         * is different, and it is one push and one screenshot to check.
+         * It comes down in the PAYLOAD rather than being mapped here, because
+         * this file cannot import from a workspace package and a second copy of
+         * a seventeen-event map is a second thing to drift.
+         *
+         * The fallback is the mark, for a push written before this field
+         * existed — an old payload sitting in a service worker's queue is a
+         * real thing, and a missing icon would be a "W" again.
          */
         /**
          * The status-bar mark, which Android draws from the ALPHA CHANNEL
@@ -171,6 +171,7 @@ self.addEventListener("push", (event) => {
          * shade was pulled down and the real icon appeared under it. It is the
          * glyph and transparency now.
          */
+        icon: typeof payload.icon === "string" ? payload.icon : "/icons/icon-192.png",
         badge: "/icons/badge-96.png",
         // The path travels in data rather than in the tag or the title, so
         // nothing about the destination is displayed.

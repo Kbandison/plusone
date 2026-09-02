@@ -5,6 +5,7 @@ import {
   PUSH_APP_NAME,
   NEARBY_JOIN_MIN_COUNT,
   type NotificationEvent,
+  NOTIFICATION_ICONS,
 } from "@plusone/config";
 
 /**
@@ -35,6 +36,16 @@ export interface NotificationPayload {
   readonly path: string;
   /** Every transactional email shares one subject. */
   readonly emailSubject: string;
+  /**
+   * The glyph for this KIND of notification.
+   *
+   * Carried in the payload rather than mapped in the service worker, because
+   * sw.js is a static asset that cannot import from a workspace package — and a
+   * second copy of a seventeen-event map is a second thing to drift. Checked
+   * for content-blindness like every other field: it is a path, and a path that
+   * ever gained a word would be refused.
+   */
+  readonly icon: string;
 }
 
 export class ContentBlindViolation extends Error {
@@ -66,6 +77,7 @@ export function assertContentBlind(payload: NotificationPayload): void {
     ["body", payload.body],
     ["path", payload.path],
     ["emailSubject", payload.emailSubject],
+    ["icon", payload.icon],
     ["event", payload.event],
   ];
 
@@ -124,6 +136,7 @@ export function buildPayload(
     body: template.body,
     path: usable && template.pathFor ? template.pathFor(usable) : template.path,
     emailSubject: EMAIL_SUBJECT,
+    icon: NOTIFICATION_ICONS[event],
   };
 
   assertContentBlind(payload);

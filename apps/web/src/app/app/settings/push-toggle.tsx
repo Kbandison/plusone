@@ -281,9 +281,10 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
         // whose absence Android fills with a letter taken from the domain.
         await registration.showNotification(PUSH_APP_NAME, {
           body: C.pushTestBody,
-          // No large icon, matching a real one — see the note in sw.js. A test
-          // control that looks different from the thing it tests answers a
-          // different question.
+          // The same glyph a real one carries, since a test control that looks
+          // different from the thing it tests answers a different question.
+          // Hardcoded rather than mapped: this screen has no event.
+          icon: "/icons/n-message.png",
           badge: "/icons/badge-96.png",
           tag: "plusone-test",
         });

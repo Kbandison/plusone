@@ -273,6 +273,52 @@ export const PUSH_APP_NAME = "⁺One" as const;
  * `push.test.ts` fails when the two stop agreeing. `silent` and `renotify`
  * throw when combined, so an event is one or the other.
  */
+/**
+ * Which glyph each notification carries, from scripts/generate-icons.mjs.
+ *
+ * Android fills the large-icon slot whether we ask it to or not — with nothing
+ * there it draws a monogram taken from the origin, a grey circle with a "W" in
+ * it. So the only question is what occupies a space that cannot be blank, and
+ * the app's own mark repeated beside itself was the wrong answer.
+ *
+ * ── coarse on purpose ───────────────────────────────────────────────────────
+ *
+ * Six glyphs for seventeen events. §8 governs what a notification DISPLAYS and
+ * a glyph is displayed, so each is chosen to say exactly what the body already
+ * says and no more — a speech bubble beside "You have a new message" tells a
+ * passer-by nothing new. Keeping the set coarse is what stops the icon
+ * narrowing the sentence: "someone liked your post" and "someone replied" share
+ * one, and neither says which room.
+ */
+export const NOTIFICATION_ICONS: Record<NotificationEvent, string> = {
+  drop_ready: "/icons/n-drop.png",
+
+  connect_received: "/icons/n-connect.png",
+  connect_accepted: "/icons/n-connect.png",
+
+  message_received: "/icons/n-message.png",
+  reply_received: "/icons/n-message.png",
+  mention_received: "/icons/n-message.png",
+
+  plan_proposed: "/icons/n-plan.png",
+  plan_confirmed: "/icons/n-plan.png",
+
+  // Everything with a deadline on it, including the two that end something.
+  connect_expiring: "/icons/n-time.png",
+  fuse_warning: "/icons/n-time.png",
+  chat_closed: "/icons/n-time.png",
+  premium_expiring: "/icons/n-time.png",
+
+  like_received: "/icons/n-people.png",
+  nearby_joins: "/icons/n-people.png",
+  activity_nearby: "/icons/n-people.png",
+  referral_converted: "/icons/n-people.png",
+
+  // The two that are about the member's own account rather than anybody else.
+  verification_decided: "/icons/n-drop.png",
+  beta_signup: "/icons/n-drop.png",
+};
+
 export const PUSH_SILENT: readonly NotificationEvent[] = [
   "like_received",
   "nearby_joins",

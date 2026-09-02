@@ -267,3 +267,84 @@ if (!existsSync(IOS_ASSETS)) {
   }
   console.log(`  Splash.imageset  2732×2732 ×3  ${splash.length} bytes each`);
 }
+
+/**
+ * One icon per KIND of notification, drawn on the same ground as everything
+ * else here.
+ *
+ * ── why these exist ─────────────────────────────────────────────────────────
+ *
+ * Android draws a large icon on the right of a notification and will not leave
+ * it empty: with none it synthesises a monogram from the origin, which is a
+ * grey circle with a "W" in it, for "www". That was measured twice — once when
+ * the icon was first added, and again on 2026-09-01 when it was removed on the
+ * theory that TWA delegation had changed the fallback. It had not.
+ *
+ * So the slot is going to be filled either way, and the only question is by
+ * what. It used to be the app mark, which meant the mark appeared twice in one
+ * notification, once each side. Kevin asked for something that pertains to the
+ * notification instead, which is the better use of a space that cannot be blank.
+ *
+ * ── they say nothing the body does not ──────────────────────────────────────
+ *
+ * §8 governs what a notification DISPLAYS, and a glyph is displayed. Each one
+ * is chosen to match the sentence already on screen — a speech bubble beside
+ * "You have a new message" tells a passer-by nothing the words did not. None of
+ * them is specific to a condition, a person, or a room, and the set is
+ * deliberately coarse: six glyphs for seventeen events, so the icon can never
+ * narrow what the body says.
+ */
+const GLYPHS = {
+  // A speech bubble. Messages, and anything somebody wrote.
+  message: `<path d="M14 22h36a6 6 0 0 1 6 6v18a6 6 0 0 1-6 6H30l-11 9v-9h-5a6 6 0 0 1-6-6V28a6 6 0 0 1 6-6Z"
+        fill="none" stroke="${ACCENT}" stroke-width="5" stroke-linejoin="round"/>`,
+
+  // An arrow turning back. A connect is a reply to a prompt, never a wave.
+  connect: `<path d="M40 20 24 34l16 14" fill="none" stroke="${ACCENT}" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M24 34h18a14 14 0 0 1 14 14v8" fill="none" stroke="${ACCENT}" stroke-width="5"
+        stroke-linecap="round"/>`,
+
+  // A calendar. A plan is the thing a chat is for.
+  plan: `<rect x="14" y="22" width="42" height="38" rx="6" fill="none" stroke="${ACCENT}" stroke-width="5"/>
+      <path d="M14 34h42M25 16v10M45 16v10" fill="none" stroke="${ACCENT}" stroke-width="5"
+        stroke-linecap="round"/>`,
+
+  // A clock. Everything with a deadline on it.
+  time: `<circle cx="35" cy="38" r="21" fill="none" stroke="${ACCENT}" stroke-width="5"/>
+      <path d="M35 26v13l9 6" fill="none" stroke="${ACCENT}" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>`,
+
+  // Two people. Rooms, and anybody arriving near you.
+  people: `<circle cx="27" cy="30" r="9" fill="none" stroke="${ACCENT}" stroke-width="5"/>
+      <circle cx="47" cy="33" r="7" fill="none" stroke="${ACCENT}" stroke-width="5"/>
+      <path d="M13 58c0-8 6-13 14-13s14 5 14 13" fill="none" stroke="${ACCENT}" stroke-width="5"
+        stroke-linecap="round"/>
+      <path d="M45 58c0-6 4-10 9-10s9 4 9 10" fill="none" stroke="${ACCENT}" stroke-width="5"
+        stroke-linecap="round"/>`,
+};
+
+/** The glyph on the app's ground, at the size a large icon is drawn. */
+function glyphSvg(size, glyph) {
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 70 70">
+  <rect width="70" height="70" rx="16" fill="${GROUND}"/>
+  ${glyph}
+</svg>`);
+}
+
+for (const [name, glyph] of Object.entries(GLYPHS)) {
+  const png = await sharp(glyphSvg(192, glyph)).png({ compressionLevel: 9 }).toBuffer();
+  writeFileSync(join(OUT, `n-${name}.png`), png);
+  console.log(`  n-${name}.png  192×192  ${png.length} bytes`);
+}
+
+/**
+ * The Drop keeps the app's own mark, because it IS the app's own moment rather
+ * than a kind of thing that happened. Written as its own file rather than
+ * pointed at icon-192 so every notification icon is one naming convention.
+ */
+{
+  const png = await sharp(svg(192, false)).png({ compressionLevel: 9 }).toBuffer();
+  writeFileSync(join(OUT, "n-drop.png"), png);
+  console.log(`  n-drop.png  192×192  ${png.length} bytes  (the mark)`);
+}

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -142,5 +142,57 @@ describe("the delegation service strips the origin", () => {
   it("guards the API level, since minSdk is below it", () => {
     // recoverBuilder is API 24+; twa-manifest declares minSdkVersion 23.
     expect(service).toMatch(/Build\.VERSION_CODES\.N/);
+  });
+});
+
+describe("the notification icon survives into the build", () => {
+  /**
+   * v3 shipped without `ic_notification_icon` at all — the drawable was absent
+   * from the APK entirely, so SMALL_ICON pointed at a resource id with no entry
+   * and Android substituted its own default. It read as a stale icon that no
+   * amount of regenerating would fix, because the file on disk was never the
+   * problem.
+   *
+   * Found 2026-09-01 by dumping the resource table of the APK pulled OFF THE
+   * PHONE, which is the only artifact that could have answered it: the repo's
+   * copy had the drawable, the source tree had it at five densities, and both
+   * were irrelevant.
+   *
+   * This checks the source is complete. Whether it reaches the APK is a
+   * question only a built APK can answer, and the density list in
+   * BACKLOG server 26 records how to ask it.
+   */
+  const densities = ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"];
+
+  it("exists at every density the launcher icons use", () => {
+    for (const d of densities) {
+      const file = join(
+        import.meta.dirname,
+        `app/src/main/res/drawable-${d}/ic_notification_icon.png`,
+      );
+      expect(existsSync(file), `ic_notification_icon missing at ${d}`).toBe(true);
+    }
+  });
+
+  it("is alpha, since Android draws the silhouette and discards colour", () => {
+    // An opaque small icon renders as a solid white block.
+    for (const d of densities) {
+      const b = readFileSync(
+        join(import.meta.dirname, `app/src/main/res/drawable-${d}/ic_notification_icon.png`),
+      );
+      const colourType = b.readUInt8(25);
+      expect([4, 6], `${d} has colour type ${colourType}, which carries no alpha`).toContain(
+        colourType,
+      );
+    }
+  });
+
+  it("is the same mark the web badge uses", () => {
+    // One mark, one generator. They were byte-identical when this was written.
+    const badge = readFileSync(join(import.meta.dirname, "../web/public/icons/badge-96.png"));
+    const xxxhdpi = readFileSync(
+      join(import.meta.dirname, "app/src/main/res/drawable-xxxhdpi/ic_notification_icon.png"),
+    );
+    expect(xxxhdpi.equals(badge)).toBe(true);
   });
 });

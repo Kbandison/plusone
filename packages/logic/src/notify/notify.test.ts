@@ -7,6 +7,7 @@ import {
   NEARBY_JOIN_MIN_COUNT,
   PUSH_APP_NAME,
   type NotificationEvent,
+  NOTIFICATION_ICONS,
 } from "@plusone/config";
 
 import {
@@ -66,6 +67,7 @@ describe("the dispatcher refuses to carry a condition word", () => {
     body: "You have a new message",
     path: "/app/inbox",
     emailSubject: EMAIL_SUBJECT,
+    icon: NOTIFICATION_ICONS.message_received,
   };
 
   it.each(CONTENT_BLIND_BANNED_TERMS)("refuses %s in the body", (term) => {
@@ -212,6 +214,7 @@ describe("the stub notifier", () => {
         body: "your hsv result is in",
         path: "/app/inbox",
         emailSubject: EMAIL_SUBJECT,
+        icon: NOTIFICATION_ICONS.message_received,
       },
     };
     await expect(notifier.send([smuggled])).rejects.toThrow(ContentBlindViolation);
