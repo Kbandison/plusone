@@ -104,3 +104,34 @@ describe("the sign-in code box fits the code that was sent", () => {
     expect(OTP.codeMaxLength).toBeGreaterThanOrEqual(8);
   });
 });
+
+describe("signing out ends this session and no other", () => {
+  /**
+   * `signOut()` with no options defaults to GLOBAL in supabase-js, which
+   * revokes every session on every device. The action's own docblock said it
+   * "ends the session and touches nothing else" — which the call made false.
+   *
+   * On this app the link sits at the bottom of every onboarding screen so
+   * somebody who has just handed their phone over can reach it, and that member
+   * is thinking about the phone in their hand. Taking their laptop with it is a
+   * surprise in the direction of losing access.
+   */
+  const action = readFileSync(
+    fileURLToPath(new URL("../app/settings/sign-out.ts", import.meta.url)),
+    "utf8",
+  )
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "");
+
+  it("finds the call at all", () => {
+    expect(action).toMatch(/auth\.signOut\(/);
+  });
+
+  it("asks for local scope rather than taking the default", () => {
+    expect(action).toMatch(/auth\.signOut\(\{ scope: "local" \}\)/);
+    // The bare CALL is the bug — anchored on `auth.` so the function's own
+    // declaration, `export async function signOut()`, does not match it. The
+    // first version of this assertion failed on the code it was written for.
+    expect(action).not.toMatch(/auth\.signOut\(\)/);
+  });
+});

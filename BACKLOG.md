@@ -1527,6 +1527,54 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
 
     Worth solving before launch. Not worth solving before a metro opens.
 
+27. **Four things found by testing v4, 2026-09-01.** Signing out is fixed; the
+    rest are open and listed in the order they hurt.
+
+    a. ~~**Signing out on one device signed you out on all of them.**~~ — fixed.
+    `signOut()` defaults to GLOBAL scope in supabase-js, so the action's own
+    docblock — "ends the session and touches nothing else" — was false. The
+    link sits at the bottom of every onboarding screen so somebody who just
+    handed their phone over can reach it, and that member means THIS phone.
+    Now `scope: "local"`, pinned by a test.
+
+    **Signing out everywhere is still worth having**, for a lost phone. It is
+    a different button and it does not exist.
+
+    **And it may not be the whole story.** Kevin described it as happening on
+    LOGIN, not logout. If it recurs after this, check Supabase → Auth →
+    Sessions for **"enforce single session per user"** — that setting does
+    exactly what he described and no code change can override it.
+
+    b. **A notification opens the section, not the thing.** A message takes you
+    to the inbox rather than to the chat. `NOTIFICATIONS[event].path` is a
+    fixed string per event, and `buildPayload(event)` takes no subject.
+
+    **This one needs a decision before it needs code.** The payload type says
+    "Deep link path. No identity, no condition, no query string", and
+    `assertContentBlind` enforces it. A chat id in the path is an opaque uuid
+    and is never displayed — a lock screen shows the title and body, not the
+    URL — so the rule's _reason_ does not reach it. But the rule is written
+    absolutely, it has a test, and relaxing it is a §8 judgement rather than
+    a refactor. Kevin has asked for the behaviour; what needs settling is
+    whether the id travels in `path` or in `data`, and whether
+    `assertContentBlind` learns the difference.
+
+    c. **The connect sheet does not close after sending.** It refreshes in
+    place. The action revalidates and never navigates, so `RouteModal` is
+    still open on a form that has already been submitted — which reads as the
+    send having failed, and invites a second one.
+
+    d. **A profile shows one photo.** Tapping through to somebody should show
+    the whole gallery, blurred where they chose it. Backlog server 17 already
+    records the shape of this: the connect panel selects
+    `id, display_name, prompts` and nothing else, and calls filtering on an
+    attribute that appears on no card "a control with no visible effect".
+    Same argument, one surface further in.
+
+    `visible_profile_photos` and the per-photo privacy from 18b already
+    decide what may be shown, so this is a read and a render rather than new
+    policy.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
