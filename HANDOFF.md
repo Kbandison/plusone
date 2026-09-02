@@ -88,6 +88,14 @@ Keep it short. If a section has been true and unread for a month, delete it.
   re-run an `alter table ... add column`. The dry run is read-only and settles it
   in one command.
 
+- **`EXPECT` in `verify-schema.mjs` is a hardcoded count, so `check:db` goes red
+  the moment anything is applied.** Tables, views, functions, enums. Not a
+  breakage — a thing to know before it looks like one.
+
+  Move it WITH each delta attributed, never bumped until green. A silent bump
+  once hid six enums arriving from a migration another session believed it had
+  not applied, which is how that apply was discovered at all.
+
 - **CODE REACHES PRODUCTION BEFORE THE SCHEMA DOES, as a matter of course, and
   PostgREST does not fail narrowly on an unknown column — it fails the WHOLE
   request.** Migrations here are applied by hand and are Kevin's call, so a push
@@ -305,6 +313,18 @@ runtimes` just comes back empty.
   unavailable until that is sorted — the screenshot technique below is what
   works today, and it is why the premium screen could not be driven to a
   signed-in state on 2026-08-26.
+- **The FASTEST way to point the shell at a page: edit the config inside the
+  INSTALLED app.** `capacitor.config.json` lives in the simulator's container at
+  `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Containers/Bundle/Application/<id>/App.app/`.
+  Change `server.url`, `simctl terminate`, `simctl launch` — no Xcode build, no
+  reinstall, seconds rather than minutes. Copy the original aside and put it
+  back; the repo's own copy is never touched.
+
+  That is what makes a measure-refine-remeasure loop cheap enough to bother
+  with, and it is how every WKWebView check on 08-29 and 09-01 was done —
+  including the ones that found a locked filter pixel-identical to a live one,
+  and an install block offering the app to somebody already inside it.
+
 - **There is a simpler way to script the shell than the proxy.** Point
   `server.url` in `ios/App/App/capacitor.config.json` at a local page that runs
   the checks and renders the answers, then `simctl io screenshot`. No inspector,
@@ -429,6 +449,43 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
 
+### 2026-09-01 · macOS · a build Apple accepted, and a link that could not cross engines
+
+**1.0 (202609020240) is uploaded and was ACCEPTED**, archived here with
+`/Applications/Xcode-beta.app` on macOS 27 beta. "Analyzing package" is where
+ITMS-90111 fires and it passed, so **this Mac can produce a submittable binary**
+and Xcode Cloud is a convenience rather than the only route. BACKLOG 21; that
+retires most of Kevin 18. The build-number bump is still manual and still a
+floor — bump it in a commit before archiving or the upload dies at the end.
+
+**What the archive carries:** 137d358, the shell's start URL moving to `/app`.
+Verified before building, including the half with the risk in it — a page
+OUTSIDE `/app` renders inside the shell, so `allowNavigation` does what its
+comment claims. Launching at `/app` is not enough on its own to trust it.
+
+**Two bugs came out of writing the App Review reply, not out of reading code.**
+Both are the shape worth keeping: a signed-out launch now lands on
+`/onboarding/phone`, and the only `/sign-in` link on that screen sat inside the
+closed-beta refusal card. A shell has no address bar, so the sole route to
+signing in began with being rejected. Then `/beta/*` was unclaimed in the
+association file, so an invitation opened Safari and the cookie landed in a jar
+WKWebView cannot see. Neither is visible from the code alone; both are obvious
+the moment you ask what a person opening the app actually meets.
+
+**I broke the two-engines rule while fixing a two-engines bug.** The install
+block I taught to detect the shell used `inNativeShell()`, which cannot see a
+TWA — so Android testers got the screen the commit existed to prevent. WSL
+caught it. The specific thing I did not know is now a bullet in `AGENTS.md`:
+only iOS enumerates its deep-link paths, Android's intent filter has none, so
+every path on the host opens in the TWA once assetlinks verifies.
+
+**Left off:** tree clean, five gates green, nothing claimed, nothing in flight.
+The build is processing. Everything outstanding is Kevin's and none of it is
+code — the 2.1 reply needs three dashboard things done first (an email on the
+reviewer account, `{{ .Token }}` in the Magic Link template, SMTP on Resend so a
+second code is not rate-limited), and Android verification of tonight's beta
+work needs the device, same blocker as the Play re-read.
+
 ### 2026-09-01 · WSL · Android v5, and an invitation that could not cross engines
 
 **Left off:** tree clean, in sync, nothing claimed, nothing in flight. Forced run
@@ -522,105 +579,3 @@ is rewritten — its old reviewer note is now actively wrong, since it told a
 reviewer that creating an account needs an identity check, when it is refused
 outright. The App Store guide needs the same correction and does not have it
 yet, because it lives in an artifact rather than in the repo.
-
-### 2026-08-29 · macOS · the premium alert, and the gap between two green gates
-
-**Server 18c is done, applied and pushed** — `7e4c93b`, ledger recorded, and
-`check:db` green. Detail is in the backlog entry. Three things belong here
-instead, because they are about how this repo behaves rather than about the
-feature.
-
-**A migration and the code that reads it cannot ship together, and nothing in
-the build can see that.** `check:sql` validates the migration, typecheck
-validates the TypeScript, and the gap between two green gates is exactly where
-this lives. WSL put a live break on the profile page this way an hour before I
-finished: PostgREST does not fail narrowly on an unknown column, it fails the
-WHOLE request, so one unshipped column returned `data: null` and blanked every
-field on the page. Write every read for BOTH deploy orders — mine asks for
-`activity_alerts` in its own request so a missing table cannot take the other
-forty-two switches down with it, and the cron separates 42883 from a real error
-and names the migration in its response.
-
-**`EXPECT` in `verify-schema.mjs` is a hardcoded count and goes red the moment
-anything is applied.** Not a warning so much as a thing to know before it looks
-like breakage: tables, views, functions, enums. Move it WITH the deltas
-attributed — a bump until green would have hidden that six enums arrived from a
-migration another session believed it had not applied.
-
-**A peer session's account of production goes stale while you work.** WSL told
-me their migration was applied nowhere; it was true when written, and by the
-time I read the schema it was applied and in the ledger. I found out from an
-enum count, not from a message. Read the database, not the last thing anybody
-said about it.
-
-**The Simulator run, and the one thing it changed.** Both today's `apps/web`
-changes are now seen in WKWebView — my alert and WSL's filter fold, the real
-components, iOS 27.0. The fold arrives open on `?kids=none` and the radius
-select is 16px. Neither is checked in the TWA, which is a different engine.
-
-**The 16px rule cannot be checked statically, and `design-system.test.ts` reads
-as though it can.** It scans for a literal `text-[Npx]` inside a control's tag,
-so a field that INHERITS a small size is invisible to it. Measured at runtime
-every text-and-select field is >= 16px and the only two under are checkboxes,
-which raise no keyboard and do not zoom — so nothing is broken. But the gate is
-narrower than its name, and a runtime measurement is the only thing that knows.
-
-**Scripting the shell without a rebuild.** `capacitor.config.json` can be
-edited INSIDE the installed `App.app` in the simulator's container, then
-`terminate` + `launch` — no Xcode build, no reinstall, seconds rather than
-minutes. Copy the original aside first and put it back; the repo's own copy is
-never touched. That is a good deal faster than the technique the older note
-describes, and it is what made a three-round measure-and-refine loop cheap.
-
-**`next dev` failed with "Failed to open database" on the first try**, which is
-the corrupt Turbopack cache the machine notes already describe. `rm -rf
-apps/web/.next` and it started. Worth knowing the note is accurate — it cost
-nothing because it was written down.
-
-**18b went on to land too** — per-photo privacy, applied, `43a35dc`. Its own
-reasoning is in the backlog entry. The one thing here rather than there: the
-right premium gate is a consequence of HOW A TABLE WAS GRANTED, and this schema
-does both. `profile_photos` carries a whole-table update grant so a member can
-PATCH any column on their own rows and a check in a server action is decoration
-— that one needs a trigger. `profiles` has no such grant, so 18a could simply
-never grant the column and write through a definer function, which is the
-stronger shape. **Read `information_schema.role_table_grants`, never the
-migration that created the table** — 20260826000200 exists precisely because a
-table's grants are not what its creating file says, which makes that file the
-one source guaranteed to be able to lie about this.
-
-**Staging a state in the production database was proposed and refused**, and
-the refusal is the durable part. WSL suggested forcing a column as owner so a
-lapsed-premium screen could be photographed. BACKLOG shells 11 had already
-settled it — "inventing one in the production database to watch a button render
-is a worse idea than the bug" — and it was a real member's row. Rendering the
-component directly with props answered the same question. Worth knowing the
-answer exists, because the request is a reasonable-sounding one and it will
-come again.
-
-**A test nobody has watched fail is a test nobody has a reason to trust.** Three
-separate instances of this turned up in one afternoon: a labels scan that read
-zero columns and passed, a grant assertion satisfied by the migration's own
-COMMENT saying the right sentence, and a 16px gate blinded by a class hoisted
-into a constant. Give any source-scanning test a floor on what it actually read,
-strip comments before matching, and break it once on purpose.
-
-Everything this block used to say about how to work is in the machine notes
-above now — read the artifact not the claim, the two sabotage traps, the
-floor-and-strip-comments rules for source-scanning tests. They are standing
-rules, and a session block is one of three under a delete-below rule, so a rule
-kept here has an expiry date. That was the `debugPanel` failure and both of us
-had committed it in our own blocks by the end of the day.
-
-**Left off:** tree clean, five gates green on a forced run (3039 tests, nothing
-cached), nothing in flight, nothing claimed in either lane. All five
-PREMIUM_INCLUDES promises are built and applied.
-
-Everything outstanding is Kevin's and none of it is code — the device, the App
-Store Connect log (Kevin 18, and read the log BEFORE touching the build number),
-Play's app setup, and counsel. The Play catalogue is unread since the 27th and
-the phone is unreachable from both machines.
-
-This paragraph previously said two things were waiting on Kevin that he had
-decided hours earlier. It was rewritten rather than appended to, which is the
-whole point of this file being a whiteboard.
