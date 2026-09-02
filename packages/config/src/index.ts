@@ -140,6 +140,7 @@ export {
   BETA_MANUAL_STEP,
   betaInstallFor,
   LINK_ADDS_THE_TESTER,
+  PLAY_TESTER_PASTE,
   PLAY_TRACK,
 } from "./waitlist";
 export type { Metro, WaitlistEmail, BetaInstall, BetaPlatform } from "./waitlist";

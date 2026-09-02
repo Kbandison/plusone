@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { WAITLIST_METRO_TARGET, metroLabel } from "@plusone/config";
+import { PLAY_TESTER_PASTE, WAITLIST_METRO_TARGET, metroLabel } from "@plusone/config";
 
 import { Card } from "@/app/ui";
 import { confirmedWaitlist, countByMetro, testerList } from "@/lib/waitlist";
@@ -104,8 +104,8 @@ export default async function AdminWaitlistPage() {
         </p>
 
         <TesterBlock
-          heading="Google Play — internal testing"
-          note="Paste into Play Console → Testing → Internal testing → Testers. Comma-separated; these must be Google account addresses."
+          heading={PLAY_TESTER_PASTE.heading}
+          note={`Paste into ${PLAY_TESTER_PASTE.path}. Comma-separated; these must be Google account addresses.`}
           value={android.addresses.join(", ")}
           missing={android.missing}
         />

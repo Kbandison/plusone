@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { BETA_INSTALL } from "@plusone/config";
+import { BETA_INSTALL, BETA_LINKS, PLAY_TESTER_PASTE, PLAY_TRACK } from "@plusone/config";
 
 const SRC = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(SRC, p), "utf8");
@@ -520,5 +520,40 @@ describe("an invitation has to survive the jump between two engines", () => {
     // above passed for both platforms it would be matching something generic
     // rather than the instruction that was added for one engine.
     expect(android.steps[0]).not.toMatch(/browser/i);
+  });
+});
+
+describe("the track testers are pasted into is the track their link opts them into", () => {
+  it("the opt-in URL form agrees with PLAY_TRACK", () => {
+    // Play uses two different URL shapes and only one works per track:
+    //   closed / open  ->  play.google.com/apps/testing/<package>
+    //   internal       ->  play.google.com/apps/internaltest/<id>
+    // Sending one track's link to somebody on the other answers "Plus One is
+    // unavailable" with no reason given, which is the failure
+    // BETA_INSTALL.android.accountHint describes arriving from our side.
+    const url = BETA_LINKS.android.optIn;
+    if (PLAY_TRACK === "internal") {
+      expect(url).toMatch(/\/apps\/internaltest\//);
+    } else {
+      expect(url).toMatch(/\/apps\/testing\//);
+      expect(url).not.toMatch(/internaltest/);
+    }
+  });
+
+  it("the admin screen names the track from PLAY_TRACK rather than a literal", () => {
+    // It carried "Internal testing" as a hardcoded string while PLAY_TRACK said
+    // closed and the shipped link was the closed one. PLAY_TRACK had no readers
+    // at all, which is what let them disagree — a constant nothing consults
+    // cannot contradict anything until somebody trusts it.
+    const admin = code("app/admin/waitlist/page.tsx");
+    expect(admin).toMatch(/PLAY_TESTER_PASTE/);
+    expect(admin).not.toMatch(/Internal testing|Closed testing/);
+  });
+
+  it("and PLAY_TESTER_PASTE actually names the live track", () => {
+    // The floor. Both assertions above pass against a constant that resolves to
+    // the wrong half of the map, so check the resolved value, not its shape.
+    expect(PLAY_TESTER_PASTE.heading.toLowerCase()).toContain(PLAY_TRACK);
+    expect(PLAY_TESTER_PASTE.path.toLowerCase()).toContain(PLAY_TRACK);
   });
 });

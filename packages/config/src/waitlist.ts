@@ -494,6 +494,32 @@ export const BETA_INSTALL: Record<BetaPlatform, BetaInstall> = {
 export const PLAY_TRACK: "internal" | "closed" = "closed";
 
 /**
+ * Where the admin screen says to paste the Google addresses.
+ *
+ * Derived rather than written out, because it was written out and it drifted:
+ * the card said "Internal testing" while this constant said closed and
+ * `BETA_LINKS.android.optIn` shipped the CLOSED opt-in URL
+ * (`/apps/testing/<pkg>`; internal testing uses `/apps/internaltest/<id>`, a
+ * different form). A tester pasted into one track and sent the other track's
+ * link is told Plus One is unavailable, with nothing anywhere saying why — the
+ * failure `BETA_INSTALL.android.accountHint` already warns about, arriving from
+ * the operator's side instead of the tester's.
+ *
+ * PLAY_TRACK had no readers at all, which is what allowed it. A constant nothing
+ * consults cannot contradict anything, right up until somebody trusts it.
+ */
+export const PLAY_TESTER_PASTE = {
+  internal: {
+    heading: "Google Play — internal testing",
+    path: "Play Console → Testing → Internal testing → Testers",
+  },
+  closed: {
+    heading: "Google Play — closed testing",
+    path: "Play Console → Testing → Closed testing → the track → Testers",
+  },
+}[PLAY_TRACK];
+
+/**
  * The store links, which are TWO different things on Android and easy to
  * confuse because both are play.google.com.
  *
