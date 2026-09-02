@@ -1929,7 +1929,22 @@ unblock other work.
     reply. Apple asks for that explicitly and it is what stops the next
     submission asking the same seven questions.
 
-20. **ITMS-90111 did not recur, and that is most of Kevin 18's experiment.**
+20. ~~**Can this Mac produce a submittable binary?**~~ — **YES, settled
+    2026-09-01.** 1.0 (202609020240) was archived here with
+    `/Applications/Xcode-beta.app` on macOS 27 beta, and App Store Connect
+    accepted the upload: "Analyzing package" passed and it went to processing.
+    ITMS-90111 is an upload-time refusal, so clearing that step IS the answer.
+
+    So the beta-SDK note in `HANDOFF.md` is confirmed — the beta is the
+    submission toolchain — and **Xcode Cloud is a convenience rather than the
+    only route.** Which retires most of Kevin 18: the controlled experiment does
+    not need running, and the `ci_post_clone.sh` build-number log only matters
+    if Xcode Cloud is ever the route again.
+
+    The build-number bump is still manual and still a floor. That part of the
+    note stands.
+
+21. **ITMS-90111 did not recur, and that is most of Kevin 18's experiment.**
     Inferred 2026-08-29 from the rejection itself rather than from a build log:
     a submission that reaches human review has already passed Apple's upload
     validation, and ITMS-90111 is an upload-time refusal. So whatever toolchain

@@ -63,75 +63,78 @@ rejection reason; a list that implies coverage nobody has is.
 
 ## 4. Setting up and accessing the app — KEVIN, AND READ THIS FIRST
 
-> **CHANGED UNDER THIS DOCUMENT ON 2026-08-31, by WSL, and it is not a detail.**
-> Plus One is now in a **closed beta**: no account can be created without an
-> invitation, and the home page is a waitlist form rather than "Get started".
-> Server 21. This section was written hours before that landed and everything
-> in it is still correct — but it is no longer sufficient, and the missing part
-> is the kind a reviewer resolves by rejecting.
->
-> **What still works, and why.** The gate is on account CREATION only.
-> `/onboarding/phone` is the one call that can mint an account and it now
-> refuses without an invitation; `/sign-in` was already closed to non-members
-> and is untouched. So the email-OTP route below is exactly as valid as it was,
-> and a reviewer signing in to the prepared account meets no new obstacle.
->
-> **What has to be added to the reply.** A reviewer who opens the app looking
-> for a way in now sees a waitlist form, and a reviewer who concludes the app
-> cannot be used files a 2.1 rather than asking. The App Review notes must say,
-> before anything else:
->
-> ```
-> Plus One is currently in a closed beta: new accounts require an
-> invitation, so the app opens on a waitlist form. Please use "Sign in"
-> — not "Get started" and not the waitlist form — with the credentials
-> below. The account already exists and has completed onboarding.
-> ```
->
-> Naming the button is not politeness. `apps/android/README.md` records a round
-> trip lost to exactly this: "Get started" and "Sign in" are different doors and
-> only one of them works once the account exists.
->
-> The Play-side equivalent is already rewritten in `apps/android/README.md`,
-> including why its previous note — "creating a NEW account does require a
-> one-time identity check" — is now actively wrong and invites a reviewer to go
-> and try something that is refused outright. The same sentence must not survive
-> into Apple's reply.
->
-> Left as a note rather than edited into the sections below, because this is the
-> shells lane and the 2.1 reply is macOS's to send. The correction is here so it
-> cannot be missed; the wording of the reply is theirs.
+**What a reviewer actually meets, on the build being submitted.** Checked in the
+Simulator against 1.0 (202609020240), not inferred:
 
-**A reviewer cannot sign in with a phone number.** Sign-in sends a one-time code
-by SMS to the member's own phone, and a reviewer has no way to receive it. This
-is the App Access problem BACKLOG Kevin 12 flagged on 2026-08-27 as the thing
-that "blocks submission on both stores rather than delaying a listing, and wants
-solving before somebody is waiting on a review". Somebody is now waiting on a
-review.
+```
+launch  ->  server.url is /app          (137d358; it was the marketing page before)
+        ->  no session, so /app redirects to /onboarding/phone
+        ->  the screen titled "Your number", step 1 of 10
+```
 
-**The way out is email, and it is already built.** `sign-in/actions.ts` accepts
-an email address as well as a phone number, and `verifyOtp({ type: "email" })`
-takes a SIX-DIGIT CODE typed into the app — not a magic link. So a reviewer with
-an email address on the account can sign in with no SMS and no working redirect
-URL.
+So the reviewer does NOT see the home page and does NOT see the waitlist form.
+They land on the first step of account creation — which is the one door the
+closed beta refuses. WSL's earlier note described the web entry point correctly
+and it stopped being the shell's the moment the start URL changed.
 
-Two things have to be true and **neither has been checked**:
+**They must not use that screen.** Plus One is in a closed beta (server 21): new
+accounts need an invitation, so entering a number there is refused. The account
+you give them already exists. `aa6f434` puts "Already have an account? Sign in"
+on that screen — before this it appeared only AFTER the refusal, and a shell has
+no address bar, so the only route to sign-in began with being rejected.
 
-1. **The reviewer account needs an email address on it.** Adding one through
-   Settings passes an explicit `emailRedirectTo`, and Supabase silently falls
-   back to Site URL when the target is not allow-listed — which is Kevin item 6,
-   still open. Setting the address directly in the Supabase dashboard avoids
-   that path entirely.
-2. **Supabase's email template must send the code, not just a link.** The
-   default template contains `{{ .ConfirmationURL }}` and no `{{ .Token }}`. If
-   the token is missing, the reviewer gets a link that points at
-   `http://localhost:3000` (Kevin item 6 again) and the code screen has nothing
-   to type. Dashboard → Authentication → Email Templates → Magic Link.
+**Paste this at the top of the reply and into the Notes field:**
 
-Kevin item 12 also records that **the liveness gate is not a barrier**: a
-reviewer account already taken through onboarding is past it permanently.
+```
+Plus One is currently in a closed beta, so creating a new account requires
+an invitation and the app opens on the "Your number" signup step.
 
-Give Apple the email address and note that the code arrives by email.
+Please do NOT enter a number on that screen — signup is invitation-only and
+will be refused. Instead tap "Sign in" on that same screen, enter the email
+address below, and enter the code sent to it. The account already exists and
+has completed onboarding, so no invitation or identity check is involved.
+```
+
+Naming the button is not politeness. `apps/android/README.md` records a round
+trip lost to exactly this: "Get started" and "Sign in" are different doors and
+only one of them works once the account exists. Its old sentence — "creating a
+NEW account does require a one-time identity check" — is now actively wrong and
+invites a reviewer to try something that is refused outright. It must not
+survive into Apple's reply.
+
+**Why email and not SMS.** Sign-in sends a one-time code, and a reviewer cannot
+receive an SMS. This is the App Access problem BACKLOG Kevin 12 flagged on
+2026-08-27 as the thing that "blocks submission on both stores rather than
+delaying a listing, and wants solving before somebody is waiting on a review".
+
+The way out was already built: `sign-in/actions.ts` accepts an email address as
+well as a phone number, and `verifyOtp({ type: "email" })` takes a CODE typed
+into the app rather than a magic link — so no SMS and no working redirect URL is
+needed. The code length is a Supabase dashboard setting; the input is a ceiling
+(`OTP.codeMaxLength`) and fits whatever it is set to.
+
+**Two things must be true and BOTH are dashboard work, not code:**
+
+1. **The reviewer account needs an email address on it.** Set it in Supabase →
+   Authentication → Users, not through the app's Settings screen, which passes
+   an `emailRedirectTo` that is not allow-listed yet (Kevin item 6).
+2. **The Magic Link template must contain `{{ .Token }}`.** The default has only
+   `{{ .ConfirmationURL }}`, which points at `http://localhost:3000` — so the
+   reviewer would get a dead link and a code screen with nothing to type.
+   `supabase/templates/magic-link.html` is the branded replacement and carries
+   the token.
+
+A third, learned the hard way: **Supabase's built-in mailer is rate-limited to a
+couple of messages an hour and is not for production.** Point SMTP at Resend
+(Project Settings → Authentication → SMTP Settings) and raise the limit, or a
+reviewer who asks for a second code is told there have been too many.
+
+**Send yourself a code at that address and sign in with it before replying.** The
+reply is what promises this works, and an untested credential costs a review
+cycle rather than a minute.
+
+Kevin item 12 also records that **the liveness gate is not a barrier**: an
+account already taken through onboarding is past it permanently.
 
 ## 5. External services — READY
 
