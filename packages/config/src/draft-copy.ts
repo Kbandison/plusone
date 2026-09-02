@@ -983,6 +983,15 @@ export const DRAFT_COPY = {
     /** A voice note has no body; an empty line reads as a message that failed. */
     threadVoiceNote: "Voice note",
     /**
+     * An image-only message in the inbox preview.
+     *
+     * It read "Voice note" before this existed, because the fallback tested for
+     * a body and called everything else a voice note — so a photograph was
+     * described as a recording, on the one line a member reads to decide
+     * whether to open a conversation.
+     */
+    threadPhoto: "Photo",
+    /**
      * Somebody whose name the viewer may not have — blocked since, or no longer
      * on a dating surface. The row still exists because the thread does.
      */

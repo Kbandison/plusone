@@ -16,6 +16,7 @@ import {
   PhotoButton,
   ProposePlan,
 } from "./chat-forms";
+import { ComposerTray } from "./composer-tray";
 import { UnsendButton } from "./unsend-button";
 import { VoiceRecorder } from "./voice-recorder";
 import { OverflowMenu } from "../../overflow-menu";
@@ -579,7 +580,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
             id={COMPOSER_ID}
             className="ease-brand fixed inset-x-0 bottom-[var(--nav-h)] z-20 border-t border-line bg-ground/95 backdrop-blur"
           >
-            <div className="group mx-auto w-full max-w-[550.8px] px-6 pt-2.5 pb-2">
+            <div className="mx-auto w-full max-w-[550.8px] px-6 pt-2.5 pb-2">
               {/* The fuse, still visible (§7.2), but next to the thing it is a
                 deadline for. At the top of the screen it was a number a member
                 scrolled past on the way to the conversation; above the box they
@@ -596,35 +597,11 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 <p className="text-[11.3px] text-positive">{C.datePlannedLabel}</p>
               ) : null}
 
-              <Composer chatId={id} pickerId={PICKER_ID} />
-
-              {/* One row: the photograph, the microphone and the date proposal,
-                side by side under the box. All three were full-width blocks
-                stacked below it, so the optional things took more of the screen
-                than the message field.
-
-                The photo button drives an input that lives inside the
-                Composer's form — see PhotoButton. A form cannot contain another
-                form, and VoiceRecorder is one, so the two things that belong
-                side by side on screen cannot be siblings in the markup. */}
-              {/* Hidden until the box is focused, and done in CSS.
-               *
-               * `group-focus-within` rather than React state, for two reasons.
-               * Tracking blur in JS hides the row on the way to the button being
-               * pressed — the pointer leaves the input, focus moves, the row
-               * unmounts, and the click lands on nothing. focus-within stays
-               * true while focus is anywhere inside the group, including on
-               * these controls, so the race does not exist.
-               *
-               * And it keeps the three siblings adjacent in this file, which
-               * chat-layout.test.ts requires: moving them into a client wrapper
-               * to hold the state would have broken the guard that stops them
-               * being stacked again. */}
-              <div className="mt-2 hidden flex-wrap items-center gap-3 group-focus-within:flex">
+              <ComposerTray composer={<Composer chatId={id} pickerId={PICKER_ID} />}>
                 <PhotoButton pickerId={PICKER_ID} />
                 <VoiceRecorder chatId={id} />
                 {chat.status === "open" && !plan ? <ProposePlan chatId={id} /> : null}
-              </div>
+              </ComposerTray>
             </div>
           </div>
 

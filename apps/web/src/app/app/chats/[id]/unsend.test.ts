@@ -159,13 +159,22 @@ describe("it survives the deploy order", () => {
     expect(page).toMatch(/!message\.body && !message\.image_path && !message\.voice_note_path/);
   });
 
-  it("asks the same question in the inbox, on all three kinds", () => {
-    // Missing image_path here would file every image-only message as redacted.
-    const inbox = read("../../inbox/page.tsx");
-    expect(inbox).toMatch(/!row\["body"\]/);
-    expect(inbox).toMatch(/!row\["voice_note_path"\]/);
-    expect(inbox).toMatch(/!row\["image_path"\]/);
-    expect(inbox).toMatch(/image_path/);
-    expect(inbox).toMatch(/wasUnsent\s*\?\s*C\.unsendTombstoneTheirs/);
+  it("tells the four kinds apart in the inbox, in an order that can", () => {
+    // The preview reads one row and has to name it. An unsent row has no
+    // content of ANY kind, so it can only be identified last — after body,
+    // photo and voice note have each had their chance. Asking in any other
+    // order files a photograph or a recording as removed.
+    const inbox = noComments(read("../../inbox/page.tsx"));
+    const fn = /const previewOf = [\s\S]*?\n  };/.exec(inbox)?.[0] ?? "";
+    expect(fn.length).toBeGreaterThan(80);
+    expect(fn.indexOf("threadPhoto")).toBeGreaterThan(fn.indexOf("body"));
+    expect(fn.indexOf("threadVoiceNote")).toBeGreaterThan(fn.indexOf("threadPhoto"));
+    expect(fn.indexOf("unsendTombstoneTheirs")).toBeGreaterThan(fn.indexOf("threadVoiceNote"));
+  });
+
+  it("selects the column the photo case needs", () => {
+    // Without image_path in the select, every photo message reads as unsent —
+    // the fallback cannot see what it is not given.
+    expect(noComments(read("../../inbox/page.tsx"))).toMatch(/\.select\("[^"]*image_path[^"]*"\)/);
   });
 });

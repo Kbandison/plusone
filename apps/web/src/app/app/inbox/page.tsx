@@ -105,26 +105,37 @@ export default async function InboxPage() {
     ]),
   );
 
+  /**
+   * The one line that stands for a whole message.
+   *
+   * Ordered by what can be told apart. An unsent row has no content of any kind
+   * — messages_has_content cannot allow that otherwise — so it has to be asked
+   * FIRST, or it falls through to whichever fallback happens to be last.
+   */
+  const previewOf = (row: Record<string, unknown>) => {
+    const body = ((row["body"] as string | null) ?? "").trim();
+    if (body) return body;
+    if (row["image_path"]) return C.threadPhoto;
+    if (row["voice_note_path"]) return C.threadVoiceNote;
+    return C.unsendTombstoneTheirs;
+  };
+
   // First seen wins: the query came back newest-first.
   const lastMessage = new Map<string, { senderId: string; body: string; at: number }>();
   for (const row of (recentMessages ?? []) as Record<string, unknown>[]) {
     const chatId = row["chat_id"] as string;
     if (lastMessage.has(chatId)) continue;
-    // No body, no voice note and no image: messages_has_content cannot allow
-    // that unless the row was redacted, so the absence IS the marker. Asked of
-    // the row rather than fetched separately, because a second query for the
-    // deleted ids came back empty in production and every redaction then read
-    // as a voice note.
-    const wasUnsent = !row["body"] && !row["voice_note_path"] && !row["image_path"];
     lastMessage.set(chatId, {
       senderId: row["sender_id"] as string,
       // A voice note has no body. Saying so beats an empty line that reads as
       // a message that failed to load — but an unsent one has no body EITHER,
       // so it has to be asked about first or every redaction reads as a voice
       // note somebody left.
-      body: wasUnsent
-        ? C.unsendTombstoneTheirs
-        : ((row["body"] as string | null) ?? "").trim() || C.threadVoiceNote,
+      // Four kinds, asked in the order that makes each one answerable. The
+      // fallback used to be "body, else voice note", which described a
+      // photograph as a recording and an unsent message as one too — both have
+      // no body, and neither is a voice note.
+      body: previewOf(row),
       at: Date.parse(row["created_at"] as string),
     });
   }
