@@ -50,16 +50,51 @@ const INK = "#ede7de";
  * So this draws the glyph and nothing else. The colour is irrelevant — only
  * where the pixels are.
  */
+/**
+ * The notification small icon: the app's mark, redrawn for 24dp.
+ *
+ * ── it used to be a bare plus, and that was a leftover ──────────────────────
+ *
+ * This drew two rectangles crossing, because the mark WAS a plus. It became
+ * "⁺1" on 2026-08-28 and the badge did not follow, so every Android status bar
+ * carried the retired logo — and no amount of rebuilding fixed it, because the
+ * file was doing exactly what it said.
+ *
+ * ── it is NOT the app icon shrunk, and that was tried ───────────────────────
+ *
+ * Android renders this at 24dp and tints it flat, so the alpha channel is the
+ * whole design. Reusing markGroup at that size fails in both directions and
+ * there is no setting between them: at the app icon's weight the plus is under
+ * a pixel and disappears, leaving what reads as a bare "1"; thick enough to
+ * survive, its arms merge into a rounded blob. Rendered both and looked.
+ *
+ * So the small size gets its own drawing — the plus set BESIDE the one rather
+ * than raised above it, both at a weight that survives. Optical sizing rather
+ * than inconsistency: the same two marks, arranged to be legible a quarter of
+ * an inch tall.
+ */
 function badgeSvg(size) {
-  const arm = size * 0.62;
-  const thickness = arm * 0.26;
-  const c = size / 2;
-  const radius = thickness / 2;
+  // The plus: a cross of two bars, generous enough to read at 24px.
+  const arm = size * 0.32;
+  const bar = size * 0.092;
+  const px = size * 0.25;
+  const py = size * 0.44;
+  const r = bar / 2;
+
+  // The one: cap height a little over half the canvas, set to its right.
+  const cap = size * 0.76;
+  const scale = cap / ONE_UPM;
+  const cx = (ONE_BBOX.x0 + ONE_BBOX.x1) / 2;
+  const cy = (ONE_BBOX.y0 + ONE_BBOX.y1) / 2;
+  const ox = size * 0.66;
+  const oy = size * 0.55;
 
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <g fill="#ffffff">
-    <rect x="${c - arm / 2}" y="${c - thickness / 2}" width="${arm}" height="${thickness}" rx="${radius}"/>
-    <rect x="${c - thickness / 2}" y="${c - arm / 2}" width="${thickness}" height="${arm}" rx="${radius}"/>
+    <rect x="${(px - arm / 2).toFixed(2)}" y="${(py - bar / 2).toFixed(2)}" width="${arm.toFixed(2)}" height="${bar.toFixed(2)}" rx="${r.toFixed(2)}"/>
+    <rect x="${(px - bar / 2).toFixed(2)}" y="${(py - arm / 2).toFixed(2)}" width="${bar.toFixed(2)}" height="${arm.toFixed(2)}" rx="${r.toFixed(2)}"/>
+    <path d="${ONE_PATH}"
+      transform="translate(${ox.toFixed(2)} ${oy.toFixed(2)}) scale(${scale.toFixed(5)} ${(-scale).toFixed(5)}) translate(${-cx} ${-cy})"/>
   </g>
 </svg>`);
 }
@@ -98,7 +133,7 @@ const ONE_BBOX = { x0: 5, y0: 0, x1: 239, y1: 735 };
  * @param mark   how much of the canvas the composition may occupy
  * @param weight plus stroke, as a fraction of its own arm
  */
-function markGroup(size, mark, weight) {
+function markGroup(size, mark, weight, fill) {
   const cap = size * (mark + 0.3); // the "1"'s font size
   const scale = cap / ONE_UPM;
   const arm = size * mark * 0.42;
@@ -129,9 +164,9 @@ function markGroup(size, mark, weight) {
   const cy = (ONE_BBOX.y0 + ONE_BBOX.y1) / 2;
 
   return `<g transform="translate(${dx.toFixed(2)} 0)">
-    <path d="${ONE_PATH}" fill="${INK}"
+    <path d="${ONE_PATH}" fill="${fill ?? INK}"
       transform="translate(${oneX.toFixed(2)} ${oneY.toFixed(2)}) scale(${scale.toFixed(5)} ${(-scale).toFixed(5)}) translate(${-cx} ${-cy})"/>
-    <g fill="${ACCENT}">
+    <g fill="${fill ?? ACCENT}">
       <rect x="${(plusX - arm / 2).toFixed(2)}" y="${(plusY - thickness / 2).toFixed(2)}" width="${arm.toFixed(2)}" height="${thickness.toFixed(2)}" rx="${radius.toFixed(2)}"/>
       <rect x="${(plusX - thickness / 2).toFixed(2)}" y="${(plusY - arm / 2).toFixed(2)}" width="${thickness.toFixed(2)}" height="${arm.toFixed(2)}" rx="${radius.toFixed(2)}"/>
     </g>
@@ -347,4 +382,39 @@ for (const [name, glyph] of Object.entries(GLYPHS)) {
   const png = await sharp(svg(192, false)).png({ compressionLevel: 9 }).toBuffer();
   writeFileSync(join(OUT, "n-drop.png"), png);
   console.log(`  n-drop.png  192×192  ${png.length} bytes  (the mark)`);
+}
+
+/**
+ * The same badge, into the Android notification drawables.
+ *
+ * These were made by hand and were therefore outside the "one generator, every
+ * surface" rule the rest of this file follows — which is exactly how they came
+ * to be a retired logo that regenerating the web icons never touched. Android
+ * draws the small icon at 24dp; the five densities are that at 1x through 4x.
+ */
+{
+  const ANDROID_RES = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../apps/android/app/src/main/res",
+  );
+  const DENSITIES = [
+    ["mdpi", 24],
+    ["hdpi", 36],
+    ["xhdpi", 48],
+    ["xxhdpi", 72],
+    ["xxxhdpi", 96],
+  ];
+
+  for (const [density, px] of DENSITIES) {
+    const dir = join(ANDROID_RES, `drawable-${density}`);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const png = await sharp(badgeSvg(px)).png({ compressionLevel: 9 }).toBuffer();
+    writeFileSync(join(dir, "ic_notification_icon.png"), png);
+
+    // An opaque small icon renders as a solid white block, so the alpha channel
+    // is checked rather than assumed — the same guard the web badge gets.
+    const { isOpaque } = await sharp(png).stats();
+    if (isOpaque) throw new Error(`ic_notification_icon at ${density} has no alpha`);
+    console.log(`  ic_notification_icon ${density}  ${px}×${px}  ${png.length} bytes`);
+  }
 }
