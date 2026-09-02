@@ -1635,10 +1635,27 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     floor asserting the manifest still has no path filter — the branch is only
     right while that holds.
 
-    **UNVERIFIED IN EITHER SHELL, and that is what is actually outstanding.** The
-    iOS branch was watched in WKWebView before the TWA half existed; nothing has
-    been looked at since, and the Android half has never been seen at all. It
-    needs Kevin and the device (Kevin 17).
+    **VERIFIED IN BOTH ENGINES 2026-09-01.** iOS in WKWebView by macOS; Android
+    on Kevin's Galaxy S26 Ultra over adb, on a live invitation, against the real
+    component.
+
+    The Android reading, and the negatives are the half that matters — with
+    `inNativeShell()` alone as the condition, the first two would be present:
+
+    ```
+    in the TWA          "You are all set" 1   "Create your account" 1
+                        "Install TestFlight" 0   "Getting it on your phone" 0
+    same URL by curl    "You are all set" 0   "Create your account" 0
+                        "Install TestFlight" 1   "Getting it on your phone" 1
+    ```
+
+    Exactly inverted, same URL, minutes apart. That is the client-side detection
+    doing the work rather than the page lacking the copy, which a single reading
+    could not have distinguished.
+
+    Also confirmed on the device: an arbitrary `/beta/*` path is picked up by
+    `app.loveplusone` and opened as a TWA, which is the premise the whole fix
+    rests on and had only been inferred from the manifest.
 
     **And one thing not changed, deliberately.** A signed-out `/app` lands on
     `STEP_ROUTES.phone` — the sign-up door, which is the one door the gate
