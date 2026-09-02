@@ -85,7 +85,7 @@ export default async function InboxPage() {
     chatIds.length
       ? supabase
           .from("messages")
-          .select("id, chat_id, sender_id, body, voice_note_path, created_at")
+          .select("chat_id, sender_id, body, voice_note_path, image_path, created_at")
           .in("chat_id", chatIds)
           .order("created_at", { ascending: false })
           // Bounded. The newest few hundred across every chat is far more than
@@ -105,31 +105,17 @@ export default async function InboxPage() {
     ]),
   );
 
-  /**
-   * Which of those were unsent, in a request ALLOWED TO FAIL.
-   *
-   * Separate from the query above and not folded into its select, for the
-   * reason the chat page carries the same shape: `deleted_at` arrives in
-   * 20260902000300 and this deploys first, and PostgREST fails the WHOLE
-   * request on an unknown column — so one column would have emptied every
-   * preview in the inbox rather than degrading to no tombstones.
-   *
-   * Without it a redacted row reads as a VOICE NOTE, because it has no body and
-   * no voice path and the fallback below cannot tell those two apart.
-   */
-  const { data: redacted } = await supabase
-    .from("messages")
-    .select("id")
-    .in("chat_id", chatIds.length ? chatIds : ["00000000-0000-0000-0000-000000000000"])
-    .not("deleted_at", "is", null);
-  const unsent = new Set((redacted ?? []).map((r) => r.id as string));
-
   // First seen wins: the query came back newest-first.
   const lastMessage = new Map<string, { senderId: string; body: string; at: number }>();
   for (const row of (recentMessages ?? []) as Record<string, unknown>[]) {
     const chatId = row["chat_id"] as string;
     if (lastMessage.has(chatId)) continue;
-    const wasUnsent = unsent.has(row["id"] as string);
+    // No body, no voice note and no image: messages_has_content cannot allow
+    // that unless the row was redacted, so the absence IS the marker. Asked of
+    // the row rather than fetched separately, because a second query for the
+    // deleted ids came back empty in production and every redaction then read
+    // as a voice note.
+    const wasUnsent = !row["body"] && !row["voice_note_path"] && !row["image_path"];
     lastMessage.set(chatId, {
       senderId: row["sender_id"] as string,
       // A voice note has no body. Saying so beats an empty line that reads as

@@ -17,6 +17,10 @@ const code = sql.replace(/--[^\n]*/g, "");
 const fn = /create or replace function public\.unsend_message[\s\S]*?\$\$;/.exec(code)?.[0] ?? "";
 const page = read("./page.tsx");
 
+/** Block and line comments out, so prose cannot satisfy or break an assertion. */
+const noComments = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/[^\n]*$/gm, "");
+
 describe("unsending redacts, and moderation keeps what it needs", () => {
   it("finds the function at all", () => {
     // The floor under every assertion in this block.
@@ -103,7 +107,7 @@ describe("what the other person sees", () => {
     // remembers something that is no longer there and has nothing to point at.
     // And the row is what a report references, so a silent disappearance takes
     // away the ability to REPORT it as well as the evidence.
-    expect(page).toMatch(/unsent\.has\(message\.id as string\)/);
+    expect(page).toMatch(/isRedacted\(message\) \?/);
     expect(page).toMatch(/unsendTombstoneMine/);
     expect(page).toMatch(/unsendTombstoneTheirs/);
   });
@@ -111,7 +115,8 @@ describe("what the other person sees", () => {
   it("shows the sender a marker too", () => {
     // Only showing it to the recipient would let a sender believe it had gone
     // without trace.
-    const branch = /unsent\.has\(message\.id as string\) \? \([\s\S]*?<\/li>/.exec(page)?.[0] ?? "";
+    const branch = /isRedacted\(message\) \? \([\s\S]*?<\/li>/.exec(page)?.[0] ?? "";
+    expect(branch.length).toBeGreaterThan(80);
     expect(branch).toMatch(/mine \? C\.unsendTombstoneMine : C\.unsendTombstoneTheirs/);
   });
 
@@ -133,23 +138,34 @@ describe("what the other person sees", () => {
 });
 
 describe("it survives the deploy order", () => {
-  it("reads deleted_at in a request of its own, in the chat", () => {
-    // Folding the column into the message select would not degrade to "no
-    // tombstones" — PostgREST fails the WHOLE request on an unknown column, so
-    // the chat would render with NO MESSAGES until the migration ran.
-    const messagesQuery =
-      /\.from\("messages"\)\s*\.select\("id, sender_id[^)]*\)/.exec(page)?.[0] ?? "";
-    expect(messagesQuery.length).toBeGreaterThan(40);
-    expect(messagesQuery).not.toMatch(/deleted_at/);
-    expect(page).toMatch(/\.select\("id, deleted_at"\)/);
+  it("names no column a live schema might not have", () => {
+    // The first version fetched the deleted ids separately, which needed
+    // deploy-order care because PostgREST fails the WHOLE request on an unknown
+    // column — one line would have rendered the chat with NO MESSAGES. Deriving
+    // it from the row removes the column reference and the care with it.
+    // Comments stripped first. Both files EXPLAIN why they no longer name the
+    // column, and matching the prose that says so is how this assertion failed
+    // on the correct code — the same shape the migration scans in this repo
+    // strip for, one language over.
+    expect(noComments(page)).not.toMatch(/deleted_at/);
+    expect(noComments(read("../../inbox/page.tsx"))).not.toMatch(/deleted_at/);
   });
 
-  it("and in the inbox, where a redaction would otherwise read as a voice note", () => {
+  it("derives redaction from the row, which the constraint guarantees", () => {
+    // messages_has_content allows a row with no body, no voice note and no
+    // image ONLY when deleted_at is set, so the absence IS the marker and the
+    // database enforces the equivalence. A separately-fetched set of ids can
+    // disagree with the rows it describes; this cannot.
+    expect(page).toMatch(/!message\.body && !message\.image_path && !message\.voice_note_path/);
+  });
+
+  it("asks the same question in the inbox, on all three kinds", () => {
+    // Missing image_path here would file every image-only message as redacted.
     const inbox = read("../../inbox/page.tsx");
-    expect(inbox).toMatch(/\.select\("id"\)\s*\n\s*\.in\("chat_id"/);
-    // Whitespace-tolerant: prettier wraps this ternary across three lines, and
-    // an assertion that only matches the one-line form is a guard that a
-    // reformat silently removes.
+    expect(inbox).toMatch(/!row\["body"\]/);
+    expect(inbox).toMatch(/!row\["voice_note_path"\]/);
+    expect(inbox).toMatch(/!row\["image_path"\]/);
+    expect(inbox).toMatch(/image_path/);
     expect(inbox).toMatch(/wasUnsent\s*\?\s*C\.unsendTombstoneTheirs/);
   });
 });

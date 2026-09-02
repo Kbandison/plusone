@@ -43,6 +43,33 @@ const C = DRAFT_COPY.app;
  */
 const PICKER_ID = "chat-photo";
 
+/**
+ * A message whose content has been taken back.
+ *
+ * Asked of the ROW rather than of `deleted_at`, and that is not a shortcut —
+ * it is the stronger question. `messages_has_content` reads
+ *
+ *   deleted_at is not null
+ *   or body is not null ... or voice_note_path is not null or image_path is not null
+ *
+ * so a row with none of the three CANNOT exist unless it was redacted. The
+ * database guarantees the equivalence, which means this cannot disagree with
+ * `deleted_at` the way a separately-fetched set of ids can.
+ *
+ * It replaces exactly that: a second query selecting the deleted ids, which
+ * came back empty in production on the first real unsend and dropped the
+ * message through to a TextBubble with a null body — an empty bubble where a
+ * marker should have been. Why it was empty was never established, and this
+ * removes the question rather than answering it: there is no longer a second
+ * source to be wrong.
+ *
+ * It also drops a round trip and the deploy-order care that went with it. No
+ * column is named that a live schema might not have.
+ */
+function isRedacted(message: { body: unknown; image_path: unknown; voice_note_path: unknown }) {
+  return !message.body && !message.image_path && !message.voice_note_path;
+}
+
 /** The pinned composer, whose height the thread has to reserve. */
 const COMPOSER_ID = "chat-composer";
 
@@ -112,26 +139,6 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .select("id, sender_id, body, image_path, voice_note_path, voice_note_seconds, created_at")
     .eq("chat_id", id)
     .order("created_at", { ascending: true });
-
-  /**
-   * Which messages have been unsent, in a request ALLOWED TO FAIL.
-   *
-   * `deleted_at` arrives in 20260902000300 and this deploys before it. Adding
-   * the column to the select above would not have degraded to "no tombstones" —
-   * PostgREST fails the WHOLE request on an unknown column, so the chat would
-   * have rendered with NO MESSAGES until the migration ran. One line, every
-   * conversation in the app, and nothing in the build can see it.
-   *
-   * A Set of ids rather than a merge: the redacted row already carries no body,
-   * image or voice path, so a message in this set has nothing left to render
-   * either way and the marker is the only thing that changes.
-   */
-  const { data: redacted } = await supabase
-    .from("messages")
-    .select("id, deleted_at")
-    .eq("chat_id", id)
-    .not("deleted_at", "is", null);
-  const unsent = new Set((redacted ?? []).map((r) => r.id as string));
 
   /**
    * When they last read this chat, in a request that is ALLOWED TO FAIL.
@@ -320,7 +327,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
                 </li>
               ) : null}
 
-              {unsent.has(message.id as string) ? (
+              {isRedacted(message) ? (
                 /* The tombstone, and it is not optional.
                  *
                  * A message that simply vanishes is a gaslighting vector: the
