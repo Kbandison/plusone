@@ -13,6 +13,7 @@ import {
 import { ManageBilling, PlanChooser } from "./plan-buttons";
 import { ManageStoreSubscription } from "./manage-store";
 import { IncognitoToggle } from "./incognito-toggle";
+import { ReadReceiptsToggle } from "./read-receipts-toggle";
 import { redirect } from "next/navigation";
 import { PremiumIncludes } from "@/app/premium-includes";
 
@@ -31,6 +32,7 @@ export default async function PremiumPage() {
     { data: entitlements },
     { data: isPremium, error: premiumError },
     { data: ownProfile },
+    { data: ownReceipts },
   ] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -77,9 +79,20 @@ export default async function PremiumPage() {
      * select feeds rather than defaulting one switch to off.
      */
     supabase.from("profiles").select("incognito").eq("id", auth.user.id).maybeSingle(),
+    /**
+     * And AGAIN separately, rather than joining it to the line above.
+     *
+     * Two columns from the same table in one select is the tempting tidy-up and
+     * it is the bug: they arrive in different migrations, so between the two
+     * deploys the pair fails together and BOTH switches read as off. One of them
+     * defaulting to off is a switch that looks unset; both defaulting to off is
+     * a member silently un-hidden on a page that says they are hidden.
+     */
+    supabase.from("profiles").select("hide_read_receipts").eq("id", auth.user.id).maybeSingle(),
   ]);
 
   const incognito = (ownProfile?.incognito as boolean | null) ?? false;
+  const hideReadReceipts = (ownReceipts?.hide_read_receipts as boolean | null) ?? false;
 
   // Not discarded. This page deciding wrongly is a member being asked to pay
   // twice, which should be loud rather than silent.
@@ -217,6 +230,17 @@ export default async function PremiumPage() {
         <h2 className="text-[0.972rem]">{C.incognitoHeading}</h2>
         <IncognitoToggle on={incognito} isPremium={Boolean(isPremium)} />
         <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">{C.incognitoFreeAlternative}</p>
+      </section>
+
+      {/* Beside incognito because it is the same purchase in a different place:
+          control over what other people learn about you. The difference worth
+          noticing is the RESTING STATE — incognito is off until you buy it, and
+          receipts are on until you do. That is not an inconsistency. The
+          transparent state is the one this product ships, because "nobody gets
+          ghosted" is on the front page, and premium buys stepping out of it. */}
+      <section className="mt-14">
+        <h2 className="text-[0.972rem]">{C.readReceiptsHeading}</h2>
+        <ReadReceiptsToggle hidden={hideReadReceipts} isPremium={Boolean(isPremium)} />
       </section>
 
       <section className="mt-14">

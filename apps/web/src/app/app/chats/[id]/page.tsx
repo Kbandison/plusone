@@ -112,6 +112,22 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .eq("chat_id", id)
     .order("created_at", { ascending: true });
 
+  /**
+   * When they last read this chat, in a request that is ALLOWED TO FAIL.
+   *
+   * Migrations here are applied by hand and are Kevin's call, so a deploy lands
+   * against whatever schema is live — which for a function written the same day
+   * is one without it. PostgREST does not fail narrowly on a missing function;
+   * it fails the request, and supabase-js hands back `data: null`. Folded into
+   * the message query above, one unshipped function would render this chat with
+   * no messages at all.
+   *
+   * So it stands alone and a failure means "no receipt", which is exactly what
+   * a member with receipts hidden also produces. The screen cannot tell the two
+   * apart and does not need to.
+   */
+  const { data: theyReadAt } = await supabase.rpc("chat_read_at", { p_chat_id: id });
+
   const { data: profile } = await supabase
     .from("profiles")
     // timezone, so a message sent at 22:30 says 22:30 to the person who sent
@@ -342,6 +358,30 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
           );
         })}
       </ul>
+
+      {/* The receipt, once, under the thread rather than per message.
+       *
+       * chat_reads holds ONE marker per member per chat — how far they have
+       * read, not which messages — so a tick beside every line would be six
+       * copies of one fact. It answers "did they see it", which is a question
+       * about the latest thing you sent.
+       *
+       * Only for a message of MINE, and only when their marker is at or past
+       * it. Null covers not-read, hidden, and the function not existing yet;
+       * the screen cannot tell those apart, which is deliberate — a member who
+       * could would be probing for the flag. */}
+      {(() => {
+        if (!theyReadAt) return null;
+        const lastMine = [...(messages ?? [])].reverse().find((m) => m.sender_id === me);
+        if (!lastMine) return null;
+        const readMs = Date.parse(theyReadAt as string);
+        if (!(readMs >= Date.parse(lastMine.created_at as string))) return null;
+        return (
+          <p className="mt-2 text-right text-[11px] text-ink-3">
+            {C.chatReadAt(chatLogic.messageTimeLabel(readMs, now, zone))}
+          </p>
+        );
+      })()}
 
       {/* Keyed on the last message, so the page also comes back to the bottom
           after one is sent — which is the other moment the newest line is the

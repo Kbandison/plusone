@@ -33,6 +33,14 @@ const SAFE_PREFIXES: readonly string[] = [
   // incognito off, because a member whose premium lapsed while hidden must not
   // be trapped invisible behind a paywall.
   "incognito requires premium",
+  // Read receipts, and the same reasoning exactly: the member's own
+  // subscription, actionable by them, silent about anybody else.
+  //
+  // Only the HIDING direction can raise it. set_read_receipts_hidden() never
+  // gates un-hiding, because a lapsed member who could not clear their own flag
+  // would be stranded holding a setting they can neither keep deliberately nor
+  // undo — the mirror of the incognito note above.
+  "hiding read receipts requires premium",
   // Slow mode. Tells the member exactly how long is left, which is the whole
   // point of raising it rather than silently dropping the post.
   "slow mode: wait ",

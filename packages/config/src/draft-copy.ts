@@ -1028,6 +1028,14 @@ export const DRAFT_COPY = {
      * stopped being a decision and became a conversation.
      */
     chatOriginNote: "This is where it started.",
+    /**
+     * Shown under the last message you sent, once they have opened the chat.
+     *
+     * A time and not "Seen ✓✓". Two ticks are a convention borrowed from apps
+     * where everybody already knows what they mean, and read as delivery state
+     * rather than as a person. This says what actually happened.
+     */
+    chatReadAt: (time: string) => `Read ${time}`,
     chatEmptyHeading: "Say the first thing",
     chatEmptyBody:
       "Nobody has written yet. There is no clever opener needed here — the hard part is already behind both of you.",
@@ -1308,6 +1316,34 @@ export const DRAFT_COPY = {
     incognitoFreeAlternative:
       "Support-only mode takes you off every dating surface entirely, and it is free.",
     incognitoFailed: "That did not save. Try again.",
+
+    readReceiptsHeading: "Read receipts",
+    /**
+     * Says what OTHERS see, not what you have enabled.
+     *
+     * The setting is about them, so the sentence is too. "Read receipts are on"
+     * is the phrasing every other app uses and it leaves a member working out
+     * which direction that points.
+     */
+    readReceiptsShownNote:
+      "People you are talking to can see when you have read their message. Everyone can, by default — it is how this app avoids leaving somebody wondering.",
+    readReceiptsHiddenNote:
+      "Nobody can see when you have read their message. You can still see when they have read yours, if they have not turned theirs off too.",
+    readReceiptsHide: "Hide when I read",
+    readReceiptsShow: "Show when I read",
+    readReceiptsNeedsPremium: "Hiding your read receipts is part of Premium.",
+    /**
+     * The lapsed case, and it says KEPT rather than apologising.
+     *
+     * A member whose subscription ended stays hidden — the same rule as
+     * incognito and photo overrides, because un-hiding would start telling
+     * people something about them at a moment they were not present for. The
+     * note exists so that is visibly deliberate rather than looking like a bug
+     * they should report.
+     */
+    readReceiptsLapsedNote:
+      "Your subscription has ended and this stays as you set it. Turning it back on is always free.",
+    readReceiptsFailed: "That did not save. Try again.",
     /**
      * Server 19 — what a filter costs, before an empty grid says it.
      *

@@ -376,6 +376,14 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   bio: "User Content → Other User Content",
   prompts: "User Content → Other User Content",
   photo_privacy: "operational",
+  // Read receipts. The same family as incognito and photo_privacy: a switch
+  // about what the product shows others, not a fact about the person. It is
+  // declared here rather than skipped because the marker it governs —
+  // chat_reads.last_read_at — IS behavioural, and the column that decides
+  // whether that behaviour reaches another member belongs on the form beside
+  // it. Nothing about the flag is disclosed to anybody; the whole point is that
+  // it withholds.
+  hide_read_receipts: "operational",
   verification_status: "operational",
   verified_at: "operational",
   last_active_at: "operational",

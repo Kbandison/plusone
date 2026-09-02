@@ -178,6 +178,19 @@ export const PREMIUM_INCLUDES: readonly PremiumGroup[] = [
         title: "Decide photo by photo",
         body: "Some clear, some blurred until you connect, on the same profile. Blurring everything stays free, always: safety is not the part you pay for.",
       },
+      {
+        /**
+         * Phrased as what it withholds, not as a feature you switch on.
+         *
+         * Receipts are ON for everybody by default and that is the point: this
+         * app's tagline is that nobody gets ghosted. What premium buys is the
+         * ability to step out of that, which is the same thing the two items
+         * above buy. It does NOT buy an exemption from the fuse or the closure
+         * note — those are on PREMIUM_NEVER and stay there.
+         */
+        title: "Read without saying when",
+        body: "People can normally see when you have read a message. Turn that off for yourself, and keep it off — a lapsed subscription never switches it back on for you.",
+      },
     ],
   },
   {
