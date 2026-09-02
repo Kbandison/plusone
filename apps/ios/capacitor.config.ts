@@ -51,7 +51,24 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * `/app` inside the shell, while setting it to the bare origin and then
  * navigating would leave the prefix behind.
  */
-const SERVER_URL = process.env["CAP_SERVER_URL"] ?? "https://www.loveplusone.app";
+/**
+ * The default carries `/app`, which the paragraph directly above has been
+ * telling people to do since it was written — and the default did not.
+ *
+ * A signed-in member who closed the app and reopened it landed on the MARKETING
+ * page, because a bare origin means the shell loads `/` every launch. Android
+ * never did it: `twa-manifest.json` sets `startUrl` to `/app`, so the two
+ * shells disagreed about where the app begins, which is exactly the class of
+ * difference AGENTS.md exists to catch. Kevin found it on an iPad, 2026-09-01.
+ *
+ * Safe because of the allowlist below rather than because of this string: `www`
+ * is named in `allowNavigation`, so every page on that host stays inside the
+ * shell whatever `server.url` is. Sign-in and onboarding live outside `/app`
+ * and are unaffected — that allowance is the reason the comment beneath says it
+ * "survives whatever server.url is set to", and this is the change that relies
+ * on it.
+ */
+const SERVER_URL = process.env["CAP_SERVER_URL"] ?? "https://www.loveplusone.app/app";
 
 const config: CapacitorConfig = {
   /**

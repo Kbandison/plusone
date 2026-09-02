@@ -46,7 +46,13 @@ describe("the origin the shell loads", () => {
    * app — and it would look like the shell simply did not work.
    */
   it("is the origin that answers, not the one that redirects", () => {
-    expect(config).toMatch(/CAP_SERVER_URL"\]\s*\?\?\s*"https:\/\/www\.loveplusone\.app"/);
+    // Matched on the HOST, not the whole string. This pinned the URL exactly
+    // and so failed when a path was added on 2026-09-01 — a correct change,
+    // caught by a test asserting more than its own reason. What matters here is
+    // www rather than the apex; where the path points is checked separately.
+    const url = /CAP_SERVER_URL"\]\s*\?\?\s*"(https:\/\/[^"]+)"/.exec(config)?.[1] ?? "";
+    expect(url, "no default server URL found").not.toBe("");
+    expect(new URL(url).host).toBe("www.loveplusone.app");
   });
 
   /**
@@ -514,5 +520,40 @@ describe("the identity the App Store record gets", () => {
     expect(icon.readUInt32BE(16)).toBe(1024);
     expect(icon.readUInt32BE(20)).toBe(1024);
     expect([4, 6]).not.toContain(icon.readUInt8(25));
+  });
+});
+
+describe("both shells begin in the same place", () => {
+  /**
+   * A signed-in member who closed the app and reopened it landed on the
+   * marketing page on iPad and on Tonight on Android. The shells disagreed
+   * about where the app starts: `twa-manifest.json` has always set `startUrl`
+   * to `/app`, and the iOS default was a bare origin, so WKWebView loaded `/`
+   * every launch.
+   *
+   * AGENTS.md's rule is that a thing verified in one engine is not verified in
+   * the other. This is the cheap half of that — a difference the two config
+   * files can be asked about directly, without either shell running.
+   */
+  const twa = JSON.parse(
+    readFileSync(fileURLToPath(new URL("../android/twa-manifest.json", import.meta.url)), "utf8"),
+  ) as { startUrl: string };
+
+  it("the TWA still starts at /app", () => {
+    expect(twa.startUrl).toBe("/app");
+  });
+
+  it("the iOS shell's default lands on the same path", () => {
+    // Read out of the source rather than imported: the config module reads
+    // process.env at import time, and a test that set CAP_SERVER_URL would be
+    // asserting about itself.
+    expect(config).toMatch(/CAP_SERVER_URL"\] \?\? "https:\/\/www\.loveplusone\.app\/app"/);
+  });
+
+  it("and the host is allow-listed, which is what makes a path safe here", () => {
+    // Capacitor's fallback rule prefix-matches the WHOLE server.url string, so
+    // giving it a path would eject every other page to Safari — except that
+    // `www` is named explicitly, which is why the path can be set at all.
+    expect(config).toMatch(/allowNavigation: \["loveplusone\.app", "www\.loveplusone\.app"\]/);
   });
 });
