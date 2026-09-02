@@ -22,7 +22,8 @@ const code = sql.replace(/--[^\n]*/g, "");
 
 describe("hiding is bought; being seen is the default", () => {
   const fn =
-    /create or replace function public\.set_read_receipts_hidden[\s\S]*?\$\$;/.exec(code)?.[0] ?? "";
+    /create or replace function public\.set_read_receipts_hidden[\s\S]*?\$\$;/.exec(code)?.[0] ??
+    "";
 
   it("finds the function at all", () => {
     // The floor. Every assertion below is about the contents of this string.
