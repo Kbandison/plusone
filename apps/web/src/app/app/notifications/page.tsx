@@ -84,7 +84,7 @@ export default async function NotificationsPage() {
           <EmptyState heading={C.notificationsHeading} body={C.notificationsEmpty} />
         </div>
       ) : (
-        <ul className="mt-6 flex flex-col">
+        <ul className="rise-in mt-6 flex flex-col">
           {rows.map((row) => {
             const event = row.event as NotificationEvent;
             const line = NOTIFICATION_LINES[event];

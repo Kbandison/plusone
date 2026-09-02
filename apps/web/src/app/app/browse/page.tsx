@@ -345,7 +345,7 @@ export default async function BrowsePage({
               on the surface whose whole job is showing people to each other.
               The Drop settled this argument already; this is the same card at
               directory density. */}
-          <ul className="mt-4 grid grid-cols-2 gap-4">
+          <ul className="rise-in mt-4 grid grid-cols-2 gap-4">
             {rows.map((row) => {
               const id = row.id as string;
               const photo = photos.get(id);

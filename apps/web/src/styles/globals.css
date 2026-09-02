@@ -350,8 +350,48 @@ dialog[open]::backdrop {
   animation: rise-in var(--duration-slow) var(--ease-brand) both;
 }
 
+/* A page arriving after a navigation.
+ *
+ * OPACITY ONLY, and that is a constraint rather than a preference.
+ *
+ * An element with a transform applied becomes the containing block for every
+ * `position: fixed` descendant. This wraps the page, the chat composer inside
+ * it is fixed, and `fill-mode: both` means a transform here would be applied
+ * from before the animation starts until after it ends — so the composer would
+ * anchor to this div rather than to the viewport for that whole window, and
+ * jump back when it finished. `translate` counts: it is a transform by another
+ * name.
+ *
+ * So the fade carries it alone, which is also the right amount. A route change
+ * already replaces everything on the screen; the animation only has to say
+ * "this is new", and anything more makes the app feel like it deals itself out
+ * on every tap of the nav. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-enter {
+  animation: page-enter var(--duration-base) var(--ease-brand-out) both;
+}
+
 /* A control that has been pressed should feel pressed. Scale rather than
-   colour, because the tones already carry meaning here. */
+   colour, because the tones already carry meaning here.
+ *
+ * The scale was instant in both directions — it snapped down and snapped back,
+ * which reads as a glitch rather than as a press. `fast` because a control
+ * answering a finger is the one place where anything slower feels like lag, and
+ * the release is what carries the feel: the press is under the finger where it
+ * cannot be seen, and the return is the part somebody watches. */
+button:not(:disabled),
+a[class*="bg-accent"] {
+  transition: scale var(--duration-fast) var(--ease-brand-out);
+}
+
 button:not(:disabled):active,
 a[class*="bg-accent"]:active {
   scale: 0.96;
@@ -367,7 +407,8 @@ a[class*="bg-accent"]:active {
      element holding its FROM state — a zero-length animation that never
      finishes visibly is still an animation that applied. The rise has to be
      removed rather than shortened. */
-  .rise-in {
+  .rise-in,
+  .page-enter {
     animation: none;
   }
 

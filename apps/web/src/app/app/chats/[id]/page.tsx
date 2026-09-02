@@ -578,7 +578,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
               nothing about the layout's own max-width. */}
           <div
             id={COMPOSER_ID}
-            className="ease-brand fixed inset-x-0 bottom-[var(--nav-h)] z-20 border-t border-line bg-ground/95 backdrop-blur"
+            className="rise-in ease-brand fixed inset-x-0 bottom-[var(--nav-h)] z-20 border-t border-line bg-ground/95 backdrop-blur"
           >
             <div className="mx-auto w-full max-w-[550.8px] px-6 pt-2.5 pb-2">
               {/* The fuse, still visible (§7.2), but next to the thing it is a

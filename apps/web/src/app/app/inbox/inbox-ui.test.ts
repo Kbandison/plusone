@@ -70,10 +70,34 @@ describe("motion", () => {
    * `animation-duration: 0.01ms` with `both` leaves the element holding its
    * FROM state — invisible content, permanently. Reduced motion has to remove
    * the animation, not shorten it.
+   *
+   * Repinned 2026-09-02: `.page-enter` joined `.rise-in` in the same rule, so
+   * the selector is followed by a comma rather than a brace. Both are matched
+   * individually now, because they share the hazard and not the shape — every
+   * animation using `fill-mode: both` has to be listed here, and a new one that
+   * is not will hide its element from anybody who asked for less motion.
    */
   it("removes the arrival for reduced motion rather than shortening it", () => {
     const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
-    expect(reduced).toMatch(/\.rise-in\s*\{\s*animation:\s*none/);
+    const removed = /([^}]*)\{\s*animation:\s*none/.exec(reduced)?.[1] ?? "";
+    expect(removed).toMatch(/\.rise-in\b/);
+    expect(removed).toMatch(/\.page-enter\b/);
+  });
+
+  /**
+   * The list above is only correct while it is complete. Every `both` in the
+   * stylesheet must appear in it, or that animation freezes its element in the
+   * FROM state — which for an entrance means invisible, permanently, for the
+   * member who asked for no motion.
+   */
+  it("lists every fill-mode: both animation in that rule", () => {
+    const classes = [...css.matchAll(/^\.([a-z-]+)\s*\{\s*animation:[^;]*\bboth\b/gm)].map(
+      (m) => m[1],
+    );
+    const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
+    const removed = /([^}]*)\{\s*animation:\s*none/.exec(reduced)?.[1] ?? "";
+    const missing = classes.filter((name) => !new RegExp(`\\.${name}\\b`).test(removed));
+    expect(missing).toEqual([]);
   });
 });
 
