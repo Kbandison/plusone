@@ -149,6 +149,31 @@ Keep it short. If a section has been true and unread for a month, delete it.
   was fine. So: a failing sabotage proves itself; a passing one is not evidence
   until you have separately confirmed the file changed.
 
+- **EVERY PUSH TO `main` STARTS AN XCODE CLOUD BUILD, AND THE ALLOWANCE IS
+  FINITE.** Xcode Cloud bills compute hours per month, and a workflow whose
+  start condition is "branch changes on main" fires on every commit — including
+  the great majority here, which never touch `apps/ios` at all.
+
+  **The iOS shell loads a remote URL.** A change to `apps/web` reaches the app
+  without any build whatsoever. So almost every build this repo triggers
+  produces a binary identical in behaviour to the last one, and spends the
+  allowance to do it.
+
+  Two levers, and only one of them is a mechanism:
+
+  - **Set the workflow's start condition to Files and Folders → `apps/ios`.**
+    App Store Connect → Xcode Cloud → the workflow → Start Conditions → Branch
+    Changes. This is Kevin's, it is done once, and afterwards nobody has to
+    remember anything. **Do this rather than the one below.**
+  - `[ci skip]` in a commit message stops Xcode Cloud starting a build for that
+    commit. Useful as a stopgap, and it is a convention rather than a
+    mechanism — this file's own argument applies: an instruction that depends
+    on being followed in time is not a mechanism, and both sessions will forget
+    it on the commit that matters.
+
+  Until the setting is changed, put `[ci skip]` on any commit that does not
+  touch `apps/ios`.
+
 - **The scripts do not load `.env.local`.** They read `process.env`, so a
   `check:*` or `seed` run needs the value exported into the shell first.
 
