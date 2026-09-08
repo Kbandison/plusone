@@ -109,7 +109,13 @@ describe("the chrome kept its size", () => {
   it("leaves the wordmark, the gear and the bar where they were", () => {
     expect(layout).toMatch(/<Wordmark className="text-\[26px\]" \/>/);
     expect(layout).toMatch(/className="size-\[21px\]"/);
-    expect(links).toMatch(/text-\[13px\]/);
+    // The nav is icons now, so there is no type size to pin. What kept the bar
+    // its height was the label, and min-h-tap is the only thing holding it at
+    // 44px once the label is gone — which is the assertion that matters here.
+    // In the className. Matching it anywhere in the file passes against a
+    // comment that merely mentions it — which is how the nav sabotage for this
+    // came back green.
+    expect(links).toMatch(/className=\{`[^`]*min-h-tap/);
   });
 });
 

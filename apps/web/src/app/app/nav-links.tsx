@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { NAV_ICONS } from "./nav-icons";
+
 /**
  * The bottom nav's links, which need to know where you are.
  *
@@ -24,17 +26,31 @@ export function NavLinks({ items }: { items: readonly { href: string; label: str
         // /app is only current when it IS /app — every other section lives
         // underneath it, so a prefix test would light up Home on every screen.
         const current = item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
+        // Falls back to the word for any route without a mark, so adding a
+        // sixth section renders something legible rather than an empty tab.
+        const Icon = NAV_ICONS[item.href];
 
         return (
           <li key={item.href}>
             <Link
               href={item.href}
               aria-current={current ? "page" : undefined}
-              className={`ease-brand flex min-h-tap items-center border-b-2 px-2.5 text-[13px] transition-colors duration-300 ${
+              /* The label is the ACCESSIBLE NAME now that it is not drawn.
+               *
+               * Without this the bar is five unnamed links, which is worse than
+               * the words it replaced — a screen reader had a perfectly good nav
+               * before. The icons are aria-hidden, so this is the only name each
+               * link has. */
+              aria-label={item.label}
+              title={item.label}
+              /* min-h-tap still, and it is doing more work than it was. The
+               * label carried height; without it the row would collapse to the
+               * icon's 22px and fall under the 44px minimum. */
+              className={`ease-brand flex min-h-tap items-center justify-center border-b-2 px-2.5 transition-colors duration-300 ${
                 current ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink"
               }`}
             >
-              {item.label}
+              {Icon ? <Icon /> : item.label}
             </Link>
           </li>
         );
