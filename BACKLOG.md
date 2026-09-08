@@ -1582,7 +1582,12 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     Sessions for **"enforce single session per user"** — that setting does
     exactly what he described and no code change can override it.
 
-    b. **A notification opens the section, not the thing.** A message takes you
+    b. ~~**A notification opens the section, not the thing.**~~ — done
+    2026-09-01 in `ef87637`. `buildPayload(event, subjectId)` takes a subject and
+    `notify("message_received", …, { subjectId: chatId })` passes one from
+    `chats/[id]/actions.ts`. The §8 question this entry held open was settled by
+    SHAPE-CHECKING rather than by relaxing the rule: the id must match a uuid or
+    it is dropped, so a display name cannot reach a path. Originally: A message takes you
     to the inbox rather than to the chat. `NOTIFICATIONS[event].path` is a
     fixed string per event, and `buildPayload(event)` takes no subject.
 
@@ -1596,7 +1601,9 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     whether the id travels in `path` or in `data`, and whether
     `assertContentBlind` learns the difference.
 
-    c. **The connect sheet does not close after sending.** It refreshes in
+    c. ~~**The connect sheet does not close after sending.**~~ — done.
+    `connect/[id]/actions.ts` ends in `redirect("/app/inbox")`, so the sheet
+    closes and lands where the connect now lives. Originally: It refreshes in
     place. The action revalidates and never navigates, so `RouteModal` is
     still open on a form that has already been submitted — which reads as the
     send having failed, and invites a second one.
