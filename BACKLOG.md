@@ -1713,7 +1713,12 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     thank-you and is exactly the banned shape: it makes somebody more visible,
     and on this app it would mark the earliest and most identifiable cohort.
 
-30. **Read receipts, on by default, hideable only with premium.** Kevin's ask
+30. ~~**Read receipts, on by default, hideable only with premium.**~~ — built and
+    APPLIED. 20260902000100 and 20260902000200 are both live (Kevin, 2026-09-08),
+    so the receipt arrives by itself rather than on the next render. Unsend
+    (20260902000300) is live too. Everything below is the design as built.
+
+    Originally: Kevin's ask
     2026-09-01, and his framing settled the design after mine was wrong.
 
     **The data already exists.** `chat_reads` (20260819000100) holds
@@ -1790,7 +1795,10 @@ unblock other work.
    regardless. Submitting before it would also trip 3.1.1, which is a far more
    certain rejection than 4.2 ever was.
 
-6. **Supabase's Site URL is still `http://localhost:3000`.** An emailed
+6. ~~**Supabase's Site URL is still `http://localhost:3000`.**~~ — fixed by
+   Kevin 2026-09-08. That also un-breaks adding an email address in Settings,
+   which passed an explicit `emailRedirectTo` and was silently falling back.
+   Originally: An emailed
    sign-in link therefore lands on localhost. The app is fine —
    `/auth/callback` handles both link shapes. Dashboard → Authentication →
    URL Configuration: Site URL to `https://www.loveplusone.app`, and add
@@ -1801,9 +1809,22 @@ unblock other work.
    Settings is broken the same way. Dashboard-only; there is no
    `config.toml`, so no session can do this from the repo.
 
-7. **The app icon and launch image.** Both are placeholder geometry — Claude's,
-   not a design. Replacing the SVG in `scripts/generate-icons.mjs` replaces
-   every surface at once, web and iOS.
+7. **The app icon and launch image — no longer placeholder, and the entry said
+   they were.** Corrected 2026-09-08 by reading `generate-icons.mjs` rather than
+   this list.
+
+   `4f4a324` made the icon the **⁺1** mark and both `svg()` and `splashSvg()`
+   draw it through `markGroup` — the same mark as the ⁺One wordmark, as a path
+   so the build does not depend on a font. `ddaaa5b` then fixed the notification
+   badge, which had kept the retired bare-plus logo for a week after the mark
+   changed.
+
+   So there is no placeholder geometry anywhere. What is left is a preference
+   rather than a gap: whether Kevin wants a designer's take on a mark that is
+   currently mine. Replacing the SVG in `scripts/generate-icons.mjs` still
+   replaces every surface at once, web and iOS, which is the part of this entry
+   that was always the useful half.
+
 8. ~~**A Resend-verified sending domain**~~ — done 2026-08-25.
    `loveplusone.app` is verified and `RESEND_FROM` is set in Production to
    `Plus One <support@loveplusone.app>` — an address that can actually receive,
