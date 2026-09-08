@@ -17,11 +17,7 @@ import { NAV_ICONS } from "./nav-icons";
  * The list itself, the nav element and the labels all stay on the server; this
  * is the smallest thing that had to move.
  */
-export function NavLinks({
-  items,
-}: {
-  items: readonly { href: string; label: string; showLabel?: boolean }[];
-}) {
+export function NavLinks({ items }: { items: readonly { href: string; label: string }[] }) {
   const pathname = usePathname();
 
   return (
@@ -50,17 +46,24 @@ export function NavLinks({
               /* min-h-tap still, and it is doing more work than it was. The
                * label carried height; without it the row would collapse to the
                * icon's 22px and fall under the 44px minimum. */
-              className={`ease-brand flex min-h-tap flex-col items-center justify-center gap-1 border-b-2 px-1 transition-colors duration-300 ${
-                current ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink"
+              /* The current tab is the ACCENT, not an underline.
+               *
+               * It was `border-b-2 border-accent`, which put the only marker
+               * below the thing it marked — a rule under a tab, competing with
+               * the bar's own top border two pixels away. Colouring the mark and
+               * its word says the same thing on the element a thumb is aiming
+               * at, and it is the one place the accent is meant to go: the token
+               * file's rule is "CTAs, links, highlights, interactive states". */
+              className={`ease-brand flex min-h-tap flex-col items-center justify-center gap-1 px-1 transition-colors duration-300 ${
+                current ? "text-accent" : "text-ink-2 hover:text-ink"
               }`}
             >
               {Icon ? <Icon /> : null}
-              {/* Only Tonight, and only because no mark says what it means —
-                  see the note on NAV. The others are named to a screen reader
-                  by the aria-label above and to everyone else by the drawing. */}
-              {item.showLabel || !Icon ? (
-                <span className="text-[10.5px] leading-none">{item.label}</span>
-              ) : null}
+              {/* Every tab. Icons READ faster once known and none of the five
+                  says what it means to somebody who has not learnt it yet —
+                  Tonight least of all, since no mark says "three people, once a
+                  day". The word is what makes the drawing learnable. */}
+              <span className="text-[10.5px] leading-none">{item.label}</span>
             </Link>
           </li>
         );

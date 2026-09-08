@@ -51,19 +51,8 @@ export const metadata: Metadata = {
  * settings control is looked for, and it takes a row off the bar on the phones
  * this is used on.
  */
-const NAV: { href: string; label: string; datingOnly?: boolean; showLabel?: boolean }[] = [
-  /**
-   * The one tab that keeps its word.
-   *
-   * Four of the five are conventions a person reads cold — a magnifier, a
-   * speech bubble, a pair of bubbles, a person. "Tonight" is not: it is this
-   * app's own mechanic, three people once a day, and no mark carries that. A
-   * crescent says night, not "your Drop is ready".
-   *
-   * So the label stays here and nowhere else. It costs a slightly uneven bar,
-   * which is cheaper than the one tab somebody has to learn by tapping it.
-   */
-  { href: "/app", label: DRAFT_COPY.app.navHome, showLabel: true },
+const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
+  { href: "/app", label: DRAFT_COPY.app.navHome },
   // Hidden from a support-only member: Browse is a dating surface (Decision #17)
   // and they get the Preview Drop instead (#19). The page redirects too — this
   // only stops the link existing, so nobody is bounced by their own nav.
@@ -285,7 +274,13 @@ export default async function AppLayout({
          *
          * No wrap now. Five icons cannot need a second row, and flex-wrap with
          * flex-1 children is a way to get one unexpectedly. */}
-        <ul className="mx-auto flex max-w-[550.8px] items-center px-2 py-1.5 sm:px-4">
+        {/* Spread, but not to the edges.
+         *
+         * flex-1 on the items distributes them evenly, which fixed the icons
+         * collecting in the middle. Taken to px-2 it put the outer two hard
+         * against the screen, so the padding is back where it was: inset, and
+         * still even. */}
+        <ul className="mx-auto flex max-w-[550.8px] items-center px-4 py-1.5 sm:px-6">
           {/* A client component, only so it can read the pathname. Nine links
               rendered identically with no aria-current anywhere, so nothing
               said which section you were in. */}

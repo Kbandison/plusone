@@ -212,7 +212,31 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
     fail silently, including a call to an unregistered plugin, which never
     settles rather than rejecting.
 
-12. **Verification debt — two closed, one still needs a person.**
+12. **Verification debt — the badge, and now the nav bar.**
+
+    **THE BOTTOM BAR IS UNSEEN ON ANY DEVICE, and it is on every screen.**
+    Rebuilt 2026-09-08 across `869c837`, `20cbeb5` and the commit after: five
+    marks, every tab a mark and its word, the current tab coloured instead of
+    underlined, and the tabs spread with `flex-1` rather than collected in the
+    middle. All of it is `apps/web`, so it reaches both engines, and nobody has
+    looked at it in either.
+
+    What to look at, in order of how likely it is to be wrong:
+
+    - **The tap target.** The label used to carry the bar's height. `min-h-tap`
+      is the only thing holding it at 44px now, and an icon-only bar is where
+      safe-area padding errors surface first.
+    - **The accent as the only visual state.** It reads clearly on Dusk; on
+      Linen the accent is `#9f5b41` against `#766b60` ink-3, which is a smaller
+      step than the underline was.
+    - **The spread.** `flex-1` distributes evenly at any width; the iPad is much
+      wider than the phones this was reasoned about, and the bar caps at
+      550.8px inside a screen twice that.
+
+    Kevin asked to be reminded. This is the reminder, in the file that survives
+    a session ending.
+
+    ── the older debt, unchanged ──────────────────────────────────────────────
 
     Onboarding is fixed and confirmed on hardware: Kevin got through the radius
     step on 1.0 (5), which is what the location purpose string was for.

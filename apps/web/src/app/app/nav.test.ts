@@ -28,7 +28,7 @@ const layout = read("./layout.tsx");
  * name, the height, and the ability to tell two tabs apart — so each is pinned
  * rather than assumed.
  */
-describe("an icon-only bar still names its destinations", () => {
+describe("every tab is a mark and its word", () => {
   it("gives every link the label as its accessible name", () => {
     // Without this the bar is five unnamed links, which is strictly worse than
     // the words it replaced: a screen reader had a perfectly good nav before.
@@ -40,20 +40,32 @@ describe("an icon-only bar still names its destinations", () => {
     expect(icons).toMatch(/"aria-hidden": true/);
   });
 
-  it("keeps a word for any route without a mark", () => {
-    // A sixth section added to NAV renders something legible rather than an
-    // empty tab, which is the failure that would ship silently. `!Icon` is the
-    // half that does it; `showLabel` is the deliberate one below.
-    expect(links).toMatch(/item\.showLabel \|\| !Icon/);
+  it("draws the word on every tab, unconditionally", () => {
+    // Icon-only was tried and reverted. None of the five says what it means to
+    // somebody who has not learnt it — Tonight least of all, since no mark says
+    // "three people, once a day" — so the word is what makes the drawing
+    // learnable. No condition, because a conditional label is how one tab ends
+    // up unnamed after a refactor nobody looked at.
+    // Structure, not presence. Asserting the <span> merely EXISTS passed
+    // against `{Icon ? null : <span …>}` — markup survives inside a
+    // conditional, so a substring match cannot tell "always" from "sometimes".
+    // This takes the Link's children, removes the one expression that is
+    // allowed to branch, and requires nothing conditional to remain.
+    // From the icon expression to the close, which is exactly where a
+    // conditional label would live. A wider window catches the `?` in the
+    // className's own ternary and fails against correct code.
+    const children = noComments(links.slice(links.indexOf("{Icon ?"), links.indexOf("</Link>")));
+    expect(children).toContain("{item.label}");
+    expect(children.replace("{Icon ? <Icon /> : null}", "")).not.toMatch(/\?|&&/);
+    expect(links).not.toMatch(/showLabel/);
+    expect(noComments(layout)).not.toMatch(/showLabel/);
   });
 
-  it("keeps the word on Tonight, and only there", () => {
-    // The one tab whose label was doing real work: no mark says "three people,
-    // once a day", so a crescent alone has to be learned by tapping it. The
-    // other four are conventions read cold.
-    const layoutSrc = noComments(layout);
-    expect(layoutSrc).toMatch(/\{ href: "\/app", label: [^}]*showLabel: true \}/);
-    expect((layoutSrc.match(/showLabel: true/g) ?? []).length).toBe(1);
+  it("renders something legible for a route with no mark", () => {
+    // A sixth section added to NAV gets a word rather than an empty tab. The
+    // label being unconditional is what guarantees it now — the icon is the
+    // optional half.
+    expect(links).toMatch(/\{Icon \? <Icon \/> : null\}/);
   });
 });
 
@@ -107,5 +119,27 @@ describe("the tabs are spread, not clustered", () => {
     // flex-wrap with flex-1 children is a way to get an unexpected second row,
     // and five icons can never need one.
     expect(noComments(read("./layout.tsx"))).not.toMatch(/<ul className="[^"]*flex-wrap/);
+  });
+});
+
+describe("the current tab is the accent, not a rule under it", () => {
+  it("colours the mark and the word", () => {
+    // Kevin's call. The underline put the only marker BELOW the thing it marked,
+    // two pixels from the bar's own top border. Colouring the tab says the same
+    // thing on the element a thumb is aiming at.
+    expect(links).toMatch(/current \? "text-accent"/);
+  });
+
+  it("has no underline left to compete with it", () => {
+    // border-b-2 stayed behind once as `border-transparent`, which reserves the
+    // space and reads as a bar that never lights up.
+    expect(links).not.toMatch(/border-b-2/);
+    expect(links).not.toMatch(/border-accent/);
+  });
+
+  it("still says which tab it is to a screen reader", () => {
+    // Colour alone is not a state. aria-current is what carries it where the
+    // accent cannot be seen.
+    expect(links).toMatch(/aria-current=\{current \? "page" : undefined\}/);
   });
 });
