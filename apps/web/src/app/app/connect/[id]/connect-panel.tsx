@@ -7,7 +7,7 @@ import {
   type ProfilePromptAnswer,
 } from "@plusone/config";
 
-import { photosFor } from "@/lib/photo-urls";
+import { galleryFor } from "@/lib/photo-urls";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../../member-photo";
 import { MemberTraitChips } from "../../member-traits";
@@ -50,7 +50,10 @@ export async function ConnectPanel({
 
   if (!target) notFound();
 
-  const photos = await photosFor([target.id as string]);
+  // The whole gallery, not one face (BACKLOG 27d). galleryFor reads
+  // visible_profile_photos like the cards do, so per-photo privacy and the
+  // connection state decide what comes back — this screen decides nothing.
+  const gallery = await galleryFor(target.id as string);
 
   // The same line the Browse card carries, in the same order, so a member
   // arriving here from the grid reads the person rather than a second summary
@@ -66,12 +69,45 @@ export async function ConnectPanel({
   return (
     <>
       <div className="flex items-center gap-4">
-        <MemberPhotoFrame photo={photos.get(target.id as string)} size={56} />
+        <MemberPhotoFrame photo={gallery[0]} size={56} />
         <div className="min-w-0">
           <h1 className="text-h2">{target.display_name as string}</h1>
           {meta ? <p className="mt-1 text-[11.7px] text-ink-3">{meta}</p> : null}
         </div>
       </div>
+
+      {/* The rest of the gallery.
+       *
+       * From the second photo on, because the first is already the frame beside
+       * their name three lines up and showing it twice reads as a mistake. The
+       * card surfaces all take position 0 — one face per row, which is right for
+       * a grid — and this is the screen where somebody has already tapped
+       * through and is deciding whether to reach out. A profile that answers
+       * that with a single photograph is BACKLOG 27d's "control with no visible
+       * effect", one surface further in than the filters that had it.
+       *
+       * Nothing is decided here. A photo the viewer may not see clearly arrives
+       * already blurred — the view swaps in a different OBJECT rather than a
+       * CSS filter — and one they may not see at all never arrives, so there is
+       * no client-side gate that could be got round. */}
+      {gallery.length > 1 ? (
+        <ul className="mt-6 grid grid-cols-2 gap-3">
+          {/* No emptyLabel: galleryFor drops any photo whose URL failed to
+              sign, so every entry here has an image and the empty branch is
+              unreachable. Passing one would also trip exactOptionalPropertyTypes
+              on the undefined arm. */}
+          {gallery.slice(1).map((photo) => (
+            <li key={photo.url} className="overflow-hidden rounded-xl">
+              <MemberPhotoFrame
+                photo={photo}
+                fill
+                rounded="rounded-xl"
+                className="aspect-square w-full"
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {/* Everything they said about themselves, on the screen where somebody
           decides whether to say something back. No max: this is a full screen,

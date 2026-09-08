@@ -110,6 +110,56 @@ async function photosFrom(
 }
 
 /**
+ * Everything ONE member is allowed to show you, in the order they arranged it.
+ *
+ * The card surfaces all take `position = 0` — one face per row — and that is
+ * right for a grid. This is for the screen where somebody has already tapped
+ * through and is deciding whether to reach out, where a single photograph is
+ * the thing BACKLOG 27d calls "a control with no visible effect", one surface
+ * further in than the filters that had the same problem.
+ *
+ * Reads `visible_profile_photos` like every other caller, so per-photo privacy
+ * (18b) and the connection state decide what comes back and this function
+ * decides nothing. A photo the viewer may not see clearly arrives blurred, from
+ * the same CASE the cards use; a photo they may not see at all does not arrive.
+ *
+ * One member rather than many on purpose. The map-keyed helpers above exist to
+ * fetch one face for each of sixty rows; this fetches a whole gallery, and the
+ * signed-URL batch is per photo rather than per person — asking it for sixty
+ * members would sign several hundred URLs for a page showing one.
+ */
+export async function galleryFor(userId: string): Promise<readonly MemberPhoto[]> {
+  const supabase = await getServerSupabase();
+  const { data: rows } = await supabase
+    .from("visible_profile_photos")
+    .select("position, storage_path, is_blurred")
+    .eq("user_id", userId)
+    .order("position", { ascending: true });
+
+  if (!rows?.length) return [];
+
+  const service = serviceClient();
+  const { data: signed } = await service.storage.from("photos").createSignedUrls(
+    rows.map((row) => row.storage_path as string),
+    TTL_SECONDS,
+  );
+
+  const urlByPath = new Map(
+    (signed ?? []).filter((s) => s.signedUrl && s.path).map((s) => [s.path as string, s.signedUrl]),
+  );
+
+  // Ordered by position, and a photo whose URL failed to sign is dropped rather
+  // than rendered as a gap — the alternative is a broken image in a gallery
+  // where every frame is somebody's face.
+  return rows
+    .map((row) => {
+      const url = urlByPath.get(row.storage_path as string);
+      return url ? { url, isBlurred: Boolean(row.is_blurred) } : null;
+    })
+    .filter((photo): photo is MemberPhoto => photo !== null);
+}
+
+/**
  * The member's own photos. Read straight from `profile_photos`, which they own
  * — no view is needed to decide what someone may see of themselves.
  */

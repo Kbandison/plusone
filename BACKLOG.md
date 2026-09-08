@@ -1608,7 +1608,19 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     still open on a form that has already been submitted — which reads as the
     send having failed, and invites a second one.
 
-    d. **A profile shows one photo.** Tapping through to somebody should show
+    d. ~~**A profile shows one photo.**~~ — done 2026-09-08. `galleryFor()` reads
+    `visible_profile_photos` in position order and the connect panel renders the
+    rest of the gallery under the identity header, starting at the second since
+    the first is already the frame beside their name.
+
+    It decides nothing, which was the point: per-photo privacy (18b) and the
+    connection state pick what comes back, a photo the viewer may not see
+    clearly arrives already blurred as a different OBJECT, and one they may not
+    see at all never arrives. Pinned by tests that fail on reading
+    `profile_photos`, on re-adding `.eq("position", 0)`, and on blurring in CSS —
+    the last because a CSS filter would mean the clear file reached the browser.
+
+    Originally: Tapping through to somebody should show
     the whole gallery, blurred where they chose it. Backlog server 17 already
     records the shape of this: the connect panel selects
     `id, display_name, prompts` and nothing else, and calls filtering on an
