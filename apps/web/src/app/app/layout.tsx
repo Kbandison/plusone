@@ -51,8 +51,19 @@ export const metadata: Metadata = {
  * settings control is looked for, and it takes a row off the bar on the phones
  * this is used on.
  */
-const NAV: { href: string; label: string; datingOnly?: boolean }[] = [
-  { href: "/app", label: DRAFT_COPY.app.navHome },
+const NAV: { href: string; label: string; datingOnly?: boolean; showLabel?: boolean }[] = [
+  /**
+   * The one tab that keeps its word.
+   *
+   * Four of the five are conventions a person reads cold — a magnifier, a
+   * speech bubble, a pair of bubbles, a person. "Tonight" is not: it is this
+   * app's own mechanic, three people once a day, and no mark carries that. A
+   * crescent says night, not "your Drop is ready".
+   *
+   * So the label stays here and nowhere else. It costs a slightly uneven bar,
+   * which is cheaper than the one tab somebody has to learn by tapping it.
+   */
+  { href: "/app", label: DRAFT_COPY.app.navHome, showLabel: true },
   // Hidden from a support-only member: Browse is a dating surface (Decision #17)
   // and they get the Preview Drop instead (#19). The page redirects too — this
   // only stops the link existing, so nobody is bounced by their own nav.
@@ -264,7 +275,17 @@ export default async function AppLayout({
            the bar you swipe up on. */
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
       >
-        <ul className="mx-auto flex max-w-[550.8px] flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-4 py-1.5 sm:justify-between sm:gap-x-0 sm:px-6">
+        {/* Each tab takes an equal share of the bar.
+         *
+         * It was `justify-center gap-x-1`, which was right when the tabs were
+         * words — five labels fill a phone on their own. Five 22px icons do
+         * not: they collected in the middle with four pixels between them and
+         * a wide margin either side. `flex-1` on the items spreads them across
+         * the width instead, which is what a bottom bar does everywhere else.
+         *
+         * No wrap now. Five icons cannot need a second row, and flex-wrap with
+         * flex-1 children is a way to get one unexpectedly. */}
+        <ul className="mx-auto flex max-w-[550.8px] items-center px-2 py-1.5 sm:px-4">
           {/* A client component, only so it can read the pathname. Nine links
               rendered identically with no aria-current anywhere, so nothing
               said which section you were in. */}

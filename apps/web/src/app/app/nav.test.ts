@@ -42,8 +42,18 @@ describe("an icon-only bar still names its destinations", () => {
 
   it("keeps a word for any route without a mark", () => {
     // A sixth section added to NAV renders something legible rather than an
-    // empty tab, which is the failure that would ship silently.
-    expect(links).toMatch(/\{Icon \? <Icon \/> : item\.label\}/);
+    // empty tab, which is the failure that would ship silently. `!Icon` is the
+    // half that does it; `showLabel` is the deliberate one below.
+    expect(links).toMatch(/item\.showLabel \|\| !Icon/);
+  });
+
+  it("keeps the word on Tonight, and only there", () => {
+    // The one tab whose label was doing real work: no mark says "three people,
+    // once a day", so a crescent alone has to be learned by tapping it. The
+    // other four are conventions read cold.
+    const layoutSrc = noComments(layout);
+    expect(layoutSrc).toMatch(/\{ href: "\/app", label: [^}]*showLabel: true \}/);
+    expect((layoutSrc.match(/showLabel: true/g) ?? []).length).toBe(1);
   });
 });
 
@@ -82,5 +92,20 @@ describe("the bar keeps its tap target without the label", () => {
     // In the className, not in prose about it.
     expect(links).toMatch(/className=\{`[^`]*min-h-tap/);
     expect(noComments(icons)).toMatch(/size-\[22px\]/);
+  });
+});
+
+describe("the tabs are spread, not clustered", () => {
+  it("gives every tab an equal share of the bar", () => {
+    // Five words fill a phone on their own; five 22px icons do not. Without
+    // flex-1 they collect in the middle with a few pixels between them, which
+    // is what justify-center left behind when the labels came off.
+    expect(links).toMatch(/<li key=\{item\.href\} className="flex-1">/);
+  });
+
+  it("does not let the bar wrap to a second row", () => {
+    // flex-wrap with flex-1 children is a way to get an unexpected second row,
+    // and five icons can never need one.
+    expect(noComments(read("./layout.tsx"))).not.toMatch(/<ul className="[^"]*flex-wrap/);
   });
 });

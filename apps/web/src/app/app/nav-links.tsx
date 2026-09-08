@@ -17,7 +17,11 @@ import { NAV_ICONS } from "./nav-icons";
  * The list itself, the nav element and the labels all stay on the server; this
  * is the smallest thing that had to move.
  */
-export function NavLinks({ items }: { items: readonly { href: string; label: string }[] }) {
+export function NavLinks({
+  items,
+}: {
+  items: readonly { href: string; label: string; showLabel?: boolean }[];
+}) {
   const pathname = usePathname();
 
   return (
@@ -31,7 +35,7 @@ export function NavLinks({ items }: { items: readonly { href: string; label: str
         const Icon = NAV_ICONS[item.href];
 
         return (
-          <li key={item.href}>
+          <li key={item.href} className="flex-1">
             <Link
               href={item.href}
               aria-current={current ? "page" : undefined}
@@ -46,11 +50,17 @@ export function NavLinks({ items }: { items: readonly { href: string; label: str
               /* min-h-tap still, and it is doing more work than it was. The
                * label carried height; without it the row would collapse to the
                * icon's 22px and fall under the 44px minimum. */
-              className={`ease-brand flex min-h-tap items-center justify-center border-b-2 px-2.5 transition-colors duration-300 ${
+              className={`ease-brand flex min-h-tap flex-col items-center justify-center gap-1 border-b-2 px-1 transition-colors duration-300 ${
                 current ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink"
               }`}
             >
-              {Icon ? <Icon /> : item.label}
+              {Icon ? <Icon /> : null}
+              {/* Only Tonight, and only because no mark says what it means —
+                  see the note on NAV. The others are named to a screen reader
+                  by the aria-label above and to everyone else by the drawing. */}
+              {item.showLabel || !Icon ? (
+                <span className="text-[10.5px] leading-none">{item.label}</span>
+              ) : null}
             </Link>
           </li>
         );
