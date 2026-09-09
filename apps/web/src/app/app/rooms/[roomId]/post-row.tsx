@@ -313,7 +313,18 @@ export function PostRow({
               withdraw your words — so this is not one menu with items hidden,
               it is a menu for your own post and a menu for somebody else's. */}
             {post.is_mine ? (
-              <span className="relative z-20">
+              /* z-30, not z-20, and it has to be STRICTLY higher.
+               *
+               * Everything else this row lifts off the covering link is z-20 —
+               * the action strip that holds Share, and the image trigger. Both
+               * come AFTER this menu in the DOM, so at equal z they paint on top
+               * of it: the open panel sat under the picture, and pressing
+               * "Delete it" hit the Share button sitting over it.
+               *
+               * The panel inside OverflowMenu is absolute z-20 within this span,
+               * so lifting the span carries it — a stacking context takes its
+               * whole subtree with it. */
+              <span className="relative z-30">
                 <OverflowMenu label={C.postMenuLabel} compact>
                   <div className="py-3">
                     <DeletePost postId={post.id} roomId={roomId} />
@@ -321,7 +332,9 @@ export function PostRow({
                 </OverflowMenu>
               </span>
             ) : !post.article_url ? (
-              <span className="relative z-20">
+              /* Same lift, same reason. Report and Block open the same panel
+                 into the same row. */
+              <span className="relative z-30">
                 <OverflowMenu label={C.postMenuLabel} compact>
                   <div className="py-3">
                     {/* Neither control takes an author id, and for an anonymous

@@ -97,3 +97,37 @@ describe("it says what goes with it", () => {
     expect(control).toMatch(/setAsking\(false\)/);
   });
 });
+
+describe("the open menu outranks everything else the row lifts", () => {
+  /** Every z-N this row puts on something, as numbers. */
+  const zOf = (src: string) => [...src.matchAll(/\bz-(\d+)\b/g)].map((m) => Number(m[1]));
+
+  it("puts the menus strictly above the rest of the row", () => {
+    // Not "the menu is z-30" — the rule is that it BEATS the others, and
+    // pinning the literal would pass the day somebody raises the action strip
+    // to match it. Which is precisely the bug: at equal z the later element in
+    // the DOM wins, and both the image trigger and the Share strip come after
+    // the menu.
+    const src = noComments(row);
+    const menus = [...src.matchAll(/<span className="relative z-(\d+)">/g)].map((m) =>
+      Number(m[1]),
+    );
+    expect(menus.length).toBe(2);
+
+    const others = zOf(src.replace(/<span className="relative z-\d+">/g, ""));
+    expect(others.length).toBeGreaterThan(2);
+    for (const menu of menus) {
+      expect(Math.min(...menus), "both menus sit at the same height").toBe(menu);
+      expect(menu).toBeGreaterThan(Math.max(...others));
+    }
+  });
+
+  it("lifts the wrapper, not the panel, so the whole subtree comes with it", () => {
+    // OverflowMenu's panel is absolute z-20 INSIDE the span. Raising the panel
+    // alone would do nothing — it is already the top of its own context; what
+    // has to move is the context.
+    const menu = read("../../overflow-menu.tsx");
+    expect(menu).toMatch(/absolute z-20/);
+    expect(noComments(row)).toMatch(/<span className="relative z-30">/);
+  });
+});

@@ -822,10 +822,26 @@ describe("the post itself is the target", () => {
     expect(roomPage).toMatch(/href=\{`\/app\/rooms\/\$\{room\.id as string\}\/\$\{post\.id\}`\}/);
   });
 
-  /** Without this the whole strip would open the thread and nothing would work. */
+  /**
+   * Without this the whole strip would open the thread and nothing would work.
+   *
+   * Both numbers were literals here and the menu's is now z-30 — it has to beat
+   * the action strip and the image trigger, which come after it in the DOM and
+   * therefore win at equal z. That was the bug: the open panel sat under the
+   * picture and "Delete it" pressed Share instead.
+   *
+   * So this asserts the RELATIONSHIP the covering link needs — every control is
+   * above z-10 — rather than the exact heights, which delete-post.test.ts owns
+   * and compares against each other.
+   */
   it("lifts the controls above it", () => {
-    expect(row).toMatch(/relative z-20 mt-1 flex flex-wrap items-center gap-x-5/);
-    expect(row).toMatch(/<span className="relative z-20">\s*<OverflowMenu/);
+    expect(row).toMatch(/<Link href=\{href\} className="absolute inset-0 z-10">/);
+    const strip = /relative z-(\d+) mt-1 flex flex-wrap items-center gap-x-5/.exec(row);
+    const menu = /<span className="relative z-(\d+)">\s*(?:\/\*[\s\S]*?\*\/\s*)?<OverflowMenu/.exec(
+      row,
+    );
+    expect(Number(strip?.[1] ?? 0)).toBeGreaterThan(10);
+    expect(Number(menu?.[1] ?? 0)).toBeGreaterThan(10);
   });
 
   /** Only the menu, so the name and the time still open the thread. */
