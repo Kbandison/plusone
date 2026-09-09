@@ -214,7 +214,14 @@ LuxWeb Studio LLC`, `aps-environment = production`, privacy manifest inside
 
 12. **Verification debt — the badge, and now the nav bar.**
 
-    **THE BOTTOM BAR IS UNSEEN ON ANY DEVICE, and it is on every screen.**
+    ~~**THE BOTTOM BAR IS UNSEEN ON ANY DEVICE.**~~ — seen on BOTH by Kevin
+    2026-09-09 and good on each. That closes it: an icon-only-derived bar was
+    the one change touching every screen in the app, and the two things most
+    likely to differ between engines — a 44px target held by `min-h-tap` alone,
+    and the accent as the only visual state — are confirmed in WKWebView and in
+    Chrome. The original note follows.
+
+    **The bottom bar was unseen on any device, and it is on every screen.**
     Rebuilt 2026-09-08 across `869c837`, `20cbeb5` and the commit after: five
     marks, every tab a mark and its word, the current tab coloured instead of
     underlined, and the tabs spread with `flex-1` rather than collected in the
@@ -495,7 +502,32 @@ Needs no Apple or Google account, and touches nothing under `apps/ios`.
       end up identical, because two stores that happen to agree today are still
       two stores.
 
-13. **Play returns an empty catalogue. The bridge itself is fixed.**
+13. ~~**Play returns an empty catalogue.**~~ — **RESOLVED. Kevin can see the
+    three subscriptions, 2026-09-09.**
+
+    It came back on its own, which is the unsatisfying and honest answer: no
+    code changed, no console setting moved, and nothing here was ever wrong.
+    Everything on our side had been verified correct for two weeks — the build
+    from the packaged APK, the ids from the console, the base plans Active and
+    Backwards compatible, Chrome as the TWA provider, the DelegationService
+    bind, the licence check and the billing account hash.
+
+    The last live reading was 0 on 2026-08-29 from a device on the INTERNAL
+    track; server 4's diagnosis note asks any future reading to say which track
+    it came from, and this one is Kevin seeing them in the app.
+
+    **What this unblocks is server 15**, the Play purchase flow, which was built
+    and could not be exercised because `getDetails` had nothing to sell. It can
+    be tested end to end now, and a real purchase is the last part of the Play
+    payment path nobody has watched.
+
+    Everything below is the diagnosis as it stood, kept because the elimination
+    is worth not repeating and because the transient `clientAppUnavailable`
+    reproduction is still the only one anybody has.
+
+    ── the original entry ─────────────────────────────────────────────────────
+
+    **The bridge itself is fixed.**
 
     **`clientAppUnavailable` is GONE, 2026-08-27.** It is kept below because
     the elimination work is worth not repeating, but it is no longer the
