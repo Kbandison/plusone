@@ -52,3 +52,54 @@ export async function deleteNewsItem(_prev: NewsState, formData: FormData): Prom
   revalidatePath("/admin/news");
   return { ...NEWS_INITIAL, message: "Deleted." };
 }
+
+/**
+ * Posting an article by hand.
+ *
+ * Not the gate. `admin_post_article` is SECURITY DEFINER and checks
+ * `is_admin()` itself, refuses a non-https link, and refuses any room that is
+ * not a Latest news room — an admin could otherwise put an authorless post into
+ * a discussion room, where it would read as a member who deleted themselves.
+ * Deleting every check from this file would change only the error copy.
+ *
+ * The count comes back so the message can tell "posted to both" from "the feed
+ * already had it", which are different outcomes that used to look identical.
+ */
+export async function postArticle(_prev: NewsState, formData: FormData): Promise<NewsState> {
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+
+  const roomIds = formData.getAll("roomId").map(String).filter(Boolean);
+  if (roomIds.length === 0) {
+    return { error: "Choose at least one room.", message: null };
+  }
+
+  const { data, error } = await supabase.rpc("admin_post_article", {
+    p_room_ids: roomIds,
+    p_url: String(formData.get("url") ?? ""),
+    p_title: String(formData.get("title") ?? ""),
+    p_source: String(formData.get("source") ?? ""),
+    p_summary: String(formData.get("summary") ?? ""),
+  });
+
+  if (error) {
+    // 22023 is the function's own validation — an https link, a headline, a
+    // source, a Latest news room — and those messages are written for a person.
+    // Anything else is ours.
+    return {
+      error: error.code === "22023" ? error.message : "That didn't post.",
+      message: null,
+    };
+  }
+
+  const added = typeof data === "number" ? data : 0;
+  revalidatePath("/admin/news");
+  return {
+    ...NEWS_INITIAL,
+    message:
+      added === 0
+        ? "Already posted — nothing added."
+        : `Posted to ${added} room${added === 1 ? "" : "s"}.`,
+  };
+}

@@ -4,6 +4,7 @@ import { NEWS_SOURCES } from "@plusone/config";
 
 import { getServerSupabase } from "@/lib/supabase";
 import { NewsItemRow, type NewsRow } from "./news-row";
+import { PostArticle, type NewsRoomOption } from "./post-article";
 
 export const metadata: Metadata = { title: "News" };
 
@@ -24,8 +25,15 @@ export default async function AdminNewsPage() {
   // A definer function rather than a select: room_messages does not grant
   // user_id to a client, and an admin listing articles should not depend on
   // being a member of the rooms they were posted to.
-  const { data } = await supabase.rpc("admin_articles", { p_limit: 200 });
+  // Together: neither reads the other, and the rooms come from a definer
+  // function because `rooms` is readable only where community_scope matches the
+  // viewer's own — an admin who has HSV cannot see the HIV news room at all.
+  const [{ data }, { data: roomRows }] = await Promise.all([
+    supabase.rpc("admin_articles", { p_limit: 200 }),
+    supabase.rpc("admin_news_rooms"),
+  ]);
   const items = (data ?? []) as NewsRow[];
+  const rooms = (roomRows ?? []) as NewsRoomOption[];
 
   return (
     <main id="main">
@@ -36,6 +44,8 @@ export default async function AdminNewsPage() {
         removes it and its replies; the ingest can bring a corrected version back later, which is
         why this is a delete rather than a hidden flag.
       </p>
+
+      <PostArticle rooms={rooms} />
 
       <section className="mt-8">
         <h2 className="text-[0.891rem] tracking-[0.04em] text-ink-3 uppercase">Sources</h2>

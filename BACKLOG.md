@@ -1889,10 +1889,21 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     refuse a non-browser agent, every CDC newsroom id tried was stale (2018,
     2020), and hiv.gov advertises no working news feed.
 
-    **STILL WORTH A DECISION: there is no source chosen FOR the HSV community.**
-    thebody.com is scoped `hiv`; the HSV room is fed only by general publishers
-    that happen to mention herpes. That is a gap in editorial voice rather than
-    volume, and it is Kevin's to fill.
+    **AND THE HSV GAP IS NOT A SOURCING PROBLEM.** Measured across every live
+    feed on 2026-09-09: NINE articles on offer about herpes, a hundred and
+    twelve about HIV. Nothing publishes for people with HSV the way TheBody
+    publishes for people with HIV, and the few that do — Westover Heights,
+    Herpes Opportunity — refuse a non-browser agent, as do POZ, aidsmap,
+    Positively Aware and Medical News Today. A person can read all of them.
+
+    So an editor was built rather than more feeds hunted: `/admin/news` now
+    posts an article by hand, in the ingest's own shape and deduplicated against
+    it. `admin_post_article` (20260909000100) refuses a non-admin, a non-https
+    link and any room that is not Latest news, and neither room is preselected —
+    the scope call is the one thing a person is there to make.
+
+    What remains is genuinely editorial and nobody can automate it: somebody has
+    to read those publishers and choose. The mechanism is done.
 
     Whatever is chosen has to clear the existing rules: the host goes in the
     allowlist, `redirect: "error"` means a feed that redirects is refused

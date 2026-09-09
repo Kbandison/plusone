@@ -163,10 +163,18 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // a forged insert reaches this — and "a reply cannot be replied to" describes
   // the schema rather than anything the member did.
   "a reply cannot be replied to",
-  // The news screen, which only an admin reaches. Both describe a malformed
-  // write from that screen, and it shows its own copy for them — a member
-  // never calls these RPCs at all.
+  // The news screen, which only an admin reaches. All of these describe a
+  // malformed write from that screen — a member never calls these RPCs at all.
+  //
+  // The post-by-hand form is the exception worth noting: it DOES surface these
+  // three verbatim, because they are written for the person filling it in and
+  // "That didn't post" would send an admin hunting for a fault that is a typo
+  // in the link box. They are internal here because no MEMBER can reach them,
+  // which is what this list is about.
   "an article needs a headline",
+  "an article needs a source",
+  "an article link must be https",
+  "not a Latest news room",
   "no such article",
   // share_post_to_room. Both describe a share the UI does not offer — it lists
   // only rooms the member is in, and refuses an article already there — so
