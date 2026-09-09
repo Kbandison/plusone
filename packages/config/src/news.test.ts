@@ -178,3 +178,44 @@ describe("every source is a live feed on an allowed host", () => {
     expect(NEWS_SOURCES.some((s) => s.scope === "hiv")).toBe(true);
   });
 });
+
+describe("the relevance filter matches words, not fragments", () => {
+  const general = NEWS_SOURCES.find((s) => s.key === "sciencedaily-std")!;
+  const pub = (title: string) =>
+    shouldPublishNews(general, { title, summary: "", url: "https://www.sciencedaily.com/a/1.htm" });
+
+  it("does not let 'sti' through inside an ordinary word", () => {
+    // The bug this replaced: `includes("sti")` matched PREstigious, teSTIng,
+    // exiSTIng and inveSTIgation, so a general newsroom's whole output looked on
+    // topic. Found by measuring candidate feeds and reading the headlines that
+    // "passed" — oncology and research funding.
+    for (const title of [
+      "Orexin discoverers awarded prestigious Lasker award",
+      "Existing drugs show promise in testing",
+      "Investigation into hospital staffing",
+    ]) {
+      expect(pub(title), `let through: ${title}`).toBe(false);
+    }
+  });
+
+  it("does not let 'prep' through inside 'preparation'", () => {
+    expect(pub("Preparation of the new vaccine batch")).toBe(false);
+  });
+
+  it("still passes the real thing", () => {
+    for (const title of [
+      "New STI guidance for clinicians",
+      "PrEP uptake rises among young adults",
+      "Herpes simplex research update",
+      "HIV and STD screening in primary care",
+    ]) {
+      expect(pub(title), `blocked: ${title}`).toBe(true);
+    }
+  });
+
+  it("keeps a term that contains punctuation working", () => {
+    // u=u would not survive a \b boundary on either side of the equals sign,
+    // which is why the boundary is "not alphanumeric" rather than \b.
+    expect(pub("Ten years of U=U")).toBe(true);
+  });
+});

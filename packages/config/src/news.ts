@@ -135,6 +135,25 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
     // Its feed lists sections and contributors alongside articles.
     excludePaths: ["/about", "/author/", "/news-scan", "/contact", "/privacy", "/terms"],
   },
+  {
+    key: "thebodypro",
+    icon: "https://www.thebodypro.com/favicon-512.png",
+    name: "TheBodyPro",
+    feedUrl: "https://www.thebodypro.com/feed",
+    /**
+     * TheBody's clinical sibling: 50 items, 38 on subject, current.
+     *
+     * Nearly discarded on a measurement of my own that was wrong — `grep -c`
+     * counts matching LINES, and this feed is minified onto one, so it read as
+     * "1 item". Both it and thebody.com were dismissed on that number before
+     * anybody looked at the bytes.
+     *
+     * Scoped to the community it serves, like thebody.com, rather than shown to
+     * everybody.
+     */
+    scope: "hiv",
+    excludePaths: ["/about", "/author/", "/contact", "/privacy", "/terms"],
+  },
   /**
    * ScienceDaily's topic feeds — three, and `scope: "all"` on purpose.
    *
@@ -235,6 +254,34 @@ export function articleScope(item: {
   return null;
 }
 
+/**
+ * Whole words, not substrings — and this was a real bug, not a tidy-up.
+ *
+ * The check was `haystack.includes(term)`, and the list holds three-letter
+ * acronyms. "sti" is inside PREstigious, teSTIng, exiSTIng, inveSTIgation and
+ * stiLL; "prep" is inside PREParation; "aids" is inside a surprising number of
+ * proper nouns. So a general newsroom's entire output looked on topic: a STAT
+ * News item headlined "Orexin discoverers awarded prestigious Lasker award"
+ * passed the sexual-health filter, and so did an AstraZeneca breast cancer
+ * story.
+ *
+ * Found while measuring candidate feeds — the yields looked implausibly high
+ * and the first three "on topic" headlines were about oncology and research
+ * funding. It had been quietly widening every `requires` source since the
+ * filter was written.
+ *
+ * Boundaries are non-alphanumeric rather than \b so "u=u" survives: \b would
+ * not fire either side of an equals sign. Terms are escaped because "u=u" and
+ * any future one with punctuation are data, not patterns.
+ */
+function matchesAnyTerm(text: string, terms: readonly string[]): boolean {
+  const haystack = text.toLowerCase();
+  return terms.some((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`).test(haystack);
+  });
+}
+
 export function shouldPublishNews(
   source: NewsSource,
   item: { readonly title: string; readonly summary: string; readonly url: string },
@@ -251,8 +298,7 @@ export function shouldPublishNews(
   if ((source.excludePaths ?? []).some((prefix) => path.startsWith(prefix))) return false;
 
   if (!source.requires) return true;
-  const haystack = `${item.title} ${item.summary}`.toLowerCase();
-  return source.requires.some((term) => haystack.includes(term));
+  return matchesAnyTerm(`${item.title} ${item.summary}`, source.requires);
 }
 
 /** Every host the ingest may read from, derived rather than repeated. */
