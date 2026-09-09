@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NEWS_SOURCES, newsAllowedHosts, shouldPublishNews } from "./news";
+import { NEWS_SOURCES, newsAllowedHosts, shouldPublishNews, articleScope } from "./news";
 
 const source = NEWS_SOURCES.find((s) => s.key === "thebody")!;
 const cdc = NEWS_SOURCES.find((s) => s.key === "cdc-newsroom")!;
@@ -84,5 +84,48 @@ describe("what is not an article", () => {
   /** A malformed URL is not an article either, and must not throw. */
   it("refuses something that is not a URL", () => {
     expect(shouldPublishNews(source, { title: "x", summary: "", url: "not a url" })).toBe(false);
+  });
+});
+
+describe("an article reaches the community it is actually about", () => {
+  const item = (title: string, summary = "") => ({ title, summary });
+
+  it("sends an HIV-only piece to the HIV room alone", () => {
+    // The failure this exists for: three of the five sources are general
+    // sexual-health publishers scoped `all`, so every article they ran went
+    // into every room — an HIV-only piece reached somebody who has herpes, on a
+    // screen whose promise is that they are among people who share theirs.
+    expect(articleScope(item("New PrEP guidance for clinicians"))).toBe("hiv");
+    expect(articleScope(item("Undetectable equals untransmittable, ten years on"))).toBe("hiv");
+  });
+
+  it("sends an HSV-only piece to the HSV room alone", () => {
+    expect(articleScope(item("Managing herpes: the science and the feelings"))).toBe("hsv");
+    expect(articleScope(item("Valacyclovir and suppression"))).toBe("hsv");
+  });
+
+  it("sends a piece covering BOTH to both rooms", () => {
+    // Kevin's exception, and the reason this returns null rather than picking a
+    // winner: an article that refers to both is exactly the one to keep in both.
+    expect(articleScope(item("HIV and herpes co-infection: what the data says"))).toBeNull();
+  });
+
+  it("sends a general piece to both rooms rather than neither", () => {
+    // The other half of the safe default. A bacterial-vaginosis or general STI
+    // article names neither condition and belongs in both rooms — dropping it
+    // would make the filter quietly empty the feed.
+    expect(articleScope(item("Bacterial vaginosis and STIs often happen together"))).toBeNull();
+    expect(articleScope(item("CDC guidance on sexually transmitted ringworm"))).toBeNull();
+  });
+
+  it("reads the summary, not only the headline", () => {
+    // A headline is often coy about which condition it means.
+    expect(articleScope(item("New guidance", "The CDC has updated its HIV testing advice."))).toBe(
+      "hiv",
+    );
+  });
+
+  it("is case-insensitive", () => {
+    expect(articleScope(item("HERPES simplex in adults"))).toBe("hsv");
   });
 });

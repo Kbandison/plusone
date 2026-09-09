@@ -180,6 +180,7 @@ export {
   NEWS_SOURCES,
   shouldPublishNews,
   newsAllowedHosts,
+  articleScope,
   type NewsScope,
   type NewsSource,
 } from "./news";

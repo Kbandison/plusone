@@ -1840,6 +1840,47 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     machine note about `pnpm test --concurrency=1` being the only complete gate
     exists because a `profiles` column was added without it.
 
+31. **Four of the five news feeds are dead, and the job reported success
+    anyway.** Measured 2026-09-09 after Kevin said the Latest news tab had
+    stopped updating. It had.
+
+    Fetched live, every source in `NEWS_SOURCES`:
+
+    | source                                  | items | newest item  |
+    | --------------------------------------- | ----- | ------------ |
+    | CDC `tools.cdc.gov/.../132608.rss`      | 1840  | **Nov 2015** |
+    | ASHA `ashasexualhealth.org/feed`        | 10    | Aug 2026     |
+    | WHO `who.int/rss-feeds/news-english`    | 3     | Feb 2026     |
+    | hiv.gov `provider-visits-and-lab-tests` | 8     | **Jun 2023** |
+    | thebody.com `/feed`                     | 1     | Sep 2026     |
+
+    So the room has been fed by ASHA alone, which is exactly what the screenshot
+    showed — three articles, all "American Sexual Health Association". The CDC
+    and hiv.gov URLs are not newsrooms: one is a static media resource and the
+    other a page-specific feed, and both were presumably right when chosen.
+
+    **The job never said so, and that is now fixed.** A 404 was already
+    reported; a feed that returns 200 with items from 2015 parses cleanly,
+    deduplicates to nothing and reads as a healthy run. The response now carries
+    `stale` per source, measured on the WHOLE feed rather than the filtered set —
+    a live publisher with nothing on topic this quarter is a different fact from
+    a feed that has not moved in eleven years. It does not fail the run: a cron
+    that goes red on a slow news cycle gets ignored, and then the real outage is
+    invisible too.
+
+    **WHAT IS LEFT IS EDITORIAL AND IT IS KEVIN'S.** Replacements were hunted
+    and none of the obvious candidates work: POZ 403s, aidsmap 404s on every
+    documented path, CDC's newsroom feed ids are stale or empty, hiv.gov and
+    NIAID refuse. Many organisations have dropped RSS or block non-browser
+    agents. Choosing what this community reads is a product decision rather than
+    a lookup, so it is not being guessed at here.
+
+    Whatever is chosen has to clear the existing rules: the host goes in the
+    allowlist, `redirect: "error"` means a feed that redirects is refused
+    outright, and the scope is per source. **There is no `hsv` source at all**,
+    which is worth deciding about separately — the HSV room is currently fed
+    only by general publishers.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they

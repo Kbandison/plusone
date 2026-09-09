@@ -76,8 +76,17 @@ describe("two rooms, one per community", () => {
   });
 
   /** An article posted once would reach half the site. */
-  it("posts an 'all' article to both", () => {
-    expect(cron).toMatch(/source\.scope === "all" \|\| room\.community_scope === source\.scope/);
+  it("posts an 'all' article to both — unless the article names one condition", () => {
+    // The rule CHANGED rather than moved. It used to be per source: anything
+    // from a general publisher went to every room, which sent HIV-only pieces
+    // to people who have herpes. It is now per article, and "both" survives as
+    // the default for a piece naming neither condition or both.
+    //
+    // The behaviour itself is covered by news.test.ts in packages/config, which
+    // calls articleScope with real headlines. This only asserts the cron asks.
+    expect(cron).toMatch(/const only = articleScope\(item\);/);
+    expect(cron).toMatch(/only === null \|\| only === room\.community_scope/);
+    expect(cron).not.toMatch(/const targets = rooms\.filter/);
   });
 
   /** A unique index on the URL alone would store it for one and drop the other. */
@@ -228,5 +237,50 @@ describe("the share control is a sheet, not a dropdown", () => {
     // asserted is unchanged: setCanShare is reached through an effect and not
     // during render.
     expect(share).toMatch(/useEffect\(\(\) => \{[^}]*setCanShare/);
+  });
+});
+
+describe("the news job says when a source has gone quiet", () => {
+  const route = readFileSync(
+    fileURLToPath(new URL("../../api/cron/news/route.ts", import.meta.url)),
+    "utf8",
+  );
+
+  it("routes each article by its own subject, not the source's", () => {
+    // A source's scope says who its FEED is for; it cannot say who an ARTICLE
+    // is for. Three of five are general publishers scoped `all`.
+    expect(route).toMatch(/articleScope\(item\)/);
+    expect(route).toMatch(/only === null \|\| only === room\.community_scope/);
+  });
+
+  it("still lets a community-scoped source override the article", () => {
+    // A feed chosen for one community stays there whatever an article's wording
+    // suggests — otherwise a stray word could move thebody.com into the HSV room.
+    expect(route).toMatch(
+      /if \(source\.scope !== "all"\) return room\.community_scope === source\.scope;/,
+    );
+  });
+
+  it("reports staleness, not just reachability", () => {
+    // The failure that actually happened: four of five feeds returned 200 with
+    // items from 2015, 2018 and 2023 — parsed cleanly, deduplicated to nothing,
+    // reported as a healthy run for months.
+    expect(route).toMatch(/const stale: string\[\]/);
+    expect(route).toMatch(/STALE_AFTER_MS/);
+    expect(route).toMatch(/failures,\s*stale/);
+  });
+
+  it("measures freshness on the whole feed, not the filtered set", () => {
+    // A live source that published nothing on topic this quarter is not a dead
+    // feed, and conflating them makes the warning useless.
+    const block = route.slice(route.indexOf("const newest ="));
+    expect(block.slice(0, 400)).toMatch(/parsed/);
+    expect(route.indexOf("const parsed =")).toBeLessThan(route.indexOf("const newest ="));
+  });
+
+  it("does not fail the run on a quiet week", () => {
+    // A cron that goes red on a slow news cycle gets ignored, and then the real
+    // outage is invisible too.
+    expect(route).not.toMatch(/stale[\s\S]{0,80}status: 5/);
   });
 });

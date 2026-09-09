@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { NEWS_SOURCES, newsAllowedHosts, shouldPublishNews } from "@plusone/config";
+import { NEWS_SOURCES, articleScope, newsAllowedHosts, shouldPublishNews } from "@plusone/config";
 import { news } from "@plusone/logic";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
@@ -9,6 +9,15 @@ export const dynamic = "force-dynamic";
 
 /** Long enough for a slow feed, short enough that one cannot hold the job open. */
 const FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Past this, a source is reported as stale rather than merely quiet.
+ *
+ * Four months. Long enough that a slow publisher on a thin subject is not
+ * flagged every run, short enough that a feed frozen since 2015 cannot hide
+ * behind "nothing to report" for another quarter.
+ */
+const STALE_AFTER_MS = 120 * 24 * 60 * 60 * 1000;
 
 /**
  * Latest news, gathered from the allowlist.
@@ -43,6 +52,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no latest-news rooms" }, { status: 500 });
   }
   const failures: string[] = [];
+  /**
+   * Sources that fetched fine and had nothing recent to say.
+   *
+   * A feed that 404s is already reported. The failure this missed is quieter and
+   * is the one that actually happened: FOUR OF FIVE FEEDS returned 200 with
+   * items from 2015, 2018 and 2023 — parsed cleanly, deduplicated to nothing,
+   * and reported as a healthy run for months. The room simply stopped filling
+   * and the job kept saying it was fine.
+   *
+   * So freshness is reported, not just reachability. This does not fail the run:
+   * a quiet week is not an outage, and a cron that goes red on a slow news cycle
+   * gets ignored. It puts the fact in the response where somebody reading the
+   * log can see WHICH source died.
+   */
+  const stale: string[] = [];
   let added = 0;
   let seen = 0;
 
@@ -77,10 +101,25 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const items = news.parseFeed(xml).filter((item) => {
+    const parsed = news.parseFeed(xml);
+    const items = parsed.filter((item) => {
       seen += 1;
       return shouldPublishNews(source, item);
     });
+
+    // Read from the whole feed, not the filtered set: a source can be perfectly
+    // alive and simply have published nothing on topic this quarter, and that is
+    // a different fact from a feed that has not moved since 2015.
+    const newest = parsed
+      // Already a timestamp — feed.ts parses it. Date.parse on a number is a
+      // string coercion and gives NaN for every item, which would have reported
+      // nothing as stale ever.
+      .map((item) => item.publishedAt)
+      .filter((t): t is number => typeof t === "number" && Number.isFinite(t))
+      .reduce((a, b) => Math.max(a, b), 0);
+    if (newest > 0 && Date.now() - newest > STALE_AFTER_MS) {
+      stale.push(`${source.key}: newest ${new Date(newest).toISOString().slice(0, 10)}`);
+    }
 
     if (items.length === 0) continue;
 
@@ -91,13 +130,34 @@ export async function POST(request: Request) {
     // an article posted once would reach half the site. The two communities
     // then discuss it separately, which in a health community is the point
     // rather than the cost.
-    const targets = rooms.filter(
-      (room) => source.scope === "all" || room.community_scope === source.scope,
-    );
+    for (const room of rooms) {
+      /**
+       * Per ARTICLE, not per source — which is the whole change.
+       *
+       * A source's scope says who its FEED is for. Three of the five are
+       * general sexual-health publishers scoped `all`, and every one of their
+       * articles went into every room: so an HIV-only piece from the CDC
+       * reached somebody who has herpes, on a screen whose promise is that they
+       * are among people who share their diagnosis.
+       *
+       * `articleScope` returns null for "no restriction" — an article that
+       * mentions BOTH, or neither, goes everywhere. That is the safe default
+       * twice over: covering both is exactly what should be kept, and a general
+       * STI piece belongs in both rooms rather than in neither.
+       *
+       * A community-scoped SOURCE still ignores all of this. Its feed was
+       * chosen for one community and nothing in an article's wording should be
+       * able to move it.
+       */
+      const forRoom = items.filter((item) => {
+        if (source.scope !== "all") return room.community_scope === source.scope;
+        const only = articleScope(item);
+        return only === null || only === room.community_scope;
+      });
+      if (forRoom.length === 0) continue;
 
-    for (const room of targets) {
       const { error, count } = await supabase.from("room_messages").upsert(
-        items.map((item) => ({
+        forRoom.map((item) => ({
           room_id: room.id,
           // No author. An article is not something anybody here wrote, and a
           // system member sitting in profiles would be visible to every query
@@ -120,7 +180,7 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ sources: NEWS_SOURCES.length, seen, added, failures });
+  return NextResponse.json({ sources: NEWS_SOURCES.length, seen, added, failures, stale });
 }
 
 /**

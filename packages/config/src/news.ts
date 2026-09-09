@@ -147,6 +147,49 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
  * publisher trusted (the allowlist), is the article on topic (`requires`), and
  * is it an article at all (`excludePaths`, and the root check below).
  */
+/**
+ * Terms that make an article about ONE community rather than both.
+ *
+ * The scope on a SOURCE says who its feed is for. It cannot say who a given
+ * article is for, and three of the five sources are general sexual-health
+ * publishers whose articles land in every room — so an HIV-only piece from the
+ * CDC reached somebody who has herpes, which is the thing this app exists not
+ * to do.
+ *
+ * Deliberately short and deliberately specific. A long list of clever synonyms
+ * would misfile more than it filed: the cost of a wrong answer here is a member
+ * being shown an article about a condition they do not have, on a screen whose
+ * whole promise is that they are among people who share theirs.
+ *
+ * "prep" and "u=u" are HIV terms and belong here rather than in the shared list
+ * above, where they were only ever doing relevance filtering.
+ */
+const HIV_ONLY_TERMS = ["hiv", "aids", "antiretroviral", "prep", "u=u", "undetectable"] as const;
+const HSV_ONLY_TERMS = ["herpes", "hsv", "cold sore", "genital sores", "valacyclovir"] as const;
+
+/**
+ * Which communities an article from an `all` source belongs to.
+ *
+ * Mentions one and not the other → that one. Mentions BOTH, or neither → both,
+ * which is the safe default in two different ways: an article covering both is
+ * exactly what Kevin asked to keep, and a general STI piece belongs everywhere
+ * rather than nowhere.
+ *
+ * Returns null for "no restriction", so a caller can tell "goes everywhere"
+ * apart from "goes to this specific list" without a sentinel.
+ */
+export function articleScope(item: {
+  readonly title: string;
+  readonly summary: string;
+}): NewsScope | null {
+  const haystack = `${item.title} ${item.summary}`.toLowerCase();
+  const hiv = HIV_ONLY_TERMS.some((t) => haystack.includes(t));
+  const hsv = HSV_ONLY_TERMS.some((t) => haystack.includes(t));
+  if (hiv && !hsv) return "hiv";
+  if (hsv && !hiv) return "hsv";
+  return null;
+}
+
 export function shouldPublishNews(
   source: NewsSource,
   item: { readonly title: string; readonly summary: string; readonly url: string },
