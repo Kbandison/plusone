@@ -885,7 +885,16 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     It allows `https://vercel.com/kevin-bandisons-projects` — Vercel's default,
     and what an un-argumented call produces.
 
-15. **The Play purchase flow, which is on no list until now.** Server 12 records
+15. ~~**The Play purchase flow.**~~ — **PROVEN ON A REAL PURCHASE, Kevin
+    2026-09-09.** The button works, which is the last part of the Play payment
+    path nobody had watched — Apple's side was proven on real traffic on
+    2026-08-27 and Play's had only ever been proven as far as the webhook.
+
+    It was buildable all along and unexercisable: `getDetails` returned an empty
+    catalogue for two weeks (server 13), so there was nothing to sell. That
+    cleared on its own and the flow worked first time.
+
+    Originally: Server 12 records
     WHY three products and 10 records the TWA that would run them, but nothing
     said who builds the buying. It is web-side — a TWA runs `apps/web` in real
     Chrome — so it is this lane, not the shells one.

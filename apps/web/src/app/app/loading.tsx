@@ -1,5 +1,18 @@
 import { Card } from "@/app/ui";
 
+/*
+ * Tonight's skeleton, and no longer everybody's.
+ *
+ * This was the only loading file under /app, so it stood in for all five tabs —
+ * a title and three cards, whatever you had pressed. Browse, Inbox, Rooms and
+ * Profile have their own now, each shaped like what actually arrives, because a
+ * skeleton that matches nothing on the screen you asked for reads as a reload
+ * even when the navigation was soft.
+ *
+ * It still covers the segments without one of their own, which is the right
+ * default: a card list is what most of them are.
+ */
+
 /**
  * What the app shows while a screen is being built.
  *

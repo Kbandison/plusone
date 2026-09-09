@@ -15,6 +15,35 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp"],
 
   experimental: {
+    /**
+     * The client cache, which ships OFF.
+     *
+     * `staleTimes.dynamic` defaults to 0 — "not cached" — since Next 15, so
+     * every return to a tab refetched the whole segment from the server even if
+     * the member had been on it two seconds earlier. Every page under /app is
+     * `force-dynamic`, so that default applied to all of them, and it is most of
+     * why moving between tabs read as a reload rather than a navigation.
+     *
+     * 30 seconds is the value the reference itself uses as its example. It is
+     * short enough that nothing here goes visibly stale and long enough to cover
+     * the case this is for: looking at a profile, going back, opening another.
+     *
+     * SAFE HERE BECAUSE THE SURFACES THAT MOVE PUSH THEIR OWN UPDATES. Inbox,
+     * the chat, the room and the layout all mount LiveRefresh, which calls
+     * router.refresh() and invalidates this cache when the thing it watches
+     * changes. Every server action already calls revalidatePath. What is left
+     * caching for 30s is Browse, the rooms list and a profile — none of which
+     * change while somebody is looking away from them.
+     *
+     * It does NOT touch shared layouts, which the reference is explicit about:
+     * they were never refetched per navigation, only the segment that changes.
+     * So the four queries in app/layout.tsx were never the cost.
+     */
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+
     serverActions: {
       /**
        * Must clear MAX_UPLOAD_BYTES, or the app rejects nothing and the
