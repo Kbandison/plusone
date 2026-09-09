@@ -7,20 +7,6 @@ import { DRAFT_COPY, RETENTION } from "@plusone/config";
 import { getServerSupabase } from "@/lib/supabase";
 import { UnblockButton } from "@/app/app/safety/safety-controls";
 
-/**
- * Deferred, not resolved.
- *
- * `instant = false` marks this segment as ALLOWED TO BLOCK while Cache
- * Components is adopted one route at a time — the incremental flow the
- * migration guide describes. It does not force the route to be dynamic, so a
- * genuinely prerenderable one still ships a static shell.
- *
- * Removing this line is the unit of work: the route then has to resolve its own
- * validation, by caching data with `use cache` or wrapping the runtime parts in
- * <Suspense>.
- */
-export const instant = false;
-
 export const metadata: Metadata = { title: DRAFT_COPY.app.settingsSafety };
 
 /** One row of the caller's own block list. */

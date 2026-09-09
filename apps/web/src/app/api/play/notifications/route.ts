@@ -10,6 +10,8 @@ import {
   verifyPushCaller,
 } from "@/lib/play-notifications";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Play's Real-time Developer Notifications (server lane 4's other half).
  *

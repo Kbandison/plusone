@@ -15,14 +15,18 @@ const read = (p: string) => readFileSync(join(SRC, p), "utf8");
  * Source with its comments out — and it must not eat string literals.
  *
  * The block pattern was `/\*[\s\S]*?\*\/` anywhere, which treats the `/*` inside
- * a path glob like `"/app/*"` as a comment opener and swallows everything to the
- * next `*\/`. The association file is nothing but path globs, so adding one
- * docblock below that array silently truncated it — and every assertion about
- * which paths are claimed would have been reading an empty string.
+ * a path glob like `"/app/*"` as a comment opener and swallows everything up to
+ * the next `*\/`. The association file is nothing BUT path globs, so any
+ * docblock added below that array silently truncates it — and every assertion
+ * about which paths are claimed would then be reading an empty string.
  *
- * A real block comment in this codebase starts a line, so the opener is anchored
- * to line-start whitespace. The floor beside each use is what caught this;
- * without it the negative assertions would all have passed on "".
+ * Found during the Cache Components trial, which added such a docblock; the
+ * trial was reverted and this was not, because the bug is real either way and
+ * only waiting for the next comment written under that array.
+ *
+ * A real block comment here starts a line, so the opener is anchored to
+ * line-start whitespace. The FLOOR beside each use is the only reason anybody
+ * noticed: the negative assertions all passed happily on "".
  */
 const code = (p: string) =>
   read(p)

@@ -5,6 +5,8 @@ import { NOTIFY_TIMING } from "@plusone/config";
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notify } from "@/lib/notify";
 
+export const dynamic = "force-dynamic";
+
 /**
  * "Your premium is ending soon" (§8).
  *

@@ -4,6 +4,8 @@ import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { stripe } from "@/lib/stripe";
 import { sweepUnconfirmed } from "@/lib/waitlist";
 
+export const dynamic = "force-dynamic";
+
 /** storage-js defaults to 100 per page; naming it makes the short-page test honest. */
 const PAGE = 100;
 

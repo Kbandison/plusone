@@ -94,12 +94,7 @@ describe("assetlinks.json", () => {
    * changes and never otherwise.
    */
   it("is served static, as json", () => {
-    // Was `dynamic = "force-static"`, which cacheComponents refuses. Nothing
-    // replaces it: the handler fetches nothing, so Next prerenders it on its
-    // own — and what keeps that true is the absence of request-time APIs.
-    for (const api of ["cookies(", "headers(", "Date.now(", "new Date(", "Math.random("]) {
-      expect(route, `the route reads ${api}`).not.toContain(api);
-    }
+    expect(route).toMatch(/dynamic\s*=\s*"force-static"/);
     expect(route).toMatch(/"content-type":\s*"application\/json"/);
   });
 });

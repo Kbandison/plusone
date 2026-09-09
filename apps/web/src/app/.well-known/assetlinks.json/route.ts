@@ -21,6 +21,7 @@ import { NextResponse } from "next/server";
  * Chrome revalidates, for a file that changes when a signing key changes and
  * never otherwise.
  */
+export const dynamic = "force-static";
 
 /**
  * The same identifier as iOS, which is a decision rather than a coincidence:
@@ -74,21 +75,6 @@ const SHA256_CERT_FINGERPRINTS = [
   "FA:97:45:49:F5:D5:EB:BD:96:22:71:65:91:CF:94:AA:11:01:1C:17:9E:7D:05:0D:05:52:5A:CD:55:62:F9:4B",
 ];
 
-/**
- * Prerendered, which is what `force-static` used to say and now nobody has to.
- *
- * `cacheComponents` refuses the `dynamic` route segment config outright. The
- * replacement is not `use cache`: this handler fetches NOTHING — the payload is
- * constants — so there is no data access to cache and Next extracts a static
- * response on its own. `use cache` was tried first and fails at build, because a
- * cached value must be serializable and a Response is a class instance.
- *
- * So the property is preserved by the route staying free of request-time APIs
- * rather than by a declaration. That is weaker to read and stronger to hold, and
- * it is what the test now asserts: no cookies, no headers, no clock. The device
- * revalidates on the cache-control header below, which is a separate thing and
- * unchanged.
- */
 export function GET() {
   return NextResponse.json(
     [

@@ -6,6 +6,8 @@ import { parseServerEnv } from "@plusone/config";
 import { serviceClient } from "@/lib/cron";
 import { planIdForPrice, stripe } from "@/lib/stripe";
 
+export const dynamic = "force-dynamic";
+
 /**
  * The Stripe webhook (§2 Decision #22).
  *

@@ -19,30 +19,14 @@ import { ServiceWorker } from "./service-worker";
 import { Timezone } from "./timezone";
 
 /**
- * Deferred, not resolved.
- *
- * `instant = false` marks this segment as ALLOWED TO BLOCK while Cache
- * Components is adopted one route at a time — the incremental flow the
- * migration guide describes. It does not force the route to be dynamic, so a
- * genuinely prerenderable one still ships a static shell.
- *
- * Removing this line is the unit of work: the route then has to resolve its own
- * validation, by caching data with `use cache` or wrapping the runtime parts in
- * <Suspense>.
- */
-export const instant = false;
-
-/**
  * The member app.
  *
- * Never indexed — every screen is a function of who is asking, which is now the
- * default rather than a `force-dynamic` this file declared: `cacheComponents`
- * fetches dynamically unless a component opts in with `use cache`, and nothing
- * under here does.
+ * Never cached and never indexed — every screen is a function of who is asking.
  * Onboarding is enforced here rather than per page: a member who has not
  * finished is sent back to the step they stopped at, so there is no half-signed-up
  * state that can reach a surface.
  */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: { default: "Plus One", template: "%s · Plus One" },

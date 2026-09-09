@@ -1,9 +1,9 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { AASA_HEADERS, applinks } from "@/app/.well-known/apple-app-site-association/route";
+import { GET, dynamic } from "@/app/.well-known/apple-app-site-association/route";
 
 /**
  * Universal Links fail silently, exactly like assetlinks.json.
@@ -22,14 +22,7 @@ interface Applinks {
   };
 }
 
-/**
- * Read from the exported payload, not by calling the route.
- *
- * GET carries `use cache` now, and `cacheLife()` throws unless the
- * `cacheComponents` config is active — which a vitest run is not. So the shape
- * assertions read `applinks()` directly, which is what they were ever about.
- */
-const body = (): Applinks => applinks() as Applinks;
+const body = async (): Promise<Applinks> => (await GET().json()) as Applinks;
 
 describe("apple-app-site-association", () => {
   it("is served from a path with no extension", () => {
@@ -41,28 +34,15 @@ describe("apple-app-site-association", () => {
   });
 
   it("declares application/json, which iOS will not guess at", async () => {
-    expect(AASA_HEADERS["content-type"]).toMatch(/application\/json/);
+    expect(GET().headers.get("content-type")).toMatch(/application\/json/);
   });
 
-  it("is cached for ever, so iOS revalidating does not wake a server", () => {
-    // Was `dynamic = "force-static"`, which cacheComponents refuses outright.
-    // The property is the same and the mechanism is not, so this reads the
-    // source rather than an export that no longer exists.
-    const route = readFileSync(
-      join(import.meta.dirname, "../app/.well-known/apple-app-site-association/route.ts"),
-      "utf8",
-    );
-    // It stays prerenderable by touching nothing request-time, not by a
-    // declaration — cacheComponents refuses `dynamic` and `use cache` cannot
-    // wrap a handler returning a Response. So this asserts the property that
-    // actually keeps it static.
-    for (const api of ["cookies(", "headers(", "Date.now(", "new Date(", "Math.random("]) {
-      expect(route, `the route reads ${api}`).not.toContain(api);
-    }
+  it("is static, so iOS revalidating does not wake a server", () => {
+    expect(dynamic).toBe("force-static");
   });
 
   it("names the app as team id then bundle id", async () => {
-    const [detail] = body().applinks.details;
+    const [detail] = (await body()).applinks.details;
     expect(detail?.appIDs).toEqual(["JUR426AHDD.app.loveplusone"]);
     // Android uses the same identifier deliberately — one name across both
     // stores, so a bundle id in a crash report needs no disambiguation.
@@ -70,7 +50,7 @@ describe("apple-app-site-association", () => {
   });
 
   it("uses appIDs and components, not the iOS 12 pair", async () => {
-    const [detail] = body().applinks.details;
+    const [detail] = (await body()).applinks.details;
     // `appID` and `paths` still parse, and the system prefers `components`
     // where both exist — so the older pair beside them is dead weight that
     // reads as though it were authoritative.
@@ -81,7 +61,7 @@ describe("apple-app-site-association", () => {
   });
 
   it("claims the member area, invites, and the sign-in return", async () => {
-    const patterns = body().applinks.details[0]!.components.map((c) => c["/"]);
+    const patterns = (await body()).applinks.details[0]!.components.map((c) => c["/"]);
     expect(patterns).toContain("/app/*");
     expect(patterns).toContain("/i/*");
     // The one that is not obvious. A session that lands in Safari is a session
@@ -90,7 +70,7 @@ describe("apple-app-site-association", () => {
   });
 
   it("leaves the marketing pages to the browser", async () => {
-    const patterns = body().applinks.details[0]!.components.map((c) => c["/"]);
+    const patterns = (await body()).applinks.details[0]!.components.map((c) => c["/"]);
     // A shared /faq link is usually shared with somebody who does NOT have the
     // app, and a universal link into an app they do not have does nothing —
     // while the same page in a browser is the entire point of it being public.

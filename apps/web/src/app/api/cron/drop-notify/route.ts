@@ -6,6 +6,8 @@ import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notifier } from "@/lib/notifier";
 import { notify as notifyMember } from "@/lib/notify";
 
+export const dynamic = "force-dynamic";
+
 /**
  * "Tonight's Drop is ready" (§8).
  *

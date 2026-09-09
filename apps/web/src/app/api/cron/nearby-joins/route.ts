@@ -5,6 +5,8 @@ import { NEARBY_JOIN_MIN_COUNT, NOTIFY_TIMING } from "@plusone/config";
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notify } from "@/lib/notify";
 
+export const dynamic = "force-dynamic";
+
 /**
  * "New members joined near you" (§8).
  *

@@ -6,6 +6,8 @@ import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notifier } from "@/lib/notifier";
 import { notify } from "@/lib/notify";
 
+export const dynamic = "force-dynamic";
+
 /**
  * The 24-hour fuse warning (§8, §6.2).
  *

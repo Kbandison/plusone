@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { verifyAppStoreNotification, statusFromNotification } from "@/lib/app-store-notifications";
 import { serviceClient } from "@/lib/cron";
 
+export const dynamic = "force-dynamic";
+
 /**
  * App Store Server Notifications V2 (server lane 4).
  *
