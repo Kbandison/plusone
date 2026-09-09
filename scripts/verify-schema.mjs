@@ -122,7 +122,17 @@ if (!DB_URL) {
 //                                          and no table: room_messages.deleted_at
 //                                          has existed since Milestone 1 and had
 //                                          simply never been written to.
-const EXPECT = { tables: 36, views: 5, functions: 129, enums: 31, rooms: 7, config: 23 };
+// functions 129 -> 131                     20260909000100 — the news editor:
+//                                          admin_post_article and
+//                                          admin_news_rooms. Two functions and
+//                                          no table, because a hand-posted
+//                                          article is a room_messages row like
+//                                          any other — it writes the same
+//                                          columns the ingest writes.
+//
+//                                          Read off the live database after
+//                                          applying, not added up.
+const EXPECT = { tables: 36, views: 5, functions: 131, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
