@@ -1868,12 +1868,31 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     that goes red on a slow news cycle gets ignored, and then the real outage is
     invisible too.
 
-    **WHAT IS LEFT IS EDITORIAL AND IT IS KEVIN'S.** Replacements were hunted
-    and none of the obvious candidates work: POZ 403s, aidsmap 404s on every
-    documented path, CDC's newsroom feed ids are stale or empty, hiv.gov and
-    NIAID refuse. Many organisations have dropped RSS or block non-browser
-    agents. Choosing what this community reads is a product decision rather than
-    a lookup, so it is not being guessed at here.
+    **RESOLVED the same day.** The two dead sources are retired and three live
+    ones added — ScienceDaily's `std`, `hiv_and_aids` and `herpes` topic feeds,
+    each 60 items with the newest the same day, all measured rather than
+    assumed.
+
+    They come in as `scope: "all"` with a relevance filter, NOT on their own
+    tags. ScienceDaily's herpes feed leads with a tuberculosis vaccine and its
+    HIV one with measles — science headlines brushed against a topic rather than
+    condition reporting — so trusting `herpes.xml` to mean HSV would put an HIV
+    article in the HSV room on ScienceDaily's say-so. `requires` discards what is
+    off subject and `articleScope` decides who each survivor is for.
+
+    Three rather than one or four, from measured overlap of the on-topic items:
+    std alone 31, adding HIV reaches 47, adding herpes reaches 65, and a fourth
+    added six.
+
+    What did NOT work, so nobody hunts them again: POZ 403s, aidsmap 404s on
+    every documented path, UNAIDS/NIAID/Medical News Today/ContagionLive all
+    refuse a non-browser agent, every CDC newsroom id tried was stale (2018,
+    2020), and hiv.gov advertises no working news feed.
+
+    **STILL WORTH A DECISION: there is no source chosen FOR the HSV community.**
+    thebody.com is scoped `hiv`; the HSV room is fed only by general publishers
+    that happen to mention herpes. That is a gap in editorial voice rather than
+    volume, and it is Kevin's to fill.
 
     Whatever is chosen has to clear the existing rules: the host goes in the
     allowlist, `redirect: "error"` means a feed that redirects is refused

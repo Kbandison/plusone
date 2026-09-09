@@ -88,16 +88,26 @@ const SEXUAL_HEALTH_TERMS = [
   "undetectable",
 ] as const;
 
+/**
+ * TWO SOURCES WERE REMOVED HERE ON 2026-09-09, AND NOT FOR BEING QUIET.
+ *
+ * Both were fetched live and both answered 200 with content nobody had touched
+ * in years — so they parsed cleanly, deduplicated to nothing, and reported a
+ * healthy run every six hours while the room sat still:
+ *
+ *   cdc-newsroom  tools.cdc.gov/.../132608.rss   newest item Nov 2015
+ *   hiv-gov       hiv.gov/provider-visits...xml  newest item Jun 2023
+ *
+ * Neither URL is a newsroom. One is a static media resource and the other a
+ * page-specific topic feed, and both were presumably right when chosen. Do not
+ * put them back without fetching them first: every CDC newsroom id tried as a
+ * replacement was also stale (2018, 2020), and hiv.gov advertises no working
+ * news feed at all.
+ *
+ * The cron reports `stale` per source now, so the next one to freeze says so
+ * rather than looking like a slow news week.
+ */
 export const NEWS_SOURCES: readonly NewsSource[] = [
-  {
-    key: "cdc-newsroom",
-    icon: "https://www.cdc.gov/favicon.ico",
-    name: "CDC Newsroom",
-    feedUrl: "https://tools.cdc.gov/api/v2/resources/media/132608.rss",
-    scope: "all",
-    // A general newsroom: most of what it publishes is not about this.
-    requires: SEXUAL_HEALTH_TERMS,
-  },
   {
     key: "asha",
     icon: "https://www.ashasexualhealth.org/wp-content/uploads/2020/02/site_icon.jpg",
@@ -115,19 +125,6 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
     requires: SEXUAL_HEALTH_TERMS,
   },
   {
-    key: "hiv-gov",
-    name: "HIV.gov",
-    // The only feed hiv.gov advertises anywhere on the site, and it works.
-    //
-    // It is a TOPIC feed rather than a news feed — care and lab tests, written
-    // once and kept current — so it fills Latest with guidance as well as
-    // headlines. That is a fair thing for a member to find there and worth
-    // knowing it is what this is.
-    feedUrl: "https://www.hiv.gov/provider-visits-and-lab-tests.xml",
-    icon: "https://www.hiv.gov/favicon.ico",
-    scope: "hiv",
-  },
-  {
     key: "thebody",
     icon: "https://www.thebody.com/favicon-512.png",
     name: "TheBody",
@@ -137,6 +134,54 @@ export const NEWS_SOURCES: readonly NewsSource[] = [
     scope: "hiv",
     // Its feed lists sections and contributors alongside articles.
     excludePaths: ["/about", "/author/", "/news-scan", "/contact", "/privacy", "/terms"],
+  },
+  /**
+   * ScienceDaily's topic feeds — three, and `scope: "all"` on purpose.
+   *
+   * Each is live and current: 60 items apiece, newest the same day, measured
+   * rather than assumed. They are the only maintained on-subject feeds found;
+   * POZ, aidsmap, UNAIDS, NIAID, Medical News Today and ContagionLive all
+   * refuse a non-browser agent or 404 on every documented path.
+   *
+   * ── why "all" rather than the topic's own scope ─────────────────────────
+   *
+   * Their tagging is LOOSE. The herpes feed leads with a tuberculosis vaccine
+   * and the HIV one with measles — science headlines brushed against a topic,
+   * not condition reporting. Trusting `herpes.xml` to mean HSV would put an HIV
+   * article in the HSV room on ScienceDaily's say-so, which is the exact failure
+   * per-article routing exists to stop. So they arrive general, `requires`
+   * discards what is off subject, and `articleScope` decides who each surviving
+   * article is for.
+   *
+   * ── why three, not one or four ──────────────────────────────────────────
+   *
+   * Measured overlap of the on-topic items: std alone 31, adding HIV reaches 47,
+   * adding herpes reaches 65. A fourth (sexual_health) added six. Duplicates
+   * across them cost nothing — the upsert conflicts on (room_id, article_url).
+   */
+  {
+    key: "sciencedaily-std",
+    name: "ScienceDaily",
+    icon: "https://www.sciencedaily.com/favicon.ico",
+    feedUrl: "https://www.sciencedaily.com/rss/health_medicine/std.xml",
+    scope: "all",
+    requires: SEXUAL_HEALTH_TERMS,
+  },
+  {
+    key: "sciencedaily-hiv",
+    name: "ScienceDaily",
+    icon: "https://www.sciencedaily.com/favicon.ico",
+    feedUrl: "https://www.sciencedaily.com/rss/health_medicine/hiv_and_aids.xml",
+    scope: "all",
+    requires: SEXUAL_HEALTH_TERMS,
+  },
+  {
+    key: "sciencedaily-herpes",
+    name: "ScienceDaily",
+    icon: "https://www.sciencedaily.com/favicon.ico",
+    feedUrl: "https://www.sciencedaily.com/rss/health_medicine/herpes.xml",
+    scope: "all",
+    requires: SEXUAL_HEALTH_TERMS,
   },
 ] as const;
 

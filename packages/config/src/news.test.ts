@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { NEWS_SOURCES, newsAllowedHosts, shouldPublishNews, articleScope } from "./news";
 
 const source = NEWS_SOURCES.find((s) => s.key === "thebody")!;
-const cdc = NEWS_SOURCES.find((s) => s.key === "cdc-newsroom")!;
+/**
+ * A general-interest source, for the topic filter.
+ *
+ * Was cdc-newsroom, retired on 2026-09-09 with its feed eleven years stale.
+ * ScienceDaily is the same shape and the reason the filter matters more now:
+ * its topic feeds lead with tuberculosis vaccines and measles.
+ */
+const general = NEWS_SOURCES.find((s) => s.key === "sciencedaily-std")!;
 
 describe("the allowlist", () => {
   /** An allowlist of dead URLs looks exactly like a working one. */
@@ -27,19 +34,19 @@ describe("the allowlist", () => {
    * figures.
    */
   it("filters a general-interest source by topic", () => {
-    expect(cdc.requires).toBeDefined();
+    expect(general.requires).toBeDefined();
     expect(
-      shouldPublishNews(cdc, {
-        title: "CDC Statement on Newly Released Kindergarten Vaccination Data",
+      shouldPublishNews(general, {
+        title: "Johns Hopkins scientists develop nose spray DNA vaccine for tuberculosis",
         summary: "",
-        url: "https://tools.cdc.gov/x/1",
+        url: "https://www.sciencedaily.com/releases/x/1.htm",
       }),
     ).toBe(false);
     expect(
-      shouldPublishNews(cdc, {
+      shouldPublishNews(general, {
         title: "New STI treatment guidelines",
         summary: "",
-        url: "https://tools.cdc.gov/x/2",
+        url: "https://tools.general.gov/x/2",
       }),
     ).toBe(true);
   });
@@ -127,5 +134,47 @@ describe("an article reaches the community it is actually about", () => {
 
   it("is case-insensitive", () => {
     expect(articleScope(item("HERPES simplex in adults"))).toBe("hsv");
+  });
+});
+
+describe("every source is a live feed on an allowed host", () => {
+  it("names every feed over https", () => {
+    // The assertion here WAS "every source's host is allowlisted", which cannot
+    // fail: newsAllowedHosts() is derived from NEWS_SOURCES by mapping their
+    // hosts, so it is true by construction. A sabotage that added a source on
+    // example.com passed happily, which is how it was found.
+    //
+    // This is a property the list can actually violate. The cron refuses
+    // redirects, so an http feed does not silently upgrade — it just fails.
+    for (const s of NEWS_SOURCES) {
+      expect(new URL(s.feedUrl).protocol, `${s.key} is not https`).toBe("https:");
+    }
+  });
+
+  it("keeps no source that was retired for being stale", () => {
+    // Both answered 200 with content years old, which is why they were removed
+    // rather than left to look like a quiet week. Re-adding either without
+    // fetching it first is the mistake this guards.
+    const urls = NEWS_SOURCES.map((s) => s.feedUrl).join(" ");
+    expect(urls).not.toContain("132608.rss");
+    expect(urls).not.toContain("provider-visits-and-lab-tests");
+  });
+
+  it("gives a loosely-tagged topic feed `all` and a relevance filter", () => {
+    // ScienceDaily's herpes feed leads with tuberculosis. Trusting its tag
+    // would put an HIV article in the HSV room on its say-so — so these arrive
+    // general and articleScope decides, which is the whole point of that
+    // function existing.
+    for (const s of NEWS_SOURCES.filter((x) => x.key.startsWith("sciencedaily"))) {
+      expect(s.scope, `${s.key} trusts its own tag`).toBe("all");
+      expect(s.requires, `${s.key} has no relevance filter`).toBeDefined();
+    }
+  });
+
+  it("still has a source scoped to each community", () => {
+    // The floor under the change above: making everything `all` would be one
+    // way to pass the previous assertion and would leave no feed chosen FOR a
+    // community.
+    expect(NEWS_SOURCES.some((s) => s.scope === "hiv")).toBe(true);
   });
 });
