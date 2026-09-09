@@ -385,3 +385,47 @@ async function tellWhoeverWasTagged({
     subjectId: messageId,
   });
 }
+
+export interface DeletePostState {
+  error: string | null;
+}
+
+/**
+ * Withdrawing your own post.
+ *
+ * Not the gate. `delete_own_room_message()` is SECURITY DEFINER and checks the
+ * author itself, because the flag it sets is the one moderation uses and a
+ * member has no update grant that could reach it. Deleting the checks from this
+ * file would change only the error copy.
+ *
+ * It sets `deleted_at` rather than removing the row —
+ * `reports.reported_room_message_id` is `on delete set null`, so a real delete
+ * strips a report of its subject. RLS is what makes the post invisible; the
+ * body stays where a moderator can still read it.
+ */
+export async function deleteOwnPost(
+  _previous: DeletePostState,
+  formData: FormData,
+): Promise<DeletePostState> {
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+
+  const postId = formData.get("postId");
+  const roomId = formData.get("roomId");
+  if (typeof postId !== "string" || typeof roomId !== "string") {
+    return { error: DRAFT_COPY.app.postDeleteFailed };
+  }
+
+  const { error } = await supabase.rpc("delete_own_room_message", { p_id: postId });
+  if (error) {
+    return {
+      error:
+        error.code === "42501" ? DRAFT_COPY.app.postDeleteRefused : DRAFT_COPY.app.postDeleteFailed,
+    };
+  }
+
+  revalidatePath(`/app/rooms/${roomId}`);
+  revalidatePath("/app/rooms");
+  return { error: null };
+}

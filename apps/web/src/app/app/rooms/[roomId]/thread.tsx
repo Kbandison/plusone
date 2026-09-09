@@ -74,6 +74,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
           under every comment. */}
       <div className="-mx-6 border-t border-line px-6 pt-5 pb-4">
         <PostRow
+          roomId={roomId}
           post={root}
           photo={photos.get(root.author_id ?? "")}
           zone={zone}
@@ -106,6 +107,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
                 puts the name in the box, because the database refuses a third
                 level and the mention is what stands in for it. */}
             <PostRow
+              roomId={roomId}
               post={comment}
               photo={photos.get(comment.author_id ?? "")}
               zone={zone}
@@ -120,6 +122,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
               {repliesTo(comment.id).map((reply) => (
                 <li key={reply.id} className="mt-2 pl-4">
                   <PostRow
+                    roomId={roomId}
                     post={reply}
                     photo={photos.get(reply.author_id ?? "")}
                     zone={zone}

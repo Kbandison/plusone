@@ -155,7 +155,9 @@ export default async function RoomPage({
       {pinned?.title ? (
         <aside className="mt-6 rounded-xl border border-line-2 bg-surface-2 p-5">
           <h2 className="text-[0.851rem]">{pinned.title}</h2>
-          {pinned.body ? <p className="mt-2 text-[11.7px] text-ink-2">{pinned.body}</p> : null}
+          {pinned.body ? (
+            <p className="mt-2 text-[11.7px] break-words text-ink-2">{pinned.body}</p>
+          ) : null}
 
           {pinned.url ? (
             <a
@@ -176,9 +178,18 @@ export default async function RoomPage({
                * edit.
                */
               rel="noopener noreferrer"
-              className="ease-brand mt-4 inline-flex min-h-tap items-center text-[11.7px] text-accent underline decoration-line-control underline-offset-4 transition-colors duration-300 hover:decoration-accent"
+              /* max-w-full and a breakable child, because urlLabel is optional
+                 and the fallback is the RAW URL.
+                 
+                 An inline-flex sizes to its content and a URL has no spaces in
+                 it, so a pinned card with no label rendered a single unbreakable
+                 run wider than the phone — which does not scroll the card, it
+                 scrolls the DOCUMENT. Header, wordmark and all shift left, which
+                 is what Kevin photographed. It comes and goes because it depends
+                 on which room's pinned card you are looking at. */
+              className="ease-brand mt-4 inline-flex min-h-tap max-w-full items-center text-[11.7px] text-accent underline decoration-line-control underline-offset-4 transition-colors duration-300 hover:decoration-accent"
             >
-              {pinned.urlLabel ?? pinned.url}
+              <span className="break-all">{pinned.urlLabel ?? pinned.url}</span>
             </a>
           ) : null}
         </aside>
@@ -230,12 +241,17 @@ export default async function RoomPage({
         {posts.map((post) => (
           <li
             key={post.id}
-            className="ease-brand relative border-b border-line px-6 py-4 transition-colors duration-300 hover:bg-surface"
+            /* py-3, from py-4. The row's own padding is the whole of the gap
+                between one post and the next — there is no margin between
+                them, just this doubled at the border — so 16px each side read
+                as 32px of quiet between two sentences. */
+            className="ease-brand relative border-b border-line px-6 py-3 transition-colors duration-300 hover:bg-surface"
           >
             {/* The whole row opens the thread, and the comment count still
                 does too — one is where a member reaches for it and the other
                 is what they aim at when they mean the comments. */}
             <PostRow
+              roomId={roomId}
               post={post}
               photo={post.author_id ? authorPhotos.get(post.author_id) : undefined}
               zone={zone}

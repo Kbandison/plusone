@@ -10,6 +10,7 @@ import { OverflowMenu } from "../../overflow-menu";
 import { CommentIcon, EyeIcon, LikeButton } from "./like-button";
 import { PostImage } from "./post-image";
 import { ReplyButton } from "./reply-button";
+import { DeletePost } from "./delete-post";
 import { ShareMenu, type ShareRoom } from "./share-menu";
 
 const C = DRAFT_COPY.app;
@@ -64,8 +65,11 @@ export function PostRow({
   href,
   shareUrl,
   shareRooms,
+  roomId,
 }: {
   post: Post;
+  /** For the delete action's revalidate. Only ever your own post needs it. */
+  roomId: string;
   photo: MemberPhoto | undefined;
   zone: string;
   now: number;
@@ -304,7 +308,19 @@ export function PostRow({
             {/* An article has nobody to report and nobody to block — the block
               control resolves an author from the message and there is none, so
               the menu was a control that could only fail. */}
-            {!post.is_mine && !post.article_url ? (
+            {/* Two different menus, because there is nothing the two audiences
+              share. You cannot report or block yourself, and nobody else may
+              withdraw your words — so this is not one menu with items hidden,
+              it is a menu for your own post and a menu for somebody else's. */}
+            {post.is_mine ? (
+              <span className="relative z-20">
+                <OverflowMenu label={C.postMenuLabel} compact>
+                  <div className="py-3">
+                    <DeletePost postId={post.id} roomId={roomId} />
+                  </div>
+                </OverflowMenu>
+              </span>
+            ) : !post.article_url ? (
               <span className="relative z-20">
                 <OverflowMenu label={C.postMenuLabel} compact>
                   <div className="py-3">
@@ -347,7 +363,13 @@ export function PostRow({
                 ? "line-clamp-3 text-[12.4px] leading-[1.55] text-ink-2"
                 : isComment
                   ? "text-[12.4px] leading-[1.5]"
-                  : "text-[17px] leading-[1.55]"
+                  : /* 15px, from 17. The only size touched, and the one Kevin
+                       allowed: at 17 a post was larger than anything else on
+                       the screen including the room's own heading, which made
+                       three short posts fill a phone. Still the largest thing
+                       in the row, which is right — it is what somebody came to
+                       read. */
+                    "text-[15px] leading-[1.55]"
             }`}
           >
             {/* The people being spoken to, told apart from what is said.

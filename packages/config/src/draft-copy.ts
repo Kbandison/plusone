@@ -1062,6 +1062,21 @@ export const DRAFT_COPY = {
     unsendTombstoneTheirs: "This was removed",
     unsendRefused: "That message cannot be unsent.",
     unsendFailed: "That did not work. Try again.",
+    postDeleteLabel: "Delete",
+    postDeleteConfirm: "Delete it",
+    postDeleteCancel: "Keep it",
+    /**
+     * Says what goes with it, because replies go too.
+     *
+     * room_feed nests replies under their parent, so hiding the parent takes
+     * them out of view — and those are other people's words. Deleting is still
+     * allowed, because this app exists so somebody can control their own
+     * disclosure and a stranger's reply must not put them in charge of it. What
+     * is not allowed is finding that out afterwards.
+     */
+    postDeleteWarning: "Replies to it go too.",
+    postDeleteRefused: "That post cannot be deleted.",
+    postDeleteFailed: "That did not work. Try again.",
     chatEmptyHeading: "Say the first thing",
     chatEmptyBody:
       "Nobody has written yet. There is no clever opener needed here — the hard part is already behind both of you.",

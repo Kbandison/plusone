@@ -182,7 +182,10 @@ const menu = read("../overflow-menu.tsx");
 describe("the room reads as a feed", () => {
   it("rules the rows off instead of boxing each one", () => {
     expect(room).toMatch(/<ul className="-mx-6 mt-6 border-t border-line">/);
-    expect(room).toMatch(/border-b border-line px-6 py-4/);
+    // Any vertical padding. The rule is that a row is RULED OFF rather than
+    // boxed — the exact value is a design dial Kevin turns, and pinning it made
+    // this fail on a spacing change that broke nothing it cares about.
+    expect(room).toMatch(/border-b border-line px-6 py-\d/);
     const feed = room.slice(room.indexOf('<ul className="-mx-6'));
     expect(feed, "a row must not be a card").not.toMatch(/rounded-lg border border-line px/);
   });

@@ -144,6 +144,11 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // an id is real. Unreachable through the UI: the control is rendered only on
   // your own messages, so either one means a forged request.
   "that message is not yours to unsend",
+  // The same, for a room post. The Delete control renders only on your own
+  // posts, so either arm — not yours, or no such id — means a forged request.
+  // Both raise the same sentence deliberately, so this cannot be used to
+  // discover whether a post exists in a room the caller cannot see.
+  "that post is not yours to delete",
   "not permitted",
   "no such room",
   "a pinned card is an object",
