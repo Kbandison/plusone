@@ -35,7 +35,10 @@ describe("the activity stat counts people, not cards", () => {
    * area — a count that drops when you pick a filter is describing the filter.
    */
   it("describes the area rather than the current search", () => {
-    const stat = page.slice(page.indexOf("const { count: activeNearby }"));
+    // Anchored on the named builder, not on the await that used to wrap it.
+    // Parallelising the page moved the destructure and the old anchor vanished
+    // — the RULE did not change, so the assertion should not have needed to.
+    const stat = page.slice(page.indexOf("const peopleNearbyQuery ="));
     const call = stat.slice(0, stat.indexOf(";"));
     expect(call).toMatch(/lte\("distance_mi", distanceMi\)/);
     // Mattered when there were three filters and matters more now there are
@@ -293,5 +296,49 @@ describe("a card carries something they said", () => {
     expect(page).toMatch(/line-clamp-3/);
     expect(page).toMatch(/line-clamp-1/);
     expect(page).not.toMatch(/\.slice\(0, \d+\)\s*\+\s*"…"/);
+  });
+});
+
+describe("the page does not wait on itself", () => {
+  const noComments = (src: string) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/[^\n]*$/gm, "");
+  const code = noComments(page);
+
+  /**
+   * A round trip is an AWAIT, not a builder.
+   *
+   * The first version of this counted every `supabase.from(...)` outside a
+   * Promise.all and reported three — because `const countQuery = supabase
+   * .from(...)` and the people-nearby builder are declared as consts and only
+   * executed inside it. A PostgREST builder does nothing until awaited, so
+   * counting declarations measured style rather than latency.
+   */
+  const awaitedQueries = () =>
+    [...code.matchAll(/await\s+(?:supabase\s*\.\s*(?:from|rpc)\(|applyFilters)/g)].length;
+
+  it("runs its independent queries together", () => {
+    // Browse ran SEVEN round trips in a row to build one screen, and the middle
+    // four read none of each other's results — the grid, the member's connects,
+    // the people-nearby stat and the match count need only `filters`, `viewer`
+    // or `distanceMi`. Nothing is awaited on its own now; the two Promise.alls
+    // are the only places a query is executed.
+    expect(awaitedQueries()).toBe(0);
+  });
+
+  it("still awaits the two batches, so this is not passing on an empty page", () => {
+    // The floor. `awaitedQueries` returning 0 would also be true of a file with
+    // no queries at all, which is exactly the shape a refactor could leave.
+    // Three batches, each a round trip: the two independent RPCs, then the four
+    // that need only the filters, then photos and compatibility which need the
+    // ids. Three trips to build a screen that used to take seven.
+    expect((code.match(/await Promise\.all\(\[/g) ?? []).length).toBe(3);
+    expect(code).toMatch(/applyFilters\(query\)/);
+  });
+
+  it("keeps the dependent reads after the thing they depend on", () => {
+    // Not "parallelise everything" — photosFor and compatibilityFor take the
+    // ids, so hoisting them would fetch photos for a list that does not exist.
+    expect(code.indexOf("const ids =")).toBeLessThan(code.indexOf("photosFor(ids)"));
+    expect(code.indexOf("applyFilters(query)")).toBeLessThan(code.indexOf("photosFor(ids)"));
   });
 });

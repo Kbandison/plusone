@@ -88,11 +88,26 @@ export default async function BrowsePage({
   if (!auth.user) redirect("/sign-in");
   const viewer = auth.user.id;
 
-  const { data: me } = await supabase.rpc("my_profile").maybeSingle<{
-    mode: string | null;
-    search_radius_mi: number | null;
-    intention: string | null;
-  }>();
+  /**
+   * Together, because neither reads the other.
+   *
+   * They were two awaits in a row and the second does not use the first — so
+   * every visit to Browse spent a round trip waiting for nothing. `filters`
+   * below needs BOTH, which is what makes this the right place to join them
+   * rather than push either later.
+   *
+   * A support-only member now issues the premium call before being redirected,
+   * which is one wasted query on the rarest path in exchange for a round trip
+   * saved on every other. Said out loud because it looks like an oversight.
+   */
+  const [{ data: me }, { data: isPremium }] = await Promise.all([
+    supabase.rpc("my_profile").maybeSingle<{
+      mode: string | null;
+      search_radius_mi: number | null;
+      intention: string | null;
+    }>(),
+    supabase.rpc("i_am_premium"),
+  ]);
   if (me?.mode === "support_only") redirect("/app");
 
   // One parse, in one module, shared with the form that wrote the URL. The
@@ -111,7 +126,6 @@ export default async function BrowsePage({
   // silently handed the free tier with five locked filter groups. The premium
   // settings page carries a comment about this exact bug, having shipped it
   // once already.
-  const { data: isPremium } = await supabase.rpc("i_am_premium");
   const premium = isPremium === true;
 
   const filters = parseBrowseFilters(params, me?.search_radius_mi ?? null, premium);
@@ -196,8 +210,62 @@ export default async function BrowsePage({
     return next;
   };
 
-  const { data } = await applyFilters(query);
+  /**
+   * FOUR QUERIES IN ONE ROUND TRIP, where there were four round trips.
+   *
+   * The grid, the member's own connects, the "N people active" stat and the
+   * count that sits beside the filters were each awaited in turn — and not one
+   * of them reads another's result. Every one needs only `filters`, `viewer` or
+   * `distanceMi`, all of which are known by the line above. So the page spent
+   * four sequential trips to build a screen that could have taken one.
+   *
+   * `photos` and `compatibility` stay behind it because they genuinely depend on
+   * the ids the grid returns. That is the shape to keep: parallel by default,
+   * sequential only where a value is actually consumed.
+   *
+   * Extracted into a const rather than inlined for the reason the count query
+   * already carried — passing a builder straight into a generic sends
+   * TypeScript excessively deep through PostgREST's row generics.
+   */
+  const countQuery = supabase.from("matched_profiles").select("id", { count: "exact", head: true });
+
+  /**
+   * The "N people active" stat, and it is DELIBERATELY NOT filtered.
+   *
+   * A fact about the area, so nothing the member picked may narrow it — it says
+   * how alive this place is, not how many rows the current search returns. That
+   * is what `matching` beside the filters is for, and the two numbers have two
+   * jobs.
+   *
+   * Named rather than inlined into the Promise.all below so the rule stays
+   * testable: the guard reads this builder and fails if any filter name appears
+   * in it. Inlined, the only anchor was a `const` the parallelising broke.
+   *
+   * Named `peopleNearby` and not `activity` because that guard is a SUBSTRING
+   * check — it refused `activityQuery` on sight, which is the guard working
+   * rather than being fussy: a name is as good a place to smuggle a filter in
+   * as a clause.
+   */
+  const peopleNearbyQuery = supabase
+    .from("matched_profiles")
+    .select("id", { count: "exact", head: true })
+    .lte("distance_mi", distanceMi)
+    .gte("last_active_at", weekAgo);
+
+  const [{ data }, { data: myConnects }, { count: activeNearby }, { count: matchingCount }] =
+    await Promise.all([
+      applyFilters(query),
+      supabase
+        .from("connects")
+        .select("initiator_id, target_id, status")
+        .or(`initiator_id.eq.${viewer},target_id.eq.${viewer}`),
+      peopleNearbyQuery,
+      applyFilters<typeof countQuery>(countQuery),
+    ]);
+
   const rows = data ?? [];
+  const activeThisWeek = activeNearby ?? 0;
+  const matching = matchingCount ?? 0;
 
   const ids = rows.map((row) => row.id as string);
   const [photos, compatibility] = await Promise.all([
@@ -222,10 +290,6 @@ export default async function BrowsePage({
   //
   // One query for the whole page rather than one per row. RLS already limits
   // this to the viewer's own connects; the filter says which end they are.
-  const { data: myConnects } = await supabase
-    .from("connects")
-    .select("initiator_id, target_id, status")
-    .or(`initiator_id.eq.${viewer},target_id.eq.${viewer}`);
 
   const history = new Map<string, ReturnType<typeof connectsLogic.historyWith>>();
   for (const row of myConnects ?? []) {
@@ -263,13 +327,6 @@ export default async function BrowsePage({
    * filter is describing the filter. That mattered when there were three
    * filters and matters more now there are eleven.
    */
-  const { count: activeNearby } = await supabase
-    .from("matched_profiles")
-    .select("id", { count: "exact", head: true })
-    .lte("distance_mi", distanceMi)
-    .gte("last_active_at", weekAgo);
-
-  const activeThisWeek = activeNearby ?? 0;
 
   /**
    * The OTHER number (server 19) — how many the current search actually
@@ -287,9 +344,6 @@ export default async function BrowsePage({
    */
   // Extracted rather than applied inline: passing the builder straight into a
   // generic sends TypeScript excessively deep through PostgREST's row generics.
-  const countQuery = supabase.from("matched_profiles").select("id", { count: "exact", head: true });
-  const { count: matchingCount } = await applyFilters<typeof countQuery>(countQuery);
-  const matching = matchingCount ?? 0;
 
   const advanced = advancedFilterCount(filters);
   const filtered = isFiltered(filters);
