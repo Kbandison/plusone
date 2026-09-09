@@ -1844,6 +1844,34 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     anyway.** Measured 2026-09-09 after Kevin said the Latest news tab had
     stopped updating. It had.
 
+    **CORRECTED LATER THE SAME DAY, AND THE FEEDS WERE NOT WHY.** Everything
+    below is true and none of it was the outage. The room stopped on
+    **2026-08-20**, which is the day `20260820000300` created a PARTIAL unique
+    index — and from that day every article insert failed outright:
+
+    ```
+    on conflict (room_id, article_url) do nothing                    -> ERROR
+    on conflict (room_id, article_url)
+      where article_url is not null do nothing                       -> OK
+    ```
+
+    Postgres will only use a partial index as a conflict arbiter if the
+    statement repeats its predicate. PostgREST's `.upsert()` emits the first
+    form and **cannot express a predicate at all**, so the cron could not write
+    an article whatever the feeds returned. ASHA was alive the whole time and
+    has published several since that are absent from the room.
+
+    Fixed in `20260909000300` by moving the insert into `ingest_article`, where
+    the predicate can be written — one insert, three callers. Found because
+    Claude Cowork hit the same error through the new agent endpoint and reported
+    it; the cron had been reporting it into a `failures` array nobody reads,
+    which is the same shape as the paragraph below about a stale feed parsing
+    cleanly and reading as a healthy run.
+
+    So the source audit stands on its own merits — four feeds really were dead
+    and the catalogue is better for the work — but it was not a diagnosis. A
+    plausible cause was found first and it fitted the symptom exactly.
+
     Fetched live, every source in `NEWS_SOURCES`:
 
     | source                                  | items | newest item  |

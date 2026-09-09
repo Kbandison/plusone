@@ -9,6 +9,12 @@ const adminSql = read(
   "../../../../../../supabase/migrations/20260820000400_the_news_admin_follows_the_posts.sql",
 );
 const cron = read("../../api/cron/news/route.ts");
+// The article insert itself. It moved out of the cron and into a function so
+// three callers — the cron, the admin form and the agent ingest — share one
+// conflict clause; 20260909000300 is the live definition.
+const ingestSql = read(
+  "../../../../../../supabase/migrations/20260909000300_the_conflict_target_needs_its_predicate.sql",
+);
 const row = read("./[roomId]/post-row.tsx");
 const tabs = read("./room-tabs.tsx");
 const layout = read("./layout.tsx");
@@ -94,7 +100,15 @@ describe("two rooms, one per community", () => {
     expect(sql).toMatch(
       /on public\.room_messages \(room_id, article_url\) where article_url is not null/,
     );
-    expect(cron).toMatch(/onConflict: "room_id,article_url"/);
+    // The cron no longer writes the conflict clause itself. It went through a
+    // PostgREST upsert, which emits `ON CONFLICT (room_id, article_url)` with no
+    // predicate and has no way to add one — so it could not match the PARTIAL
+    // index above and every insert failed from the day that index was created.
+    // Latest news was frozen for three weeks on exactly this. The clause lives
+    // in ingest_article now, where a predicate can be written; the assertion
+    // that it carries one is in api/news/ingest/route.test.ts.
+    expect(cron).toMatch(/supabase\.rpc\("ingest_article"/);
+    expect(cron).not.toMatch(/onConflict/);
   });
 
   /** A tab that is empty until you press a button you were never shown. */
@@ -135,7 +149,10 @@ describe("what an article looks like", () => {
 
   /** So an article reads like a post rather than a link with a heading over it. */
   it("uses the summary as the post's body", () => {
-    expect(cron).toMatch(/body: item\.summary \|\| item\.title/);
+    // Moved into ingest_article with the insert, so the hand-posted article and
+    // the gathered one fall back the same way rather than in two places.
+    expect(cron).toMatch(/p_summary: item\.summary/);
+    expect(ingestSql).toMatch(/if v_body = '' then\s*\n\s*v_body := v_title;/);
   });
 });
 

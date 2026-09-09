@@ -156,27 +156,40 @@ export async function POST(request: Request) {
       });
       if (forRoom.length === 0) continue;
 
-      const { error, count } = await supabase.from("room_messages").upsert(
-        forRoom.map((item) => ({
-          room_id: room.id,
-          // No author. An article is not something anybody here wrote, and a
-          // system member sitting in profiles would be visible to every query
-          // that assumes a profile row is a person.
-          user_id: null,
-          // The summary is the post's body, so an article reads like a post
-          // rather than like a link with a heading.
-          body: item.summary || item.title,
-          article_url: item.url,
-          article_title: item.title,
-          article_source: source.name,
-          article_icon: source.icon ?? null,
-          created_at: item.publishedAt ? new Date(item.publishedAt).toISOString() : undefined,
-        })),
-        { onConflict: "room_id,article_url", ignoreDuplicates: true, count: "exact" },
-      );
+      /**
+       * Through `ingest_article`, not a PostgREST upsert — and this is the fix
+       * for a three-week outage rather than a tidy-up.
+       *
+       * The upsert emitted `ON CONFLICT (room_id, article_url) DO NOTHING`, and
+       * `room_messages_article_once_per_room` is a PARTIAL unique index
+       * (`where article_url is not null`). Postgres refuses to use a partial
+       * index as a conflict arbiter unless the statement repeats its predicate,
+       * so EVERY article insert failed with "there is no unique or exclusion
+       * constraint matching the ON CONFLICT specification" from the day that
+       * index was created. PostgREST cannot express a predicate; a function can.
+       *
+       * The failure was reported all along, into a `failures` array in a cron
+       * response nobody reads — which is why the room looked like a slow news
+       * cycle for three weeks while ASHA kept publishing.
+       */
+      // One call per article rather than one per batch. The upsert took an
+      // array; a function takes one row, and an article that fails validation —
+      // a feed serving an http link, say — now fails alone instead of taking
+      // the whole room's batch down with it.
+      for (const item of forRoom) {
+        const { data: inserted, error } = await supabase.rpc("ingest_article", {
+          p_room_ids: [room.id],
+          p_url: item.url,
+          p_title: item.title,
+          p_source: source.name,
+          p_summary: item.summary,
+          p_icon: source.icon ?? null,
+          p_published_at: item.publishedAt ? new Date(item.publishedAt).toISOString() : null,
+        });
 
-      if (error) failures.push(`${source.key}/${room.slug}: ${error.message}`);
-      else added += count ?? 0;
+        if (error) failures.push(`${source.key}/${room.slug}: ${error.message}`);
+        else added += typeof inserted === "number" ? inserted : 0;
+      }
     }
   }
 

@@ -38,6 +38,7 @@ interface ArticleInput {
   summary?: unknown;
   icon?: unknown;
   scope?: unknown;
+  publishedAt?: unknown;
 }
 
 /** Constant time, because a timing-variable compare on a bearer token leaks it. */
@@ -124,6 +125,15 @@ export async function POST(request: Request) {
       continue;
     }
 
+    // The article's own date, not this request's. An agent posting four things
+    // it found this morning would otherwise stamp all four with the minute it
+    // ran, and the room sorts on created_at — so a piece from March would sit
+    // above one from last week. Unparseable or absent falls back to now() in the
+    // function rather than failing the article; a wrong date is worth less than
+    // the article, and a caller is told nothing was wrong so it will not retry.
+    const published = new Date(str(article.publishedAt));
+    const publishedAt = Number.isNaN(published.getTime()) ? null : published.toISOString();
+
     const { data, error } = await supabase.rpc("ingest_article", {
       p_room_ids: targets.map((r) => r.id),
       p_url: url,
@@ -131,6 +141,7 @@ export async function POST(request: Request) {
       p_source: str(article.source),
       p_summary: str(article.summary),
       p_icon: str(article.icon),
+      p_published_at: publishedAt,
     });
 
     if (error) {

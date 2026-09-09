@@ -115,3 +115,70 @@ describe("what it will not do", () => {
     expect(log).not.toMatch(/title|url|summary/);
   });
 });
+
+describe("the conflict target carries the partial index's predicate", () => {
+  /** The last definition wins — this function has been replaced twice. */
+  const ingest = (() => {
+    const all = [
+      ...code.matchAll(/create or replace function public\.ingest_article[\s\S]*?\$\$;/g),
+    ];
+    expect(all.length).toBeGreaterThan(0);
+    return all[all.length - 1]![0];
+  })();
+
+  it("repeats `where article_url is not null` on the ON CONFLICT", () => {
+    // room_messages_article_once_per_room is PARTIAL. Postgres refuses to use a
+    // partial index as a conflict arbiter unless the statement repeats its
+    // predicate, so without this every article insert fails outright with
+    // "there is no unique or exclusion constraint matching the ON CONFLICT
+    // specification". Verified against the live database in a rolled-back
+    // transaction: without the predicate ERROR, with it OK.
+    expect(ingest).toMatch(
+      /on conflict \(room_id, article_url\) where article_url is not null do nothing/,
+    );
+  });
+
+  it("still keeps the index partial, which is why the predicate is needed", () => {
+    // A plain unique index would be the other way to fix this and would be
+    // wrong: most room posts have no article, and they would all collide on
+    // NULL... except NULLs do not collide, so it would silently permit
+    // duplicates instead. The partial index is correct; the statement was not.
+    expect(code).toMatch(
+      /create unique index if not exists room_messages_article_once_per_room[\s\S]{0,160}where article_url is not null/,
+    );
+  });
+
+  it("has one insert for all three callers", () => {
+    // The cron used a PostgREST upsert, which emits the predicate-less form and
+    // cannot express a predicate at all — so it carried the same defect by a
+    // different route, and Latest news was frozen for three weeks.
+    const cron = noComments(read("../../cron/news/route.ts"));
+    expect(cron).toMatch(/supabase\.rpc\("ingest_article"/);
+    expect(cron).not.toMatch(/from\("room_messages"\)[\s\S]{0,40}\.upsert/);
+    expect(cron).not.toMatch(/onConflict/);
+  });
+
+  it("carries the publication date through, so an article keeps its own date", () => {
+    // The upsert set created_at from the feed. Losing that would stamp every
+    // backfilled article with the moment the cron happened to run.
+    expect(ingest).toMatch(/coalesce\(p_published_at, now\(\)\)/);
+    expect(noComments(read("../../cron/news/route.ts"))).toMatch(/p_published_at:/);
+  });
+});
+
+describe("an article keeps its own date", () => {
+  const route = noComments(read("./route.ts"));
+
+  it("passes the caller's publishedAt through", () => {
+    // The room sorts on created_at. Without this, four articles found in one
+    // run all land at the same instant and sort by the order the agent happened
+    // to list them.
+    expect(route).toMatch(/p_published_at: publishedAt/);
+  });
+
+  it("falls back rather than refusing an article with a bad date", () => {
+    // A wrong date is worth less than the article, and refusing one would have
+    // the agent retrying a piece that is otherwise fine.
+    expect(route).toMatch(/Number\.isNaN\(published\.getTime\(\)\) \? null/);
+  });
+});
