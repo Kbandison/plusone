@@ -275,6 +275,22 @@ export const serverEnvSchema = z
     CRON_SECRET: z.string().min(32),
 
     /**
+     * Shared secret for POST /api/news/ingest — the machine path into Latest
+     * news, for an agent posting articles the feeds cannot reach.
+     *
+     * A SEPARATE secret from CRON_SECRET on purpose, and that is the whole
+     * reason it exists rather than reusing one. The cron secret opens
+     * /api/cron/purge, which deletes accounts. This one may add a news article
+     * and nothing else, so a token handed to an outside agent cannot be turned
+     * into account deletion if it leaks.
+     *
+     * Optional, and the route refuses everything while it is unset — an
+     * unconfigured ingest is closed rather than open. `.min(32)` applies only
+     * when present, so a short one is a startup error rather than a weak door.
+     */
+    NEWS_INGEST_SECRET: z.string().min(32).optional(),
+
+    /**
      * Bare host of a local dev tunnel, e.g. `abc-123.trycloudflare.com`.
      *
      * Read by next.config.ts at BUILD time, not by the app — it names the
