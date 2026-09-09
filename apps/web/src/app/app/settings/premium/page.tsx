@@ -206,49 +206,93 @@ export default async function PremiumPage() {
           ))}
         </section>
       ) : (
-        /* userId for the appAccountToken that binds an Apple ID's
-           subscription to this account; stripeIsLive so the shell refuses to
-           sell a second subscription to somebody already being charged. */
-        <PlanChooser userId={auth.user.id} alreadyPayingStripe={stripeLive} />
+        <>
+          {/* THE PITCH COMES BEFORE THE PRICE for somebody who has not bought.
+           *
+           * This list was FIFTH on the page, under two controls they cannot
+           * use. A member arriving here has one question — what is this — and
+           * the page asked for money twice before answering it. A subscriber
+           * gets the opposite order below, because they had that question
+           * answered when they paid and came to change something. */}
+          <section className="mt-10">
+            <h2 className="text-[0.972rem]">{C.premiumIncludesHeading}</h2>
+            <div className="mt-5">
+              <PremiumIncludes />
+            </div>
+          </section>
+
+          {/* userId for the appAccountToken that binds an Apple ID's
+             subscription to this account; stripeIsLive so the shell refuses to
+             sell a second subscription to somebody already being charged. */}
+          <div className="mt-12">
+            <PlanChooser userId={auth.user.id} alreadyPayingStripe={stripeLive} />
+          </div>
+        </>
       )}
 
-      {/* Incognito lives here rather than on Safety, and the placement is a
-          decision rather than convenience.
+      {/* ── the controls, and WHO SEES THEM ─────────────────────────────────
+       *
+       * Not gated on `isPremium`, and that is the whole care here. Both toggles
+       * exist so somebody can turn a thing OFF, and both are deliberately
+       * ungated in that direction — `set_incognito` and
+       * `set_read_receipts_hidden` refuse only the paid one. Hiding the controls
+       * from a lapsed member would put the EXIT behind the paywall, which is the
+       * failure their own comments name and the rule 18b settled.
+       *
+       * So: a subscriber, or anybody who still has something switched on. A
+       * member who never subscribed sees the tier described instead, which is
+       * what they came for.
+       *
+       * ── one section, not two ────────────────────────────────────────────
+       *
+       * They were separate headings and they are the same purchase in two
+       * places: control over what other people learn about you. The heading is
+       * the words PREMIUM_INCLUDES already uses for its own group, so the pitch
+       * and the controls do not describe one idea in two vocabularies.
+       *
+       * The resting states differ and that is not an inconsistency — incognito
+       * is off until you buy it, receipts are on until you do. The transparent
+       * state is the one this product ships, because "nobody gets ghosted" is on
+       * the front page.
+       *
+       * Incognito sits here rather than on Safety, which is a decision rather
+       * than convenience: a privacy control behind a paywall on a SAFETY screen
+       * reads as "pay to be safe". It is not that, because the free tier has the
+       * total version — support-only mode removes a member from every dating
+       * surface, costs nothing, and is named below so nobody buys what they
+       * already have. Incognito is the middle setting, which is arrangement
+       * rather than safety. */}
+      {isPremium || incognito || hideReadReceipts ? (
+        <section className="mt-14">
+          <h2 className="text-[0.972rem]">{C.premiumControlsHeading}</h2>
 
-          A privacy control behind a paywall on a SAFETY screen reads as "pay to
-          be safe", which is the discomfort §3.3 exists to refuse. It is not
-          that here, because the free tier already has the total version:
-          support-only mode removes a member from every dating surface, costs
-          nothing, and is named in the copy below so nobody buys what they
-          already have. Incognito is the middle setting — stay reachable by the
-          people you have connected with, disappear from everyone else — and
-          that is arrangement rather than safety.
+          <div className="mt-6">
+            <h3 className="text-[13px]">{C.incognitoHeading}</h3>
+            <IncognitoToggle on={incognito} isPremium={Boolean(isPremium)} />
+            <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">
+              {C.incognitoFreeAlternative}
+            </p>
+          </div>
 
-          Same line macOS and Kevin drew for per-photo privacy: the protection
-          is free, the arrangement is paid. */}
-      <section className="mt-14">
-        <h2 className="text-[0.972rem]">{C.incognitoHeading}</h2>
-        <IncognitoToggle on={incognito} isPremium={Boolean(isPremium)} />
-        <p className="mt-4 text-[11.7px] leading-[1.6] text-ink-3">{C.incognitoFreeAlternative}</p>
-      </section>
+          <div className="mt-10 border-t border-line-2 pt-8">
+            <h3 className="text-[13px]">{C.readReceiptsHeading}</h3>
+            <ReadReceiptsToggle hidden={hideReadReceipts} isPremium={Boolean(isPremium)} />
+          </div>
+        </section>
+      ) : null}
 
-      {/* Beside incognito because it is the same purchase in a different place:
-          control over what other people learn about you. The difference worth
-          noticing is the RESTING STATE — incognito is off until you buy it, and
-          receipts are on until you do. That is not an inconsistency. The
-          transparent state is the one this product ships, because "nobody gets
-          ghosted" is on the front page, and premium buys stepping out of it. */}
-      <section className="mt-14">
-        <h2 className="text-[0.972rem]">{C.readReceiptsHeading}</h2>
-        <ReadReceiptsToggle hidden={hideReadReceipts} isPremium={Boolean(isPremium)} />
-      </section>
-
-      <section className="mt-14">
-        <h2 className="text-[0.972rem]">{C.premiumIncludesHeading}</h2>
-        <div className="mt-5">
-          <PremiumIncludes />
-        </div>
-      </section>
+      {/* Only for somebody who HAS it — the other branch shows this above the
+          plans instead. One component doing two jobs: a subscriber reads it as
+          a reminder of what they hold, a visitor as the offer. What the branch
+          avoids is rendering it twice for the same person. */}
+      {isPremium ? (
+        <section className="mt-14">
+          <h2 className="text-[0.972rem]">{C.premiumIncludesHeading}</h2>
+          <div className="mt-5">
+            <PremiumIncludes />
+          </div>
+        </section>
+      ) : null}
 
       {/* §3.3 — "No selling exemptions from mechanics. Never monetized. Ever."
           Printed on the page that sells the thing, because a promise made only

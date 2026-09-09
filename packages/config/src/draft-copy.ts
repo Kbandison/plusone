@@ -1336,6 +1336,14 @@ export const DRAFT_COPY = {
      * is the free, total version and is named here so nobody pays for something
      * they could have had — §3.3 exists to stop exactly that sale.
      */
+    /**
+     * The words PREMIUM_INCLUDES uses for the same group.
+     *
+     * The controls and the pitch describe one thing, so they say it the same
+     * way. Two vocabularies for one idea is how a page starts reading as a
+     * list of unrelated switches.
+     */
+    premiumControlsHeading: "Who can see you",
     incognitoHeading: "Incognito",
     incognitoOffNote:
       "You appear in the Drop and in Browse as normal. Turn incognito on and only people you have already connected with can see you \u2014 you can still browse, connect and talk exactly as now.",
