@@ -249,14 +249,21 @@ export function PostRow({
         {/* An anonymous author has no photo, so the frame's empty state is the
           placeholder — the same neutral shape a member with no photo gets,
           rather than a second thing to learn the meaning of. */}
-        {post.article_url ? (
+        {post.article_url && post.article_icon ? (
           // The publisher's mark where a member's photograph would be.
           // referrerPolicy, because fetching it otherwise tells their server that
           // somebody in a health community is reading them — the same visit the
           // link itself takes care not to hand over.
+          //
+          // Guarded on the icon as well as the url. An article may arrive without
+          // one — the agent ingest does not require it and thirteen live rows had
+          // none — and `src=""` is not a neutral empty state: it renders a broken
+          // image, and historically resolved to the current document, which is a
+          // second request for the page from inside the page. The branch below is
+          // the placeholder the comment there already describes.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={post.article_icon ?? ""}
+            src={post.article_icon}
             alt=""
             referrerPolicy="no-referrer"
             loading="lazy"
@@ -266,6 +273,10 @@ export function PostRow({
             style={{ width: isComment ? 24 : 46, height: isComment ? 24 : 46 }}
           />
         ) : (
+          // Also where an article with no mark lands: `post.author_id` is null on
+          // one, so this is the frame's empty state either way — the same neutral
+          // shape a member with no photo gets, rather than a second thing to
+          // learn the meaning of.
           <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
         )}
 

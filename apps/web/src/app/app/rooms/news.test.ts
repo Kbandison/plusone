@@ -128,8 +128,12 @@ describe("two rooms, one per community", () => {
 
 describe("what an article looks like", () => {
   it("wears the publisher's mark where a face would be", () => {
-    expect(row).toMatch(/post\.article_url \? \(/);
-    expect(row).toMatch(/src=\{post\.article_icon \?\? ""\}/);
+    // Both halves of the condition. This assertion used to pin
+    // `src={post.article_icon ?? ""}` — it was describing the shape exactly and
+    // the shape was wrong, because an article may have no mark and an empty src
+    // is not an empty state. Pinning a literal is only as good as the literal.
+    expect(row).toMatch(/post\.article_url && post\.article_icon \? \(/);
+    expect(row).toMatch(/src=\{post\.article_icon\}/);
   });
 
   /**
@@ -299,5 +303,21 @@ describe("the news job says when a source has gone quiet", () => {
     // A cron that goes red on a slow news cycle gets ignored, and then the real
     // outage is invisible too.
     expect(route).not.toMatch(/stale[\s\S]{0,80}status: 5/);
+  });
+});
+
+describe("an article with no mark", () => {
+  const postRow = read("./[roomId]/post-row.tsx");
+
+  it("renders the neutral frame instead of an empty src", () => {
+    // `src={post.article_icon ?? ""}` was reachable: the agent ingest does not
+    // require an icon and thirteen live rows had none. An empty src is not an
+    // empty state — it renders broken, and historically resolved to the current
+    // document, which is the page requesting itself from inside itself.
+    expect(postRow).toMatch(/post\.article_url && post\.article_icon \?/);
+  });
+
+  it("does not reach the img with a nullish fallback", () => {
+    expect(postRow).not.toMatch(/src=\{post\.article_icon \?\? ""\}/);
   });
 });

@@ -6,6 +6,10 @@ import { describe, expect, it } from "vitest";
 const MIGRATIONS = new URL("../../../../../../../supabase/migrations/", import.meta.url);
 const sql = readdirSync(fileURLToPath(MIGRATIONS))
   .filter((f) => f.endsWith(".sql"))
+  // Sorted, because the assertions below take the LAST definition of a replaced
+  // function as the live one. readdirSync returns directory order, not filename
+  // order, so without this "last" is whatever the filesystem happens to say.
+  .sort()
   .map((f) => readFileSync(fileURLToPath(new URL(f, MIGRATIONS)), "utf8"))
   .join("\n");
 
@@ -180,5 +184,46 @@ describe("an article keeps its own date", () => {
     // A wrong date is worth less than the article, and refusing one would have
     // the agent retrying a piece that is otherwise fine.
     expect(route).toMatch(/Number\.isNaN\(published\.getTime\(\)\) \? null/);
+  });
+});
+
+describe("the mark belongs to the publisher it labels", () => {
+  const ingest = (() => {
+    const all = [
+      ...code.matchAll(/create or replace function public\.ingest_article[\s\S]*?\$\$;/g),
+    ];
+    expect(all.length).toBeGreaterThan(0);
+    return all[all.length - 1]![0];
+  })();
+
+  it("compares the icon's domain with the article's", () => {
+    // The MEMBER'S BROWSER fetches article_icon, so the host on the end of it
+    // gets an IP and a timestamp for somebody reading an HSV or HIV article.
+    // While the cron was the only writer that was five reviewed hosts; an agent
+    // choosing freely could hand that to anyone.
+    expect(ingest).toMatch(/v_article_domain\s*:=/);
+    expect(ingest).toMatch(/v_icon_domain\s*:=/);
+    expect(ingest).toMatch(/v_article_domain <> v_icon_domain/);
+  });
+
+  it("drops the icon rather than refusing the article", () => {
+    // Decoration lost, content kept — the same call the route makes about a date
+    // it cannot parse. A raise here would lose a good article over a logo.
+    const guard = ingest.slice(ingest.indexOf("v_icon_domain <> ") - 400);
+    expect(ingest).toMatch(/v_icon_domain\s*\n?\s*then\s*\n\s*v_icon := null;/);
+    expect(guard).not.toMatch(/raise exception/);
+  });
+
+  it("drops a non-https icon too", () => {
+    // http in an https page is mixed content and blocked by the browser, so it
+    // would render as a hole rather than a mark.
+    expect(ingest).toMatch(/v_icon !~ '\^https:\/\/'\s*then\s*\n\s*v_icon := null;/);
+  });
+
+  it("still writes the checked icon, not the raw argument", () => {
+    // The whole guard is decoration if the insert reaches past it to p_icon.
+    const insert = ingest.slice(ingest.indexOf("insert into public.room_messages"));
+    expect(insert).toMatch(/v_icon/);
+    expect(insert).not.toMatch(/p_icon/);
   });
 });
