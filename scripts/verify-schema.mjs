@@ -93,7 +93,36 @@ if (!DB_URL) {
 //                                          feedback_kind and feedback_status.
 //                                          Read off the live database after
 //                                          applying, not added up.
-const EXPECT = { tables: 35, views: 5, functions: 125, enums: 31, rooms: 7, config: 23 };
+// functions 125 -> 129, tables 35 -> 36
+//                                          Four migrations, applied together on
+//                                          2026-09-08, read off the live
+//                                          database rather than added up:
+//
+//                                          20260902000100, server 30 — read
+//                                          receipts. set_read_receipts_hidden
+//                                          and chat_read_at (+2), plus
+//                                          profiles.hide_read_receipts, which is
+//                                          a column and moves no count here.
+//
+//                                          20260902000200 — the receipt live.
+//                                          No new objects at all: it REPLACES
+//                                          mark_chat_read and rebuilds three
+//                                          policies on chat_reads out of one.
+//                                          The policy count is not in EXPECT,
+//                                          which is why the split shows up in
+//                                          the declared-policy check below
+//                                          instead.
+//
+//                                          20260902000300 — unsend.
+//                                          message_redactions (+1 table) and
+//                                          unsend_message (+1).
+//
+//                                          20260908000100 — delete your own room
+//                                          post. delete_own_room_message (+1),
+//                                          and no table: room_messages.deleted_at
+//                                          has existed since Milestone 1 and had
+//                                          simply never been written to.
+const EXPECT = { tables: 36, views: 5, functions: 129, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
@@ -103,7 +132,12 @@ const EXPECT = { tables: 35, views: 5, functions: 125, enums: 31, rooms: 7, conf
 // "their own rows" has no meaning, and a definer RPC callable by anon would
 // hand the confirmation token back to whoever called it. The migration header
 // has the full argument.
-const CLOSED_TABLES = ["waitlist"];
+// `message_redactions` is the second, from 20260902000300. Same shape and a
+// different argument: it holds the content of unsent messages, kept only so a
+// report keeps its subject. There is no member who should read it — not the
+// sender, who withdrew it, and not the recipient, for whom the point is that it
+// is gone — so a policy would be the wrong instinct rather than a missing one.
+const CLOSED_TABLES = ["waitlist", "message_redactions"];
 // 32/118 since 20260826000100: iap_entitlements, its binding trigger, and
 // emails_for() from 20260824000200, which had been sitting unapplied.
 //

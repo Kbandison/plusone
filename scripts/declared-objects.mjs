@@ -115,8 +115,27 @@ export function droppedIn(raw) {
     out.objects.add(m[1]);
   for (const m of sql.matchAll(/drop\s+constraint\s+(?:if exists\s+)?(\w+)/gi))
     out.constraints.add(m[1]);
-  for (const m of sql.matchAll(/drop\s+policy\s+(?:if exists\s+)?"([^"]+)"/gi))
-    out.policies.add(m[1]);
+  /**
+   * Keyed `table.name`, because that is how the accumulators key them.
+   *
+   * It captured the bare NAME, and every consumer stores policies as
+   * `${table}.${name}` — so `out.policies.delete(name)` matched nothing and a
+   * drop was silently discarded. `check:db` then reported the policy absent
+   * from the live schema for ever.
+   *
+   * It went unseen because every earlier `drop policy` in this repo recreates
+   * the SAME name in the same breath — the create puts the key back and the
+   * failed delete costs nothing. 20260902000200 is the first to drop one name
+   * and create three different ones, so the old key survived with nothing to
+   * restore it.
+   *
+   * The `on public.<table>` clause is required by Postgres, so there is always
+   * a table to capture.
+   */
+  for (const m of sql.matchAll(
+    /drop\s+policy\s+(?:if exists\s+)?"([^"]+)"\s+on\s+(?:public\.)?(\w+)/gi,
+  ))
+    out.policies.add(`${m[2]}.${m[1]}`);
   for (const m of sql.matchAll(/drop\s+index\s+(?:if exists\s+)?(?:public\.)?(\w+)/gi))
     out.indexes.add(m[1]);
   for (const m of sql.matchAll(/drop\s+column\s+(?:if exists\s+)?(\w+)/gi)) out.columns.add(m[1]);

@@ -1588,7 +1588,7 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
 
     Worth solving before launch. Not worth solving before a metro opens.
 
-27. **Four things found by testing v4, 2026-09-01.** Signing out is fixed; the
+27. ~~**Four things found by testing v4, 2026-09-01.**~~ — all four closed. The
     rest are open and listed in the order they hurt.
 
     a. ~~**Signing out on one device signed you out on all of them.**~~ — fixed.
