@@ -71,13 +71,17 @@ Keep it short. If a section has been true and unread for a month, delete it.
 
   The ledger was backfilled on 2026-08-26 and now holds 75 of 90 rather than 28,
   every one of them checked against the live schema by
-  `scripts/backfill-migration-ledger.mjs`. That does NOT make push safe. Fourteen
-  files leave no trace a schema can be asked — grants, revokes, data — so they
-  were deliberately left out, and push would replay them. Two of those are not
-  replay-safe: `20260815000900_slugs_are_urls` would re-add a constraint that
-  `slugs_are_not_urls` deliberately dropped, and
+  `scripts/backfill-migration-ledger.mjs`. That does NOT make push safe. Sixteen
+  files leave no trace a schema can be asked — grants, revokes, data, and
+  anything whose objects a later file replaced — so they were deliberately left
+  out, and push would replay them. THREE of those are not replay-safe:
+  `20260815000900_slugs_are_urls` would re-add a constraint that
+  `slugs_are_not_urls` deliberately dropped,
   `20260817000600_a_voice_note_in_one_write` creates a policy without dropping it
-  first. `--include-unverifiable` will record them and is Kevin's call, not a
+  first, and `20260909000200_an_article_from_an_agent` would resurrect the
+  six-argument `ingest_article` that `20260909000300` dropped — the one whose
+  `on conflict` omits the partial index predicate, which froze Latest news for
+  three weeks. `--include-unverifiable` will record them and is Kevin's call, not a
   session's: recording a migration that never ran means push skips it forever.
 
   **Re-run `backfill-migration-ledger.mjs` after applying anything.** Applying by
