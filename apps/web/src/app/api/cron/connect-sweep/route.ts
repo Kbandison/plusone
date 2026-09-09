@@ -5,8 +5,6 @@ import { NOTIFY_TIMING } from "@plusone/config";
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notify } from "@/lib/notify";
 
-export const dynamic = "force-dynamic";
-
 /**
  * Warn, then sweep (§6.3).
  *

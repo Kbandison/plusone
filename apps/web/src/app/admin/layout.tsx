@@ -5,14 +5,27 @@ import { redirect } from "next/navigation";
 import { getServerSupabase } from "@/lib/supabase";
 
 /**
+ * Deferred, not resolved.
+ *
+ * `instant = false` marks this segment as ALLOWED TO BLOCK while Cache
+ * Components is adopted one route at a time — the incremental flow the
+ * migration guide describes. It does not force the route to be dynamic, so a
+ * genuinely prerenderable one still ships a static shell.
+ *
+ * Removing this line is the unit of work: the route then has to resolve its own
+ * validation, by caching data with `use cache` or wrapping the runtime parts in
+ * <Suspense>.
+ */
+export const instant = false;
+
+/**
  * The admin surface (§7.3).
  *
- * Not indexed, not cached, and gated twice: this layout turns a non-admin away
+ * Not indexed, and gated twice: this layout turns a non-admin away
  * at the door, and every RPC underneath checks `is_admin()` itself and raises.
  * A layout guard alone would be a client-side wall by another name — it stops
  * the page rendering, not the data moving.
  */
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s · Admin" },

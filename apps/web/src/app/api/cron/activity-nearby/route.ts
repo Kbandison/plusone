@@ -6,8 +6,6 @@ import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notify } from "@/lib/notify";
 import { notifier } from "@/lib/notifier";
 
-export const dynamic = "force-dynamic";
-
 /**
  * "People are active near you" (§8, server 18c) — the premium saved alert.
  *

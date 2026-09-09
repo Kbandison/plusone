@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 
 import { getServerSupabase } from "@/lib/supabase";
 
-export const dynamic = "force-dynamic";
-
 /**
  * Saves the order the member dragged their photos into.
  *

@@ -5,8 +5,6 @@ import { news } from "@plusone/logic";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 
-export const dynamic = "force-dynamic";
-
 /** Long enough for a slow feed, short enough that one cannot hold the job open. */
 const FETCH_TIMEOUT_MS = 10_000;
 

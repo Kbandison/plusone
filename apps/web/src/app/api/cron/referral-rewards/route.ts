@@ -6,8 +6,6 @@ import { referrals } from "@plusone/logic";
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notify } from "@/lib/notify";
 
-export const dynamic = "force-dynamic";
-
 interface Conversion {
   conversion_id: string;
   referrer_id: string;

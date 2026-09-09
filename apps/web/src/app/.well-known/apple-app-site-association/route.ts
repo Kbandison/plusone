@@ -25,7 +25,6 @@ import { NextResponse } from "next/server";
  * — which would mean a server render every time iOS revalidates, for a file
  * that changes when the app id changes and never otherwise.
  */
-export const dynamic = "force-static";
 
 /**
  * The team id, and the same value as APNS_TEAM_ID.
@@ -95,18 +94,45 @@ const COMPONENTS = [
   },
 ];
 
+/**
+ * The payload, separate from the caching.
+ *
+ * Exported because the tests assert its SHAPE — the app id, the claimed paths,
+ * `appIDs`/`components` rather than the iOS 12 pair — and that is a fact about
+ * the payload rather than about the handler.
+ *
+ * It was split to get around `use cache` making GET uncallable from vitest, and
+ * that directive is gone again. Kept anyway: what iOS reads and how it is served
+ * are two different things, and only the first was ever worth calling a route
+ * handler to find out.
+ */
+export function applinks() {
+  return { applinks: { details: [{ appIDs: [APP_ID], components: COMPONENTS }] } };
+}
+
+/** iOS wants application/json and will not accept a guess, nor a redirect. */
+export const AASA_HEADERS = {
+  "content-type": "application/json",
+  // A day. Long enough that iOS is not refetching it, short enough that a
+  // corrected app id is picked up without waiting for a cache to age out.
+  "cache-control": "public, max-age=86400",
+} as const;
+
+/**
+ * Prerendered, which is what `force-static` used to say and now nobody has to.
+ *
+ * `cacheComponents` refuses the `dynamic` route segment config outright. The
+ * replacement is not `use cache`: this handler fetches NOTHING — the payload is
+ * constants — so there is no data access to cache and Next extracts a static
+ * response on its own. `use cache` was tried first and fails at build, because a
+ * cached value must be serializable and a Response is a class instance.
+ *
+ * So the property is preserved by the route staying free of request-time APIs
+ * rather than by a declaration. That is weaker to read and stronger to hold, and
+ * it is what the test now asserts: no cookies, no headers, no clock. The device
+ * revalidates on the cache-control header below, which is a separate thing and
+ * unchanged.
+ */
 export function GET() {
-  return NextResponse.json(
-    { applinks: { details: [{ appIDs: [APP_ID], components: COMPONENTS }] } },
-    {
-      headers: {
-        // iOS wants application/json and will not accept a guess. It also must
-        // not be behind a redirect — see the route's own note.
-        "content-type": "application/json",
-        // A day. Long enough that iOS is not refetching it, short enough that a
-        // corrected app id is picked up without waiting for a cache to age out.
-        "cache-control": "public, max-age=86400",
-      },
-    },
-  );
+  return NextResponse.json(applinks(), { headers: AASA_HEADERS });
 }

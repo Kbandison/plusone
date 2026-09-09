@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notify } from "@/lib/notify";
 
-export const dynamic = "force-dynamic";
-
 /**
  * Closes what the fuse ran out on, and says so (§6.2, §3.5).
  *

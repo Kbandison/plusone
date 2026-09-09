@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * Partial Prerendering, which is what this flag is in Next 16.
+   *
+   * A static shell per route is prerendered and served immediately while the
+   * dynamic parts stream in. Data fetching stays dynamic by DEFAULT — caching is
+   * opt-in per component with `use cache` — so this does not quietly start
+   * serving one member another's screen.
+   *
+   * What it buys over the skeletons: the thing shown instantly becomes the real
+   * page frame rather than a grey placeholder. On this app almost every pixel is
+   * per-member, so the shell is chrome and headings; the win is real and
+   * incremental rather than another step change.
+   */
+  cacheComponents: true,
   // Workspace packages ship TypeScript source rather than a build step, so Next
   // compiles them alongside the app.
   transpilePackages: [

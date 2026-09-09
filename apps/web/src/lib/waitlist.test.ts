@@ -11,10 +11,23 @@ const SRC = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(SRC, p), "utf8");
 
 /** Comments stripped, so a guard cannot be satisfied by prose describing it. */
+/**
+ * Source with its comments out — and it must not eat string literals.
+ *
+ * The block pattern was `/\*[\s\S]*?\*\/` anywhere, which treats the `/*` inside
+ * a path glob like `"/app/*"` as a comment opener and swallows everything to the
+ * next `*\/`. The association file is nothing but path globs, so adding one
+ * docblock below that array silently truncated it — and every assertion about
+ * which paths are claimed would have been reading an empty string.
+ *
+ * A real block comment in this codebase starts a line, so the opener is anchored
+ * to line-start whitespace. The floor beside each use is what caught this;
+ * without it the negative assertions would all have passed on "".
+ */
 const code = (p: string) =>
   read(p)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/.*$/gm, "");
+    .replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, "")
+    .replace(/^[ \t]*\/\/.*$/gm, "");
 
 /**
  * The same source with its import block removed.
