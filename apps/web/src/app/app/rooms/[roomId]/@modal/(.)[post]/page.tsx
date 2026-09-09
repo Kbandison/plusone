@@ -1,4 +1,5 @@
 import { RouteModal } from "@/app/route-modal";
+import { LiveRefresh } from "@/app/app/live-refresh";
 import { Thread } from "../../thread";
 
 /**
@@ -19,6 +20,10 @@ export default async function ThreadModal({
 
   return (
     <RouteModal>
+      {/* And in the modal, which is the same thread reached from the feed.
+       Without this, whether a reply appears depends on how you opened it. */}
+      <LiveRefresh watch={[{ table: "rooms", filter: `id=eq.${roomId}` }]} />
+
       <Thread roomId={roomId} postId={post} />
     </RouteModal>
   );
