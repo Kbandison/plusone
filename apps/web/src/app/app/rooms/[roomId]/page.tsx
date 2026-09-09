@@ -62,32 +62,39 @@ export default async function RoomPage({
     await supabase.rpc("mark_room_read", { p_room_id: room.id as string });
   });
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    // timezone, so "12 Aug" on an older post is the member's 12 August.
-    .select("timezone")
-    .eq("id", auth.user.id)
-    .maybeSingle();
-  const zone = (profile?.timezone as string | null) ?? "UTC";
-
   // Read once and passed down, so every age on the page agrees with every other
   // one rather than each row reading the clock as it renders.
   // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
 
-  const [{ data: membership }, { data: feed }] = await Promise.all([
-    supabase
-      .from("room_members")
-      .select("user_id")
-      .eq("room_id", room.id as string)
-      .eq("user_id", auth.user.id)
-      .maybeSingle(),
-    supabase.rpc("room_feed", {
-      p_room_id: room.id as string,
-      p_limit: 100,
-      p_search: q ?? null,
-    }),
-  ]);
+  /**
+   * FOUR IN ONE TRIP. Every one of these needs `auth.user.id` or `room.id`, and
+   * both are known by here — so none of them had a reason to wait on another.
+   *
+   * The timezone read and the shareable-rooms list were separate awaits either
+   * side of a Promise.all that already held two: three round trips to assemble
+   * one screen. The only real dependency on this page is that `room` resolves
+   * first, because the rest take its id.
+   */
+  const [{ data: profile }, { data: membership }, { data: feed }, { data: shareRoomRows }] =
+    await Promise.all([
+      // timezone, so "12 Aug" on an older post is the member's 12 August.
+      supabase.from("profiles").select("timezone").eq("id", auth.user.id).maybeSingle(),
+      supabase
+        .from("room_members")
+        .select("user_id")
+        .eq("room_id", room.id as string)
+        .eq("user_id", auth.user.id)
+        .maybeSingle(),
+      supabase.rpc("room_feed", {
+        p_room_id: room.id as string,
+        p_limit: 100,
+        p_search: q ?? null,
+      }),
+      supabase.rpc("rooms_i_can_share_into", { p_except: room.id as string }),
+    ]);
+
+  const zone = (profile?.timezone as string | null) ?? "UTC";
 
   // Everything the client is allowed to know about who wrote what. There is no
   // branch in room_feed where an anonymous post carries an author id, so there
@@ -101,9 +108,6 @@ export default async function RoomPage({
 
   // Where this member could share something to. One call for the page rather
   // than one per row.
-  const { data: shareRoomRows } = await supabase.rpc("rooms_i_can_share_into", {
-    p_except: room.id as string,
-  });
   const shareRooms = (shareRoomRows ?? []) as { id: string; title: string }[];
 
   // Absolute, because a shared link leaves this app: a relative one pasted into

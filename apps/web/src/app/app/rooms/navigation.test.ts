@@ -50,3 +50,39 @@ describe("posts and replies arrive on their own", () => {
     }
   });
 });
+
+describe("the room page does not wait on itself", () => {
+  const noComments = (src: string) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/[^\n]*$/gm, "");
+  const code = noComments(feed);
+
+  it("blocks on auth and the room, and nothing else", () => {
+    // `room` genuinely has to resolve first — the other four take its id. What
+    // did not have to wait was the timezone read and the shareable-rooms list,
+    // which sat either side of a Promise.all that already held two: three round
+    // trips for one screen.
+    //
+    // after() blocks are excluded: mark_room_read and record_room_views run once
+    // the response has been sent and cost the member nothing.
+    const blocking = [...code.matchAll(/await\s+supabase\s*\.\s*(?:from|rpc|auth)/g)].filter(
+      (m) => {
+        const before = code.slice(0, m.index!);
+        const opened = (before.match(/after\(async \(\) => \{/g) ?? []).length;
+        const closed = (before.match(/^\s*\}\);$/gm) ?? []).length;
+        return opened <= closed;
+      },
+    );
+    expect(blocking.length).toBeLessThanOrEqual(2);
+  });
+
+  it("batches the four that only need ids", () => {
+    expect(code).toMatch(
+      /const \[\{ data: profile \}, \{ data: membership \}, \{ data: feed \}, \{ data: shareRoomRows \}\]/,
+    );
+    const batch = code.slice(code.indexOf("await Promise.all(["));
+    const body = batch.slice(0, batch.indexOf("]);"));
+    for (const q of ["profiles", "room_members", "room_feed", "rooms_i_can_share_into"]) {
+      expect(body, `${q} left the batch`).toMatch(new RegExp(q));
+    }
+  });
+});
