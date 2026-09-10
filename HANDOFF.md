@@ -416,6 +416,27 @@ runtimes` just comes back empty.
   `adb exec-out screencap -p`. That is the Android equivalent of the
   `simctl io screenshot` technique the iOS lane uses.
 
+  **`am force-stop app.loveplusone` DOES NOT COLD-START THE TWA, and forcing
+  Chrome instead is worse.** A TWA runs as
+  `com.android.chrome/…CustomTabActivity` — `dumpsys window` says so — so
+  stopping the TWA package leaves the web view running and the next `am start`
+  RESUMES it on whatever page it already had. A screenshot then shows the
+  previous screen, which reads as a launch that failed rather than one that was
+  ignored, and it is how six real waitlist addresses were captured off a resumed
+  `/admin/waitlist` earlier in that session.
+
+  `am force-stop com.android.chrome` does kill it, and also kills the TWA
+  provider — the app drops to whatever was behind it and `am start` cannot route
+  back in until Chrome has restarted. Two round trips to learn.
+
+  What works: launch the URL you want and then CHECK YOU ARE ON IT before
+  capturing — `dumpsys window | grep mCurrentFocus` for the activity, and a
+  known string from the target page for the route. For anything showing member
+  data, target a seeded row by id rather than tapping through: seeded accounts
+  are `%@seed.plusone.invalid` in `auth.users`, and the profile itself says "A
+  seeded account for testing. Not a real person." **There are 28 profiles and 8
+  are NOT seeded**, so Browse and Inbox are not safe to photograph blind.
+
 - **Bubblewrap needs the LEGACY Android SDK layout, and lies about why.** Its
   error says the SDK path should "contain the folder `build`". It does not check
   for that. `AndroidSdkTools.validatePath` checks for `<sdk>/tools` or
