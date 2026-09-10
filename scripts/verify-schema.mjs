@@ -130,9 +130,28 @@ if (!DB_URL) {
 //                                          any other — it writes the same
 //                                          columns the ingest writes.
 //
+// functions 131 -> 132                     20260909000200 — ingest_article, the
+//                                          shared insert behind the cron, the
+//                                          admin form and the agent endpoint.
+//                                          20260909000300 REPLACED it in place
+//                                          to carry the partial index predicate
+//                                          and dropped the six-argument version,
+//                                          so that file is net zero: one
+//                                          function, not two. 20260909000400
+//                                          replaced it again, also net zero.
+//
+// functions 132 -> 133                     20260909000600 — admin_member_roster.
+//                                          Who has signed up and when, with no
+//                                          condition and no contact details. No
+//                                          table: it reads profiles.
+//
 //                                          Read off the live database after
-//                                          applying, not added up.
-const EXPECT = { tables: 36, views: 5, functions: 131, enums: 31, rooms: 7, config: 23 };
+//                                          applying, not added up. 132 was the
+//                                          live count on 2026-09-09 with 000600
+//                                          still unapplied, which is how the
+//                                          missing ingest_article delta above
+//                                          was noticed at all.
+const EXPECT = { tables: 36, views: 5, functions: 133, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that

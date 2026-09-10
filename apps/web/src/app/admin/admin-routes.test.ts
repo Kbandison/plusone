@@ -85,3 +85,91 @@ describe("the front door counts what the sections show", () => {
     expect(home).toMatch(/queue\.error \?/);
   });
 });
+
+/**
+ * The roster shows who and when, and nothing that costs a written reason.
+ *
+ * §7.3 refused a listing because "anything more is a directory of members'
+ * private details with a search box on it". Kevin asked for one on 2026-09-09;
+ * the objection is answered by what it withholds, so these assertions are the
+ * answer and not decoration.
+ */
+describe("the member roster", () => {
+  const roster = readFileSync(join(APP, "admin/members/roster.tsx"), "utf8");
+  const migration = readFileSync(
+    join(APP, "../../../../supabase/migrations/20260909000600_a_roster_not_a_directory.sql"),
+    "utf8",
+  );
+
+  it("reads it through an admin-gated definer function", () => {
+    expect(roster).toMatch(/rpc\("admin_member_roster"\)/);
+    expect(migration).toMatch(/security definer/);
+    expect(migration).toMatch(/where public\.is_admin\(\)/);
+  });
+
+  it.each([
+    "condition",
+    "condition_detail",
+    "u_equals_u",
+    "community",
+    "email",
+    "phone",
+    "location",
+    "bio",
+    "prompts",
+  ])("never returns %s", (column) => {
+    // The returns-table block is the contract. A column absent from it cannot
+    // reach the screen however the component is written.
+    const returns = migration.slice(
+      migration.indexOf("returns table ("),
+      migration.indexOf("language sql"),
+    );
+    expect(returns).not.toMatch(new RegExp(`\\b${column}\\b`));
+  });
+
+  it("returns the six things it is for, so the negatives above are not vacuous", () => {
+    // The floor. Every assertion above passes against an empty string, and this
+    // repo has been caught by exactly that more than once.
+    const returns = migration.slice(
+      migration.indexOf("returns table ("),
+      migration.indexOf("language sql"),
+    );
+    for (const column of [
+      "display_name",
+      "verification_status",
+      "created_at",
+      "last_active_at",
+      "joined_in_beta",
+      "open_reports",
+    ]) {
+      expect(returns, column).toMatch(new RegExp(`\\b${column}\\b`));
+    }
+  });
+
+  it("is capped and has no offset, so it is a first screen and not a directory", () => {
+    // The BODY, not the file. Two different pieces of prose in this migration
+    // argue for having no offset and both contain the word — the leading
+    // docblock, and then the `comment on function` string, which survives
+    // stripping `--` lines because it is a literal. The negative match failed
+    // twice on the very text explaining why it should pass. Prose has no gate,
+    // so assert against the code.
+    const body = migration.slice(migration.indexOf("as $$"), migration.indexOf("$$;"));
+    const sql = body.replace(/^\s*--.*$/gm, "");
+    expect(sql).toMatch(/limit 200/);
+    expect(sql).not.toMatch(/offset/i);
+    expect(sql).not.toMatch(/p_page|p_offset/);
+  });
+
+  it("keeps the search that reaches one person", () => {
+    const page = readFileSync(join(APP, "admin/members/page.tsx"), "utf8");
+    expect(page).toMatch(/<MemberSearch \/>/);
+    expect(page).toMatch(/<Roster \/>/);
+  });
+
+  it("does not let the table scroll the document sideways", () => {
+    // 1ea97be: an overflow at document level shifts the header and the wordmark
+    // with it. A wide table belongs in its own scroll container.
+    expect(roster).toMatch(/overflow-x-auto/);
+    expect(roster).toMatch(/<table/);
+  });
+});
