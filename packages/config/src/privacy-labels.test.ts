@@ -268,3 +268,131 @@ describe("the iOS privacy manifest matches the declarations", () => {
     expect(pbxproj).toMatch(/isa = PBXFileReference;[^}]*path = PrivacyInfo\.xcprivacy/);
   });
 });
+
+/**
+ * The privacy policy has to name what the store forms declare.
+ *
+ * The chain already runs migration → `privacy-labels.ts` → `play-data-safety.ts`
+ * and fails when the two forms disagree. It stopped there, and `legal.ts` — the
+ * document a member and a regulator actually read — was outside it.
+ *
+ * It had drifted. Eleven profile columns landed on 2026-08-29 and the policy's
+ * effective date is 2026-08-14; six of them are declared to Apple and Google as
+ * Sensitive Info or Health and appeared nowhere in the policy. Two of those,
+ * religion and political views, are special-category data under GDPR Article 9,
+ * on an app where membership already implies a diagnosis.
+ *
+ * ── why a phrase map rather than the column name ───────────────────────────
+ *
+ * The policy is plain language by §7.1 — it says "date of birth", not
+ * `birthdate`. So each declared column names the phrase the policy uses, and the
+ * map itself is the record of that correspondence. Adding a Sensitive or Health
+ * column with no entry fails here, which is the point: the author has to decide
+ * what the policy will call it before the label ships.
+ *
+ * This is NOT a legal review and does not pretend to be one. It checks that the
+ * document describes the system. Whether the description is sufficient is
+ * Decision #30 and belongs to counsel.
+ */
+describe("the policy names what the labels declare", () => {
+  const legal = readFileSync(
+    fileURLToPath(new URL("./legal.ts", import.meta.url)),
+    "utf8",
+  ).toLowerCase();
+
+  /** Column → the words the policy uses for it. */
+  const SAID_AS: Record<string, string> = {
+    condition: "condition",
+    community: "community",
+    u_equals_u: "u=u",
+    weight_kg: "weight",
+    gender: "gender",
+    seeking: "looking for",
+    relationship_structure: "relationship structure",
+    languages: "languages",
+    religion: "religion",
+    politics: "political",
+  };
+
+  const declared = [
+    ...new Set(
+      [
+        ...readFileSync(
+          fileURLToPath(new URL("./privacy-labels.ts", import.meta.url)),
+          "utf8",
+        ).matchAll(/^\s+([a-z_]+):\s*"(?:Sensitive Info|Health & Fitness[^"]*)"/gm),
+      ].map((m) => m[1]!),
+    ),
+  ].filter((c) => c !== "category");
+
+  it("finds the declarations, so the assertions below are not vacuous", () => {
+    // The floor. Every check here passes against an empty list.
+    expect(declared.length).toBeGreaterThanOrEqual(9);
+    expect(declared).toContain("condition");
+  });
+
+  it.each(declared)("%s has a phrase the policy is expected to use", (column) => {
+    expect(
+      SAID_AS[column],
+      `${column} is declared to both stores as Sensitive or Health and has no entry in SAID_AS. ` +
+        `Decide what the privacy policy calls it, add the sentence, then add it here.`,
+    ).toBeTruthy();
+  });
+
+  it.each(declared)("%s is actually named in the policy", (column) => {
+    const phrase = SAID_AS[column];
+    if (!phrase) return; // reported by the test above
+    expect(legal, `${column} → "${phrase}"`).toContain(phrase);
+  });
+
+  /**
+   * The Health data section, which is a different promise from the rest.
+   *
+   * That section commits to a consent screen, to the exact wording being stored,
+   * and to the My Health My Data and Nevada standards being applied to
+   * everyone. A health-classified field named only in the ordinary profile list
+   * is covered by none of it.
+   *
+   * Found by sabotage: removing weight from that section left the word in the
+   * optional-details bullet and the check above passed happily. Anywhere-in-the
+   * -document was the wrong question for these six.
+   */
+  const healthSection = (() => {
+    const from = legal.indexOf('title: "health data"');
+    expect(from).toBeGreaterThan(-1);
+    // The next section's id, searched FROM the title. The first version looked
+    // for a "body" key that does not exist here, got -1, and then searched for
+    // the next id from position 0 — finding the FIRST section in the file, well
+    // before `from`, so the slice ran to the end of the document and every
+    // assertion below was "appears anywhere" again under a stricter name. It
+    // passed. Only sabotaging it showed the difference.
+    const to = legal.indexOf('id: "', from);
+    expect(to).toBeGreaterThan(from);
+    return legal.slice(from, to);
+  })();
+
+  const healthColumns = [
+    ...new Set(
+      [
+        ...readFileSync(
+          fileURLToPath(new URL("./privacy-labels.ts", import.meta.url)),
+          "utf8",
+        ).matchAll(/^\s+([a-z_]+):\s*"Health & Fitness[^"]*"/gm),
+      ].map((m) => m[1]!),
+    ),
+  ].filter((c) => c !== "category");
+
+  it("finds the health section and its columns", () => {
+    // Floor for the block below, which is otherwise satisfied by an empty slice.
+    expect(healthSection.length).toBeGreaterThan(200);
+    expect(healthColumns.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(healthColumns)("%s is named in the HEALTH section, not merely somewhere", (column) => {
+    const phrase = SAID_AS[column];
+    if (!phrase) return;
+    expect(healthSection, `${column} → "${phrase}" must appear under Health data`).toContain(
+      phrase,
+    );
+  });
+});

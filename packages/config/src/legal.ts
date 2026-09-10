@@ -49,6 +49,9 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
       "Your community and condition type, and the U=U badge if you turn it on.",
       "What you are looking for, and whether you are in dating or support-only mode.",
       "An approximate location, rounded to about a kilometre before it is saved. Other members see a distance, never a point on a map.",
+      "Your gender, if you add it. Other members see it on your profile.",
+      "Optional details you can add to your profile and leave blank: height, weight, relationship structure, exercise, diet, pets, education, work, and the languages you speak. All of them start empty, all of them are shown on your profile, and you can clear any of them at any time.",
+      "Your religion and your political views, if you choose to add them. Both are optional, both start empty, and both appear on your profile like anything else you write there. You can remove either one without removing the other.",
       "Your photos, prompts, bio, and search radius.",
       "Whether you are verified, and when.",
       "Your messages, and the connects you send and receive.",
@@ -73,7 +76,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     id: HEALTH_DATA_ANCHOR,
     title: "Health data",
     body: [
-      "Your community, your condition type, and your optional U=U badge are health data, and we treat them that way.",
+      "Your community, your condition type, your optional U=U badge, and your weight if you add it are health data, and we treat them that way. Weight is here rather than with the other profile details because on an app whose members share a diagnosis it can say more about your health than it would anywhere else.",
       "We ask for them on their own screen, with their own checkbox, and we store the date you agreed along with the exact wording you agreed to. If we ever change that wording, we ask again rather than assuming the old answer still stands.",
       "We use this only to run matching and the community rooms. We do not sell it. We do not share it with advertisers, data brokers, or anyone building a profile of you. No third party receives it in exchange for money or anything else of value.",
       "You can change your community or condition type at any time, and you can delete everything permanently at any time.",
