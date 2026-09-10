@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
+import { BELIEFS_CONSENT_MISSING, recordBeliefsConsent } from "@/lib/beliefs-consent";
 import { EXTENDED_PREFERENCE_COLUMNS, parsePreferences } from "@/lib/preferences";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PreferencesState } from "@/app/onboarding/preferences/state";
@@ -31,7 +32,19 @@ export async function updatePreferences(
   const parsed = parsePreferences(formData);
   if ("error" in parsed) return { error: parsed.error };
 
+  // The same consent the onboarding step records, through the same helper. This
+  // action shares the FORM and the PARSER with that step, so it shares the
+  // checkbox too — and until 2026-09-10 it did not share the recording, which
+  // meant ticking the box here changed nothing and the trigger refused the write.
+  await recordBeliefsConsent(supabase, auth.user.id, formData);
+
   const { error } = await supabase.from("profiles").update(parsed.values).eq("id", auth.user.id);
+
+  // The trigger's refusal, before the missing-column fallback below. 42501 is a
+  // belief answered with the box unticked, which is a different thing from a
+  // migration not being applied yet and must not be swallowed by it.
+  if (error?.code === BELIEFS_CONSENT_MISSING)
+    return { error: DRAFT_COPY.preferences.errors.beliefsConsent };
 
   /**
    * If the eight new columns are not there yet, save the rest anyway.

@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -193,20 +194,19 @@ describe("a belief is not a preference", () => {
   });
 
   it("records the consent before the write it authorises", () => {
-    // The other order has the trigger reject the update and the tick never
-    // stored.
-    //
-    // The condition is asserted, not just the position. Replacing it with
-    // `if (false)` left the insert exactly where it was and this passed on an
-    // unreachable branch — an order check says nothing about whether the code
-    // between the two indexes can run.
-    const gate = action.indexOf('formData.get("beliefsConsent") === "on"');
-    const consent = action.indexOf('"consents"');
+    // The condition lives in lib/beliefs-consent now, because there are two
+    // callers and the first version wired only one of them. What this asserts
+    // here is the ORDER — the other way round has the trigger reject the update
+    // and the tick never stored. Coverage of BOTH callers is the derived block
+    // at the bottom of this file.
+    const helper = read("../../../lib/beliefs-consent.ts");
+    expect(helper).toMatch(/formData\.get\("beliefsConsent"\) !== "on"/);
+    expect(helper).toMatch(/copy_version: CONSENT_COPY_VERSION\.beliefs/);
+
+    const consent = action.indexOf("recordBeliefsConsent(");
     const update = action.indexOf('from("profiles").update');
-    expect(gate).toBeGreaterThan(-1);
-    expect(consent).toBeGreaterThan(gate);
+    expect(consent).toBeGreaterThan(-1);
     expect(update).toBeGreaterThan(consent);
-    expect(action).toMatch(/copy_version: CONSENT_COPY_VERSION\.beliefs/);
   });
 
   it("does not pre-tick the box", () => {
@@ -220,7 +220,73 @@ describe("a belief is not a preference", () => {
   });
 
   it("turns the refusal into a sentence", () => {
-    expect(action).toMatch(/error\?\.code === "42501"/);
+    expect(read("../../../lib/beliefs-consent.ts")).toMatch(/BELIEFS_CONSENT_MISSING = "42501"/);
+    expect(action).toMatch(/BELIEFS_CONSENT_MISSING/);
     expect(action).toMatch(/errors\.beliefsConsent/);
+  });
+});
+
+/**
+ * Every caller of the shared parser records the consent too.
+ *
+ * `PreferencesForm` and `parsePreferences` are deliberately shared between
+ * onboarding and the profile editor — the parser's own docblock says why: "two
+ * copies would be two sets of rules about who a member can see, and only one of
+ * them would get the next fix." The consent shipped wired into ONE of the two.
+ *
+ * The result was a broken path rather than a missing feature: the profile
+ * editor renders the same checkbox, so a member ticked it, the action did not
+ * record anything, the trigger refused the write, and they were told it did not
+ * save with no way through.
+ *
+ * DERIVED, not listed. A third caller of parsePreferences is found by walking
+ * for it, so this cannot go stale the way the wiring did.
+ */
+describe("both belief-writing paths record the consent", () => {
+  const SRC = fileURLToPath(new URL("../../../", import.meta.url));
+
+  const callers = (() => {
+    const found: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const abs = join(dir, entry.name);
+        if (entry.isDirectory()) walk(abs);
+        else if (entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts")) {
+          const src = readFileSync(abs, "utf8");
+          // The parser is what decides whether religion and politics are written
+          // at all, so its callers are exactly the writers.
+          if (src.includes("parsePreferences(formData)")) found.push(abs);
+        }
+      }
+    };
+    walk(SRC);
+    return found;
+  })();
+
+  it("finds both callers, so the assertion below is not vacuous", () => {
+    // The floor. One caller would pass the check trivially while the bug this
+    // exists to catch is precisely "one of two".
+    expect(callers.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it.each(callers.map((c) => [c.slice(SRC.length), c] as const))(
+    "%s records the consent and reads the refusal",
+    (_label, path) => {
+      const src = readFileSync(path, "utf8");
+      expect(src).toMatch(/recordBeliefsConsent\(/);
+      // COMPARED, not merely imported. `if (false)` left the constant in the
+      // import list and this passed on a dead branch — the name appearing in a
+      // file says nothing about it being read.
+      expect(src).toMatch(/error\?\.code === BELIEFS_CONSENT_MISSING/);
+    },
+  );
+
+  it("records it before the write, in every caller", () => {
+    for (const path of callers) {
+      const src = readFileSync(path, "utf8");
+      const consent = src.indexOf("recordBeliefsConsent(");
+      const update = src.indexOf('from("profiles").update');
+      expect(update, path).toBeGreaterThan(consent);
+    }
   });
 });
