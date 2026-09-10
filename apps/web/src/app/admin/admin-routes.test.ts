@@ -274,6 +274,29 @@ describe("the roster masks contact details", () => {
     expect(roster).toMatch(/[Cc]ontact details are masked/);
   });
 
+  it("can be hidden again, and re-showing does not ask twice", () => {
+    // The reason it is masked by default is that an admin screen gets
+    // photographed. A reveal with no way back would leave the screen more
+    // exposed than it started for as long as the tab is open.
+    const show = readFileSync(join(APP, "admin/members/show-contact.tsx"), "utf8");
+    expect(show).toMatch(/onClick=\{\(\) => setOpen\(false\)\}/);
+    expect(show).toMatch(/>\s*hide\s*</);
+    // Re-showing is a plain button, not the form: the value is still in the
+    // component, so asking the server again would be a request for nothing.
+    expect(show).toMatch(/onClick=\{\(\) => setOpen\(true\)\}/);
+  });
+
+  it("shows contact without a sideways scroll on a phone", () => {
+    // A five-column table needs ~44rem and a phone has ~26, so Contact sat off
+    // the right edge — the one column somebody opens this screen for. Kevin
+    // found it on his own phone the day it shipped.
+    const roster = readFileSync(join(APP, "admin/members/roster.tsx"), "utf8");
+    expect(roster).toMatch(/sm:hidden/);
+    expect(roster).toMatch(/hidden overflow-x-auto px-6 sm:block/);
+    // Both layouts render the contact, or the narrow one is decoration.
+    expect(roster.match(/<ShowContact/g)?.length).toBe(2);
+  });
+
   it("costs no written reason, unlike a diagnosis", () => {
     // Deliberate. Pricing a phone number like a condition would either cheapen
     // that gate or make ordinary administration tedious enough to route around.

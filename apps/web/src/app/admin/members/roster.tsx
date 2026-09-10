@@ -58,10 +58,65 @@ export async function Roster() {
         Contact details are masked — press show on a row you need to place.
       </p>
 
-      {/* The table scrolls inside its own box. The page must not scroll
-          sideways: a document-level overflow shifts the header and wordmark with
-          it, which is the bug 1ea97be spent an evening on. */}
-      <div className="mt-5 -mx-6 overflow-x-auto px-6">
+      {/* TWO LAYOUTS, and the narrow one is not a fallback.
+          A five-column table needs about 44rem. A phone has roughly 26, so the
+          Contact column sat off the right edge and had to be scrolled to — which
+          is exactly the column somebody opens this screen for. Kevin found it on
+          his own phone the day it shipped.
+
+          The duplication is deliberate and bounded: the same six fields in two
+          arrangements, no second query and no second source of truth. Collapsing
+          them into one reflowing grid was the alternative and it needs
+          `display: contents` on every row to share the parent's columns, which
+          then cannot carry the row's own border. */}
+
+      {/* Narrow: one block per member, nothing off screen. */}
+      <ul className="mt-5 flex flex-col sm:hidden">
+        {rows.map((r) => (
+          <li key={r.user_id} className="flex flex-col gap-1.5 border-b border-line-2 py-3.5">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="text-[13px]">
+                {r.display_name ?? <span className="text-ink-3">unnamed</span>}
+              </span>
+              <span className="shrink-0 tabular-nums text-[11px] text-ink-3">
+                {when(r.created_at)}
+              </span>
+            </span>
+
+            <span className="text-[11px] text-ink-3">
+              {r.verification_status} · last active {when(r.last_active_at)}
+            </span>
+
+            <span className="text-[11.5px]">
+              <ShowContact
+                userId={r.user_id}
+                emailMasked={r.email_masked}
+                phoneMasked={r.phone_masked}
+              />
+            </span>
+
+            {r.joined_in_beta || r.open_reports > 0 ? (
+              <span className="flex flex-wrap gap-1.5">
+                {r.joined_in_beta ? (
+                  <span className="rounded-full border border-line-2 px-2 py-0.5 text-[10.5px] text-ink-3">
+                    beta
+                  </span>
+                ) : null}
+                {r.open_reports > 0 ? (
+                  <span className="rounded-full border border-danger px-2 py-0.5 text-[10.5px] text-danger">
+                    {r.open_reports} open
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+
+      {/* Wide: the table. Still in its own scroll container — a document-level
+          overflow shifts the header and the wordmark with it, which is the bug
+          1ea97be spent an evening on. */}
+      <div className="mt-5 -mx-6 hidden overflow-x-auto px-6 sm:block">
         <table className="w-full min-w-[44rem] border-collapse text-left text-[12.4px]">
           <thead>
             <tr className="border-b border-line text-[10.5px] tracking-[0.04em] text-ink-3 uppercase">
