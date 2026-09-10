@@ -54,8 +54,8 @@ export async function Roster() {
   return (
     <>
       <p className="mt-4 text-[12px] text-ink-2">
-        {rows.length} {rows.length === 1 ? "member" : "members"}, newest first. No condition and no
-        contact details — use search to reach one person.
+        {rows.length} {rows.length === 1 ? "member" : "members"}, newest first. No condition.
+        Contact details are masked — press show on a row you need to place.
       </p>
 
       {/* The table scrolls inside its own box. The page must not scroll

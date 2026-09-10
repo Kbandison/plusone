@@ -261,6 +261,19 @@ describe("the roster masks contact details", () => {
     expect(migration).not.toMatch(/create or replace function public\.admin_member_roster/);
   });
 
+  it("does not describe itself as having no contact details", () => {
+    // It said exactly that for one deploy. The column landed and the sentence
+    // above it did not, because that one string replacement was the only edit in
+    // the batch without an assert on it — a silent no-op, reported to nobody.
+    // So the screen showed contact details under a line promising none.
+    const roster = readFileSync(join(APP, "admin/members/roster.tsx"), "utf8");
+    expect(roster).toMatch(/<ShowContact/);
+    expect(roster).not.toMatch(/no\s+contact\s+details/i);
+    // And the copy has to say what it IS, not merely not say the wrong thing —
+    // otherwise deleting the sentence passes this.
+    expect(roster).toMatch(/[Cc]ontact details are masked/);
+  });
+
   it("costs no written reason, unlike a diagnosis", () => {
     // Deliberate. Pricing a phone number like a condition would either cheapen
     // that gate or make ordinary administration tedious enough to route around.
