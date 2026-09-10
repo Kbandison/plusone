@@ -474,6 +474,52 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
 
+### 2026-09-09 · WSL · a room frozen by one missing predicate, and four sheets that opened on the tap
+
+**Left off:** tree clean, in sync, nothing claimed, nothing in flight. 15 tasks
+green on a forced run, plus check:sql and format:check. **Four migrations are
+written and NOT applied** — 000400 icon domains, 000500 the beta cohort mark,
+000600/000700 the admin roster. All dry-run clean, in that order.
+
+**Latest news had been dead since 2026-08-20 and the feeds were not why.** That
+is the day a PARTIAL unique index was created, and PostgREST's `.upsert()` emits
+`on conflict (room_id, article_url)` with no predicate and cannot express one —
+so Postgres could not match the index and refused every insert. A source audit
+the same morning found four dead feeds and read exactly like the diagnosis. It
+was not one. BACKLOG 31 says so now.
+
+**Read the whole error path, not the first plausible cause.** The cron had been
+reporting the failure into a `failures` array nobody reads. It took Claude Cowork
+hitting the same wall through the new agent endpoint for anyone to see it.
+
+**A test can pin a bug in place, and mine did — twice.** One asserted
+`src={post.article_icon ?? ""}` exactly; it described the shape faithfully and
+the shape was wrong, because an article may have no mark and an empty src renders
+broken. Another passed an edit folding a column into the wrong write, because
+with the bug present the text BETWEEN the two writes contains nothing to match. A
+literal pin is only as good as the literal.
+
+**A PASSING SABOTAGE IS STILL NOT EVIDENCE, and it caught me twice in one day.**
+Once the edit replaced one of two identical anchors and left the floor intact;
+once nothing at all guarded a migration that would fail on apply, which is the
+signal to ADD a guard rather than trust the silence.
+
+**`--dry-run` earned its note twice this week.** `create or replace` cannot change
+a function's return type; `check:sql` passes it because the statement is legal
+grammar, and only execution knows.
+
+**Verified on Kevin's Galaxy S26 Ultra, in the TWA:** the post modal and connect
+modal both open on the tap with their skeleton inside and resolve cleanly — both
+caught live, the connect one by burst-capturing to /sdcard rather than racing
+`exec-out`. Article marks render, the off-domain case draws the neutral circle,
+read receipts show on a real device, and the layout is not off-center. The chat
+skeleton could NOT be observed: that route loads too fast to show one, on a
+revisit where the client cache may have served it.
+
+**All 8 non-seed accounts are accounted for** — five test rows, two Kevin's, one
+literally named "Test account". Every one predates the beta gate and no waitlist
+row has `accepted_at`. Nobody has come through an invitation yet.
+
 ### 2026-09-01 · macOS · a build Apple accepted, and a link that could not cross engines
 
 **1.0 (202609020240) is uploaded and was ACCEPTED**, archived here with
@@ -549,58 +595,3 @@ rewrote `APP_REVIEW_NOTES.md` within three minutes, neither having claimed it. I
 dropped mine: same conclusion, but theirs was read off the Simulator against the
 build being submitted and mine was inferred from the layout. Better tiebreak than
 seniority or timestamp, and it cost one commit to learn.
-
-### 2026-08-31 · WSL · the waitlist, and a gate that had to not lock anybody out
-
-**Server 21 is done, applied and pushed.** Kevin asked for a beta-tester page
-and a waitlist, and chose a CLOSED BETA with it — nobody signs up without an
-invitation. Two migrations live, ledger 83 of 98, all six gates green on a
-forced run. Detail is backlog server 21; 22 is the reopening checklist.
-
-Three things belong here rather than there.
-
-**Sign-up and sign-in are different doors, and only one of them can be gated.**
-`/onboarding/phone` is the only call in this app that can mint an account, so
-that is where `shouldCreateUser: invited` goes. `/sign-in` has passed
-`shouldCreateUser: false` on both branches since it was written — it is already
-closed to non-members — so gating it would have added nothing and broken its
-anti-enumeration property.
-
-That distinction is what stops the gate causing a store rejection. A reviewer
-signs IN to an account that already exists, so they are untouched by it. Had the
-gate gone on sign-in "to be thorough", it would have locked out the reviewer,
-every existing member, and anybody whose invitation was long spent. **The
-thorough-looking version was the broken one**, which is why this is here and not
-only in a commit body.
-
-**A guard that is too broad gets relaxed; split it instead.** `check:db`
-asserted "every table has at least one policy" and the waitlist deliberately has
-none — it is granted to nobody, so a policy would be decoration. The tempting
-fix was an exception. What was actually wrong is that `check:sql` had the
-correct rule all along — "every table **granted to a role** has at least one
-policy" — and the live-schema copy had drifted broader than the failure it
-describes. It now checks both halves and names the closed tables, which is
-strictly stronger than what it replaced. Watched it fail on a planted grant
-before believing it.
-
-**Two floors caught two blind scans in one file, and I wrote both bugs.** The
-`signInWithOtp` scan is the gate's own test. First it anchored on a trailing
-`;`, which missed /sign-in's ternary branch that ends `})`. Then it CONSUMED a
-300-character window, so the second call — sitting inside the first one's window
-— was skipped, because `matchAll` resumes at lastIndex. Two nearby call sites
-read as one. Both times the assertion still passed; only `expect(calls >= 3)`
-failed. A lookahead fixed it.
-
-The scan would have gone on reporting success for a check covering two thirds of
-its subject. **The floor is the entire reason I know that**, and it is the
-cheapest line in the file.
-
-**Left off:** tree clean, six tasks / 3118 tests on `--force`, plus typecheck,
-lint, format:check, check:sql and check:db. Nothing claimed. Nothing in flight.
-
-**What Kevin needs to know before the next store submission**, and it is not
-code: the closed beta changes App Access on BOTH stores. `apps/android/README.md`
-is rewritten — its old reviewer note is now actively wrong, since it told a
-reviewer that creating an account needs an identity check, when it is refused
-outright. The App Store guide needs the same correction and does not have it
-yet, because it lives in an artifact rather than in the repo.
