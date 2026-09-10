@@ -389,6 +389,14 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   incognito: "operational",
   intention: "operational",
   intention_changed_at: "operational",
+  // Backlog 29. Account provenance, not a fact about the person: it records
+  // that this account was created through a beta invitation, which is a thing
+  // that happened to the signup and not an attribute of the member. Never
+  // disclosed to another member and never rendered — its only reader is the
+  // query that decides who gets thanked. It is declared rather than skipped
+  // because the chain refuses an unclassified `profiles` column, which is the
+  // guard doing its job: anything on this table lands on two store forms.
+  joined_in_beta: "operational",
   mode: "operational",
   mode_dating_reentry_at: "operational",
   location: "Location → Coarse Location",

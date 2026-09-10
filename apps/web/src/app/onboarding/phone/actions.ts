@@ -144,7 +144,8 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
    * bookkeeping update failed would be the worst possible trade. The cost of
    * missing it is one invitation reusable once more, which the TTL still bounds.
    */
-  await acceptBetaInvite((await cookies()).get("plusone_beta")?.value);
+  const betaCode = (await cookies()).get("plusone_beta")?.value;
+  await acceptBetaInvite(betaCode);
 
   // Record on the profile what the OTP just proved.
   //
@@ -181,6 +182,40 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
     if (promoteError) {
       console.error(JSON.stringify({ at: "phone.verify", problem: promoteError.message }));
       return { error: E.sendFailed, sentTo: phone };
+    }
+
+    // Mark the beta cohort, in a SEPARATE write that is allowed to fail.
+    //
+    // Not folded into the update above, and that is the whole point. Code
+    // reaches production before the schema does here as a matter of course —
+    // migrations are applied by hand and are Kevin's call — and PostgREST does
+    // not fail narrowly on an unknown column, it fails the WHOLE request. Naming
+    // joined_in_beta in the promote write would mean that until the migration
+    // lands, verification_status is never set for anybody, every new member is
+    // bounced between the phone and liveness screens, and the cause is a column
+    // that has nothing to do with either. HANDOFF.md has that exact failure,
+    // dated 2026-08-29.
+    //
+    // So: the critical write stays as it was, and this one is bookkeeping that
+    // may lose a row. The condition is the same `unverified` guard, which is
+    // what keeps it to accounts being created right now — an existing member who
+    // still has an invitation cookie is signing IN, not joining, and is not part
+    // of the cohort.
+    if (betaCode) {
+      const { error: cohortError } = await serviceClient()
+        .from("profiles")
+        .update({ joined_in_beta: true })
+        .eq("id", auth.user.id)
+        .eq("verification_status", "phone_verified")
+        .eq("joined_in_beta", false);
+
+      // Logged, never returned. The account exists and the member is signed in;
+      // refusing them their session because a cohort flag did not land would be
+      // the worst possible trade, and it is the same reasoning acceptBetaInvite
+      // above is written with.
+      if (cohortError) {
+        console.error(JSON.stringify({ at: "phone.cohort", problem: cohortError.message }));
+      }
     }
   }
 

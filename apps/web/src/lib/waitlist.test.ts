@@ -695,3 +695,92 @@ describe("countByMetro totals what it is given, whatever shape it walks in", () 
     expect(counts.every((c) => c.confirmed === 0)).toBe(true);
   });
 });
+
+/**
+ * The cohort, recorded at the one moment it is knowable.
+ *
+ * `waitlist.accepted_at` says an invitation was spent. It cannot say by WHICH
+ * account — the waitlist has no user_id and must not get one, since
+ * WAITLIST_NEVER bans `phone` as a second identifier and a user_id is stronger
+ * still: it binds an address that merely asked about an HSV and HIV app to a
+ * member account. So the account carries the mark instead, and OTP verification
+ * is the only place both halves are in hand. Backlog 22 reopens signup and from
+ * that moment nobody arriving leaves a trace at all.
+ */
+describe("who came in during the beta", () => {
+  const actions = body("app/onboarding/phone/actions.ts");
+  const MIGRATIONS = join(SRC, "..", "..", "..", "supabase", "migrations");
+  const files = readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  const allSql = files.map((f) => readFileSync(join(MIGRATIONS, f), "utf8")).join("\n");
+  const migration = files.find((f) => f.includes("who_came_in_during_the_beta"));
+
+  it("finds the migrations, so the negatives below are not vacuous", () => {
+    // The floor. Every assertion in this block that asserts an ABSENCE would
+    // pass happily against an empty string, and this file already has a
+    // docblock about exactly that failure.
+    expect(files.length).toBeGreaterThan(50);
+    expect(allSql).toMatch(/create table if not exists public\.waitlist/);
+  });
+
+  it("has a migration adding the column", () => {
+    expect(migration).toBeTruthy();
+    expect(readFileSync(join(MIGRATIONS, migration!), "utf8")).toMatch(
+      /add column if not exists joined_in_beta boolean not null default false/,
+    );
+  });
+
+  it("grants it to nobody, so a member cannot mint their own claim", () => {
+    // profiles carries NO whole-table grant — column-level only, read off
+    // information_schema rather than inferred: 33 insert, 42 select, 32 update.
+    // So the column is unreachable unless granted, and granting it would let a
+    // member set the flag that decides who gets a premium grant.
+    expect(allSql).not.toMatch(/grant\s+update\s*\(\s*joined_in_beta/i);
+    expect(allSql).not.toMatch(/grant\s+insert\s*\(\s*joined_in_beta/i);
+  });
+
+  it("is written in a SEPARATE request from the one that unlocks liveness", () => {
+    // PostgREST fails the WHOLE request on an unknown column, and code reaches
+    // production before the schema here as a matter of course. Folded into the
+    // promote write, an unapplied migration would stop verification_status
+    // being set for every new member and bounce them between two screens with
+    // each blaming the other — HANDOFF.md has that exact failure, 2026-08-29.
+    const promote = actions.indexOf('verification_status: "phone_verified"');
+    const cohort = actions.indexOf("joined_in_beta: true");
+    expect(promote).toBeGreaterThan(-1);
+    expect(cohort).toBeGreaterThan(promote);
+    // A second `.update(` between them is what makes it a second REQUEST.
+    // Without this line the assertion passes on the exact edit it exists to
+    // refuse: adding joined_in_beta to the promote object leaves no
+    // "joined_in_beta" in the text BETWEEN the two, so the negative match above
+    // is satisfied by the bug. Caught by sabotaging it.
+    const between = actions.slice(promote, cohort);
+    expect(between).toMatch(/\.update\(/);
+    expect(between).not.toMatch(/joined_in_beta/);
+  });
+
+  it("never fails the signup over it", () => {
+    // The account exists and the member is signed in. Refusing them a session
+    // because a bookkeeping flag did not land is the worst possible trade, and
+    // it is the reasoning acceptBetaInvite is already written with.
+    const cohort = actions.slice(actions.indexOf("joined_in_beta: true"));
+    expect(cohort).toMatch(/at: "phone\.cohort"/);
+    expect(cohort.slice(0, cohort.indexOf('at: "phone.cohort"'))).not.toMatch(/return \{ error/);
+  });
+
+  it("marks the account being created, not a member signing in", () => {
+    // An existing member who still has an invitation cookie is signing IN.
+    const cohort = actions.slice(
+      actions.indexOf("joined_in_beta: true"),
+      actions.indexOf("joined_in_beta: true") + 400,
+    );
+    expect(cohort).toMatch(/\.eq\("verification_status", "phone_verified"\)/);
+  });
+
+  it("keeps the waitlist free of an account identifier", () => {
+    // The reason the design points this way: a user_id on the waitlist would
+    // turn the health inference into a health fact.
+    expect(allSql).not.toMatch(/alter table public\.waitlist[\s\S]{0,200}add column[^;]*user_id/i);
+  });
+});

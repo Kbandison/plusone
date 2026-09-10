@@ -1766,13 +1766,35 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     an insert into the third — no store involved, nothing to reconcile with Apple
     or Google, and it lapses on its own if it carries a date.
 
-    **What expires is knowing WHO.** `waitlist.accepted_at` marks somebody who
-    came in through a beta invitation, and that is the only thing separating this
-    cohort from everybody else. Once `shouldCreateUser` goes back to `true`
-    (backlog 22) new members arrive by a door that leaves no such mark, and the
-    distinction stops being recoverable. **Stamp the cohort before the beta ends
-    even if the grant itself is deferred** — that costs one query now and is
-    impossible later.
+    **What expires is knowing WHO — BUILT 2026-09-09, before the beta opened.**
+    `profiles.joined_in_beta` (20260909000500), written by the service client at
+    OTP verification, which is the only moment both halves are in hand: the OTP
+    has just verified so there is an authenticated user, and the invitation
+    cookie is still on the request.
+
+    This entry originally said to stamp `waitlist.accepted_at`. That was wrong
+    and the reason is worth keeping. `accepted_at` records that an invitation was
+    SPENT; it cannot say which account resulted, because the waitlist has no
+    `user_id` — and must not get one. `WAITLIST_NEVER` bans `phone` as "a second
+    identifier, and the one that signs a member in", and a `user_id` is stronger
+    still: it binds an address that merely ASKED about an HSV and HIV app to a
+    member account, turning the inference into a fact. So the mark goes on the
+    account, which already knows the member's condition because that is what
+    this app is.
+
+    Granted to nobody — `profiles` carries no whole-table grant, read off
+    `information_schema` rather than inferred, so an ungranted column is
+    unreachable. A member who could set this would be minting their own claim on
+    a premium grant.
+
+    Written in a SEPARATE request from the one that promotes
+    `verification_status`, deliberately. PostgREST fails the WHOLE request on an
+    unknown column and code reaches production before the schema here as a
+    matter of course — folded in, an unapplied migration would stop every new
+    member reaching liveness, over a column that has nothing to do with it.
+
+    **What is left is the grant itself, and it is Kevin's**: dated or permanent,
+    and starting when the member's metro opens rather than when they joined.
 
     **Start it when their metro opens, not when they join.** Premium is reach and
     filters; a tester whose area holds four people gets nothing from either, so a
