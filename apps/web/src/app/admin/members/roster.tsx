@@ -1,5 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase";
 
+import { ShowContact } from "./show-contact";
+
 /**
  * Who has signed up, and when.
  *
@@ -27,6 +29,8 @@ interface RosterRow {
   readonly last_active_at: string | null;
   readonly joined_in_beta: boolean;
   readonly open_reports: number;
+  readonly email_masked: string | null;
+  readonly phone_masked: string | null;
 }
 
 export async function Roster() {
@@ -58,13 +62,14 @@ export async function Roster() {
           sideways: a document-level overflow shifts the header and wordmark with
           it, which is the bug 1ea97be spent an evening on. */}
       <div className="mt-5 -mx-6 overflow-x-auto px-6">
-        <table className="w-full min-w-[34rem] border-collapse text-left text-[12.4px]">
+        <table className="w-full min-w-[44rem] border-collapse text-left text-[12.4px]">
           <thead>
             <tr className="border-b border-line text-[10.5px] tracking-[0.04em] text-ink-3 uppercase">
               <th className="py-2 pr-4 font-normal">Name</th>
               <th className="py-2 pr-4 font-normal">Joined</th>
               <th className="py-2 pr-4 font-normal">Status</th>
               <th className="py-2 pr-4 font-normal">Last active</th>
+              <th className="py-2 pr-4 font-normal">Contact</th>
               <th className="py-2 font-normal">Flags</th>
             </tr>
           </thead>
@@ -81,6 +86,15 @@ export async function Roster() {
                 <td className="py-2.5 pr-4 tabular-nums text-ink-2">{when(r.created_at)}</td>
                 <td className="py-2.5 pr-4 text-ink-2">{r.verification_status}</td>
                 <td className="py-2.5 pr-4 tabular-nums text-ink-2">{when(r.last_active_at)}</td>
+                {/* Masked from the database, not hidden with CSS — a page that
+                    ships whole addresses has already put them in the payload. */}
+                <td className="py-2.5 pr-4 text-[11.5px]">
+                  <ShowContact
+                    userId={r.user_id}
+                    emailMasked={r.email_masked}
+                    phoneMasked={r.phone_masked}
+                  />
+                </td>
                 <td className="py-2.5">
                   <span className="flex flex-wrap gap-1.5">
                     {r.joined_in_beta ? (

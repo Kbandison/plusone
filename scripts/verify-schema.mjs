@@ -151,7 +151,13 @@ if (!DB_URL) {
 //                                          still unapplied, which is how the
 //                                          missing ingest_article delta above
 //                                          was noticed at all.
-const EXPECT = { tables: 36, views: 5, functions: 133, enums: 31, rooms: 7, config: 23 };
+//
+// functions 133 -> 134                     20260909000700 — admin_member_contact.
+//                                          One member's email and phone by id,
+//                                          so the roster can show them masked.
+//                                          admin_member_roster is REPLACED in
+//                                          the same file and is net zero.
+const EXPECT = { tables: 36, views: 5, functions: 134, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that

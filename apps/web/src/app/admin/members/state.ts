@@ -21,3 +21,13 @@ export type LookupState = {
 };
 
 export const LOOKUP_INITIAL: LookupState = { hits: [], searched: false };
+
+/** What `memberContact` hands back. */
+export interface ContactState {
+  readonly shown: boolean;
+  readonly email?: string | null;
+  readonly phone?: string | null;
+  readonly error?: string;
+}
+
+export const CONTACT_INITIAL: ContactState = { shown: false };
