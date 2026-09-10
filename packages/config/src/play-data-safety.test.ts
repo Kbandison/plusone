@@ -44,14 +44,23 @@ describe("the Play answers cover the same facts as the Apple ones", () => {
     }
   });
 
-  it("declares the liveness selfie, which the Apple side holds for counsel", () => {
+  it("declares the liveness selfie, and so does the Apple side now", () => {
     const ephemeral = PLAY_DATA_SAFETY.filter((e) => e.processedEphemerally);
     expect(ephemeral).toHaveLength(1);
     expect(ephemeral[0]?.purposes).toContain("Fraud prevention, security, and compliance");
-    // And the Apple side must still be carrying its held note, so the two are
-    // reconcilable by whoever reads them next.
-    const held = NOT_COLLECTED.find((n) => n.category.includes("biometric"));
-    expect(held?.because).toMatch(/HELD FOR COUNSEL/);
+
+    // This used to assert the OPPOSITE half — that Apple still carried a
+    // "HELD FOR COUNSEL" note — on the reasoning that the two forms were not in
+    // conflict, they had different resolution. That was true and it was still a
+    // position nobody wanted to defend under review. Resolved 2026-09-10 in the
+    // conservative direction the note itself named: Apple declares it too, under
+    // Sensitive Info, which is where Apple's own definition puts biometric data.
+    //
+    // The forms remain differently SHAPED — Play has "processed ephemerally" and
+    // Apple has no equivalent — but they no longer give different answers.
+    const apple = PRIVACY_LABELS.find((l) => l.category === "Sensitive Info");
+    expect(apple?.what).toMatch(/liveness check/i);
+    expect(NOT_COLLECTED.some((n) => n.category.includes("biometric"))).toBe(false);
   });
 });
 

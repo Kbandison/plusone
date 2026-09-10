@@ -51,7 +51,16 @@ export const PRIVACY_LABELS: readonly PrivacyLabel[] = [
   {
     category: "Health & Fitness → Health",
     what: "Community, condition type, and the optional U=U badge.",
-    justifiedBy: ["profiles.community", "profiles.condition", "profiles.u_equals_u", "consents"],
+    justifiedBy: [
+      "profiles.community",
+      "profiles.condition",
+      "profiles.u_equals_u",
+      // Weight is HealthKit's own category, and on a pool defined by a
+      // diagnosis it tracks treatment history closely enough to stand in for
+      // it. Classified Health since 2026-08-29 and cited here since 2026-09-10.
+      "profiles.weight_kg",
+      "consents",
+    ],
     purpose: "App Functionality",
     linkedToUser: true,
   },
@@ -59,8 +68,36 @@ export const PRIVACY_LABELS: readonly PrivacyLabel[] = [
     category: "Sensitive Info",
     what:
       "Sexual orientation. Never asked for directly — it is what gender and seeking " +
-      "amount to in a dating context, and Apple's category names it explicitly.",
-    justifiedBy: ["profiles.gender", "profiles.seeking"],
+      "amount to in a dating context, and Apple's category names it explicitly. " +
+      "Religion and political views, which members may add to a profile and leave blank. " +
+      "And the LIVENESS CHECK, which Apple's definition of this category names as " +
+      "biometric data: a short video streams from the device to Rekognition and nothing " +
+      "survives it — no face collection, no matching, OutputConfig unset so AWS has " +
+      "nowhere to write, AuditImagesLimit at its default of 0, and LivenessOutcome has no " +
+      "field that could hold an image. Only a pass and a timestamp reach this database. " +
+      "DECLARED ANYWAY, resolved 2026-09-10: it sat under NOT_COLLECTED asking whether " +
+      "processing by a processor that retains nothing counts as collection, while Play's " +
+      "form has a 'processed ephemerally' answer that fits exactly and was already used. " +
+      "Two forms with different answers to one question is not a position worth defending, " +
+      "and the note itself said which way to break the tie — under-declaring on a health " +
+      "app is found later rather than never. Folded into this entry rather than added as " +
+      "its own, because the manifest carries one NSPrivacyCollectedDataType per label and " +
+      "a second Sensitive Info entry would be a duplicate data type on the form.",
+    justifiedBy: [
+      "profiles.gender",
+      "profiles.seeking",
+      // Added 2026-09-10. These four have been classified Sensitive Info in the
+      // column map since 2026-08-29 and were cited by nothing — the form entry
+      // said gender and seeking, which is what a reviewer would have checked it
+      // against. Religion and political views are Article 9 categories in their
+      // own right, not only by inference from the app's premise.
+      "profiles.religion",
+      "profiles.politics",
+      "profiles.relationship_structure",
+      "profiles.languages",
+      "liveness_sessions()",
+      "profiles.liveness_passed_at",
+    ],
     purpose: "App Functionality",
     linkedToUser: true,
   },
@@ -155,17 +192,6 @@ export const NOT_COLLECTED = [
     because:
       "The processor holds the card and the legal name; this database holds neither. " +
       "On iOS, StoreKit holds them instead. Purchases are declared; payment details are not.",
-  },
-  {
-    category: "Sensitive Info → biometric data (the liveness check)",
-    because:
-      "The video streams from the device to Rekognition and nothing survives it: no face " +
-      "collection, no matching, OutputConfig unset so AWS has nowhere to write, " +
-      "AuditImagesLimit at its default of 0, and LivenessOutcome has no field that could " +
-      "hold an image. legal.ts lists the selfie under 'What we never store'. " +
-      "HELD FOR COUNSEL: whether real-time processing by a processor that retains nothing " +
-      "counts as collection under Apple's definition. Declare it if they say so — the cost " +
-      "is one line, and under-declaring on a health app is found later rather than never.",
   },
   {
     category: "Diagnostics, Usage Data, Browsing History, Search History, Contacts",

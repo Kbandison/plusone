@@ -179,9 +179,22 @@ describe("the answers that a later change could quietly reverse", () => {
    */
   it("still keeps nothing from the liveness check", () => {
     const liveness = readFileSync(`${ROOT}apps/web/src/lib/liveness-aws.ts`, "utf8");
+    // The substantive half, unchanged: nothing in the call can retain an image.
     expect(liveness).not.toMatch(/OutputConfig:/);
     expect(liveness).not.toMatch(/AuditImagesLimit:\s*[1-9]/);
-    expect(NOT_COLLECTED.some((n) => n.category.includes("biometric"))).toBe(true);
+    // The declaration half, inverted 2026-09-10. It asserted the biometric sat
+    // in NOT_COLLECTED with a note held for counsel. It is declared now, under
+    // Sensitive Info — Apple's own definition of that category names biometric
+    // data — because Play already declared it and two forms answering one
+    // question differently is not defensible under review.
+    //
+    // Retaining nothing and declaring it are not in tension: the declaration
+    // says the data is collected, and the two assertions above are what keep
+    // "nothing survives it" true.
+    expect(NOT_COLLECTED.some((n) => n.category.includes("biometric"))).toBe(false);
+    expect(PRIVACY_LABELS.find((l) => l.category === "Sensitive Info")?.what).toMatch(
+      /liveness check/i,
+    );
   });
 
   /**
@@ -395,4 +408,53 @@ describe("the policy names what the labels declare", () => {
       phrase,
     );
   });
+});
+
+/**
+ * A classified column has to appear as evidence for the label it is classified
+ * under.
+ *
+ * `PROFILE_COLUMN_CLASSIFICATION` is per column; `PRIVACY_LABELS` is the answer
+ * that actually goes on Apple's form, and each entry cites the columns
+ * justifying it. Nothing connected the two, so the map learned about religion,
+ * politics, relationship structure, languages and weight on 2026-08-29 and the
+ * declarations did not. Sensitive Info was still justified by gender and
+ * seeking alone; Health by community, condition and U=U.
+ *
+ * That is the same drift as the privacy policy's, one file further in, and it
+ * matters in the same way: the form entry is what a reviewer reads, and its
+ * evidence list is what anybody would check it against.
+ */
+describe("every classified column justifies its label", () => {
+  const forCategory = (category: string) =>
+    PRIVACY_LABELS.filter((l) => l.category === category).flatMap((l) => l.justifiedBy);
+
+  const columnsBy = (category: string) =>
+    Object.entries(PROFILE_COLUMN_CLASSIFICATION)
+      .filter(([, c]) => c === category)
+      .map(([col]) => col);
+
+  const CATEGORIES = ["Sensitive Info", "Health & Fitness → Health"] as const;
+
+  it("finds columns in both categories, so the checks below are not vacuous", () => {
+    // The floor, and it needs a floor of its own: emptying CATEGORIES makes both
+    // loops below iterate zero times AND removes every it.each case, so the
+    // whole block passes on nothing. Caught by sabotaging exactly that — a floor
+    // that only checks the contents is no floor when the container can be
+    // emptied.
+    expect(CATEGORIES).toHaveLength(2);
+    for (const c of CATEGORIES) expect(columnsBy(c).length, c).toBeGreaterThanOrEqual(2);
+    for (const c of CATEGORIES) expect(forCategory(c).length, c).toBeGreaterThanOrEqual(2);
+  });
+
+  it.each(CATEGORIES.flatMap((c) => columnsBy(c).map((col) => [c, col] as const)))(
+    "%s is justified by profiles.%s",
+    (category, column) => {
+      expect(
+        forCategory(category),
+        `profiles.${column} is classified "${category}" but no label of that category cites it. ` +
+          `Add it to justifiedBy, or the form entry and the column map disagree.`,
+      ).toContain(`profiles.${column}`);
+    },
+  );
 });
