@@ -145,6 +145,16 @@ if (!DB_URL) {
 //                                          condition and no contact details. No
 //                                          table: it reads profiles.
 //
+// functions 134 -> 135                     20260910000100 — faith and politics
+//                                          need their own consent:
+//                                          profiles_beliefs_need_consent, the
+//                                          trigger behind it. No table and no
+//                                          new column — the consent is a row in
+//                                          `consents`, which has existed since
+//                                          Milestone 1; what is new is a fourth
+//                                          value on consent_kind, and an enum
+//                                          value is not a function.
+//
 //                                          Read off the live database after
 //                                          applying, not added up. 132 was the
 //                                          live count on 2026-09-09 with 000600
@@ -157,7 +167,7 @@ if (!DB_URL) {
 //                                          so the roster can show them masked.
 //                                          admin_member_roster is REPLACED in
 //                                          the same file and is net zero.
-const EXPECT = { tables: 36, views: 5, functions: 134, enums: 31, rooms: 7, config: 23 };
+const EXPECT = { tables: 36, views: 5, functions: 135, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
