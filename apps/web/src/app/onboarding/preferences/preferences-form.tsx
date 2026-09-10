@@ -36,6 +36,8 @@ const AGE_FLOOR = profile.MINIMUM_AGE;
 const AGE_CEILING = profile.OLDEST_PREFERENCE;
 
 const C = DRAFT_COPY.preferences;
+/** Consent wording lives with the other consent, not with the fields. */
+const CONSENT = COPY.consent;
 
 /**
  * Every 2 cm from the floor to the ceiling.
@@ -356,6 +358,27 @@ export function PreferencesForm({
                 options={POLITICS_LABELS}
                 selected={defaults.politics ?? null}
               />
+
+              {/* The consent, beside the fields rather than on its own screen.
+                  Onboarding is nine steps already and these two are optional —
+                  a member who leaves both blank should never meet this.
+
+                  Unticked by default and never pre-checked: a pre-ticked box is
+                  not consent, and this is the one control on the form where that
+                  distinction is the whole point. Choosing "Rather not say" needs
+                  no tick either — the trigger exempts it, because making the
+                  refusal cost more than the disclosure would be backwards. */}
+              <label className="min-h-tap flex items-start gap-3 text-[12.6px]">
+                <input
+                  type="checkbox"
+                  name="beliefsConsent"
+                  className="mt-0.5 size-5 shrink-0 accent-accent"
+                />
+                <span className="flex flex-col gap-1.5">
+                  <span>{CONSENT.beliefsLabel}</span>
+                  <span className="text-[11.7px] text-ink-3">{CONSENT.beliefsBody}</span>
+                </span>
+              </label>
             </div>
           </>
         ) : null}

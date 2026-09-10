@@ -113,6 +113,28 @@ export const COPY = {
     /** §9.1 — own screen, unbundled checkbox, consent timestamp stored. */
     healthData:
       "Plus One stores the status you choose to share (your community, condition type, and optional U=U badge) to run matching and community features. We never collect medical records, test results, or diagnosis details. We never sell or share your health information. You can delete everything, permanently, at any time.",
+
+    /**
+     * Faith and politics, and why they get their own tick.
+     *
+     * Article 9 names religion and political opinion as categories in their own
+     * right, not merely by inference from what this app is. Until 2026-09-10 the
+     * whole mitigation was a hint beside the fields SAYING they do not sit
+     * behind the consent screen the health fields sit behind — which is notice,
+     * and notice is not consent.
+     *
+     * Separate from healthData rather than folded into it, deliberately: a
+     * member who agreed to their condition being stored has not agreed to a
+     * political opinion appearing on a profile, and the two must be withdrawable
+     * apart from each other.
+     *
+     * It lives here rather than beside the fields because this is where consent
+     * wording lives and where consent.test.ts looks for it. The SCREEN is still
+     * inline — onboarding is nine steps already and these fields are optional.
+     */
+    beliefsBody:
+      "Faith and politics are treated as sensitive information by law in some places, so we ask separately before storing them. Saying yes lets us keep your answers and show them on your profile. You can change either answer, or clear both, whenever you like \u2014 and clearing them never needs permission.",
+    beliefsLabel: "Store my faith and politics and show them on my profile",
   },
 } as const;
 
@@ -129,10 +151,16 @@ export const COPY = {
  */
 export const CONSENT_COPY_VERSION = {
   health_data: "2026-08-14",
+  // Faith and politics. Article 9 categories in their own right, so they get
+  // their own tick rather than riding on the health one — a member who agreed
+  // to health data being stored has not agreed to a political opinion being
+  // shown on a profile, and the two are separately withdrawable.
+  beliefs: "2026-09-10",
 } as const;
 
 export const CONSENT_COPY_DIGEST = {
   health_data: "eb80a79862defeb7",
+  beliefs: "c069e42c9c16b2bf",
 } as const;
 
 export type ConsentKind = keyof typeof CONSENT_COPY_VERSION;

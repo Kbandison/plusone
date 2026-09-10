@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { CONSENT_COPY_VERSION, DRAFT_COPY } from "@plusone/config";
 
 import { nextRoute, requireStep } from "@/lib/onboarding";
 import { parsePreferences } from "@/lib/preferences";
@@ -30,7 +30,32 @@ export async function savePreferences(
   if ("error" in parsed) return { error: parsed.error };
 
   const supabase = await getServerSupabase();
+
+  // The belief consent, recorded BEFORE the write it authorises.
+  //
+  // `profiles_beliefs_consent` refuses a disclosing religion or politics answer
+  // without a row here, so the order is not a preference — the other way round
+  // the trigger rejects the update and the tick is never stored. Idempotent:
+  // (user_id, kind, copy_version) is unique, so a second save is a no-op rather
+  // than a duplicate.
+  //
+  // Nothing here decides whether the consent is REQUIRED. The database does, on
+  // the value being written, whichever path the write arrives on — a member can
+  // PATCH these columns straight through PostgREST and a check in this action
+  // would be decoration.
+  if (formData.get("beliefsConsent") === "on") {
+    await supabase
+      .from("consents")
+      .insert({ user_id: userId, kind: "beliefs", copy_version: CONSENT_COPY_VERSION.beliefs })
+      .select()
+      .maybeSingle();
+  }
+
   const { error } = await supabase.from("profiles").update(parsed.values).eq("id", userId);
+
+  // The trigger's refusal, turned into a sentence. 42501 here means a belief
+  // was answered with the box unticked; anything else is an ordinary failure.
+  if (error?.code === "42501") return { error: DRAFT_COPY.preferences.errors.beliefsConsent };
 
   // Checked, because supabase-js resolves rather than rejects: an unchecked
   // update reads as a success and sends the member to a step the resolver will

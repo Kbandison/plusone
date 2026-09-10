@@ -738,6 +738,9 @@ export const DRAFT_COPY = {
     editSaved: "Saved.",
     errors: {
       genderRequired: "Choose one, so people looking for you can find you.",
+      /** profiles_beliefs_consent refuses these; this is so the refusal is a sentence. */
+      beliefsConsent:
+        "Tick the box below Faith and Politics to save those two, or clear them both.",
       ageOrder: "The first age has to be lower than the second.",
       ageRange: "Ages have to be between 18 and 120.",
       /** profiles_height_range refuses these; this is so the refusal is a sentence. */

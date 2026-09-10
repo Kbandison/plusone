@@ -22,6 +22,10 @@ import {
  */
 const CONSENTED_TEXT = {
   health_data: `${COPY.consent.healthData}\n${COPY.consent.checkboxLabel}`,
+  // The belief consent lives beside the fields it gates rather than on its own
+  // screen — onboarding is nine steps already and these two are optional — so
+  // its body and label sit in the preferences copy, not in COPY.consent.
+  beliefs: `${COPY.consent.beliefsBody}\n${COPY.consent.beliefsLabel}`,
 } as const;
 
 describe("consent copy versioning", () => {

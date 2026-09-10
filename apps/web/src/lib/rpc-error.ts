@@ -175,6 +175,12 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "an article needs a source",
   "an article link must be https",
   "not a Latest news room",
+  // profiles_beliefs_consent. Reached only by a member PATCHing religion or
+  // politics past the form — the form's own path records the consent first and
+  // the action turns 42501 into a sentence. Classified here because an
+  // unclassified raise reaches a member as a raw Postgres string, and this one
+  // would name the two fields it refuses.
+  "faith and politics need their own consent first",
   "no such article",
   // share_post_to_room. Both describe a share the UI does not offer — it lists
   // only rooms the member is in, and refuses an article already there — so

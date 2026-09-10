@@ -135,3 +135,92 @@ describe("the option sets", () => {
     expect(everything).not.toMatch(/\b(hsv|hiv|herpes|positive|diagnos)/i);
   });
 });
+
+/**
+ * Faith and politics have their own consent, and the database holds it.
+ *
+ * Q3 of the 2026-09-10 counsel brief. Until then the whole mitigation was a
+ * hint beside the fields saying they do NOT sit behind the consent screen the
+ * health fields sit behind — notice rather than consent, on two categories GDPR
+ * Article 9 names in their own right.
+ *
+ * The gate is a trigger because `authenticated` holds INSERT and UPDATE on both
+ * columns: a member can PATCH either straight through PostgREST, so a check in
+ * the server action is decoration. Same finding as the per-photo privacy gate.
+ */
+describe("a belief is not a preference", () => {
+  const migration = read(
+    "../../../../../../supabase/migrations/20260910000100_a_belief_is_not_a_preference.sql",
+  );
+  // NOT the comment-stripped `actions` above: these assertions are about the
+  // order of two calls, and the stripped copy is fine for that — but the
+  // 42501 check reads more clearly against the real file.
+  const action = read("./actions.ts");
+  const form = read("./preferences-form.tsx");
+
+  it("gates the write in a trigger, not only in the action", () => {
+    // Comments stripped. Commenting the CREATE TRIGGER out left the words in
+    // the file and this passed — a function with no trigger on it gates
+    // nothing, and the assertion could not tell the difference.
+    const sql = migration.replace(/^\s*--.*$/gm, "");
+    expect(sql).toMatch(/create trigger profiles_beliefs_consent/);
+    expect(sql).toMatch(/before insert or update of religion, politics on public\.profiles/);
+    expect(sql).toMatch(/execute function public\.profiles_beliefs_need_consent\(\)/);
+  });
+
+  it("never gates clearing, so consent can be withdrawn", () => {
+    // A consent that cannot be walked back is not one. Proven against the live
+    // database inside a rolled-back transaction: clearing both was ALLOWED with
+    // no consent row present.
+    const fn = migration.slice(migration.indexOf("v_disclosing :="));
+    expect(fn).toMatch(/new\.religion is not null/);
+    expect(fn).toMatch(/new\.politics is not null/);
+  });
+
+  it("never gates prefer_not_to_say", () => {
+    // A real stored answer that discloses no belief. Requiring consent to record
+    // that somebody declined would make the refusal cost more than the
+    // disclosure. Also proven live: ALLOWED with no consent row.
+    expect(migration.match(/'prefer_not_to_say'/g)?.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("compares the kind as text, so the migration can apply at all", () => {
+    // `beliefs` is added by this same file and Postgres refuses to USE a value
+    // added in the current transaction — an enum literal here would fail on the
+    // very apply that creates it. This is not a style choice.
+    expect(migration).toMatch(/c\.kind::text = 'beliefs'/);
+    expect(migration).not.toMatch(/kind = 'beliefs'::/);
+  });
+
+  it("records the consent before the write it authorises", () => {
+    // The other order has the trigger reject the update and the tick never
+    // stored.
+    //
+    // The condition is asserted, not just the position. Replacing it with
+    // `if (false)` left the insert exactly where it was and this passed on an
+    // unreachable branch — an order check says nothing about whether the code
+    // between the two indexes can run.
+    const gate = action.indexOf('formData.get("beliefsConsent") === "on"');
+    const consent = action.indexOf('"consents"');
+    const update = action.indexOf('from("profiles").update');
+    expect(gate).toBeGreaterThan(-1);
+    expect(consent).toBeGreaterThan(gate);
+    expect(update).toBeGreaterThan(consent);
+    expect(action).toMatch(/copy_version: CONSENT_COPY_VERSION\.beliefs/);
+  });
+
+  it("does not pre-tick the box", () => {
+    // A pre-checked box is not consent, and this is the one control on the form
+    // where that distinction is the entire point.
+    const box = form.slice(
+      form.indexOf('name="beliefsConsent"') - 200,
+      form.indexOf('name="beliefsConsent"') + 200,
+    );
+    expect(box).not.toMatch(/defaultChecked|checked=\{/);
+  });
+
+  it("turns the refusal into a sentence", () => {
+    expect(action).toMatch(/error\?\.code === "42501"/);
+    expect(action).toMatch(/errors\.beliefsConsent/);
+  });
+});
