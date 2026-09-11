@@ -321,3 +321,68 @@ describe("an article with no mark", () => {
     expect(postRow).not.toMatch(/src=\{post\.article_icon \?\? ""\}/);
   });
 });
+
+/**
+ * An article carries the date it was published, on every path in.
+ *
+ * The room sorts on `created_at`, so a piece from last week posted today would
+ * sit above everything genuinely newer and read as today's news — on a room
+ * whose entire job is "what has been published".
+ *
+ * The cron and the agent endpoint have passed a date since 20260909000300.
+ * `admin_post_article` passed NULL, which was defensible while the form existed
+ * for the occasional piece the ingest could not reach, and stopped being
+ * defensible on 2026-09-11 when a blocked scheduled run meant a whole day's
+ * articles had to go in by hand, all published days earlier.
+ */
+describe("an article keeps its own date", () => {
+  const adminSqlDated = read(
+    "../../../../../../supabase/migrations/20260911000100_an_article_keeps_its_own_date.sql",
+  );
+  const adminAction = read("../../admin/news/actions.ts");
+  const adminForm = read("../../admin/news/post-article.tsx");
+
+  it.each([
+    ["the cron", read("../../api/cron/news/route.ts")],
+    ["the agent endpoint", read("../../api/news/ingest/route.ts")],
+    ["the admin form", adminAction],
+  ])("%s sends a publication date", (_who, src) => {
+    expect(src).toMatch(/p_published_at:/);
+  });
+
+  it("drops the six-argument admin function, so the date cannot be skipped", () => {
+    // Comments stripped: this file argues for the drop in prose that contains
+    // the words, and a negative match over the whole file would read its own
+    // reasoning as the code.
+    const sql = adminSqlDated.replace(/^\s*--.*$/gm, "");
+    expect(sql).toMatch(
+      /drop function if exists public\.admin_post_article\(uuid\[\], text, text, text, text, text\)/,
+    );
+    expect(sql).toMatch(/p_icon, p_published_at\)/);
+  });
+
+  it("refuses a future date rather than clamping it", () => {
+    // Clamping would turn a typo into "posted now" silently, which is the exact
+    // behaviour this change exists to stop.
+    const sql = adminSqlDated.replace(/^\s*--.*$/gm, "");
+    expect(sql).toMatch(/cannot be published in the future/);
+    expect(sql).not.toMatch(/least\(p_published_at/);
+  });
+
+  it("reads a bare date as midday, not midnight", () => {
+    // A date input gives "2026-09-09", which new Date() reads as UTC MIDNIGHT —
+    // so an article published on the 9th would sort before one published at
+    // 23:00 on the 8th in a western timezone. Midday cannot cross a day
+    // boundary in either direction for any real offset.
+    expect(adminAction).toMatch(/T12:00:00Z/);
+    expect(adminAction).not.toMatch(/T00:00:00Z/);
+  });
+
+  it("leaves the date optional, and blank means now", () => {
+    // Some pieces have no publication date worth quoting, and a required field
+    // makes somebody invent one. Proven live: null stored now().
+    expect(adminAction).toMatch(/if \(!value\) return null;/);
+    expect(adminForm).toMatch(/name="publishedAt"/);
+    expect(adminForm).not.toMatch(/name="publishedAt"[^/]*required/);
+  });
+});

@@ -61,6 +61,13 @@ export function PostArticle({ rooms }: { rooms: readonly NewsRoomOption[] }) {
           label="Summary"
           placeholder="Optional — the headline is used if this is empty"
         />
+        {/* The date it was PUBLISHED, not the date it is being posted.
+            The room sorts on that, so a piece from last week posted today would
+            otherwise sit above everything genuinely newer and read as today's
+            news — on a room whose whole job is "what has been published".
+            Optional: blank means now, because some pieces have no date worth
+            quoting and a required field makes somebody invent one. */}
+        <Field id="publishedAt" name="publishedAt" label="Published" type="date" />
 
         <fieldset className="flex flex-col gap-2">
           <legend className="text-[12.2px]">Post it to</legend>

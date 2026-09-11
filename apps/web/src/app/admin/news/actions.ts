@@ -22,6 +22,18 @@ export async function updateNewsItem(_prev: NewsState, formData: FormData): Prom
     p_id: String(formData.get("id") ?? ""),
     p_title: String(formData.get("title") ?? ""),
     p_summary: String(formData.get("summary") ?? ""),
+    // The article's own date, not this request's.
+    //
+    // A date input gives "2026-09-09", which `new Date()` reads as UTC MIDNIGHT
+    // — so an article published on the 9th sorts before one published at 23:00
+    // on the 8th in a western timezone. Midday is the least wrong point to pick
+    // when a date carries no time: it cannot cross a day boundary in either
+    // direction for any real offset.
+    //
+    // Blank stays blank, and the function reads null as now(). Some pieces have
+    // no publication date worth quoting, and a required field makes somebody
+    // invent one.
+    p_published_at: publishedAt(formData.get("publishedAt")),
   });
 
   if (error) return { error: "That didn't save.", message: null };
@@ -65,6 +77,21 @@ export async function deleteNewsItem(_prev: NewsState, formData: FormData): Prom
  * The count comes back so the message can tell "posted to both" from "the feed
  * already had it", which are different outcomes that used to look identical.
  */
+/**
+ * A date field to an instant, or null.
+ *
+ * Anything unparseable is treated as absent rather than refused: the article is
+ * the value and the date is metadata, which is the same call the agent endpoint
+ * makes. The FUTURE check lives in the database, because that is a real mistake
+ * worth stopping rather than a formatting slip.
+ */
+function publishedAt(raw: FormDataEntryValue | null): string | null {
+  const value = String(raw ?? "").trim();
+  if (!value) return null;
+  const at = new Date(`${value}T12:00:00Z`);
+  return Number.isNaN(at.getTime()) ? null : at.toISOString();
+}
+
 export async function postArticle(_prev: NewsState, formData: FormData): Promise<NewsState> {
   const supabase = await getServerSupabase();
   const { data: auth } = await supabase.auth.getUser();
