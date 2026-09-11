@@ -175,6 +175,9 @@ const INTERNAL_PREFIXES: readonly string[] = [
   "an article needs a source",
   "an article link must be https",
   "not a Latest news room",
+  // admin_post_article. Admin-only, and the admin is the one person who can act
+  // on it — a mistyped year is the likely cause and the sentence says so.
+  "an article cannot be published in the future",
   // profiles_beliefs_consent. Reached only by a member PATCHing religion or
   // politics past the form — the form's own path records the consent first and
   // the action turns 42501 into a sentence. Classified here because an
