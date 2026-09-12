@@ -141,26 +141,32 @@ describe("the nav counts", () => {
   });
 
   it("draws nothing at zero", () => {
-    expect(nav).toMatch(/const badge = count > 0;/);
-    expect(nav).toMatch(/\{badge \? \(/);
+    // The COMPONENT decides, not the caller. That keeps the tab's children
+    // unconditional, which nav.test.ts separately requires — a conditional in a
+    // tab is how one ended up unnamed after a refactor nobody looked at.
+    const ui = read("../ui.tsx");
+    expect(ui).toMatch(/if \(n < 1\) return null;/);
+    expect(nav).toMatch(/<CountBadge count=\{count\} \/>/);
   });
 
   it("puts the number in the accessible name, not only on the icon", () => {
     // The icons are aria-hidden, so a badge drawn and not named is a nav that
     // tells a sighted member something it withholds from everybody else.
-    expect(nav).toMatch(/aria-label=\{badge \? C\.navUnread\(item\.label, count\) : item\.label\}/);
-    expect(nav).toMatch(/aria-hidden="true"/);
+    expect(nav).toMatch(
+      /aria-label=\{count > 0 \? C\.navUnread\(item\.label, count\) : item\.label\}/,
+    );
+    expect(read("../ui.tsx")).toMatch(/aria-hidden="true"/);
   });
 
   it("positions the badge against the icon, not the row", () => {
     // On a flex-1 tab the row's corner is a long way from the mark, and further
     // on a tablet than a phone because the tabs grow and the icon does not.
-    const icon = nav.slice(nav.indexOf('<span className="relative flex">'));
-    expect(icon.slice(0, 900)).toMatch(/absolute -top-1 -right-2/);
+    expect(nav).toMatch(/<span className="relative flex">/);
+    expect(read("../ui.tsx")).toMatch(/absolute -top-1 -right-2/);
   });
 
   it("caps the number, so it stays a count and not a shape", () => {
-    expect(nav).toMatch(/count > 99 \? "99\+" : count/);
+    expect(read("../ui.tsx")).toMatch(/n > max \? `\$\{max\}\+` : n/);
   });
 
   it("survives the migration not being applied yet", () => {

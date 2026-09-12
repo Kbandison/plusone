@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 
+import { CountBadge } from "@/app/ui";
+
 import { NAV_ICONS } from "./nav-icons";
 
 const C = DRAFT_COPY.app;
@@ -41,7 +43,6 @@ export function NavLinks({
         // sixth section renders something legible rather than an empty tab.
         const Icon = NAV_ICONS[item.href];
         const count = Math.trunc(counts?.[item.href] ?? 0);
-        const badge = count > 0;
 
         return (
           <li key={item.href} className="flex-1">
@@ -58,7 +59,7 @@ export function NavLinks({
                * badge a screen reader cannot see is a nav that tells sighted
                * members something it withholds from everybody else — and this
                * is the one part of the bar that changes. */
-              aria-label={badge ? C.navUnread(item.label, count) : item.label}
+              aria-label={count > 0 ? C.navUnread(item.label, count) : item.label}
               title={item.label}
               /* min-h-tap still, and it is doing more work than it was. The
                * label carried height; without it the row would collapse to the
@@ -82,21 +83,7 @@ export function NavLinks({
                   grow and the icon does not. */}
               <span className="relative flex">
                 {Icon ? <Icon /> : null}
-                {badge ? (
-                  <>
-                    {/* aria-hidden: the number is already in the link's name,
-                        and reading it twice is worse than not drawing it. */}
-                    <span
-                      aria-hidden="true"
-                      className="absolute -top-1 -right-2 min-w-[1.05rem] rounded-full bg-accent px-1 text-center text-[9.5px] leading-[1.05rem] font-medium text-accent-ink tabular-nums"
-                    >
-                      {/* Capped, because three digits stops being a count and
-                          starts being a shape — and it would be wider than the
-                          mark it sits on. */}
-                      {count > 99 ? "99+" : count}
-                    </span>
-                  </>
-                ) : null}
+                <CountBadge count={count} />
               </span>
               {/* Every tab. Icons READ faster once known and none of the five
                   says what it means to somebody who has not learnt it yet —

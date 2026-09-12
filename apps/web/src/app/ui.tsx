@@ -289,3 +289,39 @@ export function EmptyState({ heading, body }: { heading: string; body: string })
     </Card>
   );
 }
+
+/**
+ * A small count, sitting on the top-right of whatever it is placed against.
+ *
+ * Lives here rather than beside its first caller because `bg-accent` with
+ * padding is exactly the shape `design-system.test.ts` refuses outside this
+ * file — and that guard is right: a badge is a primitive, and the second one
+ * drawn by hand somewhere else is how thirteen spellings of the button happened.
+ *
+ * RETURNS NULL AT ZERO, rather than leaving the caller to write the condition.
+ * That is not only tidier — it keeps the caller's JSX unconditional, and the nav
+ * has a guard requiring exactly that, because a conditional in a tab's children
+ * is how one tab ended up unnamed after a refactor nobody looked at.
+ *
+ * aria-hidden, always. The number must reach a screen reader through the
+ * accessible NAME of whatever this decorates; read from here as well it would
+ * be announced twice, and read from here ALONE it would be announced adrift
+ * from the thing it counts.
+ *
+ * The container needs `relative`; this positions against it.
+ */
+export function CountBadge({ count, max = 99 }: { count: number; max?: number }) {
+  const n = Math.trunc(count);
+  if (n < 1) return null;
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute -top-1 -right-2 min-w-[1.05rem] rounded-full bg-accent px-1 text-center text-[9.5px] leading-[1.05rem] font-medium text-accent-ink tabular-nums`}
+    >
+      {/* Capped, because three digits stops being a count and starts being a
+          shape — wider than most marks it would sit on. */}
+      {n > max ? `${max}+` : n}
+    </span>
+  );
+}

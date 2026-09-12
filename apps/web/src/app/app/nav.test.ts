@@ -32,7 +32,17 @@ describe("every tab is a mark and its word", () => {
   it("gives every link the label as its accessible name", () => {
     // Without this the bar is five unnamed links, which is strictly worse than
     // the words it replaced: a screen reader had a perfectly good nav before.
-    expect(links).toMatch(/aria-label=\{item\.label\}/);
+    //
+    // BOTH BRANCHES, since 2026-09-11. The name gained a count for the two tabs
+    // that carry a badge, so the old literal no longer appears — but the label
+    // must still be in the name either way, and asserting both arms is stricter
+    // than the single match it replaces. A badge drawn and not named would tell
+    // a sighted member something the nav withholds from everybody else.
+    const label = links.match(/aria-label=\{([^}]*)\}/)?.[1] ?? "";
+    expect(label).toContain("item.label");
+    expect(label).toMatch(/\?[^:]*item\.label|item\.label[^:]*:/);
+    // The unread arm names the section as well as the number.
+    expect(links).toMatch(/C\.navUnread\(item\.label, count\)/);
   });
 
   it("hides the marks from the accessibility tree", () => {
