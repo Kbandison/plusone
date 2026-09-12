@@ -121,14 +121,33 @@ export default async function AppLayout({
   const step = onboarding.resolveStep(await loadFacts(data.user.id));
   if (step !== "done") redirect(STEP_ROUTES[step]);
 
-  const [{ data: me }, { data: unreadData }] = await Promise.all([
+  const [{ data: me }, { data: unreadData }, { data: navCounts }] = await Promise.all([
     supabase.rpc("my_profile").maybeSingle<{ mode: string | null; timezone: string | null }>(),
     // A count rather than the list. The bell is on every screen, and rendering
     // it through my_notifications would fetch fifty rows and their joins on
     // every page load to produce one integer.
     supabase.rpc("my_unread_notifications"),
+    // The nav badges, in the same parallel block — one more round trip that
+    // costs nothing in wall clock, on a query that runs for every screen.
+    //
+    // Allowed to come back null. 20260911000200 is applied by hand like every
+    // other migration, so between this deploying and that landing the RPC does
+    // not exist, and PostgREST fails the WHOLE request rather than the one call
+    // — which here would take the header, the nav and the badge down with it.
+    supabase.rpc("my_nav_counts").then(
+      (r) => r,
+      () => ({ data: null }),
+    ),
   ]);
   const unread = Number(unreadData ?? 0);
+  // A row, or nothing. Zero is the safe reading of "we could not tell": a badge
+  // that fails to appear is a member who checks their inbox anyway; one that
+  // appears wrongly sends them to an empty screen.
+  const navRow = (navCounts as { messages: number; replies: number }[] | null)?.[0];
+  const navUnread = {
+    "/app/inbox": Number(navRow?.messages ?? 0),
+    "/app/rooms": Number(navRow?.replies ?? 0),
+  };
   const supportOnly = me?.mode === "support_only";
   const nav = NAV.filter((item) => !(item.datingOnly && supportOnly));
 
@@ -284,7 +303,7 @@ export default async function AppLayout({
           {/* A client component, only so it can read the pathname. Nine links
               rendered identically with no aria-current anywhere, so nothing
               said which section you were in. */}
-          <NavLinks items={nav} />
+          <NavLinks items={nav} counts={navUnread} />
         </ul>
       </nav>
 

@@ -1923,6 +1923,14 @@ export const DRAFT_COPY = {
      * The count is in the label rather than only in the badge, because the
      * badge is a coloured dot to anyone not looking at it.
      */
+    /**
+     * The nav badge, in the link's accessible name.
+     *
+     * The number is drawn on the icon and the icon is aria-hidden, so without
+     * this the bar tells a sighted member something it withholds from everybody
+     * else — on the one part of it that changes.
+     */
+    navUnread: (section: string, count: number) => `${section}, ${count} unread`,
     notificationsBellLabel: (unread: number) =>
       unread === 0 ? "Notifications" : `Notifications, ${unread} unread`,
     /**

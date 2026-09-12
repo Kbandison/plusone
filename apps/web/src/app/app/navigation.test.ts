@@ -85,3 +85,93 @@ describe("returning to a tab does not refetch it from scratch", () => {
     }
   });
 });
+
+/**
+ * The nav badges: unread messages, and replies to your own posts.
+ *
+ * Two counts and two decisions. Kevin chose total unread MESSAGES over threads
+ * ("16" says how much is waiting, "3" says how many people are), and replies to
+ * his OWN posts over all room activity — the second being the consequential one.
+ * Counting unread room posts would have read 118 the day it shipped, because
+ * Latest news holds 117 articles against 1 reply: a number the news cron sets
+ * rather than a person, and one that never reaches zero. §3.3 forbids the app
+ * nudging somebody back for general activity.
+ */
+describe("the nav counts", () => {
+  const sql = read(
+    "../../../../../supabase/migrations/20260911000200_two_numbers_for_the_nav.sql",
+  ).replace(/^\s*--.*$/gm, "");
+  const nav = read("./nav-links.tsx");
+  const layout = read("./layout.tsx");
+
+  it("reads through the caller's own walls", () => {
+    // Not a definer. messages and room_messages already carry RLS restricting a
+    // caller to their chats and their community's rooms; a definer would have to
+    // re-derive both and be a second set of rules to keep in step.
+    expect(sql).toMatch(/security invoker/);
+    expect(sql).not.toMatch(/security definer/);
+  });
+
+  it("counts an unopened chat as entirely unread", () => {
+    // A chat never opened has NO chat_reads row. An inner join scores it zero,
+    // which is the opposite of the truth — and it is the case the badge most
+    // exists for. Measured live: all 5 of one member's unread messages were in
+    // chats with no read row at all, so an inner join would have shown nothing.
+    expect(sql).toMatch(/left join public\.chat_reads/);
+    expect(sql).toMatch(/left join public\.room_reads/);
+    expect(sql.match(/last_read_at is null or/g)?.length).toBe(2);
+  });
+
+  it("never counts the member's own messages or replies", () => {
+    expect(sql).toMatch(/m\.sender_id is distinct from \(select auth\.uid\(\)\)/);
+    expect(sql).toMatch(/reply\.user_id is distinct from \(select auth\.uid\(\)\)/);
+  });
+
+  it("never counts something that was taken back", () => {
+    // Unsend redacts through deleted_at. A withdrawn message is not waiting.
+    expect(sql).toMatch(/m\.deleted_at is null/);
+    expect(sql).toMatch(/reply\.deleted_at is null/);
+    expect(sql).toMatch(/post\.deleted_at is null/);
+  });
+
+  it("counts replies under the member's OWN posts only", () => {
+    // The whole point. Without this it is room activity, and Latest news wins.
+    expect(sql).toMatch(/post\.user_id = \(select auth\.uid\(\)\)/);
+    expect(sql).toMatch(/join public\.room_messages post on post\.id = reply\.parent_id/);
+  });
+
+  it("draws nothing at zero", () => {
+    expect(nav).toMatch(/const badge = count > 0;/);
+    expect(nav).toMatch(/\{badge \? \(/);
+  });
+
+  it("puts the number in the accessible name, not only on the icon", () => {
+    // The icons are aria-hidden, so a badge drawn and not named is a nav that
+    // tells a sighted member something it withholds from everybody else.
+    expect(nav).toMatch(/aria-label=\{badge \? C\.navUnread\(item\.label, count\) : item\.label\}/);
+    expect(nav).toMatch(/aria-hidden="true"/);
+  });
+
+  it("positions the badge against the icon, not the row", () => {
+    // On a flex-1 tab the row's corner is a long way from the mark, and further
+    // on a tablet than a phone because the tabs grow and the icon does not.
+    const icon = nav.slice(nav.indexOf('<span className="relative flex">'));
+    expect(icon.slice(0, 900)).toMatch(/absolute -top-1 -right-2/);
+  });
+
+  it("caps the number, so it stays a count and not a shape", () => {
+    expect(nav).toMatch(/count > 99 \? "99\+" : count/);
+  });
+
+  it("survives the migration not being applied yet", () => {
+    // Code reaches production before the schema here as a matter of course, and
+    // PostgREST fails the WHOLE request on an unknown function — which in this
+    // layout would take the header, the nav and the bell down with it.
+    // Whitespace-insensitive: prettier wraps the two-argument .then across
+    // three lines, and the first version of this asserted the one-line form.
+    const compact = layout.replace(/\s+/g, " ");
+    expect(compact).toMatch(
+      /rpc\("my_nav_counts"\)\.then\( \(r\) => r, \(\) => \(\{ data: null \}\)/,
+    );
+  });
+});
