@@ -98,18 +98,41 @@ describe("returning to a tab does not refetch it from scratch", () => {
  * nudging somebody back for general activity.
  */
 describe("the nav counts", () => {
+  // 20260912000100, not 20260911000200. That file created the function as
+  // `security invoker` and it could not run at all — see below. This is where
+  // the contract lives now.
   const sql = read(
-    "../../../../../supabase/migrations/20260911000200_two_numbers_for_the_nav.sql",
+    "../../../../../supabase/migrations/20260912000100_the_nav_counts_need_their_own_walls.sql",
   ).replace(/^\s*--.*$/gm, "");
   const nav = read("./nav-links.tsx");
   const layout = read("./layout.tsx");
 
-  it("reads through the caller's own walls", () => {
-    // Not a definer. messages and room_messages already carry RLS restricting a
-    // caller to their chats and their community's rooms; a definer would have to
-    // re-derive both and be a second set of rules to keep in step.
-    expect(sql).toMatch(/security invoker/);
-    expect(sql).not.toMatch(/security definer/);
+  it("is a definer, because authorship is not the member's to read", () => {
+    // This asserted the OPPOSITE until 2026-09-12, and the invoker version could
+    // not run at all: "permission denied for table room_messages".
+    //
+    // Two reasons. `count(*)` needs table-level SELECT and authenticated has
+    // only column-level — which is why room_activity gets away with invoker,
+    // since it selects max(created_at) and never counts rows. And `user_id` is
+    // NOT among the granted columns, because a room post may be anonymous. So
+    // "replies to MY posts" cannot be expressed as the member at any cost.
+    expect(sql).toMatch(/security definer/);
+    expect(sql).not.toMatch(/security invoker/);
+  });
+
+  it("counts a granted column, never count(*)", () => {
+    expect(sql).not.toMatch(/count\(\*\)/);
+    expect(sql).toMatch(/count\(m\.id\)/);
+    expect(sql).toMatch(/count\(reply\.id\)/);
+  });
+
+  it("writes out the walls a definer does not inherit", () => {
+    // A definer does not see RLS, so every restriction the invoker version would
+    // have got free has to be stated. Without these the count spans the whole
+    // database — measured: 8 across everyone's chats against 3 truly the
+    // member's.
+    expect(sql).toMatch(/public\.i_am_in_chat\(m\.chat_id\)/);
+    expect(sql).toMatch(/from public\.room_members rmem/);
   });
 
   it("counts an unopened chat as entirely unread", () => {
