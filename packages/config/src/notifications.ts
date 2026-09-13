@@ -144,7 +144,20 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     path: "/app/inbox",
     pathFor: (id) => `/app/chats/${id}`,
   },
-  like_received: { event: "like_received", body: "Someone liked your post", path: "/app/rooms" },
+  /**
+   * `/app/p/<id>` for all three room events, not /app/rooms/<room>/<post>.
+   *
+   * pathFor gets ONE id and a thread needs two. The resolver route looks the
+   * second one up as the member, so the uuid shape check on this path still
+   * holds — and it 404s for a post the member cannot reach, rather than putting
+   * a room named for a diagnosis into their history.
+   */
+  like_received: {
+    event: "like_received",
+    body: "Someone liked your post",
+    path: "/app/rooms",
+    pathFor: (id) => `/app/p/${id}`,
+  },
   /**
    * "to you", not "to your post".
    *
@@ -155,7 +168,12 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
    * that is not there. The in-app line says which; a push cannot, and does not
    * pretend to.
    */
-  reply_received: { event: "reply_received", body: "Someone replied to you", path: "/app/rooms" },
+  reply_received: {
+    event: "reply_received",
+    body: "Someone replied to you",
+    path: "/app/rooms",
+    pathFor: (id) => `/app/p/${id}`,
+  },
   /**
    * Being tagged.
    *
@@ -173,6 +191,7 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     event: "mention_received",
     body: "Someone mentioned you",
     path: "/app/rooms",
+    pathFor: (id) => `/app/p/${id}`,
   },
   /**
    * A member who is mid-signup and waiting on a human is the one person here

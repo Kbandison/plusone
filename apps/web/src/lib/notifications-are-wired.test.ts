@@ -345,3 +345,76 @@ describe("a reply to a comment does not claim to be a reply to a post", () => {
     expect(page).toMatch(/line\(row\.actor_name, row\.subject_is_comment\)/);
   });
 });
+
+/**
+ * A room notification opens the thread, not the tab.
+ *
+ * Every chat event has had a `pathFor` since ef87637. The three ROOM events did
+ * not — `reply_received`, `like_received` and `mention_received` all sat on the
+ * bare `/app/rooms`, so the tap landed on the tab and the member went hunting.
+ *
+ * It was a real constraint rather than an oversight: pathFor receives ONE id
+ * and a thread lives at /app/rooms/<room>/<post>, which needs two. The id is
+ * shape-checked as a uuid before it reaches a path — deliberately, so a display
+ * name cannot be smuggled into one — so "<room>/<post>" would be dropped by
+ * that guard. `/app/p/<id>` resolves the second id server-side instead.
+ */
+describe("a room notification can find its thread", () => {
+  const at = (rel: string) => readFileSync(join(SRC, rel), "utf8");
+  const notifications = at("../../../packages/config/src/notifications.ts");
+  const resolver = at("app/app/p/[post]/page.tsx");
+  const sql = at(
+    "../../../supabase/migrations/20260912000200_a_notification_can_find_the_thread.sql",
+  ).replace(/^\s*--.*$/gm, "");
+
+  it.each(["reply_received", "like_received", "mention_received"])("%s deep-links", (event) => {
+    const entry = notifications.slice(
+      notifications.indexOf(`${event}: {`),
+      notifications.indexOf("},", notifications.indexOf(`${event}: {`)),
+    );
+    expect(entry, event).toMatch(/pathFor: \(id\) => `\/app\/p\/\$\{id\}`/);
+  });
+
+  it("walks to the root, because the data nests deeper than the render", () => {
+    // notifications.ts says a thread is "two levels deep and no deeper" — that
+    // describes what is DRAWN. parent_id records what was actually answered, and
+    // 6 of 18 replies in this database have a parent that is itself a reply. One
+    // hop would land a third of them on a thread that does not exist. Verified
+    // live: a two-hop reply resolves to the root.
+    expect(sql).toMatch(/with recursive up as/);
+    expect(sql).toMatch(/where up\.parent_id is null/);
+  });
+
+  it("bounds the walk, so a cycle cannot hang a page load", () => {
+    expect(sql).toMatch(/where up\.depth < 16/);
+  });
+
+  it("lets RLS be the access check", () => {
+    // room_messages' read policy is `deleted_at is null AND i_am_in_room AND NOT
+    // i_am_blocked_with`. Running as the member makes that the check, and it
+    // cannot drift from the room screens because it IS their rule. A definer
+    // would have to re-derive all three.
+    // The CREATE statement, not the file. `comment on function` describes the
+    // choice in a string literal that survives stripping `--` lines, so a
+    // whole-file match is satisfied by the migration's own description of
+    // itself — swapping the real keyword to `definer` passed. Fourth time this
+    // week that prose in a file has answered for the code in it.
+    const create = sql.slice(sql.indexOf("create or replace function"), sql.indexOf("$$;"));
+    expect(create).toMatch(/security invoker/);
+    expect(create).not.toMatch(/security definer/);
+  });
+
+  it("404s rather than redirecting when nothing resolves", () => {
+    // A resolver that redirected regardless would put /app/rooms/<a room named
+    // for a diagnosis>/… into the history of somebody with no access. Verified
+    // live: a non-member and a made-up id return the SAME empty answer, which is
+    // the point — the two must be indistinguishable.
+    expect(resolver).toMatch(/if \(!row\) notFound\(\);/);
+    expect(resolver).toMatch(/if \(!UUID\.test\(post\)\) notFound\(\);/);
+  });
+
+  it("is not cached, because the answer differs by member", () => {
+    // The same url resolves for one member and 404s for another.
+    expect(resolver).toMatch(/export const dynamic = "force-dynamic";/);
+  });
+});
