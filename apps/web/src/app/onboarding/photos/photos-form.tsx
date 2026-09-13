@@ -586,8 +586,6 @@ export function PhotoGallery({
         {C.roomLeft(MAX_PHOTOS - order.length)}
       </p>
 
-      {/* Which photo is first stopped being an ordering decision the moment
-          photos could differ. Said where the ordering happens. */}
       <p className="mx-auto mt-3 max-w-[52ch] text-center text-[11.3px] leading-[1.6] text-ink-3">
         {C.firstIsTheCard}
       </p>

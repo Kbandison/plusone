@@ -257,7 +257,9 @@ export default async function BrowsePage({
       applyFilters(query),
       supabase
         .from("connects")
-        .select("initiator_id, target_id, status")
+        // chats(status), because a connect stays `accepted` after its chat
+        // closes — see historyWith.
+        .select("initiator_id, target_id, status, chats(status)")
         .or(`initiator_id.eq.${viewer},target_id.eq.${viewer}`),
       peopleNearbyQuery,
       applyFilters<typeof countQuery>(countQuery),
@@ -295,7 +297,13 @@ export default async function BrowsePage({
   for (const row of myConnects ?? []) {
     const initiated = (row.initiator_id as string) === viewer;
     const them = initiated ? (row.target_id as string) : (row.initiator_id as string);
-    const state = connectsLogic.historyWith(row.status as connectsLogic.ConnectStatus, initiated);
+    const chat = (row as { chats?: { status?: string }[] | { status?: string } | null }).chats;
+    const chatStatus = Array.isArray(chat) ? chat[0]?.status : chat?.status;
+    const state = connectsLogic.historyWith(
+      row.status as connectsLogic.ConnectStatus,
+      initiated,
+      chatStatus,
+    );
     // A member can have several connects with the same person over time. The
     // live one is what a card should say — "Connected before" on somebody who
     // is waiting on your answer right now is worse than saying nothing.

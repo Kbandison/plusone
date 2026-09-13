@@ -209,8 +209,6 @@ export default async function RoomPage({
         <RoomSearch roomId={room.id as string} />
       ) : (
         <>
-          <p className="mt-5 text-[11px] text-ink-3">{C.roomNoDmNote}</p>
-
           {/* A box the width of the column, and no button beside it. */}
           {membership ? (
             <RoomCompose roomId={room.id as string} />

@@ -223,7 +223,11 @@ export function BrowseFilters({
           Deliberately NOT the stat at the top of the page: that one describes
           the area and ignores every filter, and a member needs both to tell
           "nobody is near me" from "I have asked for too much". */}
-      <p className="mt-4 text-[11px] text-ink-3">{C.filterMatchCount(shown, matching)}</p>
+      {/* Only when a filter is cutting people out. Unfiltered it said the same
+          number the grid header says, two elements below it. */}
+      {C.filterMatchCount(shown, matching) ? (
+        <p className="mt-4 text-[11px] text-ink-3">{C.filterMatchCount(shown, matching)}</p>
+      ) : null}
 
       {/* The only way through without JavaScript, and invisible with it. The
           selects above submit on change, so a button beside them is a second

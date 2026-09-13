@@ -771,19 +771,17 @@ export const DRAFT_COPY = {
      */
     mainBadge: "Main",
     /**
-     * Per-photo privacy (server 18b), and the sentence that came out of a
-     * design flag rather than the feature itself.
+     * What MAIN does not say.
      *
-     * `photosFor` shows position 0 on every card in the app and always has.
-     * That was invisible while privacy was profile-wide, because the first
-     * photo's variant WAS every photo's variant. Once a member can set them
-     * separately, which photo is first stops being an ordering decision and
-     * starts being a privacy one — so the screen where the ordering happens has
-     * to say so. The alternative, quietly promoting whichever photo is clear,
-     * would raise somebody's visibility without their asking.
+     * Kevin cut the original — "Your first photo is the one shown on every card
+     * — the Drop, Browse, connects and rooms. Its setting is how you appear
+     * across the app." — because the badge already says which photo leads, and
+     * it does. What the badge cannot say is that this photo's BLUR SETTING is
+     * the one every card uses, which is the whole reason 18b added a sentence
+     * here: per-photo privacy makes a member reasonably expect each setting to
+     * apply where that photo appears. Only that half survives.
      */
-    firstIsTheCard:
-      "Your first photo is the one shown on every card — the Drop, Browse, connects and rooms. Its setting is how you appear across the app.",
+    firstIsTheCard: "Its blur setting is the one every card uses.",
     /**
      * The select is 106.9px wide — the width of the photo above it — and the
      * 16px floor cannot move, because iOS zooms the page on a smaller control
@@ -1404,8 +1402,15 @@ export const DRAFT_COPY = {
      * them is the whole reason a member can tell "nobody is near me" from "I
      * have asked for too much".
      */
+    /**
+     * NULL when nothing is being cut. It returned "N of them match", and the
+     * grid header two elements below already says "N people" — the same number
+     * twice, on a screen with a third count above it. It now speaks only when
+     * a filter is costing somebody people, which is the one thing the grid
+     * header cannot say.
+     */
     filterMatchCount: (shown: number, total: number) =>
-      shown === total ? `${total} of them match` : `${shown} shown of ${total} matching`,
+      shown === total ? null : `${shown} shown of ${total} matching`,
     /**
      * A ladder rather than the checkbox it replaces. "Active this week" was one
      * bit for a question with obvious shades — somebody here this afternoon and
@@ -1904,8 +1909,6 @@ export const DRAFT_COPY = {
     /** Clipboard access can simply be refused — an insecure context, a denied permission. */
     inviteCopyFailed: "That didn't copy. You can select the link above instead.",
     navInvite: "Invite",
-    roomNoDmNote:
-      "You can reach someone here through a connect — there are no direct messages in rooms.",
     previewCtaAria: "Switch to dating mode to connect",
     /**
      * The list, and the bell that leads to it.

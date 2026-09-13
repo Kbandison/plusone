@@ -214,3 +214,40 @@ describe("historyWith", () => {
     expect(historyWith("expired", false)).toBe("past");
   });
 });
+
+/**
+ * A closed chat is not a conversation.
+ *
+ * Kevin, looking at Browse: "even though my conversation with … expired, her
+ * profile still shows in browse." Showing her is deliberate — Browse keeps
+ * people you have connected with and labels the card with the history, so you
+ * can reach out again. The label was the bug: the connect stays `accepted` for
+ * ever, because closing a chat does not walk a decision back, so reading it
+ * alone said "Talking" about a conversation whose fuse had run out days before.
+ */
+describe("historyWith reads the chat, not only the connect", () => {
+  it.each(["closed_fuse", "closed_by_member", "graduated"])(
+    "an accepted connect whose chat is %s is past, not talking",
+    (chatStatus) => {
+      expect(historyWith("accepted", false, chatStatus)).toBe("past");
+    },
+  );
+
+  it.each(["open", "date_planned"])("an accepted connect whose chat is %s is talking", (s) => {
+    expect(historyWith("accepted", false, s)).toBe("talking");
+  });
+
+  it("still says talking when the caller does not know", () => {
+    // Undefined is "I did not fetch a chat", not "there is no chat". No caller
+    // is forced to join one it has no use for.
+    expect(historyWith("accepted", false)).toBe("talking");
+    expect(historyWith("accepted", false, null)).toBe("talking");
+  });
+
+  it("leaves every other status alone", () => {
+    expect(historyWith("pending", true, "closed_fuse")).toBe("waiting_on_them");
+    expect(historyWith("pending", false, "closed_fuse")).toBe("waiting_on_you");
+    expect(historyWith("declined", false, "open")).toBe("none");
+    expect(historyWith(null, false, "open")).toBe("none");
+  });
+});

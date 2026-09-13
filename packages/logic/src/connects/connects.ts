@@ -178,13 +178,33 @@ export function isPendingExpired(
  * An expiry is different and is worth saying. Nobody decided anything: the ask
  * ran out unanswered, and either of them may want to try again.
  */
+/** The chat states that mean the conversation is over. */
+const CHAT_ENDED = ["closed_fuse", "closed_by_member", "graduated"] as const;
+
 export function historyWith(
   status: ConnectStatus | null,
   viewerInitiated: boolean,
+  /**
+   * The chat's own state, where there is one.
+   *
+   * A connect stays `accepted` for ever — closing a chat does not walk it back.
+   * So reading the connect alone said "Talking" about a conversation that had
+   * expired days ago, which is what a member saw on Browse for somebody whose
+   * fuse had run out. The connect says a decision was made; only the chat says
+   * whether it is still going.
+   *
+   * Undefined means the caller does not know, and the old answer stands — no
+   * caller is forced to fetch a chat it has no use for.
+   */
+  chatStatus?: string | null,
 ): ConnectionState {
   if (status === null) return "none";
   if (status === "pending") return viewerInitiated ? "waiting_on_them" : "waiting_on_you";
-  if (status === "accepted") return "talking";
+  if (status === "accepted") {
+    return chatStatus && (CHAT_ENDED as readonly string[]).includes(chatStatus)
+      ? "past"
+      : "talking";
+  }
   if (status === "declined") return "none";
   return "past";
 }
