@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import {
   COOLDOWNS,
   DRAFT_COPY,
+  PROFILE_PROMPTS,
   QUIZ_QUESTIONS,
   RADIUS,
   type Intention,
@@ -55,7 +56,19 @@ const SECTION = "mt-14 border-t-2 border-line-2 pt-10";
  * heading nobody needed and holding ~96px of empty screen above the thing the
  * page is mostly for.
  */
-const FIRST_SECTION = "mt-6";
+/**
+ * The group label.
+ *
+ * Deliberately not styled as a section heading: it names a GROUP of them, and
+ * at heading weight it would compete with the four collapsibles under it. Small,
+ * spaced, uppercase — the same treatment the admin roster's column heads get,
+ * which is the app's existing word for "this labels what follows".
+ *
+ * FIRST_SECTION is gone with it. It existed to give the photo block less room
+ * above than a section gets, because it sat directly under the member's face;
+ * the first group label now does that job and does it by saying something.
+ */
+const GROUP = "mt-12 text-[0.72rem] tracking-[0.13em] text-ink-3 uppercase";
 
 export default async function ProfilePage() {
   const supabase = await getServerSupabase();
@@ -132,6 +145,36 @@ export default async function ProfilePage() {
       ? unlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
       : null;
 
+  /**
+   * How many of the nineteen details are answered.
+   *
+   * On the closed row, so the section says whether it wants you before you open
+   * it — which is the whole reason a fold is tolerable here rather than just a
+   * thing to tap through.
+   */
+  const detailValues = [
+    profile?.gender,
+    (profile?.seeking as string[] | null)?.length ? profile?.seeking : null,
+    profile?.age_min,
+    profile?.age_max,
+    profile?.smokes,
+    profile?.drinks,
+    profile?.kids,
+    profile?.kids_plan,
+    extras?.height_cm,
+    extras?.relationship_structure,
+    extras?.exercise,
+    extras?.diet,
+    extras?.pets,
+    extras?.education,
+    extras?.work,
+    (extras?.languages as string[] | null)?.length ? extras?.languages : null,
+    extras?.weight_kg,
+    extras?.religion,
+    extras?.politics,
+  ];
+  const detailsSet = detailValues.filter((v) => v !== null && v !== undefined).length;
+
   return (
     <main id="main">
       {/* The name is the heading, and the heading is the field.
@@ -143,20 +186,22 @@ export default async function ProfilePage() {
         <NameEditor name={(profile?.display_name as string | null) ?? ""} />
       </div>
 
-      {/* The gallery itself, not a link to it.
-          It has existed since Milestone 2 and lived at /onboarding/photos,
-          which a finished member can reach and would never look for. A link
-          was better than nothing and still asked somebody to go somewhere to
-          do the most ordinary thing on this page. */}
-      {/* No heading, and less room above it than every other section gets.
-        
-          "Photos" over a grid of the member's own photographs is a label for
-          something already unmistakable, and removing it takes its margin with
-          it. FIRST_SECTION drops the rule and most of the padding for the same
-          reason: this sits directly under the member's own name and face, which
-          is enough of a boundary on its own. Nothing here changes a text or
-          image size — it is margin and a heading. */}
-      <section className={FIRST_SECTION}>
+      {/* TWO GROUPS, and the labels are the point.
+          Nine blocks sat in one column with nothing saying what any of them was
+          for, so the page read as a list of controls. Everything under the first
+          label is what another member sees; everything under the second decides
+          who is shown to you. A member coming here to change a photo passes
+          nothing about matching on the way.
+
+          The tall ones fold and the short ones do not. Photos, the details form
+          and the quiz are the only blocks with real height; a fold over a single
+          dropdown is a tap standing in for the control it hides. */}
+      <h2 className={GROUP}>{C.profileGroupSeen}</h2>
+
+      <CollapsibleSection
+        heading={C.profilePhotosHeading}
+        count={C.profileCountOf(photoList.length, MAX_PHOTOS)}
+      >
         <PhotoGallery
           photos={photoList}
           settings
@@ -176,53 +221,29 @@ export default async function ProfilePage() {
           // redirects the member into the radius step.
           save={savePhotoPrivacySetting}
         />
-      </section>
+      </CollapsibleSection>
 
-      {/* Changeable, not just displayed. This is the answer that decides who is
-          in the Drop; a member who picked wrong on their sixth screen could
-          read the rule here and had nothing to do about it. */}
-      <section className={SECTION}>
-        <h2 className="text-[0.972rem]">{C.profileLookingFor}</h2>
-        <IntentionEditor intention={intention} changeableOn={intentionChangeableOn} />
-      </section>
+      <CollapsibleSection
+        heading={DRAFT_COPY.app.bioHeading}
+        count={profile?.bio ? C.profileBioWritten : C.profileBioEmpty}
+      >
+        <BioEditor bio={(profile?.bio as string | null) ?? null} bare />
+      </CollapsibleSection>
 
-      {/* The way back to "Skip for now".
-          A skip writes an empty row and resolveStep reads presence, so the step
-          settles and never returns — and nothing in /app linked to it. A member
-          who took the app at its word on step 8 had no way back to the twelve
-          questions that shape every Drop they will ever see.
-
-          Folded, because nothing else on this page is twelve fieldsets tall. */}
-      <section className={SECTION}>
-        <CollapsibleSection
-          heading={DRAFT_COPY.quiz.heading}
-          count={DRAFT_COPY.quiz.progress(Object.keys(quizAnswers).length, QUIZ_QUESTIONS.length)}
-        >
-          <QuizForm answered={quizAnswers} save={saveQuizSetting} />
-        </CollapsibleSection>
-      </section>
-
-      {/* The slider, not a number and a link to a screen with the slider on it.
-          This decides who is in tonight's Drop and who is in Browse, and it was
-          shown here and changeable somewhere else. */}
-      <section className={SECTION}>
-        <h2 className="text-[0.972rem]">{C.profileRadius}</h2>
-        <RadiusForm
-          radiusMi={(profile?.search_radius_mi as number | null) ?? RADIUS.defaultMi}
-          approximate={approximate}
-          save={saveRadiusSetting}
-        />
-      </section>
-
-      <PromptEditor answers={prompts} />
-
-      <BioEditor bio={(profile?.bio as string | null) ?? null} />
+      <CollapsibleSection
+        heading={DRAFT_COPY.app.promptsHeading}
+        count={C.profileCountOf(prompts.length, PROFILE_PROMPTS.length)}
+      >
+        <PromptEditor answers={prompts} bare />
+      </CollapsibleSection>
 
       {/* The answers that decide the Drop, changeable. Asking them once in
           onboarding would have made them write-once, and they are the only
           settings in the product that determine everything a member ever sees. */}
-      <section className={SECTION}>
-        <h2 className="text-[0.972rem]">{DRAFT_COPY.preferences.editHeading}</h2>
+      <CollapsibleSection
+        heading={DRAFT_COPY.preferences.editHeading}
+        count={C.profileCountOf(detailsSet, detailValues.length)}
+      >
         {/* "full", so the eight from 20260829000100 render HERE and not in
             onboarding — which is nine steps already. The prop also decides
             whether those columns are written at all: parsePreferences reads it
@@ -255,7 +276,42 @@ export default async function ProfilePage() {
             politics: (extras?.politics as string | null) ?? null,
           }}
         />
+      </CollapsibleSection>
+
+      <h2 className={GROUP}>{C.profileGroupMeet}</h2>
+
+      {/* Changeable, not just displayed. This is the answer that decides who is
+          in the Drop; a member who picked wrong on their sixth screen could
+          read the rule here and had nothing to do about it. */}
+      <section className={SECTION}>
+        <h2 className="text-[0.972rem]">{C.profileLookingFor}</h2>
+        <IntentionEditor intention={intention} changeableOn={intentionChangeableOn} />
       </section>
+
+      {/* The slider, not a number and a link to a screen with the slider on it.
+          This decides who is in tonight's Drop and who is in Browse, and it was
+          shown here and changeable somewhere else. */}
+      <section className={SECTION}>
+        <h2 className="text-[0.972rem]">{C.profileRadius}</h2>
+        <RadiusForm
+          radiusMi={(profile?.search_radius_mi as number | null) ?? RADIUS.defaultMi}
+          approximate={approximate}
+          save={saveRadiusSetting}
+        />
+      </section>
+
+      {/* The way back to "Skip for now".
+          A skip writes an empty row and resolveStep reads presence, so the step
+          settles and never returns — and nothing in /app linked to it. A member
+          who took the app at its word on step 8 had no way back to the twelve
+          questions that shape every Drop they will ever see. */}
+      <CollapsibleSection
+        heading={DRAFT_COPY.quiz.heading}
+        count={DRAFT_COPY.quiz.progress(Object.keys(quizAnswers).length, QUIZ_QUESTIONS.length)}
+      >
+        <QuizForm answered={quizAnswers} save={saveQuizSetting} />
+      </CollapsibleSection>
+
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{C.profileModeHeading}</h2>
         <ModeToggle mode={mode} />

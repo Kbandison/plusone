@@ -173,9 +173,13 @@ describe("what you are here for can change, once a month", () => {
  */
 describe("prompts are shown once", () => {
   it("leaves only the editor", () => {
-    expect(page).toMatch(/<PromptEditor answers=\{prompts\} \/>/);
+    // The page must not reimplement the prompt UI — that is the whole claim,
+    // and it still holds. What changed on 2026-09-13 is that the page now NAMES
+    // the section, because the editor sits inside a fold and a closed fold with
+    // no word on it is a blank row. `bare` is how the editor gives up its own
+    // frame and heading so there is exactly one of each.
+    expect(page).toMatch(/<PromptEditor answers=\{prompts\} bare \/>/);
     expect(page).not.toMatch(/promptQuestion/);
-    expect(page.match(/promptsHeading/g) ?? []).toHaveLength(0);
   });
 });
 
@@ -254,9 +258,18 @@ describe("the quiz can be taken after it was skipped", () => {
       expect(i, needle).toBeGreaterThan(-1);
       return i;
     };
-    expect(at("<IntentionEditor")).toBeLessThan(at("<CollapsibleSection"));
-    expect(at("<CollapsibleSection")).toBeLessThan(at("<RadiusForm"));
-    expect(at("<CollapsibleSection")).toBeLessThan(at("<PreferencesForm"));
+    // The claim is that the quiz sits WITH the things that decide who you meet,
+    // rather than being dumped under everything else. It used to be checked by
+    // position against the only CollapsibleSection on the page; there are five
+    // now, so it is checked against the group instead — which is what the claim
+    // was always about.
+    const meet = at("profileGroupMeet");
+    expect(at("<IntentionEditor")).toBeGreaterThan(meet);
+    expect(at("<RadiusForm")).toBeGreaterThan(meet);
+    expect(at("DRAFT_COPY.quiz.heading")).toBeGreaterThan(meet);
+    // And the details form is not in that group: fifteen of its nineteen fields
+    // are facts about the member, which is why it moved and was renamed.
+    expect(at("<PreferencesForm")).toBeLessThan(meet);
   });
 
   it("saves each answer where it is tapped", () => {

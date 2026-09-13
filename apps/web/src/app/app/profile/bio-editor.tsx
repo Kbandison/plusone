@@ -21,14 +21,24 @@ const MAX_CHARS = 500;
  * there was no way to reach any of it. The same half-built shape as the purge
  * job with no delete button and the reports with no reader.
  */
-export function BioEditor({ bio }: { bio: string | null }) {
+export function BioEditor({
+  bio,
+  bare = false,
+}: {
+  bio: string | null;
+  /** Rendered inside a CollapsibleSection, which supplies the frame and heading. */
+  bare?: boolean;
+}) {
   const [state, act, pending] = useActionState(saveBio, PROFILE_INITIAL);
   const fieldId = useId();
   const hintId = useId();
 
   return (
-    <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[0.972rem]">{C.bioHeading}</h2>
+    <section className={bare ? "" : "mt-10 rounded-xl border border-line-2 bg-surface p-6"}>
+      {/* The heading belongs to whoever owns the boundary. Inside a
+          CollapsibleSection that is the section itself, and a second copy of the
+          word under the one you just tapped is how a fold reads as broken. */}
+      {bare ? null : <h2 className="text-[0.972rem]">{C.bioHeading}</h2>}
 
       <form action={act} className="mt-5 flex flex-col gap-3">
         <label htmlFor={fieldId} className="text-[12.2px]">

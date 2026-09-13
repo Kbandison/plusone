@@ -23,7 +23,14 @@ const C = DRAFT_COPY.app;
  * one of them. A member with none cannot receive connects at all, so the empty
  * state says that plainly rather than letting them wonder why it is quiet.
  */
-export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswer[] }) {
+export function PromptEditor({
+  answers,
+  bare = false,
+}: {
+  answers: readonly ProfilePromptAnswer[];
+  /** Rendered inside a CollapsibleSection, which supplies the frame and heading. */
+  bare?: boolean;
+}) {
   const [state, act, pending] = useActionState(savePrompts, PROFILE_INITIAL);
   const [rows, setRows] = useState<ProfilePromptAnswer[]>(
     answers.length > 0 ? [...answers] : [{ id: PROFILE_PROMPTS[0].id, answer: "" }],
@@ -33,8 +40,11 @@ export function PromptEditor({ answers }: { answers: readonly ProfilePromptAnswe
     setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 
   return (
-    <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
-      <h2 className="text-[0.972rem]">{C.promptsHeading}</h2>
+    <section className={bare ? "" : "mt-10 rounded-xl border border-line-2 bg-surface p-6"}>
+      {/* The heading belongs to whoever owns the boundary. Inside a
+          CollapsibleSection that is the section itself, and a second copy of the
+          word under the one you just tapped is how a fold reads as broken. */}
+      {bare ? null : <h2 className="text-[0.972rem]">{C.promptsHeading}</h2>}
       <p className="mt-3 text-[12.2px] leading-[1.7] text-ink-2">{C.promptsIntro}</p>
 
       {answers.length === 0 ? (

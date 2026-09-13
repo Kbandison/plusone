@@ -732,7 +732,15 @@ export const DRAFT_COPY = {
 
     skipLabel: "Prefer not to say",
     /** The same questions on the profile, where they are changed rather than set. */
-    editHeading: "Who you would like to meet",
+    /**
+     * "Who you would like to meet" until 2026-09-13, which was true of four of
+     * the nineteen fields on this form — gender, seeking, and the age range.
+     * The other fifteen are height, weight, kids, religion, politics and the
+     * rest: facts about the member, shown on their own card. Renamed when the
+     * page was grouped, because a heading that contradicts its group is worse
+     * than no group.
+     */
+    editHeading: "Your details",
     editSaveLabel: "Save",
     editSaved: "Saved.",
     errors: {
@@ -1801,6 +1809,27 @@ export const DRAFT_COPY = {
      * strings in the app nobody could have found by looking for strings.
      */
     profileHeading: "Profile",
+    /**
+     * The two jobs this page does, said once each.
+     *
+     * It had nine blocks in one column and no statement of what any of them was
+     * for, so it read as a list of controls rather than a page. Everything above
+     * the second label is what another member sees; everything below decides who
+     * you are shown.
+     */
+    /**
+     * The photos block had no heading, on the reasoning that "Photos" over a
+     * grid of the member's own photographs labels something unmistakable. True,
+     * and only while the grid is on screen — folded, there is nothing to
+     * recognise, so the word has to do the work the pictures were doing.
+     */
+    profilePhotosHeading: "Photos",
+    profileGroupSeen: "What people see",
+    profileGroupMeet: "Who you meet",
+    /** On the closed rows, so a section says whether it needs you before you open it. */
+    profileCountOf: (have: number, total: number) => `${have} of ${total}`,
+    profileBioWritten: "written",
+    profileBioEmpty: "nothing yet",
     profileLookingFor: "Looking for",
     profileNotSet: "Not set",
     profileRadius: "Search radius",

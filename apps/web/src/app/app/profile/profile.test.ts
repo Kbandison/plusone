@@ -116,7 +116,18 @@ describe("the name is editable", () => {
 describe("the sections are told apart", () => {
   it("uses one rule for every break", () => {
     expect(page).toMatch(/const SECTION = "mt-14 border-t-2 border-line-2 pt-10"/);
-    expect(page.match(/\{SECTION\}/g)?.length).toBeGreaterThanOrEqual(4);
+    // Three, not four. Four blocks became folds on 2026-09-13 and a fold brings
+    // its own spacing; the rule is still one constant for every break that is
+    // still drawn.
+    expect(page.match(/\{SECTION\}/g)?.length).toBeGreaterThanOrEqual(3);
+    // FIRST_SECTION is gone with them. It gave the photo block less room than a
+    // section because it sat under the member's face; the first group label now
+    // does that job and says something while doing it.
+    // Comments stripped. The constant's own removal note names it, so a
+    // whole-file match is answered by the sentence explaining the absence.
+    const code = page.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code).not.toMatch(/FIRST_SECTION/);
+    expect(page.match(/\{GROUP\}/g)?.length).toBe(2);
   });
 
   /** Four literals would have drifted the first time one was made heavier. */
@@ -143,5 +154,30 @@ describe("the page has no words of its own", () => {
 
   it("leaves the mode toggle under a heading rather than loose at the bottom", () => {
     expect(page).toMatch(/\{C\.profileModeHeading\}<\/h2>\s*\n\s*<ModeToggle/);
+  });
+});
+
+/**
+ * `bare` is what stops the fold showing its heading twice.
+ *
+ * Both editors are self-contained cards with their own <section> and <h2>.
+ * Inside a CollapsibleSection the section owns both, so the editor has to give
+ * them up — and if it quietly stopped doing that, the page would render the
+ * word you just tapped again directly underneath it. Nothing checked this until
+ * a sabotage removed the suppression and every test still passed.
+ */
+describe("an editor inside a fold gives up its frame", () => {
+  it.each(["bio-editor.tsx", "prompt-editor.tsx"])("%s", (file) => {
+    const src = read(`./${file}`);
+    // The heading is conditional on bare.
+    expect(src).toMatch(/\{bare \? null : <h2/);
+    // So is the card, or the fold would sit inside a second border.
+    expect(src).toMatch(/className=\{bare \? "" : "mt-10 rounded-xl/);
+  });
+
+  it("and the page always asks for it", () => {
+    // A fold whose child brought its own heading would show two.
+    expect(page).toMatch(/<BioEditor[^/]*bare/s);
+    expect(page).toMatch(/<PromptEditor[^/]*bare/s);
   });
 });
