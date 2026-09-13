@@ -211,7 +211,7 @@ export const DRAFT_COPY = {
      * know that will sit on their hands until an invitation arrives.
      */
     worksNow:
-      "You can start right now, in this browser. The version in a store is the same app with the same account — installing it is about getting an icon and notifications, not about getting in.",
+      "You can start right now, in this browser. The store version is the same app and the same account — installing gets you an icon and notifications.",
     start: "Start",
 
     whichDevice: "Which will you use it on?",
@@ -453,8 +453,7 @@ export const DRAFT_COPY = {
 
   quiz: {
     heading: "A few questions",
-    intro:
-      "Twelve quick ones. They shape who you see, and there are no right answers — only ways of being. You can skip this and it will not count against you.",
+    intro: "Twelve quick ones. They shape who you see. You can skip it.",
     skipLabel: "Skip for now",
     skipNudge: "Answering even a few makes your Drop better.",
     /**
@@ -480,7 +479,7 @@ export const DRAFT_COPY = {
      * ever stored here. "Deleted" implied we held it, which understated this.
      */
     intro:
-      "Every profile here is a verified human. Point your camera at your face for a few seconds and the check runs automatically. The video goes straight to the service that checks it — it never reaches us, and it is never shown to anyone.",
+      "Point your camera at your face for a few seconds. The video goes straight to the service that checks it — it never reaches us, and it is never shown to anyone.",
     startLabel: "Take the selfie",
     /**
      * onUserCancel — backing out is not a failed attempt and must not read as
@@ -702,7 +701,7 @@ export const DRAFT_COPY = {
      * discovering it by inference from an empty inbox.
      */
     aboutHint:
-      "These sit on your profile so people know you, and they never change your Drop. People browsing can filter by them, so answer honestly rather than strategically — the point is being found by the right person, not by everyone.",
+      "These sit on your profile and people browsing can filter by them. They never change your Drop.",
     smokesLabel: "Smoke",
     drinksLabel: "Drink",
     kidsLabel: "Kids",
@@ -888,7 +887,7 @@ export const DRAFT_COPY = {
      * measure from is not a setting, it is a number.
      */
     locationHint:
-      "We ask your device where you are so we can measure this. Your exact position is never stored — it is rounded to about a kilometre before it is saved, and nobody is ever shown your coordinates.",
+      "Your exact position is never stored — it is rounded to about a kilometre, and nobody is shown your coordinates.",
     locationDenied:
       "No problem. We will work from your approximate area instead, which is less precise.",
     /**
@@ -898,7 +897,7 @@ export const DRAFT_COPY = {
      * location produces, and it looks identical to nobody being nearby.
      */
     locationUnknown:
-      "We could not work out where you are, so we cannot show you anyone nearby yet. Allow location access and finish this step again, and everything else will work.",
+      "We could not work out where you are. Allow location access and try this step again.",
     unit: (mi: number) => `${mi} miles`,
     continueLabel: "Finish",
   },
@@ -1349,7 +1348,7 @@ export const DRAFT_COPY = {
     premiumControlsHeading: "Who can see you",
     incognitoHeading: "Incognito",
     incognitoOffNote:
-      "You appear in the Drop and in Browse as normal. Turn incognito on and only people you have already connected with can see you \u2014 you can still browse, connect and talk exactly as now.",
+      "You appear in the Drop and in Browse as normal. Turn incognito on and only people you have already connected with can see you. You can still browse and connect.",
     incognitoOnNote:
       "Incognito is on. Only people you have already connected with, and anyone you have reached out to, can see you. You are not in anybody else's Drop or Browse.",
     incognitoTurnOn: "Turn incognito on",
@@ -1378,7 +1377,7 @@ export const DRAFT_COPY = {
      * which direction that points.
      */
     readReceiptsShownNote:
-      "People you are talking to can see when you have read their message. Everyone can, by default — it is how this app avoids leaving somebody wondering.",
+      "People you are talking to can see when you have read their message. On by default.",
     readReceiptsHiddenNote:
       "Nobody can see when you have read their message. You can still see when they have read yours, if they have not turned theirs off too.",
     readReceiptsHide: "Hide when I read",
@@ -1550,7 +1549,7 @@ export const DRAFT_COPY = {
      */
     installHeading: "Add to your home screen",
     installBody:
-      "Installed, ⁺One opens on its own and its notifications come from ⁺One rather than from your browser. The web address still shows beside them — no app can hide that — so a locked phone reveals the site name either way.",
+      "Installed, ⁺One opens on its own and its notifications come from ⁺One rather than from your browser. The web address still shows beside them, as it does for any app.",
     installLabel: "Install",
     // No "installed" line: the section removes itself once the app is running
     // as one, and a card whose only content is a past tense is a card nobody
@@ -1862,7 +1861,7 @@ export const DRAFT_COPY = {
      */
     emailHeading: "A second way to sign in",
     emailBody:
-      "Add an email and you can get your sign-in code there instead of by text — useful if you change your number or lose your phone. It is only ever used to send you a code. We do not email you anything else, and it is never shown to anyone.",
+      "Add an email and you can get your sign-in code there instead of by text — useful if you change your number or lose your phone. It is never shown to anyone.",
     emailLabel: "Email",
     emailAddLabel: "Send a confirmation",
     emailChangeLabel: "Use a different email",

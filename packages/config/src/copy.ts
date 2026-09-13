@@ -43,7 +43,7 @@ export const COPY = {
   drop: {
     header: "Tonight's Drop",
     /** Shown when the local pool is genuinely thin. We never pad with stale profiles. */
-    thin: "Fewer people near you tonight — we only show real, active members. Widen your radius or check back tomorrow.",
+    thin: "Fewer people near you tonight. Widen your radius, or check back tomorrow.",
   },
 
   browse: {

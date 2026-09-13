@@ -724,8 +724,13 @@ describe("what the phone actually draws", () => {
    */
   it("does not promise the web address goes away", () => {
     const copy = read("../../packages/config/src/draft-copy.ts");
-    const install = copy.slice(copy.indexOf("installBody:"));
-    expect(install.slice(0, 400)).toMatch(/no app can hide that/i);
+    // The CLAIM, not the phrasing. This pinned the literal "no app can hide
+    // that" and failed on a copy edit that kept the meaning exactly — the point
+    // was never those five words, it is that the copy must not suggest the
+    // address goes away.
+    const install = copy.slice(copy.indexOf("installBody:"), copy.indexOf("installLabel:"));
+    expect(install).toMatch(/still shows/i);
+    expect(install).not.toMatch(/hides|hidden|no longer shows|goes away|without the address/i);
     const push = copy.slice(copy.indexOf("pushPrivacyNote:"));
     expect(push.slice(0, 400)).toMatch(/no app can turn off/i);
   });
