@@ -326,6 +326,11 @@ export const TABLE_CLASSIFICATION: Readonly<
   room_members: { feeds: ["Identifiers → User ID"], note: "Membership of a room." },
   room_likes: { feeds: ["Identifiers → User ID"], note: "Who liked a post." },
   room_reads: { feeds: [], note: "Read position within a room." },
+  // Same shape as room_reads and classified the same way: a position, not a
+  // fact about the member. Separate from room_post_views because that table
+  // counts a post being SEEN in a feed and never advances, which is right for
+  // "seen by" and useless as a read marker.
+  thread_reads: { feeds: [], note: "Read position within one thread." },
   room_post_views: { feeds: [], note: "View counts. Aggregate." },
   notifications: {
     feeds: ["Identifiers → User ID"],

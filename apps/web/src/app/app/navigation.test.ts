@@ -204,3 +204,87 @@ describe("the nav counts", () => {
     );
   });
 });
+
+/**
+ * An unread reply clears a thread at a time, not a room at a time.
+ *
+ * The first version measured against `room_reads.last_read_at`, which is per
+ * ROOM — so opening any post in Disclosure stories cleared every unread reply
+ * in it, including replies to posts never opened. Kevin: "that would bother
+ * me." The badge said one thing and clearing it required nothing to do with the
+ * thing it counted.
+ */
+describe("a reply is read when its thread is", () => {
+  const sql = read(
+    "../../../../../supabase/migrations/20260912000300_a_reply_is_read_when_the_thread_is.sql",
+  ).replace(/^\s*--.*$/gm, "");
+  const thread = read("./rooms/[roomId]/thread.tsx");
+
+  /**
+   * The BODY of my_nav_counts, not the file from that point on.
+   *
+   * `comment on function` describes the choice in a string literal — "room_reads
+   * is deliberately not consulted" — which survives stripping `--` lines and
+   * satisfies a negative match for the very thing it says is absent. Fifth time
+   * this week that prose in a file has answered for the code in it.
+   */
+  const countsBody = (() => {
+    const at = sql.indexOf("create or replace function public.my_nav_counts");
+    expect(at).toBeGreaterThan(-1);
+    const open = sql.indexOf("as $$", at);
+    return sql.slice(open, sql.indexOf("$$;", open));
+  })();
+
+  it("measures a reply against its own thread", () => {
+    const counts = countsBody;
+    expect(counts).toMatch(/left join public\.thread_reads tr/);
+    expect(counts).toMatch(/coalesce\(tr\.last_read_at, '-infinity'::timestamptz\)/);
+  });
+
+  it("NEVER consults room_reads for a reply", () => {
+    // The regression, and the whole point. rooms/[roomId]/page.tsx calls
+    // mark_room_read when the room opens, so reading it here lets opening the
+    // ROOM clear a reply the member never saw. My first attempt kept it as a
+    // fallback for members who had read a room before this existed, and it
+    // reintroduced the bug by a different route — caught by testing the four
+    // cases rather than only the one being fixed.
+    expect(countsBody).not.toMatch(/room_reads/);
+  });
+
+  it("copies the old room markers once, so nothing comes back unread", () => {
+    // History is handled by a BACKFILL rather than a fallback: a member who had
+    // read a room is treated as having read their own threads in it as of then.
+    // THE WHOLE STATEMENT, not three substrings. Neutering the backfill —
+    // appending `select null … where false` after the insert line — left all
+    // three fragments in place and this passed. A shape is what needs asserting
+    // when the sabotage can keep the words.
+    expect(sql).toMatch(
+      /insert into public\.thread_reads \(root_id, user_id, last_read_at\)\s*\n\s*select post\.id, rd\.user_id, rd\.last_read_at\s*\n\s*from public\.room_messages post\s*\n\s*join public\.room_reads rd/,
+    );
+    // Only the member's OWN root posts, which is all the count ever looks at.
+    expect(sql).toMatch(/rd\.user_id = post\.user_id/);
+    expect(sql).toMatch(/where post\.parent_id is null/);
+  });
+
+  it("advances on every open, unlike the view recorder", () => {
+    // record_room_views is `on conflict do nothing` — right for a first-seen
+    // count and useless as a read marker, because a reply arriving after the
+    // first view would stay unread for ever.
+    expect(sql).toMatch(/on conflict \(root_id, user_id\) do update set last_read_at = now\(\)/);
+  });
+
+  it("marks the thread read when the thread renders", () => {
+    // Beside record_room_views, not instead of it: the FEED writes the view too,
+    // and scrolling past a post must not clear a reply the member never saw.
+    expect(thread).toMatch(/rpc\("mark_thread_read", \{ p_root_id: root\.id \}\)/);
+    expect(thread).toMatch(/rpc\("record_room_views"/);
+  });
+
+  it("closes the new table the way every other one is closed", () => {
+    // Supabase grants every role everything on a new object in this schema.
+    expect(sql).toMatch(/alter table public\.thread_reads enable row level security/);
+    expect(sql).toMatch(/create policy "own thread markers in your own rooms"/);
+    expect(sql).toMatch(/revoke all on public\.thread_reads from anon, authenticated/);
+    expect(sql).toMatch(/grant select, insert, update on public\.thread_reads to authenticated/);
+  });
+});

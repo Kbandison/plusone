@@ -62,6 +62,17 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
   // many people opened the thread.
   after(async () => {
     await supabase.rpc("record_room_views", { p_message_ids: [root.id] });
+    // And READ, which is a different fact from seen.
+    //
+    // record_room_views counts a post coming up in a feed and never advances —
+    // `on conflict do nothing` — which is right for "seen by" and useless as a
+    // read marker. This one advances, and it is what clears an unread reply on
+    // the nav badge. Without it the badge measured against room_reads, so
+    // opening ANY post in a room cleared every unread reply in it.
+    //
+    // Beside the view rather than instead of it: the feed writes the view too,
+    // and a member scrolling past a post must not clear a reply they never saw.
+    await supabase.rpc("mark_thread_read", { p_root_id: root.id });
   });
 
   return (
