@@ -593,9 +593,24 @@ async function prepareReviewer(client, seededEmails, lat, lon) {
   }
   const reviewer = found.rows[0].id;
 
-  // Somewhere to be. Through the RPC, so the round_location trigger coarsens it
-  // exactly as it does for a member who granted permission in onboarding.
-  await asMember(client, reviewer, `select public.set_my_location($1, $2)`, [lat, lon]);
+  /**
+   * Somewhere to be — but only if they have nowhere.
+   *
+   * Through the RPC, so the round_location trigger coarsens it exactly as it
+   * does for a member who granted permission in onboarding. Guarded because an
+   * account onboarded BY HAND already has a real location, and moving it would
+   * quietly relocate a member to wherever the seeds happen to be — undoing the
+   * one thing that makes their Drop and Browse work.
+   */
+  const placed = await client.query(
+    `select location is not null as located from public.profiles where id = $1`,
+    [reviewer],
+  );
+  if (placed.rows[0]?.located) {
+    console.log("  reviewer already has a location — left where they are");
+  } else {
+    await asMember(client, reviewer, `select public.set_my_location($1, $2)`, [lat, lon]);
+  }
 
   /**
    * Verified, which is what /dev/sign-in cannot make somebody.
