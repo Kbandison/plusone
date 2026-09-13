@@ -784,3 +784,63 @@ describe("who came in during the beta", () => {
     expect(allSql).not.toMatch(/alter table public\.waitlist[\s\S]{0,200}add column[^;]*user_id/i);
   });
 });
+
+/**
+ * The metro centroids exist twice, and a drift here is silent.
+ *
+ * METROS lives in packages/config and SQL cannot reach it, so
+ * 20260912000400 carries its own copy to derive a member's metro from their
+ * rounded location. The values were GENERATED from METROS rather than typed,
+ * and this is what stops them parting company: a metro added, moved or removed
+ * in config with no matching edit there would put members in the wrong place on
+ * the admin roster, and nothing else would notice.
+ *
+ * Same arrangement as privacy-labels and play-data-safety: two copies with a
+ * gate, because one copy the database cannot see is not an option.
+ */
+describe("the SQL metro centroids match METROS", () => {
+  const migration = (() => {
+    const dir = join(SRC, "..", "..", "..", "supabase", "migrations");
+    return readFileSync(join(dir, "20260912000400_which_metro_a_member_is_in.sql"), "utf8");
+  })();
+
+  // NUMBERS, not strings. The SQL literal is `-80.0` and the same value read
+  // off METROS stringifies to `-80` — a difference in spelling, not in place,
+  // and comparing text failed on Pittsburgh for no reason at all.
+  const inSql = new Map(
+    [...migration.matchAll(/\('([a-z0-9-]+)', (-?[0-9.]+), (-?[0-9.]+)\)/g)].map((m) => [
+      m[1]!,
+      { lat: Number(m[2]), lng: Number(m[3]) },
+    ]),
+  );
+
+  /** `elsewhere` has no centroid — it is not a place. */
+  const withCentroid = METROS.filter(
+    (m): m is typeof m & { lat: number; lng: number } =>
+      typeof (m as { lat?: number }).lat === "number",
+  );
+
+  it("finds both lists, so the comparison is not vacuous", () => {
+    expect(withCentroid.length).toBeGreaterThanOrEqual(40);
+    expect(inSql.size).toBe(withCentroid.length);
+  });
+
+  it.each(METROS.map((m) => m.id))("%s", (id) => {
+    const config = METROS.find((m) => m.id === id) as { lat?: number; lng?: number };
+    if (typeof config.lat !== "number") {
+      // elsewhere: must NOT be in the SQL list, or every distant member would
+      // be slotted into a place that does not exist.
+      expect(inSql.has(id)).toBe(false);
+      return;
+    }
+    expect(inSql.get(id), `${id} centroid`).toEqual({ lat: config.lat, lng: config.lng });
+  });
+
+  it("never guesses beyond the radius it states", () => {
+    // Null, not "elsewhere". A centroid is a city hall rather than a boundary,
+    // so past a distance the honest answer is absence — and a roster reading
+    // "elsewhere" for somebody 300 miles out looks like a category.
+    expect(migration).toMatch(/<= 120701/);
+    expect(migration).not.toMatch(/'elsewhere'/);
+  });
+});

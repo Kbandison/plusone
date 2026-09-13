@@ -1,3 +1,5 @@
+import { metroLabel } from "@plusone/config";
+
 import { getServerSupabase } from "@/lib/supabase";
 
 import { ShowContact } from "./show-contact";
@@ -16,6 +18,11 @@ import { ShowContact } from "./show-contact";
  * disagreeing with it: no condition, no email, no phone, no location, no bio.
  * A diagnosis still costs a written reason through RevealCondition.
  */
+/** metroLabel takes an id; the roster's is nullable when nothing is in range. */
+function metro(id: string | null): string | null {
+  return id ? metroLabel(id) : null;
+}
+
 function when(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toISOString().slice(0, 10);
@@ -31,6 +38,7 @@ interface RosterRow {
   readonly open_reports: number;
   readonly email_masked: string | null;
   readonly phone_masked: string | null;
+  readonly metro: string | null;
 }
 
 export async function Roster() {
@@ -84,7 +92,8 @@ export async function Roster() {
             </span>
 
             <span className="text-[11px] text-ink-3">
-              {r.verification_status} · last active {when(r.last_active_at)}
+              {r.verification_status} · {metro(r.metro) ?? "no metro"} · last active{" "}
+              {when(r.last_active_at)}
             </span>
 
             <span className="text-[11.5px]">
@@ -117,11 +126,12 @@ export async function Roster() {
           overflow shifts the header and the wordmark with it, which is the bug
           1ea97be spent an evening on. */}
       <div className="mt-5 -mx-6 hidden overflow-x-auto px-6 sm:block">
-        <table className="w-full min-w-[44rem] border-collapse text-left text-[12.4px]">
+        <table className="w-full min-w-[52rem] border-collapse text-left text-[12.4px]">
           <thead>
             <tr className="border-b border-line text-[10.5px] tracking-[0.04em] text-ink-3 uppercase">
               <th className="py-2 pr-4 font-normal">Name</th>
               <th className="py-2 pr-4 font-normal">Joined</th>
+              <th className="py-2 pr-4 font-normal">Metro</th>
               <th className="py-2 pr-4 font-normal">Status</th>
               <th className="py-2 pr-4 font-normal">Last active</th>
               <th className="py-2 pr-4 font-normal">Contact</th>
@@ -139,6 +149,11 @@ export async function Roster() {
                 {/* tabular-nums so the dates line up as a column rather than
                     wandering by digit width. */}
                 <td className="py-2.5 pr-4 tabular-nums text-ink-2">{when(r.created_at)}</td>
+                {/* Derived from the member's rounded location, never asked for
+                    — nothing in the app puts a metro question to a member. */}
+                <td className="py-2.5 pr-4 text-ink-2">
+                  {metro(r.metro) ?? <span className="text-ink-3">—</span>}
+                </td>
                 <td className="py-2.5 pr-4 text-ink-2">{r.verification_status}</td>
                 <td className="py-2.5 pr-4 tabular-nums text-ink-2">{when(r.last_active_at)}</td>
                 {/* Masked from the database, not hidden with CSS — a page that

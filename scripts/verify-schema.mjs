@@ -186,7 +186,13 @@ if (!DB_URL) {
 //                                          note's own instruction, and following
 //                                          it is how the missed delta above was
 //                                          caught rather than shipped.
-const EXPECT = { tables: 36, views: 5, functions: 137, enums: 31, rooms: 7, config: 23 };
+// tables    36 -> 37                      20260912000300 — thread_reads, so an
+// functions 137 -> 138                     unread reply clears the thread it is
+//                                          in rather than the whole room. The
+//                                          function is mark_thread_read;
+//                                          my_nav_counts is REPLACED in the same
+//                                          file and is net zero.
+const EXPECT = { tables: 37, views: 5, functions: 138, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
