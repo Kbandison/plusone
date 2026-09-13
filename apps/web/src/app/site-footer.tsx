@@ -39,7 +39,28 @@ export function SiteFooter({ current }: { current?: string }) {
         </ul>
       </nav>
 
-      <p className="mt-7 text-[11px] text-ink-3">{BRAND.name} is in build.</p>
+      {/*
+       * A reachable address, on every marketing page.
+       *
+       * It was already published — terms.ts and legal.ts both write it into
+       * their body text — but only to somebody who opens a policy and reads to
+       * the end of it. App Review's guideline 1.2 asks for a published point of
+       * contact for a user-generated-content app, and a reviewer checking that
+       * looks at the footer, not paragraph forty of the terms.
+       *
+       * Off BRAND rather than typed, for the reason the constant's own comment
+       * gives: three places naming an address is three places for it to drift.
+       */}
+      <p className="mt-7 text-[11px] text-ink-3">
+        {BRAND.name} is in build. Reach us at{" "}
+        <a
+          href={`mailto:${BRAND.supportEmail}`}
+          className="ease-brand underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:text-ink hover:decoration-accent"
+        >
+          {BRAND.supportEmail}
+        </a>
+        .
+      </p>
     </footer>
   );
 }
