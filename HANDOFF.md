@@ -227,6 +227,21 @@ apps/web/.next` and start again. It is not a code error and the message does
   points at CommandLineTools and changing it needs sudo, so everything is driven
   with `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` instead.
   It is a beta: fine for the Simulator, **not** for a submission build.
+- **You cannot record the iPad's screen from this Mac. Record it on the iPad.**
+  Three routes, all dead on macOS 27, so nobody re-walks them:
+  `devicectl device capture screen-record` refuses with CoreDeviceError 1001 —
+  this iPad publishes `capturescreenshot` and `viewdevicescreen` but not
+  `com.apple.coredevice.feature.screenrecording`. ffmpeg's avfoundation input
+  lists the FaceTime camera and the screen and no iPad, because CoreMediaIO
+  hides connected iOS devices until a process sets
+  `kCMIOHardwarePropertyAllowScreenCaptureDevices` — and setting it from our own
+  Swift recorder returned status 0 and still published nothing, because
+  **`/System/Library/CoreMediaIO/Plug-Ins/DAL/` no longer exists.** Apple removed
+  the DAL plugin directory; the flag has nothing left to answer it. That is the
+  same path QuickTime used, so QuickTime will not see the iPad either.
+  `devicectl device capture screenshot` still works and is the only picture this
+  Mac can take. Use iOS Control Center's screen recorder and AirDrop the file.
+
 - **THE XCODE CLOUD BUILD NUMBER IS NOT AUTOMATIC. Bump it before every
   archive, or the build fails at the end.**
 
@@ -457,10 +472,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item | since |
-| ------- | ---- | ----- |
-| _macOS_ | —    | —     |
-| _WSL_   | —    | —     |
+| session | item                                                   | since      |
+| ------- | ------------------------------------------------------ | ---------- |
+| _macOS_ | the App Review demo recording (shells 11 / submission) | 2026-09-13 |
+| _WSL_   | —                                                      | —          |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
 only**, said 2026-08-29, because this is one body of work he wants done in
