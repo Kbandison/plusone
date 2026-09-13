@@ -78,6 +78,26 @@ if (!SUPABASE_URL || !SECRET_KEY) {
 const ANCHOR = process.env.SEED_NEAR ?? "";
 
 /**
+ * A member to prepare for App Review, given the same way as SEED_NEAR.
+ *
+ * A reviewer signing in to an empty account cannot verify anything the review
+ * notes claim. Measured on 2026-09-13, the onboarded test member had no
+ * location, no connects, no chats and no Drop — so Tonight and Browse matched
+ * nobody (`distance_mi <= radius` is null against everybody without a
+ * location), and Block and Report were unreachable, because those live in a
+ * chat and there were none.
+ *
+ * "We could not review your app" is a 2.1 rejection rather than a question, so
+ * this gives that account the three things the notes depend on: somewhere to
+ * be, somebody to see, and one conversation to report from.
+ *
+ * Everything it creates is between the reviewer and a seeded member, so
+ * `pnpm seed:remove` still takes all of it away — the chat goes with the
+ * connect, and the connect goes with the seed.
+ */
+const REVIEWER = process.env.SEED_REVIEWER ?? "";
+
+/**
  * Answers for the §10 prompts. Written to sound like people rather than like
  * filler, because a grid of "lorem ipsum" tests the layout and nothing else —
  * a card with three real sentences is the only way to see whether the profile
@@ -507,6 +527,8 @@ try {
 
     made.push(email);
   }
+  if (REVIEWER) await prepareReviewer(client, made, lat, lon);
+
   await client.query("commit");
   console.log(`Seeded ${made.length} members near ${lat.toFixed(2)}, ${lon.toFixed(2)}.`);
   console.log(`Remove them with:  pnpm seed:remove`);
@@ -516,4 +538,179 @@ try {
   process.exitCode = 1;
 } finally {
   await client.end();
+}
+
+/**
+ * Runs one statement as a member, the way the check:* scripts do.
+ *
+ * The connect and chat mechanics are SECURITY DEFINER functions keyed on
+ * auth.uid(), and §5.3.4 says a mechanic transition goes through the RPC rather
+ * than a table write. So the seed becomes the member rather than working around
+ * them: the rows that come out are the rows the app itself would have made, and
+ * anything the mechanics would refuse is refused here too.
+ */
+async function asMember(client, id, sql, params = []) {
+  // A SAVEPOINT, not a bare try/finally. A statement that fails aborts the
+  // whole transaction, and every command after it — including the `reset role`
+  // in a finally — is refused with "current transaction is aborted", which
+  // replaces the real error with a useless one. Rolling back to the savepoint
+  // clears both the aborted state and the role in one move, so the original
+  // failure survives to be thrown. verify-columns.mjs does the same and for the
+  // same reason.
+  // Counted on the function rather than in a module-level `let`: these helpers
+  // sit at the end of the file, so a `let` here is still in its temporal dead
+  // zone when the main body above calls this. A function declaration hoists, and
+  // so does somewhere to hang a counter.
+  asMember.n = (asMember.n ?? 0) + 1;
+  const name = `m${asMember.n}`;
+  await client.query(`savepoint ${name}`);
+  try {
+    await client.query(`select set_config('request.jwt.claims', $1, true)`, [
+      JSON.stringify({ sub: id, role: "authenticated" }),
+    ]);
+    await client.query(`set local role authenticated`);
+    const result = await client.query(sql, params);
+    await client.query(`reset role`);
+    await client.query(`select set_config('request.jwt.claims', '', true)`);
+    await client.query(`release savepoint ${name}`);
+    return result;
+  } catch (error) {
+    await client.query(`rollback to savepoint ${name}`);
+    throw error;
+  }
+}
+
+/** Gives the reviewer account somewhere to be, somebody to see, and a chat. */
+async function prepareReviewer(client, seededEmails, lat, lon) {
+  const found = await client.query(
+    `select id from auth.users where phone = $1 or email = $1 or phone = $2`,
+    [REVIEWER, REVIEWER.replace(/^\+/, "")],
+  );
+  if (found.rowCount !== 1) {
+    throw new Error(
+      `SEED_REVIEWER matched ${found.rowCount} accounts. Give the phone in the form stored on auth.users, or the email.`,
+    );
+  }
+  const reviewer = found.rows[0].id;
+
+  // Somewhere to be. Through the RPC, so the round_location trigger coarsens it
+  // exactly as it does for a member who granted permission in onboarding.
+  await asMember(client, reviewer, `select public.set_my_location($1, $2)`, [lat, lon]);
+
+  /**
+   * Verified, which is what /dev/sign-in cannot make somebody.
+   *
+   * That route sets `phone_verified` and stops — liveness is what promotes an
+   * account to `verified`, and there is no way to pass a selfie check from a
+   * script.
+   *
+   * TWO columns, because they gate different things and only one of them is
+   * obvious. `verification_status` is what `can_view_profile` reads, so without
+   * it the account is invisible to everybody and sees nobody. But the
+   * ONBOARDING RESOLVER reads `liveness_passed_at`, and without that the member
+   * is sent back to the selfie step on every sign-in — which is what actually
+   * happened here: the account had `onboarded_at` set, looked finished, and
+   * still could not reach the app. Setting only the status leaves a member
+   * permanently one screen short of the product.
+   *
+   * The App Review notes already tell a reviewer this account is "fully
+   * onboarded". This is the line that makes that true.
+   */
+  /**
+   * Gender is set because the resolver gates `hasPreferences` on its PRESENCE
+   * and reads nothing else from that screen — an empty `seeking` is a real
+   * answer meaning everyone. So the value is arbitrary and only its presence
+   * matters. Without it the account is returned to the preferences step on
+   * every sign-in: one screen short of the app, with `onboarded_at` already
+   * set and everything looking finished.
+   */
+  const promoted = await client.query(
+    `update public.profiles
+        set verification_status = 'verified',
+            liveness_passed_at = coalesce(liveness_passed_at, now()),
+            gender = coalesce(gender, 'non_binary')
+      where id = $1
+        and (verification_status <> 'verified'
+             or liveness_passed_at is null
+             or gender is null)`,
+    [reviewer],
+  );
+  if (promoted.rowCount) {
+    console.log("  reviewer completed: verified, liveness recorded, preferences answered");
+  }
+
+  /**
+   * A partner in the SAME community, because the visibility wall is not
+   * decoration.
+   *
+   * `can_view_profile` is what refused the first attempt — "connect: target is
+   * not visible to initiator" — and it reads community, the cross-community
+   * opt-in, mode and verification. Picking the first seeded member and hoping
+   * is how that happens; picking one who can actually see this account is how
+   * the mechanics get exercised rather than worked around.
+   *
+   * One conversation, and from a SEEDED member so `pnpm seed:remove` takes the
+   * connect and the chat away with them.
+   */
+  const already = await client.query(
+    `select 1 from public.chats ch
+       join public.connects co on co.id = ch.connect_id
+      where co.initiator_id = $1 or co.target_id = $1`,
+    [reviewer],
+  );
+  if (already.rowCount) {
+    console.log("  reviewer already has a chat — located and verified, nothing else to do");
+    return;
+  }
+
+  // This run's seeds first, then any that are already there, so the reviewer
+  // can be prepared on its own with SEED_COUNT=0.
+  const partner = await client.query(
+    `select u.id
+       from auth.users u
+       join public.profiles p on p.id = u.id
+      where (u.email = any($1) or u.email like '%@' || $3)
+        and p.community = (select community from public.profiles where id = $2)
+        and p.mode = 'dating'
+      order by (u.email = any($1)) desc
+      limit 1`,
+    [seededEmails, reviewer, DOMAIN],
+  );
+  if (partner.rowCount !== 1) {
+    throw new Error("no seeded member shares the reviewer's community — raise SEED_COUNT");
+  }
+  const other = partner.rows[0].id;
+
+  const connect = await asMember(
+    client,
+    other,
+    `select public.create_connect($1, $2, $3, 'drop'::public.connect_source, null) as id`,
+    [reviewer, PROFILE_PROMPTS[0].id, PROMPT_ANSWERS[0]],
+  );
+  const connectId = connect.rows[0].id;
+
+  // Accepted by the reviewer, which is what opens the chat.
+  await asMember(client, reviewer, `select public.accept_connect($1)`, [connectId]);
+
+  const chat = await client.query(`select id from public.chats where connect_id = $1`, [connectId]);
+  if (chat.rowCount !== 1) throw new Error("accept_connect did not open a chat");
+  const chatId = chat.rows[0].id;
+
+  // Two lines, so the thread reads as a conversation rather than a fixture —
+  // and so the overflow menu carrying Block and Report has something under it.
+  for (const [sender, body] of [
+    [other, "Your answer about the supermarket aisle made me laugh out loud. Guilty of it myself."],
+    [reviewer, "Ha — then we will get on. Are you free later in the week?"],
+  ]) {
+    await asMember(
+      client,
+      sender,
+      `insert into public.messages (chat_id, sender_id, body) values ($1, $2, $3)`,
+      [chatId, sender, body],
+    );
+  }
+
+  console.log(
+    `Reviewer account prepared: located, one accepted connect, one chat with 2 messages.`,
+  );
 }
