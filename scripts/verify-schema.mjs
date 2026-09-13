@@ -167,7 +167,26 @@ if (!DB_URL) {
 //                                          so the roster can show them masked.
 //                                          admin_member_roster is REPLACED in
 //                                          the same file and is net zero.
-const EXPECT = { tables: 36, views: 5, functions: 135, enums: 31, rooms: 7, config: 23 };
+// functions 135 -> 136                     20260911000200 — my_nav_counts, the
+//                                          two numbers behind the nav badges.
+//                                          Applied on 2026-09-11 and NOT moved
+//                                          here at the time: the badge did not
+//                                          render, we went straight into why,
+//                                          and this line was never written.
+//                                          20260912000100 then REPLACED that
+//                                          function — invoker to definer — which
+//                                          is net zero.
+//
+// functions 136 -> 137                     20260912000200 — room_post_root, so a
+//                                          notification carrying one uuid can
+//                                          open the thread it belongs to.
+//
+//                                          Read off the live database after
+//                                          applying, not added up — which is the
+//                                          note's own instruction, and following
+//                                          it is how the missed delta above was
+//                                          caught rather than shipped.
+const EXPECT = { tables: 36, views: 5, functions: 137, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
