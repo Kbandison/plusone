@@ -2361,6 +2361,35 @@ unblock other work.
     `ci_post_clone.sh` build-number log is still worth reading — and that only
     matters if Xcode Cloud is the route.
 
+22. **The reviewer account has to have something in it.** Found 2026-09-13 while
+    recording the app for App Review, and it is a submission blocker rather than
+    a polish item.
+
+    The only onboarded test member — `+15555550102`, the one a reviewer would be
+    pointed at — measured:
+
+    ```
+    connects  0     chats  0     drops ever  0     location  NOT SET
+    ```
+
+    So a reviewer signs in and sees an empty Drop, an empty inbox, and **no way
+    to reach the Block and Report controls at all**, because those live in a
+    chat and a room post and there are no chats. The App Review notes claim
+    guideline 1.2 is satisfied; an empty account makes that claim unverifiable,
+    and "we could not review your app" is a 2.1 rejection rather than a
+    question.
+
+    No location is the root of most of it: `distance_mi <= radius` is null
+    against everybody, so the Drop and Browse both match nobody. Onboarding the
+    reviewer account from where the other 22 members are is what fixes the feed
+    — see shells 11's note — and a connect accepted into a chat is what makes
+    the reporting route reachable.
+
+    What it needs before submission: a location, a Drop that returns people, and
+    at least one chat. Whether that is done by onboarding it properly by hand or
+    by extending `seed-test-members.mjs` is Kevin's call; the second is
+    repeatable and the first is honest.
+
 ---
 
 ## Done, so nobody re-opens it
