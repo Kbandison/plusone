@@ -1966,11 +1966,27 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
 Nothing else can proceed on some of these, so they are roughly in the order they
 unblock other work.
 
-1. **Counsel review of the privacy policy and terms** (Decision #30). The last
+1. **Counsel review of the privacy policy and terms** (Decision #30). **The
+   brief is written and sits in Downloads as `PlusOne-counsel-brief.pdf`**, also
+   published as an artifact. It states what the product does with data — the
+   inventory is generated from the same source as both store forms — and lists
+   seven decisions. Two were resolved in the conservative direction (the
+   liveness declaration, and faith and politics getting their own consent); the
+   five that remain each carry a PROPOSED POSITION, so counsel is agreeing,
+   correcting or replacing rather than starting from a blank page.
+
+   The five: governing law and forum; the child safety commitments; whether to
+   name the processors and what transfer language is needed; confirmation the
+   encryption wording does not overstate; and the waitlist — retention, consent
+   shape, and what a deletion request from a non-member obliges.
+
+   **Governing law is the one that blocks opening signups.** The terms still say
+   "the law of the place we are established", which is a placeholder. The last
    item on `verify-launch`'s by-hand list; the other six are done. Both
    documents are marked DRAFT and the terms still say governed by "the law of
    the place we are established" with no jurisdiction named. Long pole — worth
    starting before it is the only thing left.
+
 2. ~~**The signing key's SHA-256**~~ — supplied 2026-08-25 and serving. Note
    the Play record was recreated, so the first fingerprint is dead; the live one
    is in the route and pinned by a test that refuses the old one.
@@ -2041,7 +2057,20 @@ unblock other work.
     2026-08-26: **count**. Against the argument in `app-badge.tsx`, which is
     left in place rather than deleted so the trade stays legible, and beside a
     note saying the bucketed middle option is one line.
-12. **Play's release checklist, which was on no list.** Found 2026-08-27 from a
+12. ~~**Play's release checklist**~~ — **done by Kevin 2026-09-13.** Store
+    listing, content rating, target audience, data safety, app access and the
+    privacy policy URL are all complete. The copy-paste pack in
+    `apps/android/README.md` stays: it is the record of what was answered, and
+    the data-safety half is generated from `play-data-safety.ts` rather than
+    typed, so a new column still re-opens it.
+
+    Still missing and not code, unchanged: the feature graphic and screenshots.
+    `adb` is set up, so `adb exec-out screencap -p` takes them off the device.
+
+    The original entry follows, because the App-access reasoning is what stops
+    somebody re-deriving it.
+
+    **Play's release checklist, which was on no list.** Found 2026-08-27 from a
     screenshot: Monetize with Play says "Finish setting up your app on the
     Dashboard", because the app's setup tasks are not done. None of them is
     tracked anywhere, and together they are the difference between an internal
@@ -2302,7 +2331,19 @@ unblock other work.
     you can paste the expanded post-clone log into a session, that unblocks the
     whole thing.
 
-19. **Apple's Guideline 2.1 reply — the pack is written, three sections need
+19. **Apple's Guideline 2.1 — ANSWERED AND RESUBMITTED 2026-09-13.** Kevin sent
+    the reply and put the app back in for review. Not closed: resubmitted is not
+    approved, and the demo recording macOS is producing is the part a reviewer
+    actually watches.
+
+    What made it answerable was the reviewer account, which is Kevin 22 — an
+    empty one made the guideline 1.2 claim unverifiable, which would have been
+    the next rejection rather than the next question.
+
+    The original entry follows, since the sections it names are what the reply
+    was built from.
+
+    **Apple's Guideline 2.1 reply — the pack is written, three sections need
     you.** 2026-08-29, 6:58 PM. `apps/ios/APP_REVIEW_NOTES.md`.
 
     **This is not a rejection of the app.** 2.1 "Information Needed" means the
