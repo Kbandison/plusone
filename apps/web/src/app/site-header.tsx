@@ -27,7 +27,7 @@ export function SiteHeader() {
         <ButtonLink tone="quiet" href="/sign-in">
           {DRAFT_COPY.home.signIn}
         </ButtonLink>
-        <ButtonLink href="/waitlist">{DRAFT_COPY.waitlist.submit}</ButtonLink>
+        <ButtonLink href="/onboarding/phone">{DRAFT_COPY.home.getStarted}</ButtonLink>
       </div>
     </header>
   );

@@ -206,23 +206,29 @@ describe("no email we send outs the person receiving it", () => {
   });
 });
 
-describe("the closed-beta copy does not strand a member", () => {
-  const B = DRAFT_COPY.betaClosed;
-
-  it("offers sign-in as well as the list", () => {
-    // The half that is easy to leave out. Somebody who already has an account
-    // and typed their number on the wrong screen does not need an invitation,
-    // and telling them they do is a dead end with their own data behind it.
-    expect(B.already.length).toBeGreaterThan(0);
-    expect(B.signIn.length).toBeGreaterThan(0);
-    expect(B.join.length).toBeGreaterThan(0);
+/**
+ * The closed-beta copy is gone, and the half that mattered is not.
+ *
+ * `betaClosed` held a refusal card — heading, body, "Join the list" — and two
+ * lines that were never about the beta at all: "Already have an account?" and
+ * "Sign in". That pair is the half easy to leave out and the one that strands
+ * somebody real, a member who typed their number on the wrong screen and does
+ * not need an invitation.
+ *
+ * Signup opened on 2026-09-13 and the card went with the gate. The pair moved
+ * to `phone`, where it renders, because a member on the wrong screen happens
+ * whether or not there is a gate.
+ */
+describe("the wrong-screen member is still offered a way through", () => {
+  it("keeps the sign-in offer on the phone screen", () => {
+    expect(DRAFT_COPY.phone.already.length).toBeGreaterThan(0);
+    expect(DRAFT_COPY.phone.signIn.length).toBeGreaterThan(0);
   });
 
-  it("reads as a shut door rather than a broken one", () => {
-    const all = `${B.heading} ${B.body}`.toLowerCase();
-    for (const word of ["error", "wrong", "failed", "invalid"]) {
-      expect(all, `"${word}" blames somebody who did nothing`).not.toContain(word);
-    }
+  it("leaves no copy describing a beta that has ended", () => {
+    // The same class of error as a reviewer note describing a gate that is no
+    // longer there — BACKLOG 22 names it explicitly.
+    expect(DRAFT_COPY).not.toHaveProperty("betaClosed");
   });
 });
 

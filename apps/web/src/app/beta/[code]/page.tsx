@@ -62,7 +62,7 @@ export default async function BetaInvitePage({ params }: { params: Promise<{ cod
         {open ? <Install code={code} known={known} /> : null}
 
         {open ? null : (
-          <Link href="/waitlist" className={buttonClass("secondary", "mt-8 self-start")}>
+          <Link href="/onboarding/phone" className={buttonClass("secondary", "mt-8 self-start")}>
             {DRAFT_COPY.waitlistConfirm.rejoin}
           </Link>
         )}

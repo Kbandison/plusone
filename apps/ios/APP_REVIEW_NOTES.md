@@ -77,22 +77,31 @@ They land on the first step of account creation — which is the one door the
 closed beta refuses. WSL's earlier note described the web entry point correctly
 and it stopped being the shell's the moment the start URL changed.
 
-**They must not use that screen.** Plus One is in a closed beta (server 21): new
-accounts need an invitation, so entering a number there is refused. The account
-you give them already exists. `aa6f434` puts "Already have an account? Sign in"
-on that screen — before this it appeared only AFTER the refusal, and a shell has
-no address bar, so the only route to sign-in began with being rejected.
+**They should still use Sign in, but not because signup is refused.** Signup
+OPENED on 2026-09-13 (BACKLOG 22), so entering a number on that screen now
+creates a real account — it works, it just is not the account you want reviewed.
+The demo account already exists and is past onboarding and the liveness check,
+which is what makes it worth pointing at. `aa6f434` puts "Already have an
+account? Sign in" on that screen, and a shell has no address bar, so that link
+is the only route there.
+
+**This paragraph and the block below were rewritten after the 2026-09-13
+resubmission.** The notes submitted with it said signup was invitation-only and
+would be refused, which stopped being true the same day. A reviewer note
+describing a gate that no longer exists is the same error as one describing a
+screen that does not exist — the App Review Information → Notes field needs the
+block below pasted over the old one, which does not require resubmitting.
 
 **Paste this at the top of the reply and into the Notes field:**
 
 ```
-Plus One is currently in a closed beta, so creating a new account requires
-an invitation and the app opens on the "Your number" signup step.
+The app opens on the "Your number" signup step.
 
-Please do NOT enter a number on that screen — signup is invitation-only and
-will be refused. Instead tap "Sign in" on that same screen, enter the email
-address below, and enter the code sent to it. The account already exists and
-has completed onboarding, so no invitation or identity check is involved.
+Please do not create a new account. Tap "Sign in" on that same screen, enter
+the email address below, and enter the code sent to it. The account provided
+has already completed onboarding and the one-time identity check, so signing
+in to it is the only way to reach the full app — a new account would stop at
+those steps.
 ```
 
 Naming the button is not politeness. `apps/android/README.md` records a round

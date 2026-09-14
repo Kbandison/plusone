@@ -47,7 +47,7 @@ export default function Home() {
       <p className="mt-6 max-w-[46ch] text-ink-2">{COPY.marketing.sub}</p>
 
       <div className="mt-11 flex flex-wrap items-center gap-x-7 gap-y-4">
-        <Link href="/waitlist" className={buttonClass("primary")}>
+        <Link href="/onboarding/phone" className={buttonClass("primary")}>
           {DRAFT_COPY.waitlist.submit}
         </Link>
 

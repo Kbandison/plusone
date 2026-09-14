@@ -54,7 +54,7 @@ export default async function InvitePage() {
        * this request and lives thirty days, and attribution happens once the
        * invitee has an account — which is the point at which there is anyone to
        * attribute it to, whenever that turns out to be. */}
-      <Link href="/waitlist" className={buttonClass("primary", "mt-10 self-start")}>
+      <Link href="/onboarding/phone" className={buttonClass("primary", "mt-10 self-start")}>
         {COPY.referral.landingButton}
       </Link>
     </PublicShell>

@@ -257,29 +257,19 @@ export const DRAFT_COPY = {
       "Invitations are good for 14 days. Ask us for another and we will send one — the list still has you on it.",
   },
 
-  /**
-   * What somebody uninvited meets at /onboarding/phone.
-   *
-   * NOT an error, and not "something went wrong". They did nothing wrong and
-   * the app is working exactly as intended — so this reads as a door that is
-   * shut rather than a door that is broken, and it offers the only thing there
-   * is to offer.
-   */
-  betaClosed: {
-    heading: "Plus One is in a closed beta",
-    body: "New accounts need an invitation while we open one area at a time. Join the list and we will send you one when your area opens.",
-    join: "Join the list",
+  phone: {
+    heading: "Your number",
     /**
      * The half that is easy to leave out and strands somebody real: a member
      * who already has an account and typed their number on the wrong screen.
-     * They do not need an invitation and must not be told they do.
+     *
+     * It lived in `betaClosed` until 2026-09-13 because it also sat on the
+     * closed-beta refusal card. The card went when signup opened; this did not,
+     * because it was never about the beta — it is about somebody on the wrong
+     * screen, which happens whether or not there is a gate.
      */
     already: "Already have an account?",
     signIn: "Sign in",
-  },
-
-  phone: {
-    heading: "Your number",
     intro:
       "We text you a code to sign in. Your number is never shown to anyone, and it is not used to find you.",
     phoneLabel: "Mobile number",

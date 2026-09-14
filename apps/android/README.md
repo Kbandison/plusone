@@ -161,11 +161,15 @@ The liveness check is not the problem it looks like: a reviewer account that
 Kevin has already taken through onboarding is past that gate permanently, so the
 only live barrier is the sign-in code.
 
-**THE APP IS IN A CLOSED BETA SINCE 2026-08-31, AND THAT CHANGES THIS SECTION
-MORE THAN ANYTHING ELSE ON THE PAGE.** No account can be created without an
-invitation — `/onboarding/phone` passes `shouldCreateUser: false` to Supabase
-unless a valid, unexpired, unspent invitation cookie is present — and the front
-door is now a waitlist form.
+**THE CLOSED BETA ENDED 2026-09-13 AND SIGNUP IS OPEN.** `/onboarding/phone`
+passes `shouldCreateUser: true`, so a reviewer can create an account the same
+way anybody else does — no invitation, no waitlist detour. Between 2026-08-31
+and that date this section described a gate, and a reviewer note describing a
+beta that has ended is the same error as one describing a screen that does not
+exist, which is why this paragraph is rewritten rather than deleted.
+
+The waitlist form still exists and is still linked; it is no longer the front
+door.
 
 A reviewer who taps through looking for a way in finds a form asking for their
 email address, and a reviewer who concludes the app cannot be used files a

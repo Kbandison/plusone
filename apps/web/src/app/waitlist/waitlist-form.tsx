@@ -66,7 +66,7 @@ export function WaitlistForm() {
           href="/sign-in"
           className="underline decoration-line-2 underline-offset-4 hover:text-ink"
         >
-          {DRAFT_COPY.betaClosed.signIn}
+          {DRAFT_COPY.phone.signIn}
         </Link>
       </p>
     </form>

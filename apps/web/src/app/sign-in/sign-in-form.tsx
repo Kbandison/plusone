@@ -79,7 +79,7 @@ export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: str
             sent somebody who is new — which is exactly who this line is for —
             to a door that does not open. */}
         <Link
-          href="/waitlist"
+          href="/onboarding/phone"
           className="underline decoration-line-2 underline-offset-4 hover:text-ink"
         >
           {C.newHereLink}

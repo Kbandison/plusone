@@ -124,14 +124,35 @@ describe("the closed beta has exactly one door", () => {
     expect(flags).toEqual(["false", "false"]);
   });
 
-  it("/onboarding/phone gates it on the invitation, checked against the database", () => {
+  /**
+   * SIGNUP IS OPEN since 2026-09-13, and this records the reversal rather than
+   * deleting the assertion.
+   *
+   * It read `shouldCreateUser: invited`, with the cookie checked against the
+   * database rather than trusted — the gate's whole design. Kevin reopened with
+   * counsel review still outstanding, which is his call; BACKLOG 22 is the
+   * checklist this followed.
+   *
+   * The property worth keeping is the one that made the gate safe and now makes
+   * the absence of it unremarkable: creation was never gated on a COOKIE. If
+   * signup is ever closed again, it must go back to a database check and not to
+   * `Boolean(cookie)`, which anybody can set.
+   */
+  it("/onboarding/phone creates an account for anybody", () => {
     const actions = code("app/onboarding/phone/actions.ts");
-    expect(actions).toMatch(/betaInviteIsOpen/);
-    expect(actions).toMatch(/shouldCreateUser:\s*invited/);
-    // The cookie is read here and not trusted as a credential: the value goes
-    // to a function that asks the database. If this ever becomes
-    // `shouldCreateUser: Boolean(cookie)` the gate is a cookie anybody can set.
+    expect(actions).toMatch(/shouldCreateUser:\s*true/);
     expect(actions).not.toMatch(/shouldCreateUser:\s*Boolean\(/);
+    expect(actions).not.toMatch(/shouldCreateUser:\s*invited/);
+  });
+
+  it("still spends and marks the invitation, though it no longer opens the door", () => {
+    // An invitation that was already issued must not be passable round, and
+    // `joined_in_beta` is the only record of who arrived during the beta —
+    // unrecoverable afterwards, since the waitlist is keyed by email and an
+    // account by phone. BACKLOG 29.
+    const actions = code("app/onboarding/phone/actions.ts");
+    expect(actions).toMatch(/acceptBetaInvite/);
+    expect(actions).toMatch(/joined_in_beta/);
   });
 
   it("spends the invitation only after the code verifies", () => {
@@ -198,7 +219,7 @@ describe("nothing offers a door that does not open", () => {
    * refusal — and the invited arrive from /beta/<code>, which sets the cookie
    * on the way.
    */
-  it("no public page links to /onboarding/phone", () => {
+  it("public pages link to signup, now that it is open", () => {
     /**
      * Both files of the invite surface, which is the only place a link to
      * signup is correct — an invited member arrives from /beta/<code>, which
@@ -209,20 +230,20 @@ describe("nothing offers a door that does not open", () => {
      * the install steps, so the most prominent control on an invitation to
      * install an app opened the web app without saying so.
      */
-    const allowed = new Set(["app/beta/[code]/page.tsx", "app/beta/[code]/install.tsx"]);
-    const offenders = files.filter(
-      (f) =>
-        !allowed.has(f.replace(/^app\//, "app/")) && /href="\/onboarding\/phone"/.test(code(f)),
-    );
-    expect(
-      offenders,
-      "links to signup, which the beta gate refuses for anybody without an invitation",
-    ).toEqual([]);
+    // INVERTED 2026-09-13. It asserted that no public page linked here, because
+    // a link to a refusal is a button that goes nowhere. With the gate open the
+    // opposite is required: the front door has to be reachable from the front
+    // page, or the only route in is an invitation nobody is issuing any more.
+    for (const f of ["app/page.tsx", "app/site-header.tsx", "app/sign-in/sign-in-form.tsx"]) {
+      expect(code(f), f).toMatch(/href="\/onboarding\/phone"/);
+    }
   });
 
-  it("the front page and the marketing header point at the waitlist", () => {
-    expect(code("app/page.tsx")).toMatch(/href="\/waitlist"/);
-    expect(code("app/site-header.tsx")).toMatch(/href="\/waitlist"/);
+  it("the waitlist survives, because it was never only a gate", () => {
+    // It is what turns COPY.drop.thin from an apology into a plan, and it is
+    // still how somebody in an area with nobody in it says where they are.
+    expect(code("app/waitlist/page.tsx").length).toBeGreaterThan(0);
+    expect(files.some((f) => /href="\/waitlist"/.test(code(f)))).toBe(true);
   });
 });
 

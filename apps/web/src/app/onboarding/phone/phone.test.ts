@@ -31,7 +31,14 @@ describe("a member who already has an account is never stranded", () => {
     expect(mainForm).toContain('href="/sign-in"');
   });
 
-  it("still offers it on the refusal card too", () => {
-    expect(form.split('href="/sign-in"').length - 1).toBeGreaterThanOrEqual(2);
+  it("has no closed-beta card left to offer it on", () => {
+    // There were two sign-in links: one on the form and one on the refusal
+    // card, because a member who typed their number on the wrong screen had to
+    // be told they did not need an invitation. Signup opened on 2026-09-13 and
+    // the card went with the gate — `shouldCreateUser: true` makes the state
+    // that rendered it unreachable, and a card explaining a beta that has ended
+    // is the reviewer-note error in another place.
+    expect(form).not.toMatch(/sendState\.closed/);
+    expect(form).not.toMatch(/betaClosed/);
   });
 });

@@ -1355,7 +1355,36 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     which is strictly stronger than what it replaced. Watched it fail on a
     planted grant.
 
-22. **Reopening: what has to change when the beta ends.** Written now because
+22. ~~**Reopening: what has to change when the beta ends.**~~ — **DONE
+    2026-09-13. Signup is open**, at Kevin's instruction, with counsel review
+    still outstanding. That is his call and is recorded here rather than argued:
+    the terms members now accept still say "governed by the law of the place we
+    are established", and Kevin 1 is where that gets fixed.
+
+    Every item on the list below was executed. `shouldCreateUser: true`; the
+    five public links point at `/onboarding/phone`; the refusal card and its
+    `closed` state are gone, because `shouldCreateUser: true` makes the branch
+    that rendered them unreachable; `getStarted` left `KNOWINGLY_UNUSED`,
+    which is the map cleaning itself exactly as it was built to; and both store
+    reviewer notes are rewritten.
+
+    THE WAITLIST STAYS, as this entry always said. It is still linked and still
+    what turns `COPY.drop.thin` from an apology into a plan.
+
+    **The invitation cookie is now a MARK rather than a key.** `acceptBetaInvite`
+    still spends it so it cannot be passed round, and `joined_in_beta` is still
+    stamped — that is the only record of who arrived during the beta, and it is
+    unrecoverable afterwards. BACKLOG 29.
+
+    **One thing needs Kevin and is not code: the App Store Notes field.** The
+    2026-09-13 resubmission carried notes saying signup was invitation-only and
+    would be refused, which stopped being true hours later. The corrected block
+    is in `apps/ios/APP_REVIEW_NOTES.md` and pasting it over the old one does
+    not require resubmitting.
+
+    The original entry follows.
+
+    **Reopening: what has to change when the beta ends.** Written now because
     the closed beta is deliberately temporary and every piece of it is a thing
     somebody has to remember to undo.
 

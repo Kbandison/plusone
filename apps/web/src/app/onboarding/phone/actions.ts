@@ -11,7 +11,7 @@ import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
 import { nextRoute } from "@/lib/onboarding";
-import { acceptBetaInvite, betaInviteIsOpen } from "@/lib/waitlist";
+import { acceptBetaInvite } from "@/lib/waitlist";
 
 const E = DRAFT_COPY.phone.errors;
 
@@ -35,49 +35,43 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
   if (!phone) return { error: E.phoneInvalid, sentTo: null };
 
   /**
-   * The closed beta gate, and the ONLY place it can live.
+   * The one call in the app that can bring an account into existence.
    *
-   * ── why here and nowhere else ───────────────────────────────────────────────
+   * ── the gate that used to be here ──────────────────────────────────────────
    *
-   * This is the one call in the app that can bring an account into existence.
-   * `/sign-in` passes `shouldCreateUser: false` on both branches and says so in
-   * its own header — "This screen can never mint an account" — so it is already
-   * closed to anybody who is not already a member, and gating it a second time
-   * would do nothing except break the anti-enumeration property it was built
-   * for.
+   * Between 2026-08-31 and 2026-09-13 this passed `shouldCreateUser: invited`,
+   * and that was the closed beta. The reasoning is worth keeping because it is
+   * what makes reopening safe to do in one line:
    *
-   * That distinction is the whole design. "Nobody outside the beta gets in" is
-   * implemented as "no account can be CREATED without an invitation", not as
-   * "nobody can sign in" — and the difference is what stops the gate stranding
-   * real people:
+   * The gate was on CREATION, never on signing in. `/sign-in` passes
+   * `shouldCreateUser: false` on both branches — "this screen can never mint an
+   * account" — so it was already closed to non-members, and gating it a second
+   * time would only have broken its anti-enumeration property. "Nobody outside
+   * the beta gets in" was implemented as "no account can be CREATED without an
+   * invitation", which is why an existing member, or a store reviewer, could
+   * always sign in regardless. Nothing about that changes by opening it; the
+   * refusal branch simply stops being reachable.
    *
-   *   an invited stranger      shouldCreateUser: true. Account created.
-   *   an EXISTING member       Account already exists, so the OTP sends and
-   *                            they sign in, invitation or not. A member whose
-   *                            invitation was spent months ago, or who never
-   *                            had one because they joined before the beta,
-   *                            cannot be locked out of their own account.
-   *   a store REVIEWER         The same case. They sign in to an account that
-   *                            already exists and is past every one-time gate,
-   *                            which is what App Review Information tells them
-   *                            to do — so this gate cannot cause the rejection
-   *                            it most looks like it would.
-   *   an uninvited stranger    No account to sign into and none created. Told
-   *                            it is a closed beta, and offered the list.
+   * ── what the cookie still does ─────────────────────────────────────────────
    *
-   * The cookie is a CLAIM and this is where it gets checked. proxy.ts only
-   * carries the value; `betaInviteIsOpen` asks the database whether that code
-   * was really issued, has not expired, and has not already been spent. Checked
-   * on every send rather than once, because a cookie outlives the invitation it
-   * names and the browser is not ours.
+   * It is no longer a key. It is still a MARK: `verifyCode` spends the
+   * invitation so it cannot be passed round, and stamps `joined_in_beta` on the
+   * profile, which is the only record of who arrived during the beta and is
+   * unrecoverable afterwards — an email on a list and an account keyed by
+   * phone, with nothing joining them. BACKLOG 29.
    */
-  const inviteCode = (await cookies()).get("plusone_beta")?.value;
-  const invited = await betaInviteIsOpen(inviteCode);
-
+  // OPEN, since 2026-09-13. The closed beta gated account creation on an
+  // invitation; Kevin reopened signups with counsel review still outstanding,
+  // which is his call and is recorded in BACKLOG 22.
+  //
+  // The cookie is still READ, below and in verifyCode — an invitation that was
+  // already issued still marks its cohort through `joined_in_beta`, and still
+  // gets spent so it cannot be handed round. What stopped is refusing anybody
+  // who does not have one.
   const supabase = await getServerSupabase();
   const { error } = await supabase.auth.signInWithOtp({
     phone,
-    options: { shouldCreateUser: invited },
+    options: { shouldCreateUser: true },
   });
 
   if (error) {
@@ -92,19 +86,17 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
         return { error: E.rateLimited, sentTo: null };
       case "undeliverable":
         return { error: E.undeliverable, sentTo: null };
-      // `pretend_sent` is Supabase refusing to create an account, which on this
-      // screen means exactly one thing: no account exists for this number and
-      // `shouldCreateUser` was false. That is the closed beta, and it is the
-      // only way this branch can be reached now.
+      // `pretend_sent` is Supabase refusing to create an account, which needs
+      // `shouldCreateUser: false` — and this screen now passes true. So the
+      // branch is unreachable again, as it was before the gate, and it is kept
+      // rather than deleted because the classifier still has the case and a
+      // switch that silently falls through is worse than one that answers.
       //
-      // Before the gate this was unreachable in practice, and the old comment
-      // said so — "a brand-new member has no account yet, so the enumeration
-      // concern that makes /sign-in pretend does not apply here". The second
-      // half of that is still true and is why this can be answered plainly
-      // rather than pretended at: there is nothing to hide about a number with
-      // no account when we are refusing every number with no account.
+      // Treated as an ordinary send failure: if Supabase ever does refuse here,
+      // "that did not send" is true and actionable, where the closed-beta card
+      // would be a lie about a beta that has ended.
       case "pretend_sent":
-        return { error: null, sentTo: null, closed: true };
+        return { error: E.sendFailed, sentTo: null };
       case "failed":
         return { error: E.sendFailed, sentTo: null };
     }
