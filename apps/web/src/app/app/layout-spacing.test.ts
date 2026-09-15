@@ -7,6 +7,25 @@ const APP = join(import.meta.dirname);
 const layout = readFileSync(join(APP, "layout.tsx"), "utf8");
 const rooms = readFileSync(join(APP, "rooms/layout.tsx"), "utf8");
 const globals = readFileSync(join(APP, "../../styles/globals.css"), "utf8");
+const appHeader = readFileSync(join(APP, "app-header.tsx"), "utf8");
+
+/**
+ * Just the class attributes.
+ *
+ * Not fussiness: `expect(layout).toMatch(/pointer-events-auto/)` passed against
+ * a file where the class had been DELETED, because the comment explaining why
+ * the class is there still said the words. A sabotage is what found it. This
+ * repo has now lost that one six times, and the shape is always the same — a
+ * guard that greps a source file is a guard that reads its own documentation.
+ *
+ * A floor comes with it below, because a regex that stops matching anything
+ * makes every assertion built on it trivially true.
+ */
+function classAttrs(src: string): string {
+  return (src.match(/className="[^"]*"/g) ?? []).join("\n");
+}
+const layoutClasses = classAttrs(layout);
+const headerClasses = classAttrs(appHeader);
 
 function pages(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -110,5 +129,82 @@ describe("nothing is wider than the phone", () => {
   /** Like, comments, share, reply and the view count. */
   it("wraps the controls under a post rather than widening the row", () => {
     expect(row).toMatch(/flex flex-wrap items-center gap-x-5 gap-y-1/);
+  });
+});
+
+/**
+ * The pinned header, and the two things about it that fail in silence.
+ *
+ * Kevin's call 2026-09-15, picked from a working mock: the bar stays put, the
+ * wordmark leaves, the controls collect into a pill. What makes it safe is not
+ * the look, and neither of the two load-bearing parts shows up on a screenshot.
+ */
+describe("the pinned header does not eat the page", () => {
+  it("finds the classes at all", () => {
+    // The floor. Without it every assertion below is satisfied by an empty
+    // string the moment the className regex stops matching.
+    expect(headerClasses).toMatch(/flex items-center/);
+    expect(layoutClasses.length).toBeGreaterThan(400);
+  });
+
+  it("is actually pinned", () => {
+    expect(headerClasses).toMatch(/sticky top-0/);
+    // Above the feed rows, which became `relative z-10` when a whole post was
+    // made clickable and painted straight over the chrome once before.
+    expect(headerClasses).toMatch(/z-30/);
+  });
+
+  it("stops taking pointer events once it is transparent", () => {
+    // THE ONE THAT WOULD HAVE HURT. A sticky element with no background still
+    // captures clicks across its whole box, so the top ~70px of every scrolled
+    // screen — a Drop card, a chat row, the first post in a room — would be
+    // visibly there and completely dead, with nothing on screen to explain it.
+    expect(headerClasses).toMatch(/data-scrolled:pointer-events-none/);
+  });
+
+  it("gives the controls their pointer events back", () => {
+    // The other half. Without this the bell, feedback and gear go dead with the
+    // bar they sit in, which is worse than the bug above because those are the
+    // only way to reach notifications and settings from anywhere in the app.
+    expect(layoutClasses).toMatch(/pointer-events-auto/);
+  });
+
+  it("takes the wordmark out of the tab order when it leaves", () => {
+    // opacity-0 alone leaves a fully transparent link focusable and in the
+    // accessibility tree: somebody tabbing lands on nothing, and a screen reader
+    // offers a link to a home that is not on screen. pointer-events-none fixes
+    // neither — it only stops the mouse.
+    expect(layoutClasses).toMatch(/group-data-scrolled:invisible/);
+    // And `visibility` has to be in the transition list, or it snaps at the
+    // start of the fade instead of waiting for the end of it.
+    expect(layoutClasses).toMatch(/transition-\[opacity,transform,visibility\]/);
+  });
+
+  it("reads the scroll position passively, and settles before the first paint", () => {
+    // This listener runs on every screen in the app. Non-passive would let it
+    // block scrolling on the phones it exists for.
+    expect(appHeader).toMatch(/\{ passive: true \}/);
+    // And it is called once on mount: a back-navigation restores the scroll
+    // position before the effect runs, so without it the member returns to a
+    // mid-page scroll with the wordmark drawn over their content.
+    expect(appHeader).toMatch(/onScroll\(\);\n\s*window\.addEventListener/);
+  });
+
+  it("does not fire on the iOS rubber-band", () => {
+    // A threshold of zero flickers the wordmark on a bounce that never left the
+    // top of the page — which only happens in WKWebView and the TWA, not in a
+    // desktop browser, so it is exactly the class of thing the two-engines rule
+    // exists for.
+    expect(appHeader).toMatch(/window\.scrollY > 24/);
+  });
+
+  it("keeps the status-bar clearance that predates it", () => {
+    // The header moved into its own component and this calc had to move with
+    // it. Without it the wordmark is drawn underneath the clock in the iOS
+    // shell, where the web view IS the root view — measured at 59pt of inset
+    // against ink starting at 24pt.
+    expect(headerClasses).toMatch(/pt-\[calc\(1rem\+env\(safe-area-inset-top\)\)\]/);
+    // And nothing left a second copy behind in the layout.
+    expect(layoutClasses).not.toMatch(/pt-\[calc\(1rem\+env\(safe-area-inset-top\)\)\]/);
   });
 });

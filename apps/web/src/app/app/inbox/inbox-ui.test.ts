@@ -107,7 +107,13 @@ describe("the chrome kept its size", () => {
 
   /** Furniture rather than content — shrinking it bought nothing. */
   it("leaves the wordmark, the gear and the bar where they were", () => {
-    expect(layout).toMatch(/<Wordmark className="text-\[26px\]" \/>/);
+    // The SIZE, not the whole attribute. This pinned the exact string
+    // `<Wordmark className="text-[26px]" />` and broke on 2026-09-15 when the
+    // header was pinned and the wordmark gained transition classes — the size
+    // was untouched and the guard failed anyway. A literal pin is only as good
+    // as the literal, and this one was describing the whole line while claiming
+    // to be about the size.
+    expect(layout).toMatch(/<Wordmark className="[^"]*\btext-\[26px\]/);
     expect(layout).toMatch(/className="size-\[21px\]"/);
     // The nav is icons now, so there is no type size to pin. What kept the bar
     // its height was the label, and min-h-tap is the only thing holding it at

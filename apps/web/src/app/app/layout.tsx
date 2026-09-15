@@ -9,6 +9,7 @@ import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
 import { AppBadge } from "./app-badge";
+import { AppHeader } from "./app-header";
 import { LiveRefresh } from "./live-refresh";
 import { FeedbackLink } from "./feedback-link";
 import { NavLinks } from "./nav-links";
@@ -169,10 +170,22 @@ export default async function AppLayout({
        * (§ the note in the root layout, which chose it for exactly this reason).
        * Both report a top inset of nought, so this calc adds nothing there and
        * the layout is unchanged on every surface but the one that was broken. */}
-      <header className="flex items-center justify-between pt-[calc(1rem+env(safe-area-inset-top))] pb-3">
-        <Wordmark className="text-[26px]" />
+      <AppHeader>
+        {/* The wordmark leaves when the page is scrolled, and the controls do
+            not. `data-scrolled` is set on the header by AppHeader; these read it
+            through the group, so the two can never disagree about the state.
 
-        <div className="flex items-center">
+            `invisible` AS WELL AS opacity, and `visibility` is in the transition
+            list so it waits for the fade instead of snapping at the start.
+            Opacity alone leaves a fully transparent link in the tab order and in
+            the accessibility tree — so somebody tabbing lands on nothing, and a
+            screen reader offers a link to a home that is not on screen.
+            pointer-events-none fixes neither of those; it only stops the mouse. */}
+        <Wordmark className="ease-brand text-[26px] transition-[opacity,transform,visibility] duration-300 group-data-scrolled:invisible group-data-scrolled:-translate-y-1.5 group-data-scrolled:opacity-0" />
+
+        {/* pointer-events-auto, because the bar above turns them off once it is
+            transparent. Without this the controls go with it. */}
+        <div className="ease-brand pointer-events-auto flex items-center rounded-full transition-[background-color,box-shadow,padding] duration-300 group-data-scrolled:bg-ground/90 group-data-scrolled:px-1 group-data-scrolled:shadow-[0_0_0_1px_var(--line)] group-data-scrolled:backdrop-blur">
           {/* The way to the list, from every screen.
            *
            * §8's whole matrix delivered to a lock screen and nowhere else: a
@@ -209,12 +222,12 @@ export default async function AppLayout({
           <Link
             href="/app/settings"
             aria-label={DRAFT_COPY.app.navSettings}
-            className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-300 hover:text-ink"
+            className="ease-brand -mr-2.5 flex size-tap items-center justify-center rounded-lg text-ink-2 transition-colors duration-300 group-data-scrolled:mr-0 hover:text-ink"
           >
             <GearIcon />
           </Link>
         </div>
-      </header>
+      </AppHeader>
 
       {/* The bell, live, on every screen in the app.
        *
