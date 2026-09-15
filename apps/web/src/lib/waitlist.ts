@@ -482,7 +482,18 @@ export async function invitableWaitlist(): Promise<WaitlistRow[]> {
 export interface MetroCount {
   readonly metro: string;
   readonly label: string;
+  /** Clicked the link. The honest number, and the one a claim about reach rests on. */
   readonly confirmed: number;
+  /**
+   * Signed up and never clicked.
+   *
+   * Counted separately rather than folded in, because the two answer different
+   * questions and the screen needs both. "Is this area worth opening" wants the
+   * people we know are reachable; "who can I invite" is the whole list since
+   * Kevin's override. A single total serving both would quietly make the first
+   * question's answer bigger than the evidence for it.
+   */
+  readonly unconfirmed: number;
   readonly wantsBeta: number;
   readonly invited: number;
   readonly accepted: number;
@@ -503,11 +514,23 @@ export function countByMetro(rows: readonly WaitlistRow[]): MetroCount[] {
    */
   // Mutable on purpose: MetroCount's fields are readonly, which is right for the
   // value handed out and wrong for the accumulator building it.
-  type Tally = { confirmed: number; wantsBeta: number; invited: number; accepted: number };
+  type Tally = {
+    confirmed: number;
+    unconfirmed: number;
+    wantsBeta: number;
+    invited: number;
+    accepted: number;
+  };
+  const EMPTY: Tally = { confirmed: 0, unconfirmed: 0, wantsBeta: 0, invited: 0, accepted: 0 };
   const tally = new Map<string, Tally>();
   for (const r of rows) {
-    const t = tally.get(r.metro) ?? { confirmed: 0, wantsBeta: 0, invited: 0, accepted: 0 };
-    t.confirmed += 1;
+    const t = tally.get(r.metro) ?? { ...EMPTY };
+    // `confirmed` now READS the column rather than counting whatever arrived.
+    // It used to be `+= 1` for every row, which was correct while the only
+    // caller passed confirmedWaitlist() and became a lie the moment one passed
+    // everybody — a field named for a fact, holding a count of rows.
+    if (r.confirmed_at) t.confirmed += 1;
+    else t.unconfirmed += 1;
     if (r.wants_beta) t.wantsBeta += 1;
     if (r.invited_at) t.invited += 1;
     if (r.accepted_at) t.accepted += 1;
@@ -516,7 +539,7 @@ export function countByMetro(rows: readonly WaitlistRow[]): MetroCount[] {
   return METROS.map((m) => ({
     metro: m.id,
     label: m.label,
-    ...(tally.get(m.id) ?? { confirmed: 0, wantsBeta: 0, invited: 0, accepted: 0 }),
+    ...(tally.get(m.id) ?? EMPTY),
   }));
 }
 

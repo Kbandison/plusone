@@ -49,11 +49,25 @@ export const dynamic = "force-dynamic";
 export default async function AdminWaitlistPage() {
   const rows = await invitableWaitlist();
 
-  // The density table counts CONFIRMED people only. It answers "is this area
-  // worth opening", and an address nobody has proved is reachable should not
-  // move that number — the override changes who may be invited, not who is
-  // known to be there.
-  const counts = countByMetro(rows.filter((r) => r.confirmed_at)).filter((c) => c.confirmed > 0);
+  /**
+   * The density table counts EVERYBODY on the list, and shows the confirmed
+   * share beside it.
+   *
+   * It counted only the confirmed until Kevin asked for the override, and the
+   * reasoning then was that an address nobody has proved is reachable should
+   * not move a number that decides where to open. That reasoning survives — it
+   * is why `confirmed` is still its own column rather than being folded in —
+   * but the premise under it changed: once the unconfirmed are being INVITED,
+   * they are people the metro is being opened for, and a table that leaves them
+   * out is answering a question nobody is asking any more.
+   *
+   * So both numbers, and the honest one is never hidden. The target is measured
+   * against the total, because that is the pool that will exist if everybody
+   * shown here is invited.
+   */
+  const counts = countByMetro(rows).filter((c) => c.confirmed + c.unconfirmed > 0);
+  const onList = (c: { confirmed: number; unconfirmed: number }) => c.confirmed + c.unconfirmed;
+  const unconfirmedTotal = rows.filter((r) => !r.confirmed_at).length;
 
   /**
    * How many people a member in this metro could actually reach.
@@ -63,17 +77,20 @@ export default async function AdminWaitlistPage() {
    * "Dallas 3" are not two thin areas — they are one pool of seven, because
    * those two combine. Deciding where to concentrate without this means doing
    * it from a mental map of the United States.
+   *
+   * Measured on the same total as the column beside it. Two adjacent numbers
+   * counting different populations is worse than either one alone.
    */
-  const confirmedIn = new Map(counts.map((c) => [c.metro, c.confirmed]));
+  const peopleIn = new Map(counts.map((c) => [c.metro, onList(c)]));
   const reach = new Map(
     counts.map((c) => {
       const { near, borderline } = metrosWithin(c.metro, LAST_RUNG_MI);
-      const combined = near.reduce((n, id) => n + (confirmedIn.get(id) ?? 0), c.confirmed);
+      const combined = near.reduce((n, id) => n + (peopleIn.get(id) ?? 0), onList(c));
       // Only the ones that actually hold somebody are worth naming.
-      const withPeople = near.filter((id) => confirmedIn.get(id));
+      const withPeople = near.filter((id) => peopleIn.get(id));
       return [
         c.metro,
-        { combined, withPeople, unsure: borderline.filter((id) => confirmedIn.get(id)) },
+        { combined, withPeople, unsure: borderline.filter((id) => peopleIn.get(id)) },
       ] as const;
     }),
   );
@@ -108,8 +125,9 @@ export default async function AdminWaitlistPage() {
     <main id="main">
       <h1 className="mt-4 text-h2">Waitlist</h1>
       <p className="mt-3 text-body leading-[1.7] text-ink-2">
-        {rows.length} confirmed {rows.length === 1 ? "person" : "people"} across {counts.length}{" "}
-        {counts.length === 1 ? "area" : "areas"}.
+        {rows.length} {rows.length === 1 ? "person" : "people"} across {counts.length}{" "}
+        {counts.length === 1 ? "area" : "areas"}
+        {unconfirmedTotal > 0 ? `, ${unconfirmedTotal} of them unconfirmed` : ""}.
       </p>
 
       <Card className="mt-8">
@@ -127,7 +145,7 @@ export default async function AdminWaitlistPage() {
               <thead className="text-ink-3">
                 <tr>
                   <th className="py-2 pr-4 font-normal">Area</th>
-                  <th className="py-2 pr-4 font-normal">Confirmed</th>
+                  <th className="py-2 pr-4 font-normal">On the list</th>
                   <th className="py-2 pr-4 font-normal">Within {LAST_RUNG_MI} mi</th>
                   <th className="py-2 pr-4 font-normal">Would test</th>
                   <th className="py-2 pr-4 font-normal">Invited</th>
@@ -139,8 +157,14 @@ export default async function AdminWaitlistPage() {
                   <tr key={c.metro} className="border-t border-line-2">
                     <td className="py-2 pr-4">{c.label}</td>
                     <td className="py-2 pr-4">
-                      {c.confirmed}
+                      {onList(c)}
                       <span className="text-ink-3"> / {WAITLIST_METRO_TARGET}</span>
+                      {/* The confirmed share, said only where it differs — a
+                          metro whose whole list confirmed does not need a
+                          second number repeating the first. */}
+                      {c.unconfirmed > 0 ? (
+                        <span className="text-ink-3"> · {c.confirmed} confirmed</span>
+                      ) : null}
                     </td>
                     <td className="py-2 pr-4">
                       {reach.get(c.metro)?.combined ?? c.confirmed}

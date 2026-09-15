@@ -718,6 +718,21 @@ describe("countByMetro totals what it is given, whatever shape it walks in", () 
     });
   });
 
+  it("reads the confirmed column rather than counting whatever arrived", () => {
+    // `confirmed` was `+= 1` per row, which was right while the only caller
+    // passed confirmedWaitlist() and became a lie the moment one passed
+    // everybody — a field named for a fact, holding a count of rows.
+    const counts = countByMetro([
+      r({ metro: "houston" }),
+      r({ metro: "houston", confirmed_at: null }),
+      r({ metro: "houston", confirmed_at: null }),
+    ]);
+    expect(counts.find((c) => c.metro === "houston")).toMatchObject({
+      confirmed: 1,
+      unconfirmed: 2,
+    });
+  });
+
   it("still returns every metro, including the empty ones", () => {
     // The caller hides the zeroes. A metro missing from the list would read as
     // zero anyway, so this is about the contract rather than the display —
@@ -1157,12 +1172,36 @@ describe("the override is asked for, never assumed", () => {
     );
   });
 
-  it("keeps the density table on confirmed people only", () => {
-    // It answers "is this area worth opening". The override changes who may be
-    // invited, not who is known to be reachable.
-    expect(code("app/admin/waitlist/page.tsx")).toMatch(
-      /countByMetro\(rows\.filter\(\(r\) => r\.confirmed_at\)\)/,
+  it("counts everybody in the density table, and never hides the confirmed share", () => {
+    // This pinned the OPPOSITE until Kevin asked for it, and the earlier
+    // reasoning was sound on its own premise: an address nobody has proved is
+    // reachable should not move a number that decides where to open. The
+    // premise is what changed — once the unconfirmed are being invited, they
+    // are people the metro is being opened FOR.
+    //
+    // What survives is that the honest number stays on the screen. A single
+    // total, with no way to see how much of it clicked a link, is the version
+    // that would quietly overstate a metro.
+    const page = code("app/admin/waitlist/page.tsx");
+    expect(page).toMatch(/countByMetro\(rows\)/);
+    expect(page).toMatch(/confirmed} confirmed/);
+  });
+
+  it("measures reach on the same population as the column beside it", () => {
+    // Two adjacent numbers counting different people is worse than either one
+    // alone — "4 here, 11 within 250 miles" has to mean one thing.
+    const page = code("app/admin/waitlist/page.tsx");
+    expect(page).toMatch(
+      /peopleIn\.set|peopleIn = new Map\(counts\.map\(\(c\) => \[c\.metro, onList\(c\)\]\)\)/,
     );
+    expect(page).not.toMatch(/confirmedIn/);
+  });
+
+  it("does not call everybody on the page confirmed", () => {
+    // The header said "N confirmed people" and the read underneath it became
+    // everybody when the page moved to invitableWaitlist — a sentence that went
+    // wrong without anything failing.
+    expect(code("app/admin/waitlist/page.tsx")).not.toMatch(/rows\.length} confirmed/);
   });
 });
 
