@@ -317,3 +317,65 @@ describe("the roster masks contact details", () => {
     }
   });
 });
+
+/**
+ * The members list is members.
+ *
+ * Twenty of twenty-eight rows were `%@seed.plusone.invalid` — fabricated people
+ * who exist so the screens have something in them. A list headed "Members" that
+ * is three-quarters fiction cannot answer the question somebody opens it to ask.
+ *
+ * Excluded rather than hidden, and the count is shown, because their existence
+ * is a real fact: `check:seed` FAILS while any seeded account exists, so that
+ * number is what stands between here and launch.
+ */
+describe("seeded accounts are not members", () => {
+  const sql = readFileSync(
+    join(APP, "../../../../supabase/migrations/20260914000100_the_members_list_is_members.sql"),
+    "utf8",
+  );
+  const roster = readFileSync(join(APP, "admin/members/roster.tsx"), "utf8");
+  const body = (fn: string) => {
+    const at = sql.search(new RegExp(String.raw`create (or replace )?function public\.${fn}`));
+    expect(at, fn).toBeGreaterThan(-1);
+    const open = sql.indexOf("as $$", at);
+    return sql.slice(open, sql.indexOf("$$;", open));
+  };
+
+  it("excludes them from the list", () => {
+    expect(body("admin_member_roster")).toMatch(/u\.email not like '%@seed\.plusone\.invalid'/);
+  });
+
+  it("uses the same predicate the cleanup deletes on", () => {
+    // The list and remove-test-members.mjs must not disagree about what a
+    // seeded account is, or one of them is wrong about who is real.
+    const cleanup = readFileSync(join(APP, "../../../../scripts/remove-test-members.mjs"), "utf8");
+    expect(cleanup).toMatch(/const DOMAIN = "seed\.plusone\.invalid"/);
+    expect(body("admin_member_roster")).toMatch(/seed\.plusone\.invalid/);
+  });
+
+  it("counts them the way check:seed does", () => {
+    // 26 against 20 profiles, because some seeded auth.users have no profile.
+    // The gate counts auth.users, so this does too — a count that disagreed
+    // with the gate would say launch is clear when it is not.
+    const gate = readFileSync(join(APP, "../../../../scripts/verify-no-test-members.mjs"), "utf8");
+    expect(gate).toMatch(/from auth\.users where email like/);
+    expect(body("admin_seeded_count")).toMatch(/from auth\.users u/);
+    expect(body("admin_seeded_count")).not.toMatch(/from public\.profiles/);
+  });
+
+  it("says how many are left out, and only while any are", () => {
+    expect(roster).toMatch(/seededHidden > 0 \?/);
+    expect(roster).toMatch(/seeded accounts are not listed/);
+  });
+
+  it("does not let a missing count take the list down", () => {
+    // Applied by hand like everything else; PostgREST fails the whole request
+    // on an unknown function.
+    expect(roster).toMatch(/rpc\("admin_seeded_count"\)\.then\(/);
+  });
+
+  it("is admin-gated, like everything else on this screen", () => {
+    expect(body("admin_seeded_count")).toMatch(/public\.is_admin\(\)/);
+  });
+});

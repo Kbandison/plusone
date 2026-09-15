@@ -46,7 +46,16 @@ export async function Roster() {
   // Allowed to fail, and to fail QUIETLY. 20260909000600 may not be applied —
   // migrations here are applied by hand and are Kevin's call — and this screen's
   // reason for existing is the search box below it, which must keep working.
-  const { data, error } = await supabase.rpc("admin_member_roster");
+  const [{ data, error }, { data: seeded }] = await Promise.all([
+    supabase.rpc("admin_member_roster"),
+    // Allowed to come back null: applied by hand like everything else, and a
+    // missing count must not take the list down with it.
+    supabase.rpc("admin_seeded_count").then(
+      (r) => r,
+      () => ({ data: null }),
+    ),
+  ]);
+  const seededHidden = Number(seeded ?? 0);
 
   if (error) {
     return (
@@ -64,6 +73,10 @@ export async function Roster() {
       <p className="mt-4 text-[12px] text-ink-2">
         {rows.length} {rows.length === 1 ? "member" : "members"}, newest first. No condition.
         Contact details are masked — press show on a row you need to place.
+        {/* Only while any exist. check:seed refuses to pass while this is above
+            zero, so it is the number standing between here and launch — and
+            when they are deleted the sentence goes on its own. */}
+        {seededHidden > 0 ? ` ${seededHidden} seeded accounts are not listed.` : ""}
       </p>
 
       {/* TWO LAYOUTS, and the narrow one is not a fallback.
