@@ -192,7 +192,38 @@ if (!DB_URL) {
 //                                          function is mark_thread_read;
 //                                          my_nav_counts is REPLACED in the same
 //                                          file and is net zero.
-const EXPECT = { tables: 37, views: 5, functions: 138, enums: 31, rooms: 7, config: 23 };
+// functions 138 -> 139                     20260914000100 — admin_seeded_count, so
+//                                          the members list can say how many
+//                                          seeded accounts it is leaving out
+//                                          rather than silently shrinking.
+//                                          admin_member_roster is dropped and
+//                                          recreated in the same file and is net
+//                                          zero.
+//
+// functions 139 -> 142                     20260914000200 — metro_for,
+//                                          admin_beta_thanks_pending and
+//                                          admin_grant_beta_thanks, so BACKLOG 29
+//                                          can be granted a metro at a time.
+//                                          admin_member_roster is REPLACED here
+//                                          too, to call metro_for instead of
+//                                          carrying its own copy of the
+//                                          centroids: net zero again, and the
+//                                          reason the same function appears in
+//                                          both deltas.
+//
+//                                          FOUR, not the three this was predicted
+//                                          as before applying. The inventory was
+//                                          right and the addition was not, which
+//                                          is exactly why the note above says to
+//                                          read the count off the live database
+//                                          rather than add it up.
+//
+//                                          Read off the live database after
+//                                          applying: 142, with every one of the
+//                                          141 distinct names declared by some
+//                                          migration and is_admin the only
+//                                          overload, which is pre-existing.
+const EXPECT = { tables: 37, views: 5, functions: 142, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
