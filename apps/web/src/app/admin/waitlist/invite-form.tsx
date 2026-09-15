@@ -35,12 +35,22 @@ export interface InviteRow {
  * outcome the waitlist exists to prevent. WAITLIST_METRO_TARGET is the number
  * to aim at and the header of each group counts against it.
  *
- * ── select-all, per metro ONLY ──────────────────────────────────────────────
- *
  * This file used to refuse select-all outright, and the reason was good: "an
  * invitation is an email to a real person about an HSV and HIV app, and it
  * cannot be recalled. One button that sends to everybody currently filtered is
  * exactly the control that gets pressed with the wrong filter set."
+ *
+ * ── the list includes EXPIRED invitations, and the copy used to deny it ─────
+ *
+ * This paragraph said re-issuing was not offered, "because a second code would
+ * orphan the first and leave somebody holding a dead link". True of a LIVE
+ * code, and backwards for a dead one: once the 14 days are up the first link is
+ * already dead, and refusing to re-issue stranded that person permanently with
+ * no route back through this screen. Two invitations were hours from that when
+ * it was found. `inviteFromWaitlist` re-checks the TTL and still leaves a live
+ * code alone, so the original objection is honoured where it applies.
+ *
+ * ── select-all, per metro ONLY ──────────────────────────────────────────────
  *
  * That objection is about an UNBOUNDED control, and a metro group is not one.
  * It is named, it is counted, the addresses are on screen above the box, and it
@@ -98,9 +108,10 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
     <Card className="mt-8">
       <h2 className="text-h3">Invite</h2>
       <p className="mt-2 text-[11.7px] leading-[1.6] text-ink-3">
-        Confirmed, not yet invited, grouped by area — the biggest first. An invitation is good for
-        14 days and works once; re-issuing is not offered, because a second code would orphan the
-        first and leave somebody holding a dead link.
+        Confirmed, grouped by area — the biggest first. An invitation is good for 14 days and works
+        once. Somebody whose invitation ran out unused is back in this list and gets a fresh one; a
+        live invitation is left alone, because a second code would orphan a link they are still
+        holding.
       </p>
 
       {sent ? (

@@ -7,6 +7,7 @@ import {
   METROS,
   WAITLIST_EMAIL,
   WAITLIST_INVITE_TTL_DAYS,
+  WAITLIST_REMINDER_AFTER_DAYS,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
   isMetro,
   metroLabel,
@@ -205,10 +206,23 @@ function storeFields(
   return { store_platform: platform, store_account_email: normalised };
 }
 
-async function sendConfirmation(to: string, token: string): Promise<void> {
-  const { subject, preview, body } = WAITLIST_EMAIL.confirm;
+/**
+ * The confirmation email, and the reminder, which are the same link.
+ *
+ * One function because they must stay the same link: a reminder that minted a
+ * fresh token would leave the original email pointing at a dead one, and the
+ * person most likely to still have the original is the person who meant to
+ * confirm and got distracted. The token is the row, so re-sending it is the
+ * whole mechanism.
+ */
+async function sendConfirmation(
+  to: string,
+  token: string,
+  kind: "confirm" | "remind" = "confirm",
+): Promise<boolean> {
+  const { subject, preview, body } = WAITLIST_EMAIL[kind];
   const link = `${appOrigin()}/waitlist/confirm?t=${encodeURIComponent(token)}`;
-  await sendDirectEmail({
+  return sendDirectEmail({
     to,
     subject,
     text: `${preview}\n\n${body.join("\n\n")}\n\n${link}${footer(token)}`,
@@ -403,6 +417,17 @@ export interface WaitlistRow {
   readonly store_platform: string | null;
   readonly store_account_email: string | null;
   readonly created_at: string;
+  /**
+   * Has their invitation run out unused?
+   *
+   * Decided HERE rather than on the page, for two reasons. It is the same
+   * question `inviteFromWaitlist` asks before re-issuing, so a second copy on
+   * the screen could disagree with the thing that actually sends — offering a
+   * button that does nothing, or hiding somebody who could be re-invited. And
+   * `Date.now()` is impure, so a server component cannot ask it during render;
+   * the lint rule that says so is what sent this down here, and it was right.
+   */
+  readonly invite_expired: boolean;
 }
 
 /** Admin. Confirmed rows only — an unconfirmed address is somebody who never asked. */
@@ -414,7 +439,10 @@ export async function confirmedWaitlist(): Promise<WaitlistRow[]> {
     )
     .not("confirmed_at", "is", null)
     .order("created_at", { ascending: true });
-  return (data ?? []) as WaitlistRow[];
+  return (data ?? []).map((row) => {
+    const r = row as Omit<WaitlistRow, "invite_expired">;
+    return { ...r, invite_expired: Boolean(r.invited_at && inviteHasExpired(r.invited_at)) };
+  });
 }
 
 export interface MetroCount {
@@ -465,13 +493,166 @@ export function countByMetro(rows: readonly WaitlistRow[]): MetroCount[] {
  * be a list of addresses on an admin screen for no operational gain — the
  * screen re-reads the table afterwards and shows state from the rows.
  */
+export interface UnconfirmedRow {
+  readonly id: string;
+  readonly email: string;
+  readonly metro: string;
+  readonly created_at: string;
+  readonly confirm_sent_at: string | null;
+  /** False while the reminder floor has not passed. Decided here, not in the UI. */
+  readonly remindable: boolean;
+  /**
+   * Days until sweepUnconfirmed deletes this row.
+   *
+   * The number rather than the timestamp, because turning one into the other
+   * needs `Date.now()` and a server component may not call it during render.
+   * Rounded up, so "1 day" never means "in four minutes".
+   */
+  readonly deletes_in_days: number;
+}
+
+/**
+ * The people who signed up and never confirmed.
+ *
+ * ── this screen used to refuse to show them, and the reason was good ────────
+ *
+ * The page said "Unconfirmed rows are not listed at all. They are somebody who
+ * never asked", and that is still true of what may be DONE with them: they
+ * cannot be invited, and `inviteFromWaitlist` refuses them on a line of its
+ * own. What changed is that 20 of 45 signups sat unconfirmed with nobody able
+ * to see it, in either direction — no admin alert fires for them, because
+ * `alertAdminsOfBetaSignup` runs on confirmation, and this screen filtered them
+ * out. A number that is 44% of the list was invisible from both ends.
+ *
+ * So they are listed in order to be REMINDED, which is a second attempt at the
+ * same consent step, and for nothing else. No store account, no tester flag,
+ * and no invite checkbox — the only control is the one that asks the same
+ * question again.
+ *
+ * Ordered oldest first, which is deletion order.
+ */
+export async function unconfirmedWaitlist(): Promise<UnconfirmedRow[]> {
+  const { data } = await serviceClient()
+    .from("waitlist")
+    .select("id, email, metro, created_at, confirm_sent_at")
+    .is("confirmed_at", null)
+    .order("created_at", { ascending: true });
+
+  const floorMs = WAITLIST_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
+  const ttlMs = WAITLIST_UNCONFIRMED_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+  return (data ?? []).map((row) => {
+    const r = row as {
+      id: string;
+      email: string;
+      metro: string;
+      created_at: string;
+      confirm_sent_at: string | null;
+    };
+    const lastSent = r.confirm_sent_at ? Date.parse(r.confirm_sent_at) : 0;
+    return {
+      ...r,
+      remindable: Date.now() - lastSent >= floorMs,
+      deletes_in_days: Math.ceil((Date.parse(r.created_at) + ttlMs - Date.now()) / 86_400_000),
+    };
+  });
+}
+
+/**
+ * Ask again, once.
+ *
+ * ── a reminder is the SAME consent step, not a new one ──────────────────────
+ *
+ * It re-sends the original token to the original address and says nothing the
+ * first email did not. That is what separates it from inviting an unconfirmed
+ * address, which `inviteFromWaitlist` refuses: an invitation acts on a consent
+ * that was never given, and this asks for it a second time.
+ *
+ * It still costs something, and the cost is written into the copy rather than
+ * hidden. `WAITLIST_EMAIL.confirm` used to promise "nothing will be sent
+ * again" — to the person whose address somebody else typed, which is the whole
+ * population double opt-in protects. That sentence is gone, and the reminder
+ * template says in its own body that it is the last one.
+ *
+ * ── it cannot extend the life of the row ────────────────────────────────────
+ *
+ * `sweepUnconfirmed` deletes on `created_at`, which nothing here writes. So a
+ * reminder never buys a row another day, and "one reminder" cannot decay into
+ * an indefinite list by anybody pressing the button repeatedly. Pinned.
+ *
+ * Returns how many were actually sent, so the screen reports the send rather
+ * than the selection.
+ */
+export async function remindUnconfirmed(ids: readonly string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const supabase = serviceClient();
+
+  const { data: rows } = await supabase
+    .from("waitlist")
+    .select("id, email, token, confirmed_at, confirm_sent_at")
+    .in("id", ids as string[]);
+
+  interface Candidate {
+    readonly id: string;
+    readonly email: string;
+    readonly token: string;
+    readonly confirmed_at: string | null;
+    readonly confirm_sent_at: string | null;
+  }
+
+  const floorMs = WAITLIST_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
+  let sent = 0;
+
+  for (const row of (rows ?? []) as Candidate[]) {
+    // Confirmed between the page rendering and the button being pressed. They
+    // are on the list; asking them to join it again is the email bomb with
+    // extra steps, which is the same sentence joinWaitlist refuses on.
+    if (row.confirmed_at) continue;
+
+    const lastSent = row.confirm_sent_at ? Date.parse(row.confirm_sent_at) : 0;
+    if (Date.now() - lastSent < floorMs) continue;
+
+    // Stamp BEFORE sending, and make the stamp the claim.
+    //
+    // The floor is only a floor if two presses cannot both pass it, and the
+    // send is the slow part — so the row is claimed against the value just
+    // read, and a second press finds it moved and matches nothing. The cost of
+    // this order is that a send which then fails still consumed the window,
+    // which is the right way round: a reminder nobody received is recoverable
+    // by waiting, and two reminders are not recoverable at all.
+    const stamped = new Date().toISOString();
+    const claim = supabase.from("waitlist").update({ confirm_sent_at: stamped }).eq("id", row.id);
+    const { error } = await (row.confirm_sent_at
+      ? claim.eq("confirm_sent_at", row.confirm_sent_at)
+      : claim.is("confirm_sent_at", null));
+    if (error) continue;
+
+    if (await sendConfirmation(row.email, row.token, "remind")) sent += 1;
+  }
+  return sent;
+}
+
+/**
+ * Has this invitation run out?
+ *
+ * ONE home for the TTL comparison, because there are now two callers and they
+ * must never disagree. `betaInviteIsOpen` decides whether a link still works
+ * and `inviteFromWaitlist` decides whether to issue another — so a mismatch
+ * would either re-issue over a live code, orphaning a link somebody is holding,
+ * or refuse to replace a dead one and strand them. Same argument as metro_for.
+ */
+function inviteHasExpired(invitedAt: string): boolean {
+  const ageMs = Date.now() - Date.parse(invitedAt);
+  return ageMs > WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export async function inviteFromWaitlist(ids: readonly string[]): Promise<number> {
   if (ids.length === 0) return 0;
   const supabase = serviceClient();
 
   const { data: rows } = await supabase
     .from("waitlist")
-    .select("id, email, token, metro, confirmed_at, invited_at")
+    .select("id, email, token, metro, confirmed_at, invited_at, accepted_at")
     .in("id", ids as string[]);
 
   /** Only the columns this loop reads. A WaitlistRow cast would be a lie — the
@@ -483,22 +664,44 @@ export async function inviteFromWaitlist(ids: readonly string[]): Promise<number
     readonly token: string;
     readonly confirmed_at: string | null;
     readonly invited_at: string | null;
+    readonly accepted_at: string | null;
   }
 
   let sent = 0;
   for (const row of (rows ?? []) as InviteCandidate[]) {
     // Never invite an unconfirmed address. It is the whole point of confirming.
     if (!row.confirmed_at) continue;
-    // Already invited: re-issuing would mint a second code and orphan the
-    // first, so somebody holding the original email would find a dead link.
-    if (row.invited_at) continue;
+    // Already in. Re-inviting somebody who spent their code would mint a second
+    // one against an account that exists, and betaInviteIsOpen would refuse it
+    // anyway — so this is an email promising a link that cannot work.
+    if (row.accepted_at) continue;
+    // A LIVE invitation is left alone, and an EXPIRED one is re-issued.
+    //
+    // This used to be `if (row.invited_at) continue`, and the copy on the
+    // screen said re-issuing was not offered "because a second code would
+    // orphan the first and leave somebody holding a dead link". That reasoning
+    // is right about a live code and backwards about a dead one: once the TTL
+    // has passed the first link is ALREADY dead, and refusing to re-issue
+    // strands that person permanently with no way back through the screen. Two
+    // invitations were four hours from exactly that when this was found.
+    //
+    // Overwriting `invite_code` is what retires the old one — betaInviteIsOpen
+    // looks the code up, so a replaced value stops matching. There is never
+    // more than one live code for a row.
+    if (row.invited_at && !inviteHasExpired(row.invited_at)) continue;
 
     const code = mintInviteCode();
-    const { error } = await supabase
+    // The same optimistic guard either way, against the value just read: a
+    // first issue matches null, a re-issue matches the stamp it is replacing.
+    // Two admins pressing at once means the second update matches no row and
+    // the second email is never sent, rather than two codes racing.
+    const claim = supabase
       .from("waitlist")
       .update({ invite_code: code, invited_at: new Date().toISOString() })
-      .eq("id", row.id)
-      .is("invited_at", null);
+      .eq("id", row.id);
+    const { error } = await (row.invited_at
+      ? claim.eq("invited_at", row.invited_at)
+      : claim.is("invited_at", null));
     if (error) continue;
 
     const { subject, preview, body } = WAITLIST_EMAIL.invite;
@@ -531,8 +734,7 @@ export async function betaInviteIsOpen(code: string | undefined): Promise<boolea
 
   if (!data?.invited_at || data.accepted_at) return false;
 
-  const ageMs = Date.now() - Date.parse(data.invited_at);
-  return ageMs <= WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
+  return !inviteHasExpired(data.invited_at);
 }
 
 /**

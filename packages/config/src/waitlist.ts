@@ -236,13 +236,39 @@ export interface WaitlistEmail {
   readonly body: readonly string[];
 }
 
-export const WAITLIST_EMAIL: Record<"confirm" | "invite", WaitlistEmail> = {
+export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind", WaitlistEmail> = {
   confirm: {
     subject: "Confirm your email address",
     preview: "One tap to confirm, or ignore this and nothing happens.",
     body: [
       "Someone entered this address to hear when Plus One opens in their area. If that was you, confirm below and we will let you know.",
-      "If it was not you, ignore this email. Nothing has been added, nothing will be sent again, and the address is removed on its own within 30 days.",
+      "If it was not you, ignore this email. Nothing has been added, the address is removed on its own within 30 days, and the most you will hear from us before then is one reminder.",
+    ],
+  },
+  /**
+   * The one reminder, and the sentence in `confirm` that had to change for it
+   * to exist.
+   *
+   * `confirm` used to say "nothing will be sent again", which is a promise made
+   * specifically to somebody whose address was typed by another person — the
+   * population double opt-in exists to protect. A reminder breaks that promise
+   * for exactly them, so the promise is now the true one: at most one more, and
+   * this is it.
+   *
+   * Which is why the body says SO, rather than being a second copy of the first
+   * email with a nag on the front. A person who ignored the first one is owed
+   * the end of it in writing, not another open question.
+   *
+   * No metro, no date they signed up, nothing about what the app is for beyond
+   * what the first email already said. The subject line is the one somebody
+   * else in their inbox might read.
+   */
+  remind: {
+    subject: "Confirm your email address",
+    preview: "The last one. Confirm, or ignore it and the address is deleted.",
+    body: [
+      "A while ago this address was entered to hear when Plus One opens in an area. It was never confirmed, so nothing has been sent since.",
+      "If it was you, the link below still works. If it was not, ignore this — it is the last email you will get from us, and the address is deleted on its own.",
     ],
   },
   invite: {
@@ -258,6 +284,21 @@ export const WAITLIST_EMAIL: Record<"confirm" | "invite", WaitlistEmail> = {
 
 /** How long an invite link is good for. */
 export const WAITLIST_INVITE_TTL_DAYS = 14;
+
+/**
+ * How long to leave an unconfirmed row alone before a reminder may be sent.
+ *
+ * Three days, against a 30-day TTL, so there is room for one reminder and a
+ * long silence after it rather than a drip. The admin screen is the only
+ * trigger; nothing sends this on a schedule.
+ *
+ * A REMINDER MUST NOT EXTEND THE TTL, and the shape of the data is what
+ * guarantees it: `sweepUnconfirmed` keys off `created_at`, which a reminder
+ * never touches. So the deletion date is fixed at signup and no amount of
+ * reminding can push it out — which is the property that keeps "one reminder"
+ * from quietly becoming an indefinite list. Pinned by a test.
+ */
+export const WAITLIST_REMINDER_AFTER_DAYS = 3;
 
 /**
  * What a metro needs before it is worth opening.

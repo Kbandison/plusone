@@ -12,8 +12,9 @@ import {
 const LAST_RUNG_MI = RADIUS.ladderMi[RADIUS.ladderMi.length - 1] ?? 250;
 
 import { Card } from "@/app/ui";
-import { confirmedWaitlist, countByMetro, testerList } from "@/lib/waitlist";
+import { confirmedWaitlist, countByMetro, testerList, unconfirmedWaitlist } from "@/lib/waitlist";
 import { InviteForm } from "./invite-form";
+import { RemindForm } from "./remind-form";
 
 export const metadata: Metadata = { title: "Waitlist" };
 export const dynamic = "force-dynamic";
@@ -36,7 +37,14 @@ export const dynamic = "force-dynamic";
  * metro's worth of rows at a time, ordered by when they joined, which is the
  * order an invitation queue actually runs in.
  *
- * Unconfirmed rows are not listed at all. They are somebody who never asked.
+ * Unconfirmed rows ARE listed now, in their own section and for one purpose.
+ * They were not, and the reason given was that they are "somebody who never
+ * asked" — which is still exactly why they cannot be invited, and
+ * `inviteFromWaitlist` refuses them on a line of its own. What it did not
+ * justify was hiding them: 20 of 45 signups sat unconfirmed, no admin alert
+ * fires for them because that runs on confirmation, and this screen filtered
+ * them out — so 44% of the list was invisible from both ends at once. The only
+ * control offered against them is the one that asks the same question again.
  */
 export default async function AdminWaitlistPage() {
   const rows = await confirmedWaitlist();
@@ -65,7 +73,24 @@ export default async function AdminWaitlistPage() {
     }),
   );
 
-  const uninvited = rows.filter((r) => !r.invited_at);
+  /**
+   * Uninvited, or holding a code that has run out.
+   *
+   * The second half is new and is the fix: `invited_at` alone meant an
+   * invitation that expired unaccepted took its holder off this list for ever,
+   * with a dead link and no way back. `inviteFromWaitlist` is the wall — it
+   * re-checks the TTL and leaves a live code alone — so this only has to agree
+   * with it about who is worth showing.
+   */
+  const uninvited = rows.filter((r) => !r.accepted_at && (!r.invited_at || r.invite_expired));
+
+  const remindRows = (await unconfirmedWaitlist()).map((r) => ({
+    id: r.id,
+    email: r.email,
+    label: metroLabel(r.metro) ?? r.metro,
+    remindable: r.remindable,
+    deletesInDays: r.deletes_in_days,
+  }));
   const toAdd = { ios: testerList(rows, "ios"), android: testerList(rows, "android") };
   const roster = {
     ios: testerList(rows, "ios", "invited"),
@@ -78,8 +103,7 @@ export default async function AdminWaitlistPage() {
       <h1 className="mt-4 text-h2">Waitlist</h1>
       <p className="mt-3 text-body leading-[1.7] text-ink-2">
         {rows.length} confirmed {rows.length === 1 ? "person" : "people"} across {counts.length}{" "}
-        {counts.length === 1 ? "area" : "areas"}. Unconfirmed addresses are not shown — they are
-        people who never finished asking.
+        {counts.length === 1 ? "area" : "areas"}.
       </p>
 
       <Card className="mt-8">
@@ -223,6 +247,12 @@ export default async function AdminWaitlistPage() {
           </>
         )}
       </Card>
+
+      {/* Last, because it is a different job from the one above. Everything to
+          this point is about letting people IN; this is about the ones who
+          never finished asking, and the only thing offered is asking again. */}
+      <h2 className="mt-12 text-h3">3 · The ones who never confirmed</h2>
+      <RemindForm rows={remindRows} />
     </main>
   );
 }

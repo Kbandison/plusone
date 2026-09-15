@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getServerSupabase } from "@/lib/supabase";
-import { inviteFromWaitlist } from "@/lib/waitlist";
+import { inviteFromWaitlist, remindUnconfirmed } from "@/lib/waitlist";
 
 /**
  * The wall, and why it has to be HERE rather than where the write is.
@@ -39,6 +39,22 @@ export async function invite(formData: FormData): Promise<void> {
 
   const ids = formData.getAll("id").map(String).filter(Boolean);
   await inviteFromWaitlist(ids);
+
+  revalidatePath("/admin/waitlist");
+}
+
+/**
+ * Ask the unconfirmed ones again.
+ *
+ * Same wall, first line, for the reason the note above gives — `waitlist` has
+ * no RLS to fall back on, so every exported action in this file has to carry
+ * its own. A second action is a second door.
+ */
+export async function remind(formData: FormData): Promise<void> {
+  await assertAdmin();
+
+  const ids = formData.getAll("id").map(String).filter(Boolean);
+  await remindUnconfirmed(ids);
 
   revalidatePath("/admin/waitlist");
 }

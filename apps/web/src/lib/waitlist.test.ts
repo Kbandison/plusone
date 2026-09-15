@@ -5,7 +5,16 @@ import { describe, expect, it } from "vitest";
 
 import { type WaitlistRow, countByMetro, testerList } from "./waitlist";
 
-import { BETA_INSTALL, BETA_LINKS, METROS, PLAY_TESTER_PASTE, PLAY_TRACK } from "@plusone/config";
+import {
+  BETA_INSTALL,
+  BETA_LINKS,
+  METROS,
+  PLAY_TESTER_PASTE,
+  PLAY_TRACK,
+  WAITLIST_EMAIL,
+  WAITLIST_REMINDER_AFTER_DAYS,
+  WAITLIST_UNCONFIRMED_TTL_DAYS,
+} from "@plusone/config";
 
 const SRC = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(SRC, p), "utf8");
@@ -863,5 +872,181 @@ describe("the SQL metro centroids match METROS", () => {
     // "elsewhere" for somebody 300 miles out looks like a category.
     expect(migration).toMatch(/<= 120701/);
     expect(migration).not.toMatch(/'elsewhere'/);
+  });
+});
+
+describe("an invitation that ran out can be issued again", () => {
+  const lib = code("lib/waitlist.ts");
+  const invite = fnBody(lib, "export async function inviteFromWaitlist");
+
+  it("leaves a LIVE invitation alone", () => {
+    // The original objection, and it is still right where it applies: a second
+    // code overwrites invite_code, so the link somebody is holding goes dead.
+    expect(invite.length).toBeGreaterThan(200);
+    expect(invite).toMatch(
+      /if \(row\.invited_at && !inviteHasExpired\(row\.invited_at\)\) continue/,
+    );
+  });
+
+  it("never re-invites somebody who already spent their code", () => {
+    // betaInviteIsOpen would refuse it, so this would be an email promising a
+    // link that cannot work — and the account it would be for already exists.
+    expect(invite).toMatch(/if \(row\.accepted_at\) continue/);
+  });
+
+  it("does not simply skip anybody who was ever invited", () => {
+    // The exact line this replaced. Restoring it strands the holder of an
+    // expired code permanently, which is what this whole block is about.
+    expect(invite).not.toMatch(/if \(row\.invited_at\) continue/);
+  });
+
+  it("claims the row against the value it read, both ways", () => {
+    // The optimistic guard has to survive becoming a re-issue: `.is(null)` is
+    // only correct for a first issue, and dropping the guard entirely lets two
+    // admins mint two codes for one person.
+    expect(invite).toMatch(/\.eq\("invited_at", row\.invited_at\)/);
+    expect(invite).toMatch(/\.is\("invited_at", null\)/);
+  });
+
+  it("asks one function whether a code has expired", () => {
+    // Two callers now — the link check and the re-issue — and they must never
+    // disagree, or one orphans a live code and the other refuses a dead one.
+    expect(fnBody(lib, "export async function betaInviteIsOpen")).toMatch(/inviteHasExpired/);
+    expect(fnBody(lib, "function inviteHasExpired")).toMatch(/WAITLIST_INVITE_TTL_DAYS/);
+    // And nobody else does the arithmetic themselves.
+    const inline = lib.match(/WAITLIST_INVITE_TTL_DAYS \* 24 \* 60 \* 60 \* 1000/g) ?? [];
+    expect(inline).toHaveLength(1);
+  });
+});
+
+describe("a reminder is the same consent step, asked twice", () => {
+  const lib = code("lib/waitlist.ts");
+  const remind = fnBody(lib, "export async function remindUnconfirmed");
+
+  it("re-sends the ORIGINAL token rather than minting one", () => {
+    // A fresh token kills the link in the first email, and the person most
+    // likely to still have that email is the one who meant to confirm.
+    expect(remind.length).toBeGreaterThan(200);
+    expect(remind).toMatch(/sendConfirmation\(row\.email, row\.token, "remind"\)/);
+    expect(remind).not.toMatch(/mintToken/);
+  });
+
+  it("refuses somebody who confirmed while the page was open", () => {
+    expect(remind).toMatch(/if \(row\.confirmed_at\) continue/);
+  });
+
+  it("claims the window before sending, not after", () => {
+    // The floor is only a floor if two presses cannot both pass it, and the
+    // send is the slow part. Stamp, then send.
+    const stamp = remind.indexOf(".update({ confirm_sent_at: stamped })");
+    const send = remind.indexOf("sendConfirmation(row.email");
+    expect(stamp).toBeGreaterThan(-1);
+    expect(send).toBeGreaterThan(stamp);
+    expect(remind).toMatch(/\.eq\("confirm_sent_at", row\.confirm_sent_at\)/);
+  });
+
+  it("CANNOT extend the life of the row", () => {
+    // sweepUnconfirmed deletes on created_at, which nothing here writes — so
+    // no amount of reminding buys a row another day. If a reminder ever touched
+    // created_at, "one reminder" would decay into an indefinite list.
+    expect(remind).not.toMatch(/created_at/);
+    const sweep = fnBody(lib, "export async function sweepUnconfirmed");
+    expect(sweep).toMatch(/\.lt\("created_at", cutoff\)/);
+    expect(sweep).toMatch(/WAITLIST_UNCONFIRMED_TTL_DAYS/);
+  });
+
+  it("never invites an unconfirmed address, whatever the screen offers", () => {
+    // The wall stays in the library. The reminder form having no invite button
+    // is not the guarantee; this line is.
+    expect(fnBody(lib, "export async function inviteFromWaitlist")).toMatch(
+      /if \(!row\.confirmed_at\) continue/,
+    );
+  });
+
+  it("the confirmation email no longer promises silence it cannot keep", () => {
+    // It said "nothing will be sent again" — to the person whose address
+    // somebody else typed, which is the population double opt-in protects.
+    // A reminder breaks that sentence for exactly them.
+    const confirm = WAITLIST_EMAIL.confirm.body.join(" ");
+    expect(confirm).not.toMatch(/nothing will be sent again/i);
+    expect(confirm).toMatch(/one reminder/i);
+  });
+
+  it("the reminder says it is the last one", () => {
+    expect(WAITLIST_EMAIL.remind.body.join(" ")).toMatch(/last email/i);
+  });
+
+  it("the reminder names no condition, subject line included", () => {
+    // Its own test rather than a second assertion under the sentence above —
+    // sabotaging the subject reported the OTHER claim's name, which reads as
+    // that claim being the one holding the line. Two claims, two names.
+    //
+    // The subject is the half that lands on a lock screen and in a shared
+    // inbox, and this email goes to somebody who never confirmed and may not
+    // have asked at all.
+    const m = WAITLIST_EMAIL.remind;
+    expect(`${m.subject} ${m.preview} ${m.body.join(" ")}`).not.toMatch(
+      /HSV|HIV|herpes|positive|diagnos|community/i,
+    );
+  });
+
+  it("leaves room for one reminder inside the life of the row", () => {
+    // A floor longer than the TTL is a button that can never be pressed.
+    expect(WAITLIST_REMINDER_AFTER_DAYS).toBeGreaterThan(0);
+    expect(WAITLIST_REMINDER_AFTER_DAYS).toBeLessThan(WAITLIST_UNCONFIRMED_TTL_DAYS);
+  });
+});
+
+describe("the unconfirmed are shown, and only one thing is offered", () => {
+  const form = code("app/admin/waitlist/remind-form.tsx");
+  const page = code("app/admin/waitlist/page.tsx");
+  const actions = code("app/admin/waitlist/actions.ts");
+
+  it("cannot call the invite action at all", () => {
+    // The claim is about the DOOR, not the word: the first version of this
+    // asserted the file never says "invite" and failed on the sentence telling
+    // the admin why there is no button. That sentence is the point of the
+    // screen; the guard is that the action is not imported.
+    expect(form.length).toBeGreaterThan(200);
+    const imported = form.match(/import \{([^}]*)\} from "\.\/actions"/)?.[1] ?? "";
+    expect(imported).toContain("remind");
+    expect(imported).not.toContain("invite");
+  });
+
+  it("says on screen that these people cannot be invited", () => {
+    // The floor under the test above. A screen listing addresses with one
+    // button and no explanation invites somebody to go looking for the other
+    // one, or to assume it is missing by accident.
+    expect(form).toMatch(/cannot be invited/);
+  });
+
+  it("offers no select-all", () => {
+    // Unbounded: this is every unconfirmed row there is, not a group somebody
+    // named. invite-form.tsx refuses the same control for the same reason.
+    expect(form).not.toMatch(/toggleGroup|Select all|selectAll/);
+  });
+
+  it("asks the library whether an invitation expired, not the clock", () => {
+    // Two reasons, and both matter. The page re-deriving the TTL could disagree
+    // with inviteFromWaitlist about who is re-invitable — a button that sends
+    // nothing, or somebody hidden who could be reached. And Date.now() is
+    // impure, so a server component may not call it during render; the lint
+    // rule caught the first version of this page doing exactly that.
+    expect(page).toMatch(/r\.invite_expired/);
+    expect(page).not.toMatch(/Date\.now\(\)/);
+    expect(page).not.toMatch(/Date\.parse/);
+  });
+
+  it("decides remindability on the server", () => {
+    // A disabled checkbox is not a rule. The floor is re-checked in the action.
+    expect(code("lib/waitlist.ts")).toMatch(/remindable/);
+    expect(page).toMatch(/remindable: r\.remindable/);
+  });
+
+  it("walls the second action too", () => {
+    // waitlist has no RLS to fall back on, so every exported action carries its
+    // own wall — a second door needs a second lock.
+    const body = fnBody(actions, "export async function remind");
+    expect(body).toMatch(/await assertAdmin\(\)/);
   });
 });
