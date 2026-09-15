@@ -8,9 +8,12 @@ import {
   WAITLIST_EMAIL,
   WAITLIST_INVITE_TTL_DAYS,
   WAITLIST_REMINDER_AFTER_DAYS,
+  WAITLIST_REMINDER_HOUR,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
   isMetro,
+  localHourIn,
   metroLabel,
+  metroTimezone,
   parseClientEnv,
 } from "@plusone/config";
 
@@ -445,6 +448,37 @@ export async function confirmedWaitlist(): Promise<WaitlistRow[]> {
   });
 }
 
+/**
+ * Everybody an invitation could reach — confirmed, and not.
+ *
+ * ── one read, because the screen is now about two populations ──────────────
+ *
+ * `confirmedWaitlist` is still what the density table counts, and deliberately:
+ * that number answers "is this area worth opening", and an address nobody has
+ * proved is reachable should not inflate it. What changed is the INVITE list,
+ * which since Kevin's override can include the unconfirmed, and the store
+ * paste lists, which have to carry whoever was actually invited or they are
+ * told to install an app their account was never added to.
+ *
+ * `confirmed_at` is what tells the two apart, everywhere, and it stays honest:
+ * nothing here writes it. A row in this list with a null `confirmed_at` is
+ * somebody who typed an address and never came back, and every surface that
+ * shows them says so.
+ */
+export async function invitableWaitlist(): Promise<WaitlistRow[]> {
+  const { data } = await serviceClient()
+    .from("waitlist")
+    .select(
+      "id, email, metro, wants_beta, confirmed_at, invited_at, accepted_at, store_platform, store_account_email, created_at",
+    )
+    .order("created_at", { ascending: true });
+
+  return (data ?? []).map((row) => {
+    const r = row as Omit<WaitlistRow, "invite_expired">;
+    return { ...r, invite_expired: Boolean(r.invited_at && inviteHasExpired(r.invited_at)) };
+  });
+}
+
 export interface MetroCount {
   readonly metro: string;
   readonly label: string;
@@ -499,8 +533,16 @@ export interface UnconfirmedRow {
   readonly metro: string;
   readonly created_at: string;
   readonly confirm_sent_at: string | null;
-  /** False while the reminder floor has not passed. Decided here, not in the UI. */
+  /**
+   * May this person still be sent their one reminder?
+   *
+   * False once `reminded_at` is set — permanently, not until a cooldown passes.
+   * Decided here rather than in the UI, because the same answer has to hold for
+   * the cron, and a disabled checkbox is not a rule.
+   */
   readonly remindable: boolean;
+  /** Whether the one reminder has already gone, so the screen can say which it is. */
+  readonly reminded: boolean;
   /**
    * Days until sweepUnconfirmed deletes this row.
    *
@@ -541,6 +583,11 @@ export async function unconfirmedWaitlist(): Promise<UnconfirmedRow[]> {
   const floorMs = WAITLIST_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
   const ttlMs = WAITLIST_UNCONFIRMED_TTL_DAYS * 24 * 60 * 60 * 1000;
 
+  // Allowed to fail, so the screen still lists people before the migration
+  // lands — with the button off, because remindUnconfirmed would refuse anyway
+  // and an enabled control that silently does nothing is the worse failure.
+  const remindedAt = await remindedAtByIdOrNull((data ?? []).map((r) => (r as { id: string }).id));
+
   return (data ?? []).map((row) => {
     const r = row as {
       id: string;
@@ -549,10 +596,12 @@ export async function unconfirmedWaitlist(): Promise<UnconfirmedRow[]> {
       created_at: string;
       confirm_sent_at: string | null;
     };
+    const reminded = Boolean(remindedAt?.get(r.id));
     const lastSent = r.confirm_sent_at ? Date.parse(r.confirm_sent_at) : 0;
     return {
       ...r,
-      remindable: Date.now() - lastSent >= floorMs,
+      reminded,
+      remindable: Boolean(remindedAt) && !reminded && Date.now() - lastSent >= floorMs,
       deletes_in_days: Math.ceil((Date.parse(r.created_at) + ttlMs - Date.now()) / 86_400_000),
     };
   });
@@ -592,6 +641,10 @@ export async function remindUnconfirmed(ids: readonly string[]): Promise<number>
     .select("id, email, token, confirmed_at, confirm_sent_at")
     .in("id", ids as string[]);
 
+  // Refuse outright rather than send without the guarantee. See the helper.
+  const remindedAt = await remindedAtByIdOrNull(ids);
+  if (!remindedAt) return 0;
+
   interface Candidate {
     readonly id: string;
     readonly email: string;
@@ -609,27 +662,121 @@ export async function remindUnconfirmed(ids: readonly string[]): Promise<number>
     // extra steps, which is the same sentence joinWaitlist refuses on.
     if (row.confirmed_at) continue;
 
+    // ONE reminder, ever, and this is the line that makes the copy true. The
+    // cooldown below is not enough on its own: a schedule pressing this every
+    // three days against a thirty-day TTL would send nine.
+    if (remindedAt.get(row.id)) continue;
+
     const lastSent = row.confirm_sent_at ? Date.parse(row.confirm_sent_at) : 0;
     if (Date.now() - lastSent < floorMs) continue;
 
     // Stamp BEFORE sending, and make the stamp the claim.
     //
-    // The floor is only a floor if two presses cannot both pass it, and the
-    // send is the slow part — so the row is claimed against the value just
-    // read, and a second press finds it moved and matches nothing. The cost of
-    // this order is that a send which then fails still consumed the window,
-    // which is the right way round: a reminder nobody received is recoverable
-    // by waiting, and two reminders are not recoverable at all.
+    // The claim is on `reminded_at`, because that is the column the decision is
+    // made on — claiming the cooldown instead would let the cron and an admin
+    // press pass the same null `reminded_at` simultaneously and both send. The
+    // send is the slow part, so the window has to be taken first: a second
+    // caller finds the row moved and matches nothing.
+    //
+    // The cost of this order is that a send which then fails still consumed the
+    // one reminder, which is the right way round. A reminder nobody received is
+    // a person who gets no second email; two reminders is a promise broken to
+    // somebody who never asked for the first.
     const stamped = new Date().toISOString();
-    const claim = supabase.from("waitlist").update({ confirm_sent_at: stamped }).eq("id", row.id);
-    const { error } = await (row.confirm_sent_at
-      ? claim.eq("confirm_sent_at", row.confirm_sent_at)
-      : claim.is("confirm_sent_at", null));
+    const { error } = await supabase
+      .from("waitlist")
+      .update({ reminded_at: stamped, confirm_sent_at: stamped })
+      .eq("id", row.id)
+      .is("reminded_at", null);
     if (error) continue;
 
     if (await sendConfirmation(row.email, row.token, "remind")) sent += 1;
   }
   return sent;
+}
+
+/**
+ * `reminded_at`, read in a request that is ALLOWED TO FAIL.
+ *
+ * ── the schema arrives after the code, as a matter of course ───────────────
+ *
+ * Migrations here are applied by hand and are Kevin's call, so a deploy lands
+ * against whatever schema is live — which, for a migration written the same
+ * day, is the old one. And PostgREST does not fail narrowly on an unknown
+ * column: it fails the WHOLE request. Folding `reminded_at` into the select on
+ * /admin/waitlist would therefore return `data: null` and render a screen with
+ * no addresses on it, on the page being used to invite people, over a column
+ * that has nothing to do with them. HANDOFF.md has that exact failure dated
+ * 2026-08-29, where one unshipped column blanked every member's profile.
+ *
+ * So it is a SEPARATE request, and `null` means "the column is not there yet"
+ * rather than "nobody has been reminded". Those two must not look alike: the
+ * first has to stop every send, because the one-reminder promise is exactly
+ * what this column enforces, and a reminder sent without it could be the ninth.
+ *
+ * Narrow on purpose. A catch-all here would swallow a real read error and
+ * report it as a missing column, which turns a temporary fault into a silently
+ * disabled feature.
+ */
+async function remindedAtByIdOrNull(
+  ids: readonly string[],
+): Promise<Map<string, string | null> | null> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await serviceClient()
+    .from("waitlist")
+    .select("id, reminded_at")
+    .in("id", ids as string[]);
+
+  if (error) {
+    if (error.code === "PGRST204" || error.code === "42703") return null;
+    return null;
+  }
+  return new Map(
+    (data as { id: string; reminded_at: string | null }[]).map((r) => [r.id, r.reminded_at]),
+  );
+}
+
+/**
+ * Who is due their one reminder at this hour, in their own metro.
+ *
+ * ── the hour is decided per ROW, not per run ────────────────────────────────
+ *
+ * The cron fires hourly and every run asks the same question of every row:
+ * is it WAITLIST_REMINDER_HOUR where this person said they were? So a
+ * five-timezone list is covered by one schedule with no fan-out, and adding a
+ * metro in a new zone needs nothing here.
+ *
+ * `elsewhere` has no zone and falls back — metroTimezone owns that, with the
+ * argument in WAITLIST_REMINDER_TZ. Skipping those rows was the alternative and
+ * is worse: it is a real share of the list and a reminder nobody sends is not a
+ * kindness.
+ *
+ * Returns ids only. The send itself goes through remindUnconfirmed, which
+ * re-checks every condition — this narrows the work, it does not authorise it.
+ */
+export async function dueForReminder(at: Date = new Date()): Promise<string[]> {
+  const cutoff = new Date(
+    at.getTime() - WAITLIST_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  // The filter names the new column, so this whole request fails until the
+  // migration lands. Nothing due is the safe answer: the run sends nobody and
+  // the next hour asks again.
+  const { data, error } = await serviceClient()
+    .from("waitlist")
+    .select("id, metro")
+    .is("confirmed_at", null)
+    .is("reminded_at", null)
+    // Somebody already invited does not need asking to confirm — they have a
+    // heavier email from us sitting in the same inbox, and two in a week from
+    // an app they may not have asked about is the thing being careful of.
+    .is("invited_at", null)
+    .lt("confirm_sent_at", cutoff);
+  if (error) return [];
+
+  return ((data ?? []) as { id: string; metro: string }[])
+    .filter((row) => localHourIn(metroTimezone(row.metro), at) === WAITLIST_REMINDER_HOUR)
+    .map((row) => row.id);
 }
 
 /**
@@ -646,7 +793,38 @@ function inviteHasExpired(invitedAt: string): boolean {
   return ageMs > WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
 }
 
-export async function inviteFromWaitlist(ids: readonly string[]): Promise<number> {
+/**
+ * Kevin's override, 2026-09-14: invite somebody who never confirmed.
+ *
+ * ── it is an ARGUMENT, not a deleted wall ──────────────────────────────────
+ *
+ * The default is unchanged and the refusal is still one line. What this adds is
+ * a named flag that has to be passed deliberately, from a control that says
+ * what it does — so the override cannot happen by forgetting, and reading any
+ * call site tells you which one it is.
+ *
+ * ── what it trades, recorded because it was decided rather than missed ─────
+ *
+ * Double opt-in exists because an address may have been typed by somebody else
+ * — a mistake, or not — and the confirmation click is the only thing that tells
+ * the two apart. An invitation to an unconfirmed address therefore reaches a
+ * person who may never have asked, and it is a heavier email than the reminder:
+ * "you are invited to the beta" says more than "confirm your address" does.
+ *
+ * Against that: 20 of the first 45 signups never confirmed, they typed the
+ * address into a form on this site, and the account gate is a separate wall —
+ * an invitation is not an account, and /onboarding/phone still has to be gone
+ * through. Kevin asked for them, was told the above, and asked again.
+ *
+ * `confirmed_at` IS NOT WRITTEN. It records that somebody clicked, and nothing
+ * here makes that true — a flag set to tidy up the query would turn the one
+ * record this story rests on into a lie. An invited row with a null
+ * `confirmed_at` says exactly what happened.
+ */
+export async function inviteFromWaitlist(
+  ids: readonly string[],
+  options: { readonly includeUnconfirmed?: boolean } = {},
+): Promise<number> {
   if (ids.length === 0) return 0;
   const supabase = serviceClient();
 
@@ -669,8 +847,9 @@ export async function inviteFromWaitlist(ids: readonly string[]): Promise<number
 
   let sent = 0;
   for (const row of (rows ?? []) as InviteCandidate[]) {
-    // Never invite an unconfirmed address. It is the whole point of confirming.
-    if (!row.confirmed_at) continue;
+    // Never invite an unconfirmed address, unless the caller said so in as many
+    // words. See the note above the function for what that trades.
+    if (!row.confirmed_at && !options.includeUnconfirmed) continue;
     // Already in. Re-inviting somebody who spent their code would mint a second
     // one against an account that exists, and betaInviteIsOpen would refuse it
     // anyway — so this is an email promising a link that cannot work.
@@ -800,8 +979,15 @@ export function testerList(
   stage: "to_add" | "invited" = "to_add",
 ): { addresses: string[]; missing: number } {
   /**
-   * Keyed on CONFIRMED — every row here is, since `confirmedWaitlist` selects
-   * on it — and deliberately NOT on invited.
+   * NOT keyed on confirmed, and not keyed on invited either.
+   *
+   * It used to say "every row here is confirmed, since confirmedWaitlist
+   * selects on it". That stopped being true when the page moved to
+   * `invitableWaitlist` for Kevin's override — and the right answer is that
+   * this function should never have been relying on its caller for that. What
+   * a store track needs is somebody who asked to test and gave an account to
+   * add; whether they confirmed their email is a different question, answered
+   * by whoever decides to invite them.
    *
    * It required `accepted_at` once, then `invited_at`, and both were the wrong
    * way round for the order the operator actually works in. The store list has
@@ -854,6 +1040,18 @@ export async function sweepUnconfirmed(): Promise<number> {
     .from("waitlist")
     .delete()
     .is("confirmed_at", null)
+    // ...and never invited.
+    //
+    // This follows from the override above and would otherwise be a quiet data
+    // loss. An unconfirmed row that has been INVITED holds the only record that
+    // the invitation exists — its code, when it was sent, and whether it was
+    // spent. Sweeping it thirty days after signup would retire a live
+    // invitation mid-flight (betaInviteIsOpen looks the code up and would find
+    // nothing), and erase the fact that we wrote to that person at all.
+    //
+    // Before the override this could not happen: nothing unconfirmed was ever
+    // invited, so the two filters described the same rows.
+    .is("invited_at", null)
     .lt("created_at", cutoff)
     .select("id");
   return (data ?? []).length;

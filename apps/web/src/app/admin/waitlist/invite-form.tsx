@@ -12,6 +12,7 @@ export interface InviteRow {
   readonly metro: string;
   readonly label: string;
   readonly wantsBeta: boolean;
+  readonly confirmed: boolean;
 }
 
 /**
@@ -59,7 +60,17 @@ export interface InviteRow {
  * selects every group at once, which is the one the sentence above is about.
  */
 export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
+  const unconfirmedCount = rows.filter((r) => !r.confirmed).length;
   const [onlyTesters, setOnlyTesters] = useState(true);
+  /**
+   * Off by default, and it stays off by default however routine it becomes.
+   *
+   * This is the control that sends an invitation to somebody who never
+   * confirmed their address, which `inviteFromWaitlist` refuses unless asked in
+   * as many words. A default of on would make the heavier thing the thing that
+   * happens when nobody is thinking about it.
+   */
+  const [includeUnconfirmed, setIncludeUnconfirmed] = useState(false);
   const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set());
   const [sent, submit, pending] = useActionState(async (_prev: boolean, formData: FormData) => {
     await invite(formData);
@@ -79,6 +90,7 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
     const by = new Map<string, { label: string; rows: InviteRow[] }>();
     for (const row of rows) {
       if (onlyTesters && !row.wantsBeta) continue;
+      if (!row.confirmed && !includeUnconfirmed) continue;
       const group = by.get(row.metro) ?? { label: row.label, rows: [] };
       group.rows.push(row);
       by.set(row.metro, group);
@@ -86,7 +98,7 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
     return [...by.entries()]
       .map(([metro, g]) => ({ metro, ...g }))
       .sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label));
-  }, [rows, onlyTesters]);
+  }, [rows, onlyTesters, includeUnconfirmed]);
 
   const toggle = (id: string) =>
     setPicked((prev) => {
@@ -128,6 +140,27 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
           className="size-5 shrink-0 accent-accent"
         />
         Only people who said they would test
+      </label>
+
+      <label className="mt-3 flex items-center gap-3 text-[12.2px]">
+        <input
+          type="checkbox"
+          name="allowUnconfirmed"
+          checked={includeUnconfirmed}
+          onChange={(event) => {
+            const on = event.currentTarget.checked;
+            setIncludeUnconfirmed(on);
+            // Turning it back off must not leave an unconfirmed id ticked and
+            // invisible. The server would still refuse it, because the flag
+            // travels with the submission — but a count that includes people
+            // who are not on screen is how the wrong button gets pressed.
+            if (!on) setPicked(new Set());
+          }}
+          className="size-5 shrink-0 accent-accent"
+        />
+        {unconfirmedCount > 0
+          ? `Include the ${unconfirmedCount} who never confirmed`
+          : "Include people who never confirmed"}
       </label>
 
       {groups.length === 0 ? (
@@ -178,6 +211,9 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
                       className="min-h-tap flex flex-1 items-center break-all text-[12.6px]"
                     >
                       {row.email}
+                      {row.confirmed ? null : (
+                        <span className="ml-2 text-[11.7px] text-ink-3">not confirmed</span>
+                      )}
                     </label>
                   </div>
                 ))}

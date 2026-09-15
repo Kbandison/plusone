@@ -68,6 +68,20 @@ export interface Metro {
   readonly id: string;
   readonly label: string;
   /**
+   * IANA zone, for sending an email at a sensible local hour.
+   *
+   * Written out per metro rather than derived from the state in `label` or from
+   * `lng`, because both derivations are wrong in this list. Arizona does not
+   * observe DST and Indiana spent decades not doing so — `America/Phoenix` and
+   * `America/Indiana/Indianapolis` exist precisely because a longitude cannot
+   * express that, and Detroit has its own zone for the same kind of reason.
+   * Forty-one strings that are checked against the runtime's own zone database
+   * beat one clever function that is quietly wrong four times a year.
+   *
+   * Absent for `elsewhere`, which is not a place — see WAITLIST_REMINDER_TZ.
+   */
+  readonly tz?: string;
+  /**
    * Approximate centroid. Absent for `elsewhere`, which is not a place.
    *
    * These exist for ONE question — which metros fall inside `RADIUS.ladderMi`'s
@@ -85,48 +99,114 @@ export interface Metro {
 }
 
 export const METROS: readonly Metro[] = [
-  { id: "atlanta", label: "Atlanta, GA", lat: 33.75, lng: -84.39 },
-  { id: "austin", label: "Austin, TX", lat: 30.27, lng: -97.74 },
-  { id: "baltimore", label: "Baltimore, MD", lat: 39.29, lng: -76.61 },
-  { id: "birmingham", label: "Birmingham, AL", lat: 33.52, lng: -86.8 },
-  { id: "boston", label: "Boston, MA", lat: 42.36, lng: -71.06 },
-  { id: "charlotte", label: "Charlotte, NC", lat: 35.23, lng: -80.84 },
-  { id: "chicago", label: "Chicago, IL", lat: 41.88, lng: -87.63 },
-  { id: "cleveland", label: "Cleveland, OH", lat: 41.5, lng: -81.69 },
-  { id: "columbus", label: "Columbus, OH", lat: 39.96, lng: -82.99 },
-  { id: "dallas", label: "Dallas–Fort Worth, TX", lat: 32.78, lng: -96.8 },
-  { id: "denver", label: "Denver, CO", lat: 39.74, lng: -104.99 },
-  { id: "detroit", label: "Detroit, MI", lat: 42.33, lng: -83.05 },
-  { id: "houston", label: "Houston, TX", lat: 29.76, lng: -95.37 },
-  { id: "indianapolis", label: "Indianapolis, IN", lat: 39.77, lng: -86.16 },
-  { id: "jacksonville", label: "Jacksonville, FL", lat: 30.33, lng: -81.66 },
-  { id: "kansas-city", label: "Kansas City, MO", lat: 39.1, lng: -94.58 },
-  { id: "las-vegas", label: "Las Vegas, NV", lat: 36.17, lng: -115.14 },
-  { id: "los-angeles", label: "Los Angeles, CA", lat: 34.05, lng: -118.24 },
-  { id: "memphis", label: "Memphis, TN", lat: 35.15, lng: -90.05 },
-  { id: "miami", label: "Miami–Fort Lauderdale, FL", lat: 25.76, lng: -80.19 },
-  { id: "milwaukee", label: "Milwaukee, WI", lat: 43.04, lng: -87.91 },
-  { id: "minneapolis", label: "Minneapolis–St Paul, MN", lat: 44.98, lng: -93.27 },
-  { id: "nashville", label: "Nashville, TN", lat: 36.16, lng: -86.78 },
-  { id: "new-orleans", label: "New Orleans, LA", lat: 29.95, lng: -90.07 },
-  { id: "new-york", label: "New York, NY", lat: 40.71, lng: -74.01 },
-  { id: "oklahoma-city", label: "Oklahoma City, OK", lat: 35.47, lng: -97.52 },
-  { id: "orlando", label: "Orlando, FL", lat: 28.54, lng: -81.38 },
-  { id: "philadelphia", label: "Philadelphia, PA", lat: 39.95, lng: -75.17 },
-  { id: "phoenix", label: "Phoenix, AZ", lat: 33.45, lng: -112.07 },
-  { id: "pittsburgh", label: "Pittsburgh, PA", lat: 40.44, lng: -80.0 },
-  { id: "portland", label: "Portland, OR", lat: 45.52, lng: -122.68 },
-  { id: "raleigh", label: "Raleigh–Durham, NC", lat: 35.78, lng: -78.64 },
-  { id: "richmond", label: "Richmond, VA", lat: 37.54, lng: -77.44 },
-  { id: "sacramento", label: "Sacramento, CA", lat: 38.58, lng: -121.49 },
-  { id: "salt-lake-city", label: "Salt Lake City, UT", lat: 40.76, lng: -111.89 },
-  { id: "san-antonio", label: "San Antonio, TX", lat: 29.42, lng: -98.49 },
-  { id: "san-diego", label: "San Diego, CA", lat: 32.72, lng: -117.16 },
-  { id: "san-francisco", label: "San Francisco Bay Area, CA", lat: 37.77, lng: -122.42 },
-  { id: "seattle", label: "Seattle, WA", lat: 47.61, lng: -122.33 },
-  { id: "st-louis", label: "St Louis, MO", lat: 38.63, lng: -90.2 },
-  { id: "tampa", label: "Tampa–St Petersburg, FL", lat: 27.95, lng: -82.46 },
-  { id: "washington", label: "Washington, DC", lat: 38.91, lng: -77.04 },
+  { id: "atlanta", label: "Atlanta, GA", lat: 33.75, lng: -84.39, tz: "America/New_York" },
+  { id: "austin", label: "Austin, TX", lat: 30.27, lng: -97.74, tz: "America/Chicago" },
+  { id: "baltimore", label: "Baltimore, MD", lat: 39.29, lng: -76.61, tz: "America/New_York" },
+  { id: "birmingham", label: "Birmingham, AL", lat: 33.52, lng: -86.8, tz: "America/Chicago" },
+  { id: "boston", label: "Boston, MA", lat: 42.36, lng: -71.06, tz: "America/New_York" },
+  { id: "charlotte", label: "Charlotte, NC", lat: 35.23, lng: -80.84, tz: "America/New_York" },
+  { id: "chicago", label: "Chicago, IL", lat: 41.88, lng: -87.63, tz: "America/Chicago" },
+  { id: "cleveland", label: "Cleveland, OH", lat: 41.5, lng: -81.69, tz: "America/New_York" },
+  { id: "columbus", label: "Columbus, OH", lat: 39.96, lng: -82.99, tz: "America/New_York" },
+  { id: "dallas", label: "Dallas–Fort Worth, TX", lat: 32.78, lng: -96.8, tz: "America/Chicago" },
+  { id: "denver", label: "Denver, CO", lat: 39.74, lng: -104.99, tz: "America/Denver" },
+  { id: "detroit", label: "Detroit, MI", lat: 42.33, lng: -83.05, tz: "America/Detroit" },
+  { id: "houston", label: "Houston, TX", lat: 29.76, lng: -95.37, tz: "America/Chicago" },
+  {
+    id: "indianapolis",
+    label: "Indianapolis, IN",
+    lat: 39.77,
+    lng: -86.16,
+    tz: "America/Indiana/Indianapolis",
+  },
+  {
+    id: "jacksonville",
+    label: "Jacksonville, FL",
+    lat: 30.33,
+    lng: -81.66,
+    tz: "America/New_York",
+  },
+  { id: "kansas-city", label: "Kansas City, MO", lat: 39.1, lng: -94.58, tz: "America/Chicago" },
+  { id: "las-vegas", label: "Las Vegas, NV", lat: 36.17, lng: -115.14, tz: "America/Los_Angeles" },
+  {
+    id: "los-angeles",
+    label: "Los Angeles, CA",
+    lat: 34.05,
+    lng: -118.24,
+    tz: "America/Los_Angeles",
+  },
+  { id: "memphis", label: "Memphis, TN", lat: 35.15, lng: -90.05, tz: "America/Chicago" },
+  {
+    id: "miami",
+    label: "Miami–Fort Lauderdale, FL",
+    lat: 25.76,
+    lng: -80.19,
+    tz: "America/New_York",
+  },
+  { id: "milwaukee", label: "Milwaukee, WI", lat: 43.04, lng: -87.91, tz: "America/Chicago" },
+  {
+    id: "minneapolis",
+    label: "Minneapolis–St Paul, MN",
+    lat: 44.98,
+    lng: -93.27,
+    tz: "America/Chicago",
+  },
+  { id: "nashville", label: "Nashville, TN", lat: 36.16, lng: -86.78, tz: "America/Chicago" },
+  { id: "new-orleans", label: "New Orleans, LA", lat: 29.95, lng: -90.07, tz: "America/Chicago" },
+  { id: "new-york", label: "New York, NY", lat: 40.71, lng: -74.01, tz: "America/New_York" },
+  {
+    id: "oklahoma-city",
+    label: "Oklahoma City, OK",
+    lat: 35.47,
+    lng: -97.52,
+    tz: "America/Chicago",
+  },
+  { id: "orlando", label: "Orlando, FL", lat: 28.54, lng: -81.38, tz: "America/New_York" },
+  {
+    id: "philadelphia",
+    label: "Philadelphia, PA",
+    lat: 39.95,
+    lng: -75.17,
+    tz: "America/New_York",
+  },
+  { id: "phoenix", label: "Phoenix, AZ", lat: 33.45, lng: -112.07, tz: "America/Phoenix" },
+  { id: "pittsburgh", label: "Pittsburgh, PA", lat: 40.44, lng: -80.0, tz: "America/New_York" },
+  { id: "portland", label: "Portland, OR", lat: 45.52, lng: -122.68, tz: "America/Los_Angeles" },
+  { id: "raleigh", label: "Raleigh–Durham, NC", lat: 35.78, lng: -78.64, tz: "America/New_York" },
+  { id: "richmond", label: "Richmond, VA", lat: 37.54, lng: -77.44, tz: "America/New_York" },
+  {
+    id: "sacramento",
+    label: "Sacramento, CA",
+    lat: 38.58,
+    lng: -121.49,
+    tz: "America/Los_Angeles",
+  },
+  {
+    id: "salt-lake-city",
+    label: "Salt Lake City, UT",
+    lat: 40.76,
+    lng: -111.89,
+    tz: "America/Denver",
+  },
+  { id: "san-antonio", label: "San Antonio, TX", lat: 29.42, lng: -98.49, tz: "America/Chicago" },
+  { id: "san-diego", label: "San Diego, CA", lat: 32.72, lng: -117.16, tz: "America/Los_Angeles" },
+  {
+    id: "san-francisco",
+    label: "San Francisco Bay Area, CA",
+    lat: 37.77,
+    lng: -122.42,
+    tz: "America/Los_Angeles",
+  },
+  { id: "seattle", label: "Seattle, WA", lat: 47.61, lng: -122.33, tz: "America/Los_Angeles" },
+  { id: "st-louis", label: "St Louis, MO", lat: 38.63, lng: -90.2, tz: "America/Chicago" },
+  {
+    id: "tampa",
+    label: "Tampa–St Petersburg, FL",
+    lat: 27.95,
+    lng: -82.46,
+    tz: "America/New_York",
+  },
+  { id: "washington", label: "Washington, DC", lat: 38.91, lng: -77.04, tz: "America/New_York" },
   { id: "elsewhere", label: "Somewhere else" },
 ];
 
@@ -299,6 +379,73 @@ export const WAITLIST_INVITE_TTL_DAYS = 14;
  * from quietly becoming an indefinite list. Pinned by a test.
  */
 export const WAITLIST_REMINDER_AFTER_DAYS = 3;
+
+/**
+ * The local hour the one reminder is sent in.
+ *
+ * ── early evening, and this is a judgement rather than a measurement ────────
+ *
+ * Stated plainly because the number reads like a finding and is not one. What
+ * it rests on:
+ *
+ * This is PERSONAL email, and the general advice to send at mid-morning is
+ * drawn from marketing to people at their desks. Nobody signs up to a waitlist
+ * for an HSV and HIV app from a work account, and the reply it asks for — click
+ * a link, confirm an address — is one somebody does on their own phone, in
+ * their own time. Seven in the evening is after the commute and before the
+ * night, and it is when a personal inbox actually gets opened.
+ *
+ * The second reason is narrower and specific to this app. The email carries no
+ * condition anywhere, deliberately, so the case is not that a subject line
+ * would out somebody at work. It is that the person reading it knows what it is
+ * about, and a reminder about a health-adjacent app is one to meet somewhere
+ * other than an open-plan office.
+ *
+ * NO DAY-OF-WEEK RULE, which the same advice would also give. A reminder is
+ * sent once and the row is deleted thirty days after signup; holding somebody's
+ * only reminder for a Tuesday spends days of that window to buy a difference
+ * nobody here can measure. Hour, and nothing else.
+ *
+ * One constant. If it turns out to be wrong, it is one edit and the reasoning
+ * above is the thing to argue with.
+ */
+export const WAITLIST_REMINDER_HOUR = 19;
+
+/**
+ * Which clock to use for somebody who said "Somewhere else".
+ *
+ * `elsewhere` carries no location at all — that is the whole point of it — so
+ * there is no local hour to compute and a fallback has to be chosen rather than
+ * derived. Eastern, because it holds the largest share of the US population and
+ * because the alternative, skipping those rows, is worse: seven of the first
+ * forty-five signups picked it, and a reminder nobody sends is not a kindness.
+ *
+ * It will be the wrong clock for some of them, by up to three hours inside the
+ * country and by more outside it. Seven in the evening Eastern is four in the
+ * afternoon Pacific, which is a worse hour and not a bad one.
+ */
+export const WAITLIST_REMINDER_TZ = "America/New_York";
+
+/** The zone to send in for a metro, falling back for `elsewhere` and anything unknown. */
+export function metroTimezone(id: string): string {
+  return METROS.find((m) => m.id === id)?.tz ?? WAITLIST_REMINDER_TZ;
+}
+
+/**
+ * The hour of the day it is in a metro right now, 0–23.
+ *
+ * `Intl` rather than an offset table, so DST is the runtime's problem and not
+ * ours — the whole reason `tz` holds a zone name instead of a number of hours.
+ * `hourCycle: "h23"` because the default for en-US is h12 and renders midnight
+ * as "24", which compares as a number nobody expects.
+ */
+export function localHourIn(tz: string, at: Date): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(
+      at,
+    ),
+  );
+}
 
 /**
  * What a metro needs before it is worth opening.

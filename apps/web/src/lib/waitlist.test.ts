@@ -295,10 +295,12 @@ describe("the library keeps its promises about what it returns", () => {
     expect(lib).toMatch(/export async function joinWaitlist\([\s\S]{0,200}?\): Promise<void>/);
   });
 
-  it("never invites an unconfirmed address", () => {
+  it("never invites an unconfirmed address by default", () => {
     const invite = fnBody(lib, "export async function inviteFromWaitlist");
     expect(invite.length).toBeGreaterThan(200);
-    expect(invite).toMatch(/if \(!row\.confirmed_at\) continue/);
+    // Kevin's override 2026-09-14 made this conditional on a named argument.
+    // The refusal is still the default and still one line.
+    expect(invite).toMatch(/if \(!row\.confirmed_at && !options\.includeUnconfirmed\) continue/);
   });
 
   it("spends an invitation atomically", () => {
@@ -936,13 +938,32 @@ describe("a reminder is the same consent step, asked twice", () => {
   });
 
   it("claims the window before sending, not after", () => {
-    // The floor is only a floor if two presses cannot both pass it, and the
-    // send is the slow part. Stamp, then send.
-    const stamp = remind.indexOf(".update({ confirm_sent_at: stamped })");
+    // One reminder is only one if two callers cannot both pass the check, and
+    // the send is the slow part. Stamp, then send.
+    const stamp = remind.indexOf("reminded_at: stamped");
     const send = remind.indexOf("sendConfirmation(row.email");
     expect(stamp).toBeGreaterThan(-1);
     expect(send).toBeGreaterThan(stamp);
-    expect(remind).toMatch(/\.eq\("confirm_sent_at", row\.confirm_sent_at\)/);
+  });
+
+  it("claims the column the decision is made on", () => {
+    // Claiming the cooldown instead would let the cron and an admin press pass
+    // the same null reminded_at at the same moment and both send — which is the
+    // one failure the column exists to prevent.
+    expect(remind).toMatch(/\.is\("reminded_at", null\)/);
+  });
+
+  it("sends exactly one, ever, rather than one per cooldown", () => {
+    // A three-day floor against a thirty-day TTL is nine reminders once a
+    // schedule is doing the pressing. The copy promises one.
+    expect(remind).toMatch(/if \(remindedAt\.get\(row\.id\)\) continue/);
+  });
+
+  it("refuses to send at all while the column is missing", () => {
+    // Code reaches production before the schema here as a matter of course. A
+    // reminder sent without reminded_at has no guarantee behind it and could be
+    // the ninth, so the safe degradation is to send nobody.
+    expect(remind).toMatch(/if \(!remindedAt\) return 0/);
   });
 
   it("CANNOT extend the life of the row", () => {
@@ -955,11 +976,11 @@ describe("a reminder is the same consent step, asked twice", () => {
     expect(sweep).toMatch(/WAITLIST_UNCONFIRMED_TTL_DAYS/);
   });
 
-  it("never invites an unconfirmed address, whatever the screen offers", () => {
+  it("never invites an unconfirmed address unless told to in as many words", () => {
     // The wall stays in the library. The reminder form having no invite button
     // is not the guarantee; this line is.
     expect(fnBody(lib, "export async function inviteFromWaitlist")).toMatch(
-      /if \(!row\.confirmed_at\) continue/,
+      /if \(!row\.confirmed_at && !options\.includeUnconfirmed\) continue/,
     );
   });
 
@@ -1048,5 +1069,147 @@ describe("the unconfirmed are shown, and only one thing is offered", () => {
     // own wall — a second door needs a second lock.
     const body = fnBody(actions, "export async function remind");
     expect(body).toMatch(/await assertAdmin\(\)/);
+  });
+});
+
+describe("the override is asked for, never assumed", () => {
+  const lib = code("lib/waitlist.ts");
+  const actions = code("app/admin/waitlist/actions.ts");
+  const form = code("app/admin/waitlist/invite-form.tsx");
+
+  it("defaults to refusing", () => {
+    // The signature. A flag that defaults to true is not a wall.
+    expect(lib).toMatch(/options: \{ readonly includeUnconfirmed\?: boolean \} = \{\}/);
+  });
+
+  it("reads the override off the submission, not off the rows", () => {
+    // Inferring it from "an unconfirmed id came back" would make the POST its
+    // own permission, decided by whoever wrote the request.
+    const body = fnBody(actions, "export async function invite");
+    expect(body).toMatch(/formData\.get\("allowUnconfirmed"\) === "on"/);
+    expect(body).toMatch(/includeUnconfirmed/);
+  });
+
+  it("starts the control off", () => {
+    expect(form).toMatch(/useState\(false\)/);
+    expect(form).toMatch(/name="allowUnconfirmed"/);
+  });
+
+  it("clears the selection when the control is turned back off", () => {
+    // Otherwise an unconfirmed id stays ticked and off screen, and the count on
+    // the button describes people nobody can see.
+    expect(form).toMatch(/if \(!on\) setPicked\(new Set\(\)\)/);
+  });
+
+  it("says on the row which people are unconfirmed", () => {
+    expect(form).toMatch(/not confirmed/);
+  });
+
+  it("NEVER writes confirmed_at outside the confirmation endpoint", () => {
+    // The one thing the override must not do. confirmed_at records that a
+    // person clicked a link; setting it to tidy up a query turns the only
+    // record this story rests on into a lie.
+    //
+    // Scoped, because the first version of this asserted the whole file and
+    // failed on `confirmWaitlist` — which writes it, on a click, which is the
+    // entire point. A guard that forbids the correct write is not a stricter
+    // guard, it is a wrong one.
+    // The UPDATE calls, not the word: /confirmed_at:/ across the body matched
+    // the InviteCandidate type declaration, which reads the column and writes
+    // nothing. A guard aimed at a write has to look at writes.
+    for (const fn of ["inviteFromWaitlist", "remindUnconfirmed"]) {
+      const body = fnBody(lib, `export async function ${fn}`);
+      const updates = body.match(/\.update\(\{[^}]*\}/g) ?? [];
+      expect(updates.length).toBeGreaterThan(0);
+      for (const u of updates) expect(u).not.toMatch(/confirmed_at/);
+    }
+    // And the one place that does write it, so this cannot pass by the name
+    // changing underneath it.
+    expect(fnBody(lib, "export async function confirmWaitlist")).toMatch(
+      /confirmed_at: new Date\(\)\.toISOString\(\)/,
+    );
+  });
+
+  it("does not sweep away an invitation in flight", () => {
+    // Follows from the override and would otherwise be quiet data loss: an
+    // unconfirmed row that was invited holds the code, and deleting it retires
+    // a live invitation and erases that we wrote to that person at all.
+    const sweep = fnBody(lib, "export async function sweepUnconfirmed");
+    expect(sweep).toMatch(/\.is\("invited_at", null\)/);
+  });
+
+  it("does not remind somebody who was invited instead", () => {
+    // Two emails in a week from an app they may not have asked about.
+    expect(fnBody(lib, "export async function dueForReminder")).toMatch(
+      /\.is\("invited_at", null\)/,
+    );
+  });
+
+  it("keeps the density table on confirmed people only", () => {
+    // It answers "is this area worth opening". The override changes who may be
+    // invited, not who is known to be reachable.
+    expect(code("app/admin/waitlist/page.tsx")).toMatch(
+      /countByMetro\(rows\.filter\(\(r\) => r\.confirmed_at\)\)/,
+    );
+  });
+});
+
+describe("the reminder is scheduled at a local hour", () => {
+  const lib = code("lib/waitlist.ts");
+  const route = code("app/api/cron/waitlist-reminders/route.ts");
+  const due = fnBody(lib, "export async function dueForReminder");
+
+  it("decides the hour per row rather than per run", () => {
+    // One schedule covers every zone. A cron fixed in UTC cannot: the same
+    // instant is 7pm in New York and 4pm in Los Angeles.
+    expect(due.length).toBeGreaterThan(100);
+    expect(due).toMatch(
+      /localHourIn\(metroTimezone\(row\.metro\), at\) === WAITLIST_REMINDER_HOUR/,
+    );
+  });
+
+  it("runs every hour, because of that", () => {
+    const crons = JSON.parse(readFileSync(join(SRC, "..", "vercel.json"), "utf8")).crons as {
+      path: string;
+      schedule: string;
+    }[];
+    const cron = crons.find((c) => c.path === "/api/cron/waitlist-reminders");
+    expect(cron).toBeDefined();
+    // Minute-of-the-hour, every hour. A daily schedule would serve one zone.
+    expect(cron?.schedule).toMatch(/^\d+ \* \* \* \*$/);
+  });
+
+  it("walls the route like every other cron", () => {
+    expect(route).toMatch(/isAuthorisedCron\(request\)/);
+  });
+
+  it("does not catch up after an outage", () => {
+    // A row missed at 7pm is still due at 7pm tomorrow, because nothing is
+    // stamped by being skipped. Sending everything overdue would deliver at
+    // whatever hour the outage ended, which is the one thing this route exists
+    // to avoid — so the hour comparison is EXACT, and a catch-up cannot be
+    // written without relaxing it.
+    //
+    // The first version of this asserted the route mentions no identifier named
+    // overdue or catchUp. That guard was vacuous and a sabotage proved it: the
+    // source is comment-stripped before matching, so a catch-up branch that
+    // happened to be named anything else would have sailed through, and the
+    // sabotage that should have caught it was itself a comment. This asserts
+    // the property instead of the vocabulary.
+    expect(due).toMatch(/=== WAITLIST_REMINDER_HOUR/);
+    expect(due).not.toMatch(/<=? WAITLIST_REMINDER_HOUR|WAITLIST_REMINDER_HOUR >=?/);
+    // And the route asks for now, never for a window.
+    expect(route).toMatch(/dueForReminder\(\)/);
+  });
+
+  it("reports counts and never who", () => {
+    expect(route).toMatch(/due: due\.length/);
+    expect(route).not.toMatch(/email/i);
+  });
+
+  it("answers nothing-due while the column is missing", () => {
+    // The filter names reminded_at, so the request fails outright until the
+    // migration lands. Nothing due is the safe answer; the next hour asks again.
+    expect(due).toMatch(/if \(error\) return \[\]/);
   });
 });

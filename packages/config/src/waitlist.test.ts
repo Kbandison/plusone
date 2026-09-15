@@ -19,8 +19,13 @@ import {
   WAITLIST_INVITE_TTL_DAYS,
   WAITLIST_NEVER,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
+  WAITLIST_REMINDER_AFTER_DAYS,
+  WAITLIST_REMINDER_HOUR,
+  WAITLIST_REMINDER_TZ,
   isMetro,
+  localHourIn,
   metroLabel,
+  metroTimezone,
 } from "./waitlist";
 
 const MIGRATIONS = new URL("../../../supabase/migrations/", import.meta.url);
@@ -650,5 +655,95 @@ describe("metro coordinates are data somebody typed, so they are checked against
     // centroid error and the member's own position across a metro both exceed
     // the 25-mile margin, and reporting it as a fact would be overclaiming.
     expect(metrosWithin("dallas", 250).borderline).toContain("houston");
+  });
+});
+
+describe("every metro knows what time it is", () => {
+  const real = METROS.filter((m) => m.id !== "elsewhere");
+
+  it("has a real list to walk", () => {
+    // The floor. An empty list makes every assertion below vacuous, which is
+    // the shape that let a labels scan read no columns and pass.
+    expect(real.length).toBeGreaterThan(30);
+  });
+
+  it("gives every place a zone", () => {
+    // `elsewhere` is the one exception and it is not a place. Everything else
+    // has somebody in it who gets an email at a local hour.
+    const missing = real.filter((m) => !m.tz).map((m) => m.id);
+    expect(missing).toEqual([]);
+  });
+
+  it("uses zones the runtime actually knows", () => {
+    // A typo in an IANA name does not throw on assignment — it throws at
+    // format() time, inside a cron, at 7pm, for one metro. Ask the zone
+    // database here instead, where it is free.
+    for (const m of real) {
+      expect(() => localHourIn(m.tz as string, new Date(0))).not.toThrow();
+    }
+    expect(() => localHourIn(WAITLIST_REMINDER_TZ, new Date(0))).not.toThrow();
+  });
+
+  it("keeps the zones that do not follow their neighbours", () => {
+    // The three this list would get wrong if the zone were derived from a state
+    // code or a longitude, which is why they are written out. Arizona does not
+    // observe DST; Indiana spent decades not doing so; Michigan is Eastern
+    // despite sitting west of Georgia.
+    expect(metroTimezone("phoenix")).toBe("America/Phoenix");
+    expect(metroTimezone("indianapolis")).toBe("America/Indiana/Indianapolis");
+    expect(metroTimezone("detroit")).toBe("America/Detroit");
+  });
+
+  it("falls back rather than skipping somebody who said elsewhere", () => {
+    expect(metroTimezone("elsewhere")).toBe(WAITLIST_REMINDER_TZ);
+    expect(metroTimezone("not-a-metro")).toBe(WAITLIST_REMINDER_TZ);
+  });
+
+  it("reads the hour on a 24-hour clock", () => {
+    // The en-US default is h12 and renders midnight as "24", which compares as
+    // a number nobody expects and would send at the wrong hour exactly once a
+    // day. 2026-01-01T05:00Z is midnight in New York.
+    expect(localHourIn("America/New_York", new Date("2026-01-01T05:00:00Z"))).toBe(0);
+    expect(localHourIn("America/New_York", new Date("2026-01-01T17:00:00Z"))).toBe(12);
+  });
+
+  it("follows daylight saving rather than a fixed offset", () => {
+    // The reason tz holds a NAME. Same UTC instant, six months apart, and New
+    // York is a different number of hours from it — which a stored offset, or
+    // an offset derived from longitude, gets wrong for half the year.
+    const winter = localHourIn("America/New_York", new Date("2026-01-15T17:00:00Z"));
+    const summer = localHourIn("America/New_York", new Date("2026-07-15T17:00:00Z"));
+    expect(winter).toBe(12);
+    expect(summer).toBe(13);
+    // And Phoenix does not move, which is the whole reason it has its own zone.
+    expect(localHourIn("America/Phoenix", new Date("2026-01-15T17:00:00Z"))).toBe(10);
+    expect(localHourIn("America/Phoenix", new Date("2026-07-15T17:00:00Z"))).toBe(10);
+  });
+
+  it("sends at an hour that exists", () => {
+    expect(WAITLIST_REMINDER_HOUR).toBeGreaterThanOrEqual(0);
+    expect(WAITLIST_REMINDER_HOUR).toBeLessThan(24);
+  });
+
+  it("spans more than one zone, which is why the cron cannot be fixed in UTC", () => {
+    // The premise of running hourly. If every metro were in one zone, a single
+    // daily schedule would do and this machinery would be waste.
+    const zones = new Set(real.map((m) => m.tz));
+    expect(zones.size).toBeGreaterThan(1);
+  });
+});
+
+describe("the one reminder is scheduled, not dripped", () => {
+  const sql = stripComments(waitlistSql());
+
+  it("records that it was sent, in its own column", () => {
+    // confirm_sent_at cannot do this job: joinWaitlist writes it too, on a
+    // repeat submission of the public form, so "moved since created_at" means
+    // either we reminded them or they asked again. Two facts, two columns.
+    expect(sql).toMatch(/add column if not exists reminded_at timestamptz/);
+  });
+
+  it("leaves room for the reminder inside the life of the row", () => {
+    expect(WAITLIST_REMINDER_AFTER_DAYS).toBeLessThan(WAITLIST_UNCONFIRMED_TTL_DAYS);
   });
 });

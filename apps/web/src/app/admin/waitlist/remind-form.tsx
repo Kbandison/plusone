@@ -11,6 +11,7 @@ export interface RemindRow {
   readonly email: string;
   readonly label: string;
   readonly remindable: boolean;
+  readonly reminded: boolean;
   readonly deletesInDays: number;
 }
 
@@ -58,8 +59,9 @@ export function RemindForm({ rows }: { rows: readonly RemindRow[] }) {
       <h2 className="text-h3">Never confirmed</h2>
       <p className="mt-2 text-[11.7px] leading-[1.6] text-ink-3">
         {rows.length} {rows.length === 1 ? "person" : "people"} signed up and did not confirm, so
-        they are not on the list and cannot be invited. A reminder re-sends the original link and
-        says it is the last email. It does not change when the address is deleted.
+        they are not on the list and cannot be invited. One reminder goes out on its own at 7pm
+        where they are; the button sends it now instead of waiting. Either way it is the only one,
+        and it does not change when the address is deleted.
       </p>
 
       {sent ? <p className="mt-4 text-body text-ink-2">Sent.</p> : null}
@@ -87,7 +89,8 @@ export function RemindForm({ rows }: { rows: readonly RemindRow[] }) {
                 {row.deletesInDays <= 0
                   ? "deleted today"
                   : `deleted in ${row.deletesInDays} ${row.deletesInDays === 1 ? "day" : "days"}`}
-                {row.remindable ? "" : " · reminded recently"}
+                {row.reminded ? " · reminded" : ""}
+                {!row.reminded && !row.remindable ? " · emailed recently" : ""}
               </span>
             </label>
           </div>

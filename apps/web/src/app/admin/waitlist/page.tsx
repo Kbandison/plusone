@@ -12,7 +12,7 @@ import {
 const LAST_RUNG_MI = RADIUS.ladderMi[RADIUS.ladderMi.length - 1] ?? 250;
 
 import { Card } from "@/app/ui";
-import { confirmedWaitlist, countByMetro, testerList, unconfirmedWaitlist } from "@/lib/waitlist";
+import { countByMetro, invitableWaitlist, testerList, unconfirmedWaitlist } from "@/lib/waitlist";
 import { InviteForm } from "./invite-form";
 import { RemindForm } from "./remind-form";
 
@@ -47,8 +47,13 @@ export const dynamic = "force-dynamic";
  * control offered against them is the one that asks the same question again.
  */
 export default async function AdminWaitlistPage() {
-  const rows = await confirmedWaitlist();
-  const counts = countByMetro(rows).filter((c) => c.confirmed > 0);
+  const rows = await invitableWaitlist();
+
+  // The density table counts CONFIRMED people only. It answers "is this area
+  // worth opening", and an address nobody has proved is reachable should not
+  // move that number — the override changes who may be invited, not who is
+  // known to be there.
+  const counts = countByMetro(rows.filter((r) => r.confirmed_at)).filter((c) => c.confirmed > 0);
 
   /**
    * How many people a member in this metro could actually reach.
@@ -89,6 +94,7 @@ export default async function AdminWaitlistPage() {
     email: r.email,
     label: metroLabel(r.metro) ?? r.metro,
     remindable: r.remindable,
+    reminded: r.reminded,
     deletesInDays: r.deletes_in_days,
   }));
   const toAdd = { ios: testerList(rows, "ios"), android: testerList(rows, "android") };
@@ -215,6 +221,7 @@ export default async function AdminWaitlistPage() {
           metro: r.metro,
           label: metroLabel(r.metro) ?? r.metro,
           wantsBeta: r.wants_beta,
+          confirmed: Boolean(r.confirmed_at),
         }))}
       />
 

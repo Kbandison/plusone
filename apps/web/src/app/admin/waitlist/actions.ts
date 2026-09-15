@@ -38,7 +38,13 @@ export async function invite(formData: FormData): Promise<void> {
   await assertAdmin();
 
   const ids = formData.getAll("id").map(String).filter(Boolean);
-  await inviteFromWaitlist(ids);
+
+  // The override travels with the submission rather than being inferred from
+  // which rows came back. Inferring it would mean an unconfirmed id arriving in
+  // a POST is itself the permission to send — which is the whole wall, decided
+  // by whoever wrote the request.
+  const includeUnconfirmed = formData.get("allowUnconfirmed") === "on";
+  await inviteFromWaitlist(ids, { includeUnconfirmed });
 
   revalidatePath("/admin/waitlist");
 }
