@@ -728,7 +728,18 @@ async function remindedAtByIdOrNull(
     .in("id", ids as string[]);
 
   if (error) {
-    if (error.code === "PGRST204" || error.code === "42703") return null;
+    // Both branches refuse, because the safe answer to "can I tell whether this
+    // person was already reminded" is always no. What differs is whether
+    // anybody hears about it: a missing column is EXPECTED between a deploy and
+    // its migration and should be quiet, and anything else is a fault that
+    // would otherwise present as a feature that silently stopped working.
+    //
+    // The comment here used to claim this was narrow while both branches did
+    // the same thing, which is the shape of a catch-all wearing a docblock.
+    if (error.code !== "PGRST204" && error.code !== "42703") {
+      // §9.6 — the code, never the addresses it was asked about.
+      console.error(JSON.stringify({ at: "waitlist.reminded", problem: error.code ?? "unknown" }));
+    }
     return null;
   }
   return new Map(

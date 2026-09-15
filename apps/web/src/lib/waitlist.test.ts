@@ -959,6 +959,18 @@ describe("a reminder is the same consent step, asked twice", () => {
     expect(remind).toMatch(/if \(remindedAt\.get\(row\.id\)\) continue/);
   });
 
+  it("says something when the read fails for a reason that is NOT the migration", () => {
+    // Both branches refuse — no is always the safe answer to "were they already
+    // reminded". The difference is audibility: a missing column between a
+    // deploy and its migration is expected and quiet, and anything else is a
+    // fault that would otherwise look like a feature that stopped working.
+    const helper = fnBody(lib, "async function remindedAtByIdOrNull");
+    expect(helper).toMatch(/error\.code !== "PGRST204" && error\.code !== "42703"/);
+    expect(helper).toMatch(/console\.error/);
+    // And it logs the code, never who it asked about.
+    expect(helper).not.toMatch(/console\.error[\s\S]{0,120}email/);
+  });
+
   it("refuses to send at all while the column is missing", () => {
     // Code reaches production before the schema here as a matter of course. A
     // reminder sent without reminded_at has no guarantee behind it and could be
