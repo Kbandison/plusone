@@ -178,6 +178,10 @@ const INTERNAL_PREFIXES: readonly string[] = [
   // admin_post_article. Admin-only, and the admin is the one person who can act
   // on it — a mistyped year is the likely cause and the sentence says so.
   "an article cannot be published in the future",
+  // admin_grant_beta_thanks. Admin-only and unreachable from the UI, which
+  // sends a constant — but an unclassified raise reaches the caller as a raw
+  // Postgres string, and this one would name a column.
+  "a thank-you runs between one and twenty-four months",
   // profiles_beliefs_consent. Reached only by a member PATCHing religion or
   // politics past the form — the form's own path records the consent first and
   // the action turns 42501 into a sentence. Classified here because an

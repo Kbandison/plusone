@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { MemberSearch } from "./member-search";
+import { BetaThanks } from "./beta-thanks";
 import { Roster } from "./roster";
 
 export const metadata: Metadata = { title: "Members" };
@@ -36,6 +37,8 @@ export default function MembersPage() {
     <main id="main">
       <h1 className="mt-4 text-h2">Members</h1>
       <Roster />
+
+      <BetaThanks />
 
       <div className="mt-10 border-t border-line pt-8">
         <MemberSearch />

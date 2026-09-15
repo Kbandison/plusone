@@ -1,5 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
+import { BETA_THANKS_MONTHS } from "@plusone/config";
+
 import { getServerSupabase } from "@/lib/supabase";
 import type { ContactState, Hit, LookupState } from "./state";
 
@@ -57,4 +61,27 @@ export async function memberContact(
   // refusal look the same from here. That is the intended shape: this screen is
   // already behind is_admin() and a second error message would say nothing new.
   return { shown: true, email: row?.email ?? null, phone: row?.phone ?? null };
+}
+
+/**
+ * Grant the beta thank-you for one metro.
+ *
+ * The empty string is the no-metro case and has to become null, not "" — a
+ * member with no location has no metro, and the function matches with
+ * `is not distinct from` so null finds them. "" would find nobody and the row
+ * would sit there looking actionable for ever.
+ *
+ * Idempotent in the database rather than here: running it twice grants nobody
+ * twice, which matters because the only way to know it worked is to run it.
+ */
+export async function grantBetaThanks(formData: FormData): Promise<void> {
+  const metro = String(formData.get("metro") ?? "");
+  const supabase = await getServerSupabase();
+
+  await supabase.rpc("admin_grant_beta_thanks", {
+    p_metro: metro === "" ? null : metro,
+    p_months: BETA_THANKS_MONTHS,
+  });
+
+  revalidatePath("/admin/members");
 }

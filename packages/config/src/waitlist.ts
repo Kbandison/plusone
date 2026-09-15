@@ -344,6 +344,20 @@ export function metrosWithin(
   return { near, borderline };
 }
 
+/**
+ * How long the beta thank-you runs.
+ *
+ * Dated rather than permanent — Kevin's call, and `premium_grants.expires_at`
+ * is NOT NULL so the table only expresses a dated grant anyway. A lifetime
+ * grant on a cohort of unknown size is an open liability against a model that
+ * assumes recurring revenue; six months is the same gesture with a known cost,
+ * and it matches the longest plan somebody could otherwise buy.
+ *
+ * `admin_grant_beta_thanks` takes this as an argument and defaults to the same
+ * number, so a call without it behaves identically. A test pins the two equal.
+ */
+export const BETA_THANKS_MONTHS = 6;
+
 export const WAITLIST_METRO_TARGET = 30;
 
 /**

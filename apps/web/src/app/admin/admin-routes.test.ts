@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { BETA_THANKS_MONTHS } from "@plusone/config";
+
 const APP = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(APP, p), "utf8");
 
@@ -377,5 +379,90 @@ describe("seeded accounts are not members", () => {
 
   it("is admin-gated, like everything else on this screen", () => {
     expect(body("admin_seeded_count")).toMatch(/public\.is_admin\(\)/);
+  });
+});
+
+/**
+ * Thanking the people who were here first.
+ *
+ * BACKLOG 29. Dated rather than permanent, and starting when the member's AREA
+ * opens rather than when they joined — premium is reach and filters, and a
+ * tester whose area holds four people gets nothing from either.
+ *
+ * Nothing holds "this metro is open" in a column, because it is a judgement.
+ * Pressing the button is the opening.
+ */
+describe("the beta thank-you", () => {
+  const sql = readFileSync(
+    join(
+      APP,
+      "../../../../supabase/migrations/20260914000200_thanking_the_people_who_were_here_first.sql",
+    ),
+    "utf8",
+  );
+  const ui = readFileSync(join(APP, "admin/members/beta-thanks.tsx"), "utf8");
+  const action = readFileSync(join(APP, "admin/members/actions.ts"), "utf8");
+  const body = (fn: string) => {
+    const at = sql.search(new RegExp(String.raw`create (or replace )?function public\.${fn}`));
+    expect(at, fn).toBeGreaterThan(-1);
+    const open = sql.indexOf("as $$", at);
+    return sql.slice(open, sql.indexOf("$$;", open));
+  };
+
+  it("grants one metro at a time, never everybody", () => {
+    // A single button for all would put the grant back at signup, which is the
+    // thing this design rejects.
+    expect(sql).toMatch(/admin_grant_beta_thanks\(\s*p_metro text/);
+  });
+
+  it("is idempotent, because running it is the only way to know it worked", () => {
+    // Proven live: 3, then 0.
+    expect(body("admin_grant_beta_thanks")).toMatch(
+      /not exists \([\s\S]*?g\.source = 'beta_thanks'/,
+    );
+  });
+
+  it("finds the member with no metro instead of stranding them", () => {
+    // `= null` is never true, so a member with no location would sit in the
+    // pending list for ever with a button that does nothing.
+    expect(body("admin_grant_beta_thanks")).toMatch(
+      /public\.metro_for\(p\.location\) is not distinct from p_metro/,
+    );
+    // And the form sends null rather than "" for that row.
+    expect(action).toMatch(/metro === "" \? null : metro/);
+  });
+
+  it("never grants a seeded account", () => {
+    // Same predicate remove-test-members.mjs deletes on. Proven live: 0.
+    expect(body("admin_grant_beta_thanks")).toMatch(/seed\.plusone\.invalid/);
+    expect(body("admin_beta_thanks_pending")).toMatch(/seed\.plusone\.invalid/);
+  });
+
+  it("bounds the duration", () => {
+    expect(body("admin_grant_beta_thanks")).toMatch(/p_months < 1 or p_months > 24/);
+  });
+
+  it("defaults to the same number the UI sends", () => {
+    // Two copies, so a test keeps them equal: a call without the argument must
+    // behave exactly like the button.
+    const dflt = sql.match(/p_months integer default (\d+)/)?.[1];
+    expect(dflt).toBe(String(BETA_THANKS_MONTHS));
+    expect(action).toMatch(/p_months: BETA_THANKS_MONTHS/);
+  });
+
+  it("shows nothing when nobody is owed", () => {
+    expect(ui).toMatch(/if \(owed\.length === 0\) return null;/);
+  });
+
+  it("survives the migration not being applied", () => {
+    expect(ui).toMatch(/rpc\("admin_beta_thanks_pending"\)\.then\(/);
+  });
+
+  it("keeps the centroids in exactly one place", () => {
+    // The roster had its own copy until a second caller wanted the same lookup.
+    // Two copies is how two screens start disagreeing about where somebody is.
+    expect(sql).toMatch(/create or replace function public\.metro_for/);
+    expect(body("admin_member_roster")).toMatch(/public\.metro_for\(p\.location\)/);
+    expect(body("admin_member_roster")).not.toMatch(/with centroid/);
   });
 });
