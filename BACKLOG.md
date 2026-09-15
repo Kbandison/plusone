@@ -1787,10 +1787,19 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     not a drive-by. Worth settling once 2.1 is answered.
 
 29. ~~**Thanking the beta testers, and the window that closes when signup
-    reopens.**~~ — **BUILT 2026-09-14, NOT YET APPLIED.** Six months, dated,
-    granted a metro at a time. Kevin settled both halves: dated rather than
-    permanent, and starting when the member's area opens rather than when they
-    joined. 20260914000200, dry-run clean.
+    reopens.**~~ — **BUILT 2026-09-14, NOT YET APPLIED.** Three months, dated,
+    granted a metro at a time. Kevin settled all three: dated rather than
+    permanent, starting when the member's area opens rather than when they
+    joined, and three months rather than six. 20260914000200, dry-run clean.
+
+    **Three is decided once rather than started small, because it cannot be
+    topped up.** The grant skips anybody who has EVER held one, so a second
+    press does nothing for them; relaxing that to "has a live one" would quietly
+    re-grant every lapsed member each time the button is pressed. The argument
+    for three over one is the same one that put the start at metro open — a
+    month lands entirely inside the thinness that rule exists to skip — and the
+    argument against six is that a beta should ask the conversion question while
+    there is still time to act on the answer.
 
     **There is no "metro opened" record and no scheduled job, deliberately.** No
     column can hold "this area is worth being in" — so PRESSING THE BUTTON IS
@@ -1843,7 +1852,7 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     member reaching liveness, over a column that has nothing to do with it.
 
     ~~**What is left is the grant itself, and it is Kevin's**~~ — answered
-    2026-09-14: dated, six months, starting when the metro opens.
+    2026-09-14: dated, three months, starting when the metro opens.
     `premium_grants.expires_at` is NOT NULL, so the table only ever expressed a
     dated grant; permanent would have needed a schema change as well as a
     decision.

@@ -350,13 +350,27 @@ export function metrosWithin(
  * Dated rather than permanent — Kevin's call, and `premium_grants.expires_at`
  * is NOT NULL so the table only expresses a dated grant anyway. A lifetime
  * grant on a cohort of unknown size is an open liability against a model that
- * assumes recurring revenue; six months is the same gesture with a known cost,
- * and it matches the longest plan somebody could otherwise buy.
+ * assumes recurring revenue.
+ *
+ * THREE, and the number is decided once. The grant starts when the member's
+ * metro opens rather than when they joined, because premium is reach and
+ * filters and neither is worth anything in a pool of four — so the duration has
+ * to outlast the same thinness that argument is about. One month lands entirely
+ * inside it. Against that, a shorter grant asks the conversion question while
+ * there is still time to act on the answer, which is what a beta is for. Three
+ * spans enough of the fill to be a real thank-you and puts that question a
+ * quarter away instead of half a year.
+ *
+ * IT CANNOT BE TOPPED UP LATER, which is why this is decided rather than
+ * started small. `admin_grant_beta_thanks` skips anybody who has EVER held a
+ * beta_thanks grant, so a second press does nothing for them. Relaxing that to
+ * "has a live one" would quietly re-grant every lapsed member each time the
+ * button is pressed for their metro.
  *
  * `admin_grant_beta_thanks` takes this as an argument and defaults to the same
  * number, so a call without it behaves identically. A test pins the two equal.
  */
-export const BETA_THANKS_MONTHS = 6;
+export const BETA_THANKS_MONTHS = 3;
 
 export const WAITLIST_METRO_TARGET = 30;
 

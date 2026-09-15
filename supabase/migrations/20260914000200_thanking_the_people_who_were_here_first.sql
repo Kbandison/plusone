@@ -119,10 +119,13 @@ grant execute on function public.admin_beta_thanks_pending() to authenticated;
  * Per metro rather than all at once, because the whole point is that it starts
  * when THAT area is worth being in. A single button for everybody would put the
  * grant back at signup, which is the thing this design rejects.
+ *
+ * The default is BETA_THANKS_MONTHS, and a test pins the two equal. The reason
+ * it is three rather than one or six is argued where the constant lives.
  */
 create or replace function public.admin_grant_beta_thanks(
   p_metro text,
-  p_months integer default 6
+  p_months integer default 3
 )
 returns integer
 language plpgsql
