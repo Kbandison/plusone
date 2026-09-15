@@ -1786,9 +1786,29 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     is stranded, and changing where every signed-out person lands mid-review is
     not a drive-by. Worth settling once 2.1 is answered.
 
-29. **Thanking the beta testers, and the window that closes when signup reopens.**
-    Kevin raised it 2026-09-01 and the mechanism is trivial; the reason it is an
-    item is that half of it EXPIRES.
+29. ~~**Thanking the beta testers, and the window that closes when signup
+    reopens.**~~ — **BUILT 2026-09-14, NOT YET APPLIED.** Six months, dated,
+    granted a metro at a time. Kevin settled both halves: dated rather than
+    permanent, and starting when the member's area opens rather than when they
+    joined. 20260914000200, dry-run clean.
+
+    **There is no "metro opened" record and no scheduled job, deliberately.** No
+    column can hold "this area is worth being in" — so PRESSING THE BUTTON IS
+    THE OPENING. `/admin/members` shows who is owed, grouped by metro, and the
+    section disappears when nobody is. Idempotent in the DATABASE rather than
+    the UI, because the only way to know it worked is to run it and somebody
+    will run it twice.
+
+    Two things the first version got wrong, both found by running it rather than
+    reading it: `= p_metro` strands the member with no location behind a button
+    that does nothing, and the first probe granted nobody because the members it
+    marked had no location — a bug that looked like the grant and was the test.
+
+    Everything below is the design and the reasoning, kept because the
+    permanent-versus-dated argument is the part worth not re-deciding.
+
+    Originally: Kevin raised it 2026-09-01 and the mechanism is trivial; the
+    reason it is an item is that half of it EXPIRES.
 
     **The grant is a row.** `is_premium()` unions `subscriptions`,
     `iap_entitlements` and `premium_grants`, so thanking a tester with premium is
@@ -1822,8 +1842,11 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     matter of course — folded in, an unapplied migration would stop every new
     member reaching liveness, over a column that has nothing to do with it.
 
-    **What is left is the grant itself, and it is Kevin's**: dated or permanent,
-    and starting when the member's metro opens rather than when they joined.
+    ~~**What is left is the grant itself, and it is Kevin's**~~ — answered
+    2026-09-14: dated, six months, starting when the metro opens.
+    `premium_grants.expires_at` is NOT NULL, so the table only ever expressed a
+    dated grant; permanent would have needed a schema change as well as a
+    decision.
 
     **Start it when their metro opens, not when they join.** Premium is reach and
     filters; a tester whose area holds four people gets nothing from either, so a
