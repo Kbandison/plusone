@@ -1,13 +1,28 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
+
+import { COOLDOWNS } from "@plusone/config";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
 const copy = read("../../../../../../packages/config/src/draft-copy.ts");
 const layout = read("../layout.tsx");
 const intention = read("./intention-editor.tsx");
+const modeToggle = read("./mode-toggle.tsx");
+const MIGRATION_DIR = fileURLToPath(
+  new URL("../../../../../../supabase/migrations/", import.meta.url),
+);
+const MIGRATIONS = readdirSync(MIGRATION_DIR)
+  .filter((f) => f.endsWith(".sql"))
+  .map((f) => readFileSync(join(MIGRATION_DIR, f), "utf8"));
+
+/** Comments out, so nothing below is satisfied by prose describing it. */
+const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 describe("the section is called Profile", () => {
   it("says so in the nav and on the page", () => {
@@ -179,5 +194,98 @@ describe("an editor inside a fold gives up its frame", () => {
     // A fold whose child brought its own heading would show two.
     expect(page).toMatch(/<BioEditor[^/]*bare/s);
     expect(page).toMatch(/<PromptEditor[^/]*bare/s);
+  });
+});
+
+/**
+ * Support-only is a one-way door for thirty days, and nothing said so.
+ *
+ * Found by Kevin testing the toggle on 2026-09-16: he switched to see what it
+ * did and could not switch back. `switch_mode` stamps
+ * `mode_dating_reentry_at = now() + cooldowns.dating_reentry_days` on the way
+ * in and refuses the way out until it passes.
+ *
+ * The mechanic is right — the shield is never gated and the cooldown stops
+ * toggle-flicker gaming of a visibility setting. What was wrong is that the
+ * only place the thirty days appeared was the error a month later, on the way
+ * out. It mattered immediately: 45 testers were about to be handed this app and
+ * told to poke at everything, and unlike Kevin they cannot ask for it to be
+ * undone.
+ */
+describe("the support-only switch says what it costs", () => {
+  const toggle = strip(modeToggle);
+
+  it("finds the component at all", () => {
+    // The floor. Stripping comments from a heavily-commented file can leave
+    // very little, and every assertion below is vacuous against "".
+    expect(toggle).toMatch(/export function ModeToggle/);
+  });
+
+  it("warns BEFORE the switch, not after it", () => {
+    // The whole finding. Shown in dating mode, which is the only moment the
+    // warning can change a decision.
+    expect(toggle).toMatch(/mode === "dating" \?/);
+    expect(toggle).toMatch(/supportOnlyCooldown\(COOLDOWNS\.datingReentryDays\)/);
+  });
+
+  it("takes the number from config rather than typing it", () => {
+    // A warning that says thirty while the database says sixty is worse than no
+    // warning: it is a promise the product does not keep.
+    expect(toggle).not.toMatch(/\b30 days\b/);
+    expect(strip(copy)).toMatch(/supportOnlyCooldown: \(days: number\)/);
+  });
+
+  it("says the date once somebody is inside the window", () => {
+    // A different question from "what will this cost me" — somebody already in
+    // support-only wants to know when they can leave, which wants a date.
+    expect(toggle).toMatch(/supportOnlyLockedUntil\(datingAgainOn\)/);
+  });
+
+  it("disables the button while the cooldown runs", () => {
+    // Otherwise the screen offers a door that opens onto a wall: switch_mode
+    // raises, and the member meets the refusal only after pressing.
+    expect(toggle).toMatch(/disabled=\{pending \|\| locked\}/);
+    expect(toggle).toMatch(/mode === "support_only" && datingAgainOn !== null/);
+  });
+
+  it("computes the date on the server, beside the cooldown it mirrors", () => {
+    // Date.now() is impure and a client component re-renders against it. The
+    // intention cooldown two fields up is computed the same way for the same
+    // reason.
+    const server = strip(page);
+    expect(server).toMatch(/mode_dating_reentry_at/);
+    expect(server).toMatch(/datingAgainOn=\{datingAgainOn\}/);
+    expect(toggle).not.toMatch(/Date\.now\(\)/);
+  });
+
+  it("reads the column it needs, or the page renders nothing at all", () => {
+    // PostgREST fails the WHOLE request on an unknown column, so a select that
+    // names one the schema does not have blanks the entire profile — which has
+    // happened here before. The column is live; this pins the select naming it.
+    expect(strip(page)).toMatch(/"display_name,[^"]*mode_dating_reentry_at/);
+  });
+
+  it("keeps the number the same in all three places it is written", () => {
+    // THE SCREEN NOW QUOTES THIS NUMBER TO A MEMBER, which is what makes the
+    // three copies a correctness problem rather than tidiness. They are:
+    //
+    //   COOLDOWNS.datingReentryDays   what the warning renders
+    //   switch_mode's config_int fallback   what the RPC enforces with no override
+    //   the app_config seed row       the override that is actually in the database
+    //
+    // A warning saying thirty over a wall of sixty is a promise the product
+    // does not keep, and nothing else would notice.
+    const days = COOLDOWNS.datingReentryDays;
+    expect(days).toBe(30);
+
+    const sql = MIGRATIONS.filter((f) => f.includes("cooldowns.dating_reentry_days"));
+    // The floor: a filter that matches nothing makes the loop below vacuous.
+    expect(sql.length).toBeGreaterThanOrEqual(2);
+    for (const file of sql) {
+      const fallback = /config_int\('cooldowns\.dating_reentry_days',\s*(\d+)\)/.exec(file);
+      const seed = /'cooldowns\.dating_reentry_days',\s*to_jsonb\((\d+)\)/.exec(file);
+      if (fallback) expect(Number(fallback[1])).toBe(days);
+      if (seed) expect(Number(seed[1])).toBe(days);
+    }
   });
 });

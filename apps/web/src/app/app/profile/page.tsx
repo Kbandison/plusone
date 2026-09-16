@@ -81,7 +81,7 @@ export default async function ProfilePage() {
     // this string, and a `+` between two halves makes it a plain string and
     // every field on the result an error type.
     .select(
-      "display_name, intention, intention_changed_at, mode, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
+      "display_name, intention, intention_changed_at, mode, mode_dating_reentry_at, search_radius_mi, photo_privacy, bio, prompts, gender, seeking, age_min, age_max, smokes, drinks, kids, kids_plan",
     )
     .eq("id", auth.user.id)
     .maybeSingle();
@@ -143,6 +143,28 @@ export default async function ProfilePage() {
     // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
     unlocksAt && unlocksAt.getTime() > Date.now()
       ? unlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : null;
+
+  /**
+   * When dating becomes available again, or null.
+   *
+   * The same shape as the intention cooldown above, and for the same reason:
+   * `switch_mode` stamps `mode_dating_reentry_at` on the way into support-only
+   * and refuses the way out until it passes, so the screen needs the date to
+   * agree with the RPC rather than offering a button that raises.
+   *
+   * Null once it has passed, so ModeToggle never has to know whether a
+   * non-null column is still in the future.
+   */
+  const reentryAt = profile?.mode_dating_reentry_at as string | null | undefined;
+  const datingAgainOn =
+    // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
+    reentryAt && new Date(reentryAt).getTime() > Date.now()
+      ? new Date(reentryAt).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
       : null;
 
   /**
@@ -314,7 +336,7 @@ export default async function ProfilePage() {
 
       <section className={SECTION}>
         <h2 className="text-[0.972rem]">{C.profileModeHeading}</h2>
-        <ModeToggle mode={mode} />
+        <ModeToggle mode={mode} datingAgainOn={datingAgainOn} />
       </section>
     </main>
   );

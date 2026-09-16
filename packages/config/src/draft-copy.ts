@@ -1903,6 +1903,36 @@ export const DRAFT_COPY = {
       failed: "We could not save that just now. Try again in a moment.",
     },
     navSettings: "Settings",
+
+    /**
+     * What the support-only switch costs, said BEFORE it is pressed.
+     *
+     * `COPY.supportOnly.toggle` is §3.4 verbatim and describes what the mode
+     * does. It says nothing about the thirty days, because the cooldown is a
+     * mechanic rather than spec copy — so this is a separate sentence rather
+     * than an edit to a quoted one.
+     *
+     * ── found by Kevin testing the toggle, 2026-09-16 ─────────────────────────
+     *
+     * He switched to support-only to see what it did and could not switch back;
+     * `switch_mode` stamps `mode_dating_reentry_at = now() + 30 days` and
+     * refuses until then. The mechanic is right — the shield is never gated and
+     * the cooldown stops toggle-flicker gaming — but the only place it was ever
+     * mentioned was an error message a month later, on the way out.
+     *
+     * An action that cannot be undone for a month has to say so before it is
+     * taken, and it matters more than usual right now: 45 testers are about to
+     * be handed this app and told to poke at everything. Kevin found it on his
+     * first try, and unlike him they cannot ask for it to be undone.
+     *
+     * The number comes from COOLDOWNS.datingReentryDays rather than being
+     * typed, and a test pins the sentence to it — a warning that says thirty
+     * while the database says sixty is worse than no warning.
+     */
+    supportOnlyCooldown: (days: number) =>
+      `Switching back to dating is not available for ${days} days. The shield is instant; coming out of it is not.`,
+    /** Shown to somebody already in support-only and still inside the window. */
+    supportOnlyLockedUntil: (date: string) => `You can switch back to dating on ${date}.`,
     /**
      * The header icon's accessible name, and the only door to reporting.
      *
