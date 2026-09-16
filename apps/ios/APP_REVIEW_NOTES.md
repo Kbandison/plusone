@@ -1,9 +1,150 @@
-# App Review Information — the reply to Guideline 2.1
+# App Review Information, and the reply to Guideline 4.3(b)
+
+Two rounds live in this file. The 4.3(b) reply is first because it is the open
+one; the 2.1 material below it is still what goes in the Notes field, and
+section 3 has been rewritten because it is part of why 4.3(b) happened.
+
+---
+
+# Guideline 4.3(b) — Design — Spam · rejected 2026-09-16
+
+Submission `58f0ff8f-340d-42c0-a795-6501f85b91b1`, 1.0 (106), reviewed on an
+iPad Air (5th generation).
+
+> The app primarily includes dating features that duplicate the content and
+> functionality of similar apps that are already widely available… there are
+> already enough of these apps on the App Store.
+
+**This is a judgement about the concept, not a defect.** Nothing in the build is
+wrong and there is nothing to fix and re-upload. 4.3(b) is the saturated-category
+rule, and the two tells are in the letter: "reconsider the app concept", and the
+suggestion to ship a web app instead.
+
+**DO NOT RESUBMIT THE SAME BUILD.** The Extended Review paragraph is not
+boilerplate decoration on a 4.3 — repeated submissions of the same thing buy
+slower reviews and, at the far end, removal from the Developer Program. The next
+move is a reply in Resolution Center, and then the App Review Board if that
+fails. Not an upload.
+
+## What we did to invite it
+
+Section 3 of this file opened with **"Plus One is a dating app for people living
+with HSV or HIV."** First five words. The rejection says "primarily includes
+dating features."
+
+In a saturated-category triage that sentence is the whole decision, and
+everything that distinguishes the app came after it. It is also not the most
+accurate description of what was built: `support_only` is an enforced mode, not
+a preference — `browse/page.tsx` redirects and the dating surfaces leave the nav
+— so a member can use this app with no dating in it at all.
+
+Section 3 is rewritten below. That is the durable fix; the reply is the
+immediate one.
+
+## Do NOT argue traction, and this is measured rather than assumed
+
+The tempting line is "look how much is happening in the rooms". Measured
+2026-09-16, it does not survive being checked:
+
+| room               | posts | ingested articles | authors |
+| ------------------ | ----- | ----------------- | ------- |
+| Latest news        | 124   | **123**           | 1       |
+| Disclosure stories | 26    | 0                 | 6       |
+| Newly diagnosed    | 6     | 1                 | 5       |
+| General lounge     | 5     | 1                 | 4       |
+| HSV general        | 5     | 1                 | 4       |
+| U=U                | 5     | 0                 | 5       |
+
+So "171 posts" is about forty-seven human ones, from a handful of authors, most
+of them seeded or Kevin's own test accounts. Citing the number invites a
+reviewer to go and look, and what they find is thin rooms and fabricated people.
+
+**The case is STRUCTURAL.** What the app is built to do, and what it refuses to
+do, are true today and checkable in two minutes. Traction is neither.
+
+## The seeded accounts are a liability in this posture
+
+There are 26 of them and all 26 are in Atlanta. Their profiles say "A seeded
+account for testing. Not a real person.", so a reviewer who opens one sees that
+— but a reviewer who merely browses meets a city full of fabricated members
+while holding a spam rejection and an extended-review warning.
+
+Kevin's call, and it was made before this rejection existed. Worth re-taking:
+`pnpm seed:remove` is one command and `check:seed` goes green with it.
+
+## The reply — paste into Resolution Center
+
+> Thank you for the review. We would like to give context that was not in our
+> submission notes, and which we believe was our error rather than the
+> reviewer's.
+>
+> **Plus One is not primarily a dating app.** It is a peer-support and
+> connection app for adults who have been diagnosed with HSV or HIV, and it has
+> two halves. A member can use it with the connection half switched off
+> entirely.
+>
+> Our own notes opened by describing the app as "a dating app". That
+> misdescribes it, and we think it framed the review. We are sorry for the
+> confusion.
+>
+> **The non-dating half is a supported mode, not a setting that hides things.**
+> In Profile, a member can switch to "support-only". This removes them from
+> every dating surface: Browse leaves the navigation bar, the route itself
+> redirects, and they no longer appear in anyone else's results. What remains is
+> the community rooms — Newly diagnosed, Disclosure stories, U=U, HSV general, a
+> general lounge, and a curated news feed scoped to the member's condition.
+>
+> The problem this app exists to solve is disclosure, which is a health problem
+> rather than a matching problem. Every member has stated their status to join,
+> so nobody has to raise it with a stranger and nobody is rejected for it
+> afterwards.
+>
+> **Where the connection half differs structurally from the apps in this
+> category:**
+>
+> - There is no swipe and no like button. To reach someone, you write an answer
+>   to one of the prompts on their profile.
+> - Members are shown three profiles a day. It is the same three for everyone,
+>   it does not grow, and the number cannot be increased by payment.
+> - A conversation lasts seven days unless both people agree a plan. When it
+>   ends it closes with a note that both people see. Extending or pausing that
+>   timer is not purchasable by anyone.
+> - Our paid tier explicitly cannot buy ranking, visibility, extra profiles,
+>   undo, or an exemption from the closing note.
+> - Every member passes an automated liveness check, because impersonation and
+>   screenshot harassment are the specific harms this population faces.
+>
+> **To see the non-dating half in about two minutes**, signed in with the demo
+> account in our notes:
+>
+> 1. Tap **Rooms** in the bottom bar. Open **Newly diagnosed**, **Disclosure
+>    stories** and **U=U**.
+> 2. Go to **Profile** and switch to **Support-only**. Confirm.
+> 3. The **Browse** tab disappears from the bottom bar. Navigating to it
+>    directly redirects away.
+> 4. Switch back if you would like to see the connection half.
+>
+> We would be glad to answer anything further, and we would welcome a
+> re-review.
+
+**Kevin, before sending:** check what the app's App Store category is set to. If
+it sits in a dating category, that is the frame a reviewer reads before any of
+the above. Given the population, Health & Fitness is arguably more accurate;
+Medical brings its own scrutiny and is a real decision rather than an obvious
+one.
+
+And check what is actually listed in this space on the App Store today. The
+reply above does not claim the category is empty — deliberately, because it is
+not — but you should know what a reviewer will compare it against.
+
+---
+
+# The earlier round — Guideline 2.1, answered 2026-09-13
 
 Apple asked for seven things on 2026-08-29 (Guideline 2.1 — Information Needed,
-new app submission). **This is not a rejection of the app.** The binary was
-accepted and entered review; a reviewer is asking for the App Review Information
-that should have been in the Notes field.
+new app submission). **That was not a rejection of the app.** The binary was
+accepted and entered review; a reviewer was asking for the App Review
+Information that should have been in the Notes field.
 
 Sections 3, 5, 6 and 7 below are ready to paste. Sections 1, 2 and 4 need Kevin,
 and 4 is the one with a real blocker in it — read it before recording anything.
@@ -40,26 +181,48 @@ Apple wants the list. What is known from the record:
 **Say the truth, including that it is one device.** A short honest list is not a
 rejection reason; a list that implies coverage nobody has is.
 
-## 3. What the app does, and for whom — READY
+## 3. What the app does, and for whom — REWRITTEN AFTER 4.3(b)
 
-> Plus One is a dating app for people living with HSV or HIV. Its purpose is to
-> remove the disclosure conversation from dating: every member has already
+**This section used to open "Plus One is a dating app for people living with HSV
+or HIV."** That sentence is why it is being rewritten: a reviewer triaging a
+saturated category got "dating app" in the first five words and rejected it
+under 4.3(b) as one. The rest of the description never had a chance to land, and
+the sentence was not even accurate — support-only mode means a member can use
+this app with no dating surfaces at all.
+
+Order matters more than wording here. Lead with the population and the problem;
+name the two halves; leave the dating half as one of them rather than the
+headline.
+
+> Plus One is a peer-support and connection app for adults living with HSV or
+> HIV. It has two halves — community rooms, and one-to-one connection — and a
+> member may use it with the connection half switched off entirely.
+>
+> Its purpose is to remove the disclosure conversation. Every member has already
 > stated their status to join, so nobody has to raise it with a stranger and
-> nobody is rejected for it after the fact.
+> nobody is rejected for it after the fact. Disclosure, not matching, is the
+> problem this app exists to solve.
 >
-> Every member is verified as a real person — a phone number and a liveness
-> selfie check — because the failure this community is most exposed to is
-> catfishing and screenshot harassment.
+> **The community half** is a set of moderated rooms — Newly diagnosed,
+> Disclosure stories, U=U, HSV general, a general lounge — and a curated news
+> feed scoped to the member's condition. A member in **support-only** mode is
+> removed from every dating surface: the Browse tab leaves the navigation, the
+> route redirects, and they do not appear in anyone else's results. It is an
+> enforced mode, not a preference.
 >
-> The core features are a nightly curated set of profiles ("the Drop"), a
-> browsable directory with filters, one-to-one chats that open only on mutual
-> consent, and moderated community rooms. Members may also choose a
-> "support-only" mode, which removes them from all dating surfaces and leaves
-> only the community rooms.
+> **The connection half** is deliberately unlike the category. There is no swipe
+> and no like button: reaching someone means writing an answer to one of the
+> prompts on their profile. Members see three profiles a day — the same number
+> for everyone, not purchasable. A chat lasts seven days unless both people
+> agree a plan, and closes with a note both of them see; that timer cannot be
+> extended or paused by anyone, at any price. The paid tier explicitly cannot
+> buy ranking, visibility, extra profiles, undo, or an exemption from the note.
 >
-> The audience is adults (18+) who have received an HSV or HIV diagnosis. The
-> problem it solves is that disclosure is the hardest part of dating with a
-> stigmatised condition; the value is that it is already handled.
+> Every member is verified as a real person — a phone number and an automated
+> liveness selfie check — because impersonation and screenshot harassment are
+> the specific harms this population faces.
+>
+> The audience is adults (18+) who have received an HSV or HIV diagnosis.
 
 ## 4. Setting up and accessing the app — KEVIN, AND READ THIS FIRST
 

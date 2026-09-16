@@ -2392,10 +2392,48 @@ unblock other work.
     you can paste the expanded post-clone log into a session, that unblocks the
     whole thing.
 
-19. **Apple's Guideline 2.1 — ANSWERED AND RESUBMITTED 2026-09-13.** Kevin sent
-    the reply and put the app back in for review. Not closed: resubmitted is not
-    approved, and the demo recording macOS is producing is the part a reviewer
-    actually watches.
+19a. **Apple rejected the app under Guideline 4.3(b) on 2026-09-16, and that
+is a different problem from everything above it.** Submission
+`58f0ff8f-340d-42c0-a795-6501f85b91b1`, 1.0 (106), iPad Air (5th gen).
+
+    4.3(b) is the saturated-category rule: "there are already enough of these
+    apps", "reconsider the app concept", and a nudge to ship a web app instead.
+    It is a judgement about the concept, not a defect — there is nothing in the
+    build to fix.
+
+    **DO NOT RESUBMIT THE SAME BUILD.** The Extended Review paragraph attached
+    to it is not decoration: repeated submissions buy slower reviews and, at the
+    far end, removal from the Developer Program. Reply in Resolution Center
+    first; App Review Board after that if it fails.
+
+    **Our own notes invited it.** Section 3 of `APP_REVIEW_NOTES.md` opened
+    "Plus One is a dating app for people living with HSV or HIV", and the
+    rejection says "primarily includes dating features". In a saturated-category
+    triage those five words are the whole decision. That section is rewritten,
+    and a ready-to-paste reply is at the top of the same file.
+
+    **The case is structural, and must not be about traction.** Measured
+    2026-09-16 rather than assumed: 171 room posts is 123 ingested news articles
+    plus about forty-seven human ones, from a handful of authors, most of them
+    seeded or Kevin's test accounts. Citing volume invites a reviewer to look at
+    thin rooms full of fabricated people while holding a spam rejection. What IS
+    true today and checkable in two minutes: support-only is an enforced mode
+    that removes every dating surface, there is no swipe or like, three profiles
+    a day that cannot be bought past, a seven-day fuse nobody can extend, and a
+    liveness check on every member.
+
+    **Two things are Kevin's and neither is code.** What App Store category the
+    app is in — a dating category is the frame a reviewer reads before any of
+    the above — and whether the 26 seeded accounts, all in Atlanta, should still
+    be in the database while Apple is looking. `pnpm seed:remove` is one command.
+
+    Android and the web are unaffected. The iOS shell loads a remote URL, so the
+    beta is not blocked on this.
+
+20. **Apple's Guideline 2.1 — ANSWERED AND RESUBMITTED 2026-09-13.** Kevin sent
+the reply and put the app back in for review. Not closed: resubmitted is not
+approved, and the demo recording macOS is producing is the part a reviewer
+actually watches.
 
     What made it answerable was the reviewer account, which is Kevin 22 — an
     empty one made the guideline 1.2 claim unverifiable, which would have been
@@ -2432,10 +2470,10 @@ unblock other work.
     submission asking the same seven questions.
 
 20. ~~**Can this Mac produce a submittable binary?**~~ — **YES, settled
-    2026-09-01.** 1.0 (202609020240) was archived here with
-    `/Applications/Xcode-beta.app` on macOS 27 beta, and App Store Connect
-    accepted the upload: "Analyzing package" passed and it went to processing.
-    ITMS-90111 is an upload-time refusal, so clearing that step IS the answer.
+2026-09-01.** 1.0 (202609020240) was archived here with
+`/Applications/Xcode-beta.app` on macOS 27 beta, and App Store Connect
+accepted the upload: "Analyzing package" passed and it went to processing.
+ITMS-90111 is an upload-time refusal, so clearing that step IS the answer.
 
     So the beta-SDK note in `HANDOFF.md` is confirmed — the beta is the
     submission toolchain — and **Xcode Cloud is a convenience rather than the
@@ -2447,10 +2485,10 @@ unblock other work.
     note stands.
 
 21. **ITMS-90111 did not recur, and that is most of Kevin 18's experiment.**
-    Inferred 2026-08-29 from the rejection itself rather than from a build log:
-    a submission that reaches human review has already passed Apple's upload
-    validation, and ITMS-90111 is an upload-time refusal. So whatever toolchain
-    produced this build is one Apple accepts.
+Inferred 2026-08-29 from the rejection itself rather than from a build log:
+a submission that reaches human review has already passed Apple's upload
+validation, and ITMS-90111 is an upload-time refusal. So whatever toolchain
+produced this build is one Apple accepts.
 
     **Confirm which build it was before believing the strong version.** If it
     was archived here with `/Applications/Xcode-beta.app`, then this Mac CAN
@@ -2464,8 +2502,8 @@ unblock other work.
     matters if Xcode Cloud is the route.
 
 22. **The reviewer account has to have something in it.** Found 2026-09-13 while
-    recording the app for App Review, and it is a submission blocker rather than
-    a polish item.
+recording the app for App Review, and it is a submission blocker rather than
+a polish item.
 
     The only onboarded test member — `+15555550102`, the one a reviewer would be
     pointed at — measured:
