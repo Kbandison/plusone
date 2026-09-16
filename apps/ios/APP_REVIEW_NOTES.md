@@ -138,16 +138,16 @@ contractions, no bold, and an admission first.
 >
 > Happy to answer anything else.
 
-## Section 3 is NOT rewritten the same way — Kevin's read, 2026-09-16
+## Section 3, and what Kevin's objection changed
 
-The rewrite below opens "a peer-support and connection app", and Kevin's
-objection stands: that misrepresents the app as primarily support-only. It is a
-dating app with a serious support half, and a description that ranks them the
-other way is the same mistake as the original in the opposite direction.
+v2 of section 3 opened "a peer-support and connection app". His read was that
+this misrepresents the app as primarily support-only — the same mistake as the
+original in the opposite direction, and a worse one to be caught at, because the
+Notes field is permanent and a reviewer opening the app meets the Drop first.
 
-Held rather than changed, at his call. What it should probably say is that the
-app is both, without ranking them — and let the functionality argument above do
-the work, since that is the clause the guideline is actually about.
+Rewritten a third time rather than applied. The fix turned out to be the
+sentence shape rather than the vocabulary, and the argument moved with it: see
+section 3 below, and "Argue the right clause" above.
 
 ---
 
@@ -193,46 +193,63 @@ Apple wants the list. What is known from the record:
 **Say the truth, including that it is one device.** A short honest list is not a
 rejection reason; a list that implies coverage nobody has is.
 
-## 3. What the app does, and for whom — REWRITTEN AFTER 4.3(b)
+## 3. What the app does, and for whom — REWRITTEN TWICE
 
-**This section used to open "Plus One is a dating app for people living with HSV
-or HIV."** That sentence is why it is being rewritten: a reviewer triaging a
-saturated category got "dating app" in the first five words and rejected it
-under 4.3(b) as one. The rest of the description never had a chance to land, and
-the sentence was not even accurate — support-only mode means a member can use
-this app with no dating surfaces at all.
+**This goes in the permanent Notes field**, not in a reply. Every reviewer on
+every future submission reads it, which is why the second draft was thrown away
+rather than shipped: a description that oversells the support half is a standing
+claim, checked repeatedly by people who open the app and meet the Drop first.
 
-Order matters more than wording here. Lead with the population and the problem;
-name the two halves; leave the dating half as one of them rather than the
-headline.
+Three versions and both of the discarded ones are instructive.
 
-> Plus One is a peer-support and connection app for adults living with HSV or
-> HIV. It has two halves — community rooms, and one-to-one connection — and a
-> member may use it with the connection half switched off entirely.
+- **v1** opened "Plus One is a dating app for people living with HSV or HIV",
+  and 4.3(b) came back saying "primarily includes dating features".
+- **v2** opened "a peer-support and connection app". Kevin's read: that
+  misrepresents the app as primarily support-only, which is the same error in
+  the opposite direction and a worse one to be caught at.
+
+**The real fault in v1 was the sentence SHAPE, not the word "dating".** It made
+"dating app" the subject and "for people living with HSV or HIV" a trailing
+prepositional phrase — skimmable, and skimmed. Put the population inside the
+subject and it cannot be lifted out. That is a fix rather than spin: nothing
+below is softer than v1, it is just ordered so the qualifier is load-bearing.
+
+The second paragraph does the 4.3(b) work, because that is the question this app
+keeps triggering and the Notes field is where a reviewer meets it first.
+
+> Plus One is a dating and peer-support app for adults living with HSV or HIV.
 >
-> Its purpose is to remove the disclosure conversation. Every member has already
-> stated their status to join, so nobody has to raise it with a stranger and
-> nobody is rejected for it after the fact. Disclosure, not matching, is the
-> problem this app exists to solve.
+> The problem it solves is disclosure. Every member has stated their status
+> before joining, so nobody has to raise it with a stranger and nobody is
+> rejected for it after the fact. That is not a problem the general dating
+> category solves, and it is the reason the app exists.
 >
-> **The community half** is a set of moderated rooms — Newly diagnosed,
-> Disclosure stories, U=U, HSV general, a general lounge — and a curated news
-> feed scoped to the member's condition. A member in **support-only** mode is
-> removed from every dating surface: the Browse tab leaves the navigation, the
-> route redirects, and they do not appear in anyone else's results. It is an
-> enforced mode, not a preference.
+> It has two halves. Most members use both; a member in **support-only** mode
+> uses only the second. Support-only removes them from every dating surface —
+> the Browse tab leaves the navigation, the route redirects, and they do not
+> appear in anyone else's results.
 >
-> **The connection half** is deliberately unlike the category. There is no swipe
-> and no like button: reaching someone means writing an answer to one of the
-> prompts on their profile. Members see three profiles a day — the same number
-> for everyone, not purchasable. A chat lasts seven days unless both people
-> agree a plan, and closes with a note both of them see; that timer cannot be
-> extended or paused by anyone, at any price. The paid tier explicitly cannot
-> buy ranking, visibility, extra profiles, undo, or an exemption from the note.
+> **Connection**: a nightly curated set of three profiles ("the Drop"), a
+> browsable directory with filters, and one-to-one chats that open only on
+> mutual consent.
+>
+> **Community**: moderated rooms — Newly diagnosed, Disclosure stories, U=U,
+> HSV general, a general lounge — and a news feed scoped to the member's
+> condition.
+>
+> The connection half is deliberately unlike the category:
+>
+> - No swipe and no like button. Reaching someone means writing an answer to one
+>   of the prompts on their profile.
+> - Three profiles a day, the same number for everyone, and not purchasable.
+> - A chat lasts seven days unless both people agree a plan, then closes with a
+>   note both people see. That timer cannot be extended or paused at any price.
+> - The paid tier cannot buy ranking, visibility, extra profiles, undo, or an
+>   exemption from the closing note.
 >
 > Every member is verified as a real person — a phone number and an automated
-> liveness selfie check — because impersonation and screenshot harassment are
-> the specific harms this population faces.
+> liveness check — because impersonation and screenshot harassment are the
+> specific harms this population faces.
 >
 > The audience is adults (18+) who have received an HSV or HIV diagnosis.
 
