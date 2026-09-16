@@ -36,14 +36,34 @@ export function Modal({
    */
   triggerDescribedBy,
   panelClassName = "",
+  /**
+   * Opens itself, with no trigger.
+   *
+   * For the one dialog nobody asks for: the beta welcome, which appears because
+   * a tester arrived rather than because they pressed anything. Added here
+   * rather than hand-rolling a second dialog, on this file's own argument —
+   * focus trapping, Escape, inertness and the backdrop-click rule are all
+   * already right in one place, and the second copy is where they get fixed in
+   * one and not the other.
+   *
+   * The CALLER decides whether to render at all. This does not know what has
+   * been dismissed, and a component that opened itself and then read storage
+   * would flash at somebody who closed it last week.
+   */
+  openOnMount = false,
+  /** Called for every way out, so a caller can remember it was shut. */
+  onDismiss,
   children,
 }: {
   /** The accessible name, where no visible heading carries it. */
   label?: string;
   /** Shown as the panel's h2, and used as its accessible name. */
   heading?: string;
-  trigger: React.ReactNode;
+  /** Omitted only with openOnMount — otherwise there is no way in. */
+  trigger?: React.ReactNode;
   triggerClassName?: string;
+  openOnMount?: boolean;
+  onDismiss?: () => void;
   triggerDescribedBy?: string | undefined;
   panelClassName?: string;
   /** Given a way to dismiss itself, for the form that has just succeeded. */
@@ -60,7 +80,7 @@ export function Modal({
    * driving the DOM from state cannot drift — whatever React last decided is
    * what the dialog does.
    */
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(openOnMount);
 
   /**
    * Bumped on every opening, and used as a key on the contents.
@@ -73,6 +93,10 @@ export function Modal({
    */
   const [opening, setOpening] = useState(0);
   const close = () => setOpen(false);
+  const closed = () => {
+    setOpen(false);
+    onDismiss?.();
+  };
 
   useEffect(() => {
     const el = dialog.current;
@@ -85,18 +109,20 @@ export function Modal({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setOpening((n) => n + 1);
-          setOpen(true);
-        }}
-        aria-describedby={triggerDescribedBy}
-        aria-haspopup="dialog"
-        className={triggerClassName}
-      >
-        {trigger}
-      </button>
+      {trigger === undefined ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            setOpening((n) => n + 1);
+            setOpen(true);
+          }}
+          aria-describedby={triggerDescribedBy}
+          aria-haspopup="dialog"
+          className={triggerClassName}
+        >
+          {trigger}
+        </button>
+      )}
 
       <dialog
         ref={dialog}
@@ -119,7 +145,10 @@ export function Modal({
          */
         // The browser closing it — Escape, or the X's method="dialog" — told
         // back to the state that drives it.
-        onClose={() => setOpen(false)}
+        // Every way out lands here — Escape, the backdrop, the X's
+        // method="dialog" — so state is put back and the caller told from one
+        // place rather than from three handlers.
+        onClose={closed}
         // Positioned by us rather than by the default centring, so it sits as a
         // sheet on a phone and a panel on anything wider. backdrop:bg is the
         // ::backdrop pseudo-element, which only exists for a modal dialog.

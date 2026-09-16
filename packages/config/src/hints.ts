@@ -42,6 +42,23 @@ export interface Hint {
   readonly id: string;
   readonly heading: string;
   readonly body: string;
+  /**
+   * The same mechanic in one sentence, for the beta welcome.
+   *
+   * ── one record, two lengths, rather than two records ───────────────────────
+   *
+   * Kevin asked for the four mechanics named in the welcome AND kept as hints
+   * in context. That is two copies of the same sentence, and this file's own
+   * rule says a second copy "will drift from the first" — so the welcome reads
+   * from HINTS rather than carrying a list of its own. Add a hint and the
+   * welcome grows a line; reword one and both surfaces move together.
+   *
+   * It is not the heading. "There is no like button" says what is missing and
+   * not what to do instead, which is fine above a paragraph explaining it and
+   * useless as the whole line. It is not the body either: four paragraphs is
+   * the tour this file exists to refuse.
+   */
+  readonly oneLine: string;
   /** What somebody gets wrong without it. Not shown; it is the entry's reason to exist. */
   readonly prevents: string;
 }
@@ -50,6 +67,7 @@ export const HINTS: readonly Hint[] = [
   {
     id: "tonight-is-three",
     heading: "Three people, once a day",
+    oneLine: "Three people a night, and the Drop does not grow if you wait.",
     body: "That is the whole Drop. It does not grow if you wait, and there is no way to buy a fourth — so there is nothing to be missed by closing the app.",
     prevents:
       "Treating an empty Drop as a bug or a punishment, and refreshing for more. Every other app in this category rewards pulling to refresh; this one has nothing behind it.",
@@ -57,6 +75,7 @@ export const HINTS: readonly Hint[] = [
   {
     id: "connect-is-a-reply",
     heading: "There is no like button",
+    oneLine: "No like button — you reach someone by answering a prompt on their profile.",
     body: "To reach someone you answer one of the prompts on their profile. It takes a minute, which is the point — the first thing they read from you is about them.",
     prevents:
       "Looking for a swipe or a heart, finding neither, and concluding the app is broken or that these people cannot be contacted. The single most non-obvious mechanic here.",
@@ -64,6 +83,7 @@ export const HINTS: readonly Hint[] = [
   {
     id: "the-fuse",
     heading: "This chat has seven days",
+    oneLine: "A chat runs seven days, unless the two of you agree a plan.",
     body: "Agree a plan together and the timer disappears for good. Let it run out and the chat closes on its own, for both of you, with a note. Nobody can buy more time.",
     prevents:
       "Reading the countdown as pressure from us, or as something that can be topped up. Also the worse one: a chat closing with no warning and reading as being blocked.",
@@ -71,6 +91,7 @@ export const HINTS: readonly Hint[] = [
   {
     id: "rooms-are-not-dating",
     heading: "Rooms are not for dating",
+    oneLine: "Rooms are for company rather than dates, and are separate from your profile.",
     body: "They are for people who want company rather than a date, and nobody has to be looking for anything to belong in one. What you post here is not part of your profile.",
     prevents:
       "Two opposite mistakes: treating a support room as a place to flirt, and avoiding rooms entirely because everything else in the app is about matching.",

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { BETA_THANKS_MONTHS } from "@plusone/config";
 
+import { notify } from "@/lib/notify";
 import { getServerSupabase } from "@/lib/supabase";
 import type { ContactState, Hit, LookupState } from "./state";
 
@@ -78,10 +79,25 @@ export async function grantBetaThanks(formData: FormData): Promise<void> {
   const metro = String(formData.get("metro") ?? "");
   const supabase = await getServerSupabase();
 
-  await supabase.rpc("admin_grant_beta_thanks", {
+  const { data } = await supabase.rpc("admin_grant_beta_thanks", {
     p_metro: metro === "" ? null : metro,
     p_months: BETA_THANKS_MONTHS,
   });
+
+  // Tell them, because the welcome promised somebody would.
+  //
+  // BETA_WELCOME says the three months start "when Plus One opens in your
+  // area", and this press IS that opening — an event with no screen, on a day
+  // the member has no reason to be looking. Without this the promise is only
+  // kept for whoever happens to open Settings afterwards.
+  //
+  // The rows are the members the grant actually reached, which is not the same
+  // as the members it was asked about: the function skips anybody who has ever
+  // held one. So a second press returns nobody and notifies nobody, and the
+  // double-notify is prevented by the same `not exists` that prevents the
+  // double grant rather than by a second check here.
+  const granted = ((data ?? []) as { user_id: string }[]).map((row) => row.user_id);
+  if (granted.length > 0) await notify("beta_thanks_started", granted);
 
   revalidatePath("/admin/members");
 }

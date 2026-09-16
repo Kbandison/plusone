@@ -10,6 +10,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
 import { AppBadge } from "./app-badge";
 import { AppHeader } from "./app-header";
+import { BetaWelcome } from "./beta-welcome";
 import { LiveRefresh } from "./live-refresh";
 import { FeedbackLink } from "./feedback-link";
 import { NavLinks } from "./nav-links";
@@ -123,7 +124,17 @@ export default async function AppLayout({
   if (step !== "done") redirect(STEP_ROUTES[step]);
 
   const [{ data: me }, { data: unreadData }, { data: navCounts }] = await Promise.all([
-    supabase.rpc("my_profile").maybeSingle<{ mode: string | null; timezone: string | null }>(),
+    supabase
+      .rpc("my_profile")
+      // joined_in_beta comes back already: my_profile returns SETOF profiles,
+      // which is the table's rowtype and tracks columns added to it — read off
+      // the live function rather than assumed, so the beta welcome needs no
+      // second round trip and no migration.
+      .maybeSingle<{
+        mode: string | null;
+        timezone: string | null;
+        joined_in_beta: boolean | null;
+      }>(),
     // A count rather than the list. The bell is on every screen, and rendering
     // it through my_notifications would fetch fifty rows and their joins on
     // every page load to produce one integer.
@@ -319,6 +330,11 @@ export default async function AppLayout({
           <NavLinks items={nav} counts={navUnread} />
         </ul>
       </nav>
+
+      {/* Shown once, to a beta tester, and to nobody else. Renders nothing at
+          all for a member who did not arrive during the beta, and nothing until
+          it has read the device — see the component. */}
+      {me?.joined_in_beta ? <BetaWelcome /> : null}
 
       {modal}
 

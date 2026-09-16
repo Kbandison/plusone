@@ -152,6 +152,14 @@ export {
   PLAY_TRACK,
 } from "./waitlist";
 export type { Metro, WaitlistEmail, BetaInstall, BetaPlatform } from "./waitlist";
+export {
+  BETA_WELCOME,
+  BETA_CHECKLIST,
+  BETA_CHECK_IDS,
+  BETA_WELCOME_STORAGE_KEY,
+  BETA_CHECKLIST_STORAGE_KEY,
+} from "./beta";
+export type { BetaCheck } from "./beta";
 
 export {
   FEEDBACK_KINDS,

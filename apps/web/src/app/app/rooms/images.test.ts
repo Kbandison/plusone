@@ -262,10 +262,36 @@ describe("less repainting behind an open dialog", () => {
    * them.
    */
   it("drives the dialog from state, not from the handler", () => {
-    expect(modal).toMatch(/if \(open && !el\.open\) el\.showModal\(\)/);
-    expect(modal).toMatch(/if \(!open && el\.open\) el\.close\(\)/);
-    expect(modal).toMatch(/onClose=\{\(\) => setOpen\(false\)\}/);
-    const handler = modal.slice(modal.indexOf("<button"), modal.indexOf("<dialog"));
+    /**
+     * Comments stripped, and the onClose assertion widened to its claim.
+     *
+     * It pinned the literal `onClose={() => setOpen(false)}`. On 2026-09-16 the
+     * handler grew a second line — telling the caller it was dismissed — and
+     * became `onClose={closed}`, which satisfies this rule completely. The test
+     * failed, and then PASSED again as soon as the commit message for the
+     * change quoted the old string in a comment two lines above.
+     *
+     * So it was broken in both directions at once: too narrow to accept a
+     * correct refactor, and loose enough to be satisfied by prose describing
+     * one. The claim is that whatever handles onClose puts the state back —
+     * assert that, against code only.
+     */
+    const code = modal.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    // The floor, since every assertion below is vacuous against an empty string.
+    expect(code).toMatch(/<dialog/);
+
+    expect(code).toMatch(/if \(open && !el\.open\) el\.showModal\(\)/);
+    expect(code).toMatch(/if \(!open && el\.open\) el\.close\(\)/);
+
+    // onClose routes to setOpen(false) — inline, or through a named function
+    // defined in this file that does it.
+    const onClose = /onClose=\{(?:\(\) => )?(\w+|\(\) => setOpen\(false\))/.exec(code)?.[1];
+    expect(onClose).toBeTruthy();
+    if (onClose !== "() => setOpen(false)") {
+      expect(code).toMatch(new RegExp(`const ${onClose} = \\(\\) => \\{[^}]*setOpen\\(false\\)`));
+    }
+
+    const handler = code.slice(code.indexOf("<button"), code.indexOf("<dialog"));
     expect(handler).not.toMatch(/showModal/);
   });
 

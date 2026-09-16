@@ -32,7 +32,8 @@ export type NotificationEvent =
    * kind of thing — so it is deliberately kept out of MUTABLE_EVENTS, the way
    * `verification_decided` is, and never appears among a member's switches.
    */
-  | "beta_signup";
+  | "beta_signup"
+  | "beta_thanks_started";
 
 export interface NotificationTemplate {
   readonly event: NotificationEvent;
@@ -232,6 +233,26 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
     body: "Someone joined the beta",
     path: "/admin/waitlist",
   },
+  /**
+   * The thank-you landing, to the tester it landed for.
+   *
+   * ── it exists because the welcome makes a promise ──────────────────────────
+   *
+   * BETA_WELCOME tells a tester their three months start "when Plus One opens
+   * in your area", and that opening is Kevin pressing a button in
+   * /admin/members — an event with no screen, on a day the member has no reason
+   * to be looking. Without this the promise is only kept for somebody who
+   * happens to open Settings afterwards, which is the shape of a promise not
+   * kept.
+   *
+   * Content-blind like the rest: it is about the reader's own account and names
+   * nobody. The path is the screen that can show it is true.
+   */
+  beta_thanks_started: {
+    event: "beta_thanks_started",
+    body: "Your Premium has started — thanks for testing",
+    path: "/app/settings/premium",
+  },
   nearby_joins: { event: "nearby_joins", body: "New members joined near you", path: "/app/browse" },
   /**
    * The premium activity alert (server 18c). Same content-blind sentence for
@@ -336,6 +357,7 @@ export const NOTIFICATION_ICONS: Record<NotificationEvent, string> = {
   // The two that are about the member's own account rather than anybody else.
   verification_decided: "/icons/n-drop.png",
   beta_signup: "/icons/n-drop.png",
+  beta_thanks_started: "/icons/n-drop.png",
 };
 
 export const PUSH_SILENT: readonly NotificationEvent[] = [
@@ -505,6 +527,18 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly Notificat
    * lock screen and already listed on /admin/waitlist.
    */
   beta_signup: ["push", "in_app"],
+
+  /**
+   * Push and in-app, and email deliberately not.
+   *
+   * It fires once ever, per member, and it is good news about their own
+   * account — so the lock screen is the right place and the in-app row is the
+   * record that survives a push nobody saw. Email is off for the reason the
+   * whole matrix defaults that way (Kevin's call 2026-08-26): no event opts
+   * into it, and this one is not worth being the exception, because the thing
+   * it announces is visible in the app for the next three months.
+   */
+  beta_thanks_started: ["push", "in_app"],
 };
 
 /**
@@ -529,6 +563,18 @@ export const MUTABLE_EVENTS: readonly NotificationEvent[] = [
   "mention_received",
   "like_received",
   "premium_expiring",
+  /**
+   * Switchable, and it was not obvious.
+   *
+   * It fires exactly once per member, so a switch can only ever lose somebody a
+   * message they would have wanted — which is an argument for withholding it,
+   * and the argument the other two unswitchable events rest on is different and
+   * stronger: silencing `verification_decided` strands a member mid-onboarding,
+   * and `beta_signup` never reaches one at all. Neither is true here. Somebody
+   * who has turned everything off should not then get a surprise push, however
+   * welcome its contents.
+   */
+  "beta_thanks_started",
   "nearby_joins",
   "activity_nearby",
   "referral_converted",
