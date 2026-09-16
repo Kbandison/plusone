@@ -1905,6 +1905,21 @@ export const DRAFT_COPY = {
     navSettings: "Settings",
 
     /**
+     * The way out of a room, which had no control until 2026-09-16.
+     *
+     * "Reach out" rather than "Connect", because the button beside it on a Drop
+     * card is the one the member already knows and this is a different moment:
+     * there, you are answering a curated card; here, you read something a
+     * person wrote and want to say so. The word is the difference.
+     *
+     * Deliberately NOT "Message". A connect is a reply to one of their prompts
+     * and opens a chat only if they accept, and a label promising a message
+     * describes the wrong thing happening.
+     */
+    roomReachOut: "Reach out",
+    roomReachOutAria: (name: string) => `Reach out to ${name}`,
+
+    /**
      * What the support-only switch costs, said BEFORE it is pressed.
      *
      * `COPY.supportOnly.toggle` is §3.4 verbatim and describes what the mode

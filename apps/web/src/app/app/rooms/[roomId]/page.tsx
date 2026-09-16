@@ -132,9 +132,37 @@ export default async function RoomPage({
   // visible_profile_photos, so a member whose photos are blurred until
   // connected stays blurred here too — attribution is a choice about a name,
   // not a waiver of every other privacy setting.
-  const authorPhotos = await photosFor([
+  const authorIds = [
     ...new Set(posts.map((post) => post.author_id).filter((id): id is string => id !== null)),
+  ];
+  /**
+   * The photos and the reachability, in ONE wait rather than two.
+   *
+   * Both need the feed, so neither can join the batch above — but they do not
+   * need each other, and navigation.test.ts caps this page at two blocking
+   * round trips for a reason: "three round trips for one screen" is the exact
+   * regression it was written after. It caught this one.
+   *
+   * photosFor reads visible_profile_photos, so a member whose photos are
+   * blurred until connected stays blurred here — attribution is a choice about
+   * a name, not a waiver of every other privacy setting.
+   *
+   * The rpc is allowed to fail. connect_permitted_bulk is applied by hand like
+   * every migration, and PostgREST fails the WHOLE request on an unknown
+   * function — which here would take the room feed down rather than one
+   * control. An empty set is the safe answer: no control is shown, which is
+   * exactly the state before this existed.
+   */
+  const [authorPhotos, reachRes] = await Promise.all([
+    photosFor(authorIds),
+    supabase.rpc("connect_permitted_bulk", { p_targets: authorIds, p_room_id: room.id }).then(
+      (r) => r,
+      () => ({ data: null }),
+    ),
   ]);
+  const reachable = new Set(
+    ((reachRes.data ?? []) as { user_id: string }[]).map((row) => row.user_id),
+  );
 
   const pinned = room.pinned_resource_card as {
     title?: string;
@@ -256,6 +284,7 @@ export default async function RoomPage({
               roomId={roomId}
               post={post}
               photo={post.author_id ? authorPhotos.get(post.author_id) : undefined}
+              canReach={post.author_id ? reachable.has(post.author_id) : false}
               zone={zone}
               now={now}
               href={`/app/rooms/${room.id as string}/${post.id}`}

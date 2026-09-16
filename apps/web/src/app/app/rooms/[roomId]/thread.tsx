@@ -53,9 +53,39 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
     ...new Set(thread.map((r) => r.author_name).filter((n): n is string => Boolean(n))),
   ];
 
-  const photos = await photosFor([
+  const authorIds = [
     ...new Set(thread.map((row) => row.author_id).filter((id): id is string => id !== null)),
+  ];
+  /**
+   * The photos and the reachability, in ONE wait rather than two.
+   *
+   * Both need the feed, so neither can join the batch above — but they do not
+   * need each other, and navigation.test.ts caps this page at two blocking
+   * round trips for a reason: "three round trips for one screen" is the exact
+   * regression it was written after. It caught this one.
+   *
+   * photosFor reads visible_profile_photos, so a member whose photos are
+   * blurred until connected stays blurred here — attribution is a choice about
+   * a name, not a waiver of every other privacy setting.
+   *
+   * The rpc is allowed to fail. connect_permitted_bulk is applied by hand like
+   * every migration, and PostgREST fails the WHOLE request on an unknown
+   * function — which here would take the room feed down rather than one
+   * control. An empty set is the safe answer: no control is shown, which is
+   * exactly the state before this existed.
+   */
+  const [photos, reachRes] = await Promise.all([
+    photosFor(authorIds),
+    supabase.rpc("connect_permitted_bulk", { p_targets: authorIds, p_room_id: roomId }).then(
+      (r) => r,
+      () => ({ data: null }),
+    ),
   ]);
+  const reachable = new Set(
+    ((reachRes.data ?? []) as { user_id: string }[]).map((row) => row.user_id),
+  );
+
+  const canReach = (id: string | null) => (id ? reachable.has(id) : false);
 
   // The post itself counts as seen. A comment does not: it was on this screen
   // because the post was, and counting it would make "seen by" a measure of how
@@ -88,6 +118,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
           roomId={roomId}
           post={root}
           photo={photos.get(root.author_id ?? "")}
+          canReach={canReach(root.author_id)}
           zone={zone}
           now={now}
           replyable
@@ -121,6 +152,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
               roomId={roomId}
               post={comment}
               photo={photos.get(comment.author_id ?? "")}
+              canReach={canReach(comment.author_id)}
               zone={zone}
               now={now}
               variant="comment"
@@ -136,6 +168,7 @@ export async function Thread({ roomId, postId }: { roomId: string; postId: strin
                     roomId={roomId}
                     post={reply}
                     photo={photos.get(reply.author_id ?? "")}
+                    canReach={canReach(reply.author_id)}
                     zone={zone}
                     now={now}
                     variant="comment"

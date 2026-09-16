@@ -66,6 +66,7 @@ export function PostRow({
   shareUrl,
   shareRooms,
   roomId,
+  canReach = false,
 }: {
   post: Post;
   /** For the delete action's revalidate. Only ever your own post needs it. */
@@ -102,6 +103,19 @@ export function PostRow({
    * else is using, which is what the second level of a Facebook thread
    * actually is once you stop drawing the indent.
    */
+  /**
+   * May the reader send this author a room-sourced connect?
+   *
+   * Decided by `connect_permitted_bulk` on the server, once for the whole feed,
+   * and never re-derived here. The rule it answers is not obvious — a member in
+   * dating mode may not initiate toward a support-only member, and a
+   * support-only member may only reach a dating member through a room they are
+   * BOTH in — so a second copy on the client would be a door the RPC refuses.
+   *
+   * False for an anonymous post and for an article, because both arrive with a
+   * null author and the filter drops nulls.
+   */
+  canReach?: boolean;
   replyable?: boolean;
   /**
    * The comment a reply from this row should nest under.
@@ -185,6 +199,25 @@ export function PostRow({
           messageId={post.id}
           rooms={shareRooms ?? []}
         />
+      ) : null}
+
+      {/* The way out of a room.
+              §7.2 refuses a DM button — "rooms are a place to be seen, not a
+              directory to work through" — and says in the same breath that the
+              way out of a room IS a connect. This is that, and it is not a
+              directory: it hangs off something a person wrote, not off a list
+              of who is present.
+
+              It goes to the same form the Drop and Browse use, carrying the
+              room so the server can check both people are in it. */}
+      {canReach && post.author_id && post.author_name ? (
+        <Link
+          href={`/app/connect/${post.author_id}?source=room&room=${roomId}`}
+          aria-label={C.roomReachOutAria(post.author_name)}
+          className="ease-brand flex min-h-tap items-center text-[11.5px] text-ink-3 transition-colors duration-300 hover:text-ink"
+        >
+          {C.roomReachOut}
+        </Link>
       ) : null}
 
       {/* On a comment it addresses that person; on the post at the top of
