@@ -62,80 +62,92 @@ reviewer to go and look, and what they find is thin rooms and fabricated people.
 **The case is STRUCTURAL.** What the app is built to do, and what it refuses to
 do, are true today and checkable in two minutes. Traction is neither.
 
-## The seeded accounts are a liability in this posture
+## Argue the right clause
 
-There are 26 of them and all 26 are in Atlanta. Their profiles say "A seeded
-account for testing. Not a real person.", so a reviewer who opens one sees that
-— but a reviewer who merely browses meets a city full of fabricated members
-while holding a spam rejection and an extended-review warning.
+The guideline says the app "duplicates the content and **functionality** of
+similar apps". The first draft of this reply argued the app is not really a
+dating app — which is the wrong argument and Kevin caught it: it overstates the
+support half, it reads as somebody constructing a phrase to dodge a category,
+and getting caught overstating is worse than the framing that caused the
+rejection.
 
-Kevin's call, and it was made before this rejection existed. Worth re-taking:
-`pnpm seed:remove` is one command and `check:seed` goes green with it.
+**4.3(b) does not forbid a dating app. It forbids an interchangeable one.** The
+functionality here is not a duplicate, and that is checkable in two minutes:
+no swipe, no like, three profiles a day that cannot be bought past, a
+seven-day chat nobody can extend, a closing note nobody can buy out of, and a
+paid tier that explicitly cannot buy rank. Lead with that.
+
+## The category is NOT the problem
+
+Social Networking, with Lifestyle as secondary — confirmed by Kevin
+2026-09-16. That is honest and it does not invite the dating read, so there is
+no lever here. Moving to Health & Fitness now would look like dodging the
+rejection rather than describing the app.
+
+## Leave the seeded accounts in
+
+Raised as a liability and it was the wrong call, corrected by Kevin: a reviewer
+with an empty app cannot exercise anything, and "we could not review your app"
+is its own rejection — which is the whole of Kevin 22. Apple wants working test
+data. 4.3 is about duplicate apps, not populated test accounts.
+
+`check:seed` still gates the real launch, which is where removing them matters.
 
 ## The reply — paste into Resolution Center
 
-> Thank you for the review. We would like to give context that was not in our
-> submission notes, and which we believe was our error rather than the
-> reviewer's.
->
-> **Plus One is not primarily a dating app.** It is a peer-support and
-> connection app for adults who have been diagnosed with HSV or HIV, and it has
-> two halves. A member can use it with the connection half switched off
-> entirely.
->
-> Our own notes opened by describing the app as "a dating app". That
-> misdescribes it, and we think it framed the review. We are sorry for the
-> confusion.
->
-> **The non-dating half is a supported mode, not a setting that hides things.**
-> In Profile, a member can switch to "support-only". This removes them from
-> every dating surface: Browse leaves the navigation bar, the route itself
-> redirects, and they no longer appear in anyone else's results. What remains is
-> the community rooms — Newly diagnosed, Disclosure stories, U=U, HSV general, a
-> general lounge, and a curated news feed scoped to the member's condition.
->
-> The problem this app exists to solve is disclosure, which is a health problem
-> rather than a matching problem. Every member has stated their status to join,
-> so nobody has to raise it with a stranger and nobody is rejected for it
-> afterwards.
->
-> **Where the connection half differs structurally from the apps in this
-> category:**
->
-> - There is no swipe and no like button. To reach someone, you write an answer
->   to one of the prompts on their profile.
-> - Members are shown three profiles a day. It is the same three for everyone,
->   it does not grow, and the number cannot be increased by payment.
-> - A conversation lasts seven days unless both people agree a plan. When it
->   ends it closes with a note that both people see. Extending or pausing that
->   timer is not purchasable by anyone.
-> - Our paid tier explicitly cannot buy ranking, visibility, extra profiles,
->   undo, or an exemption from the closing note.
-> - Every member passes an automated liveness check, because impersonation and
->   screenshot harassment are the specific harms this population faces.
->
-> **To see the non-dating half in about two minutes**, signed in with the demo
-> account in our notes:
->
-> 1. Tap **Rooms** in the bottom bar. Open **Newly diagnosed**, **Disclosure
->    stories** and **U=U**.
-> 2. Go to **Profile** and switch to **Support-only**. Confirm.
-> 3. The **Browse** tab disappears from the bottom bar. Navigating to it
->    directly redirects away.
-> 4. Switch back if you would like to see the connection half.
->
-> We would be glad to answer anything further, and we would welcome a
-> re-review.
+**Written to sound like a person.** The first draft did not: "we would like to
+give context", "differs structurally", "we would welcome a re-review". A
+reviewer reads hundreds of these and that register is a tell. Short sentences,
+contractions, no bold, and an admission first.
 
-**Kevin, before sending:** check what the app's App Store category is set to. If
-it sits in a dating category, that is the frame a reviewer reads before any of
-the above. Given the population, Health & Fitness is arguably more accurate;
-Medical brings its own scrutiny and is a real decision rather than an obvious
-one.
+> We think this got reviewed as a general dating app, and that's partly our
+> fault — our own review notes called it one. Here's what it actually is.
+>
+> Plus One is for people who have been diagnosed with HSV or HIV. The whole
+> thing is built around disclosure. Everyone has already stated their status
+> before they join, so nobody has to have that conversation with a stranger and
+> nobody gets rejected for it afterwards. That is the problem it solves, and it
+> isn't one the apps in this category solve.
+>
+> It's also not only for dating. There's a support-only mode in Profile —
+> switch it on and the Browse tab disappears, the route redirects, and you stop
+> appearing in anyone else's results. What's left is the community rooms:
+> Newly diagnosed, Disclosure stories, U=U, HSV general, a general lounge, and a
+> news feed scoped to your condition. Some members use it only that way.
+>
+> On the dating side, almost nothing works the way it does elsewhere:
+>
+> - No swipe and no like button. To reach someone you answer one of the prompts
+>   on their profile.
+> - Three profiles a day. The same three for everyone, and you can't pay for
+>   more.
+> - A chat lasts seven days unless both people agree a plan. Then it closes with
+>   a note they both see. Nobody can extend it, and nobody can buy their way out
+>   of the note.
+> - Our subscription can't buy ranking, visibility, extra profiles or undo. We
+>   kept all of that off the table on purpose.
+> - Everyone passes a liveness check. Impersonation and screenshots are the
+>   specific way people with these diagnoses get hurt.
+>
+> If it helps, signing in with the demo account and doing this takes about two
+> minutes:
+>
+> 1. Tap Rooms, and open Newly diagnosed or Disclosure stories.
+> 2. Go to Profile and switch on Support-only.
+> 3. Browse disappears from the bottom bar. Going to it directly redirects.
+>
+> Happy to answer anything else.
 
-And check what is actually listed in this space on the App Store today. The
-reply above does not claim the category is empty — deliberately, because it is
-not — but you should know what a reviewer will compare it against.
+## Section 3 is NOT rewritten the same way — Kevin's read, 2026-09-16
+
+The rewrite below opens "a peer-support and connection app", and Kevin's
+objection stands: that misrepresents the app as primarily support-only. It is a
+dating app with a serious support half, and a description that ranks them the
+other way is the same mistake as the original in the opposite direction.
+
+Held rather than changed, at his call. What it should probably say is that the
+app is both, without ranking them — and let the functionality argument above do
+the work, since that is the clause the guideline is actually about.
 
 ---
 

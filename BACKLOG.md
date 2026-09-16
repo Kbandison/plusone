@@ -2422,10 +2422,26 @@ is a different problem from everything above it.** Submission
     a day that cannot be bought past, a seven-day fuse nobody can extend, and a
     liveness check on every member.
 
-    **Two things are Kevin's and neither is code.** What App Store category the
-    app is in — a dating category is the frame a reviewer reads before any of
-    the above — and whether the 26 seeded accounts, all in Atlanta, should still
-    be in the database while Apple is looking. `pnpm seed:remove` is one command.
+    **Two of my recommendations were wrong and Kevin corrected both.** The
+    category is Social Networking with Lifestyle — honest, no dating framing, no
+    lever, and moving it now would read as dodging. And the seeded accounts stay:
+    a reviewer with an empty app cannot exercise anything, "we could not review
+    your app" is its own rejection, and 4.3 is about duplicate apps rather than
+    populated test data. `check:seed` still gates the real launch.
+
+    **And the first reply argued the wrong clause.** It argued the app is not
+    really a dating app, which overstates the support half and reads as somebody
+    constructing a phrase to dodge a category. The guideline says "duplicates
+    the content and FUNCTIONALITY of similar apps" — 4.3(b) does not forbid a
+    dating app, it forbids an interchangeable one. The functionality here is
+    demonstrably not a duplicate and that is the argument. Rewritten, and
+    rewritten again to sound like a person: a reviewer reads hundreds of these
+    and "we would welcome a re-review" is a tell.
+
+    **Section 3's rewrite is HELD, not applied.** It opens "a peer-support and
+    connection app", and Kevin's read is that this misrepresents the app as
+    primarily support-only — the same mistake as the original in the opposite
+    direction. What it should say is that it is both, without ranking them.
 
     Android and the web are unaffected. The iOS shell loads a remote URL, so the
     beta is not blocked on this.
