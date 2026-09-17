@@ -223,7 +223,28 @@ if (!DB_URL) {
 //                                          141 distinct names declared by some
 //                                          migration and is_admin the only
 //                                          overload, which is pre-existing.
-const EXPECT = { tables: 37, views: 5, functions: 142, enums: 31, rooms: 7, config: 23 };
+//                                          20260916000100 — admin_grant_beta_thanks
+// functions 142 -> 142                     dropped and recreated to RETURN the
+//                                          rows it granted rather than a count,
+//                                          so the caller can notify the members
+//                                          the beta welcome promised would be
+//                                          told. Net zero: same name, new return
+//                                          type, which is why it is a DROP —
+//                                          `create or replace` cannot change one
+//                                          and only execution says so.
+//
+// functions 142 -> 143                     20260916000200 — connect_permitted_bulk,
+//                                          so a room post can offer a connect to
+//                                          the people the reader may actually
+//                                          reach. A filter over connect_permitted
+//                                          rather than a second copy of the rule.
+//
+//                                          Read off the live database after
+//                                          applying: 143, every one of the 142
+//                                          distinct names declared by some
+//                                          migration, is_admin still the only
+//                                          overload.
+const EXPECT = { tables: 37, views: 5, functions: 143, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
