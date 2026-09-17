@@ -1907,16 +1907,20 @@ export const DRAFT_COPY = {
     /**
      * The way out of a room, which had no control until 2026-09-16.
      *
-     * "Reach out" rather than "Connect", because the button beside it on a Drop
-     * card is the one the member already knows and this is a different moment:
-     * there, you are answering a curated card; here, you read something a
-     * person wrote and want to say so. The word is the difference.
+     * There is NO VISIBLE LABEL. It was "Reach out", a sixth item in an action
+     * strip that already held like, comments, share, reply and a view count —
+     * and Kevin replaced it on 2026-09-17 with the author's name and face,
+     * which is the convention everywhere else and needs no room of its own.
      *
-     * Deliberately NOT "Message". A connect is a reply to one of their prompts
-     * and opens a chat only if they accept, and a label promising a message
-     * describes the wrong thing happening.
+     * copy-is-wired.test.ts is what removed the string: the moment nothing
+     * rendered it, the map failed and demanded it go. That is the mechanism
+     * working rather than a tidy-up.
+     *
+     * The label survives because a link whose whole content is a person's name
+     * still has to say what it does. Deliberately not "Message": a connect is a
+     * reply to one of their prompts and opens a chat only if they accept, so a
+     * label promising a message describes the wrong thing happening.
      */
-    roomReachOut: "Reach out",
     roomReachOutAria: (name: string) => `Reach out to ${name}`,
 
     /**

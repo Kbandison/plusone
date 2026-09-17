@@ -56,7 +56,42 @@ describe("a room post can be replied to as a person", () => {
   it("shows nothing for an anonymous post or an article", () => {
     // Both arrive with a null author. An article additionally has nobody to
     // reach, which is the case the room page already calls out.
-    expect(row).toMatch(/canReach && post\.author_id && post\.author_name/);
+    expect(row).toMatch(/canReach && post\.author_id\s*\?/);
+  });
+
+  it("makes the name and the face the control, not a sixth item in the strip", () => {
+    // Kevin's call 2026-09-17. The action row already held like, comments,
+    // share, reply and a view count.
+    expect(row).toMatch(/aria-label=\{C\.roomReachOutAria\(post\.author_name\)\}/);
+    // And the labelled link is gone from the strip rather than duplicated.
+    expect(row).not.toMatch(/\{C\.roomReachOut\}/);
+  });
+
+  it("is one destination and one tab stop", () => {
+    // The face and the name go to the same place. Two focusable links for one
+    // action is a keyboard user pressing tab twice through every post in a feed.
+    //
+    // Scoped to the face's own element: asserting aria-hidden anywhere in the
+    // file passed against a version that had lost it, because the view count
+    // two hundred lines up carries one. A sabotage found that.
+    const face = /<Link\s+href=\{authorHref\}([\s\S]*?)>/.exec(row)?.[1] ?? "";
+    expect(face).toMatch(/tabIndex=\{-1\}/);
+    expect(face).toMatch(/aria-hidden="true"/);
+  });
+
+  it("beats the link covering the row", () => {
+    // The whole row is an anchor to the thread at z-10. A name at the default
+    // stacking level is under it and simply does not receive the tap.
+    expect(row).toMatch(/relative z-20 shrink-0/);
+    expect(row).toMatch(/relative z-20 truncate font-medium/);
+  });
+
+  it("keeps one size for the name however it is rendered", () => {
+    // It is drawn two ways now — a link when reachable, a span when not — and a
+    // reader should not be able to tell which by the size of the text.
+    expect(row).toMatch(/const nameClass = post\.article_url/);
+    const sizes = row.match(/text-\[15\.5px\]/g) ?? [];
+    expect(sizes).toHaveLength(1);
   });
 
   it("never decides reachability on the client", () => {

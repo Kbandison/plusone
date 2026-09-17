@@ -172,6 +172,80 @@ export function PostRow({
   // remounted, LikeButton included, each time anything here changed. As plain
   // JSX it is the same element reused in two places, which React is happy with
   // and which reconciles instead of remounting.
+  /**
+   * The author, as somebody you can reach.
+   *
+   * Kevin's call 2026-09-17: the name and the face ARE the control, rather than
+   * a sixth item in the action strip. It is the convention everywhere else, and
+   * it takes a row already holding like, comments, share, reply and a view
+   * count back down to five.
+   *
+   * IT TAKES THE NAME AWAY FROM THE THREAD, which was a decision here before it
+   * was this one — the overflow menu below still carries a comment saying "the
+   * name and the time still open the thread", and that is now true only of the
+   * time. The covering link is z-10 and this is lifted to z-20, so a tap on the
+   * name reaches the profile instead. Everything else on the row — the words,
+   * the picture, the space around them — still opens the thread.
+   *
+   * Null for an anonymous post, an article, your own post, and anybody the
+   * server says you may not reach.
+   */
+  const authorHref =
+    canReach && post.author_id ? `/app/connect/${post.author_id}?source=room&room=${roomId}` : null;
+
+  /**
+   * The face, before it is decided whether it is a link.
+   *
+   * A value rather than JSX in place, so the two branches below — publisher's
+   * mark and member photograph — are not each written twice, once wrapped and
+   * once bare.
+   */
+  /**
+   * The name's size, shared by the link and the plain span.
+   *
+   * A publisher's name is not a member's name: it labels the article below it
+   * rather than announcing who is speaking, so it sits at the size a label sits
+   * at. Extracted because the name is rendered two ways now and the sizes must
+   * not drift apart.
+   */
+  const nameClass = post.article_url
+    ? "text-[11.5px] text-ink-2"
+    : isComment
+      ? "text-[12px]"
+      : "text-[15.5px]";
+
+  const avatar =
+    post.article_url && post.article_icon ? (
+      // The publisher's mark where a member's photograph would be.
+      // referrerPolicy, because fetching it otherwise tells their server that
+      // somebody in a health community is reading them — the same visit the
+      // link itself takes care not to hand over.
+      //
+      // Guarded on the icon as well as the url. An article may arrive without
+      // one — the agent ingest does not require it and thirteen live rows had
+      // none — and `src=""` is not a neutral empty state: it renders a broken
+      // image, and historically resolved to the current document, which is a
+      // second request for the page from inside the page. The branch below is
+      // the placeholder the comment there already describes.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={post.article_icon}
+        alt=""
+        referrerPolicy="no-referrer"
+        loading="lazy"
+        width={isComment ? 24 : 46}
+        height={isComment ? 24 : 46}
+        className="shrink-0 rounded-full border border-line-2 bg-surface-2 object-contain"
+        style={{ width: isComment ? 24 : 46, height: isComment ? 24 : 46 }}
+      />
+    ) : (
+      // An anonymous author has no photo, so the frame's empty state is the
+      // placeholder — the same neutral shape a member with no photo gets,
+      // rather than a second thing to learn the meaning of. Also where an
+      // article with no mark lands: post.author_id is null on one.
+      <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
+    );
+
   const counts = (
     // flex-wrap, because this is five controls now — like, comments, share,
     // reply and the view count — and a row that cannot wrap is a row that
@@ -199,25 +273,6 @@ export function PostRow({
           messageId={post.id}
           rooms={shareRooms ?? []}
         />
-      ) : null}
-
-      {/* The way out of a room.
-              §7.2 refuses a DM button — "rooms are a place to be seen, not a
-              directory to work through" — and says in the same breath that the
-              way out of a room IS a connect. This is that, and it is not a
-              directory: it hangs off something a person wrote, not off a list
-              of who is present.
-
-              It goes to the same form the Drop and Browse use, carrying the
-              room so the server can check both people are in it. */}
-      {canReach && post.author_id && post.author_name ? (
-        <Link
-          href={`/app/connect/${post.author_id}?source=room&room=${roomId}`}
-          aria-label={C.roomReachOutAria(post.author_name)}
-          className="ease-brand flex min-h-tap items-center text-[11.5px] text-ink-3 transition-colors duration-300 hover:text-ink"
-        >
-          {C.roomReachOut}
-        </Link>
       ) : null}
 
       {/* On a comment it addresses that person; on the post at the top of
@@ -279,38 +334,20 @@ export function PostRow({
           </Link>
         ) : null}
 
-        {/* An anonymous author has no photo, so the frame's empty state is the
-          placeholder — the same neutral shape a member with no photo gets,
-          rather than a second thing to learn the meaning of. */}
-        {post.article_url && post.article_icon ? (
-          // The publisher's mark where a member's photograph would be.
-          // referrerPolicy, because fetching it otherwise tells their server that
-          // somebody in a health community is reading them — the same visit the
-          // link itself takes care not to hand over.
-          //
-          // Guarded on the icon as well as the url. An article may arrive without
-          // one — the agent ingest does not require it and thirteen live rows had
-          // none — and `src=""` is not a neutral empty state: it renders a broken
-          // image, and historically resolved to the current document, which is a
-          // second request for the page from inside the page. The branch below is
-          // the placeholder the comment there already describes.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.article_icon}
-            alt=""
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            width={isComment ? 24 : 46}
-            height={isComment ? 24 : 46}
-            className="shrink-0 rounded-full border border-line-2 bg-surface-2 object-contain"
-            style={{ width: isComment ? 24 : 46, height: isComment ? 24 : 46 }}
-          />
+        {/* Photo and name are ONE destination and must not be two tab stops.
+          The face carries aria-hidden and tabIndex -1, so a keyboard and a
+          screen reader meet the name once and get the whole label there. */}
+        {authorHref ? (
+          <Link
+            href={authorHref}
+            tabIndex={-1}
+            aria-hidden="true"
+            className="relative z-20 shrink-0"
+          >
+            {avatar}
+          </Link>
         ) : (
-          // Also where an article with no mark lands: `post.author_id` is null on
-          // one, so this is the frame's empty state either way — the same neutral
-          // shape a member with no photo gets, rather than a second thing to
-          // learn the meaning of.
-          <MemberPhotoFrame photo={post.author_id ? photo : undefined} size={isComment ? 24 : 46} />
+          avatar
         )}
 
         <div className="min-w-0 flex-1">
@@ -322,17 +359,27 @@ export function PostRow({
               {/* A publisher's name is not a member's name. It labels the
                 article below it rather than announcing who is speaking, so it
                 sits at the size a label sits at. */}
-              <span
-                className={`truncate font-medium ${
-                  post.article_url
-                    ? "text-[11.5px] text-ink-2"
-                    : isComment
-                      ? "text-[12px]"
-                      : "text-[15.5px]"
-                }`}
-              >
-                {post.author_name ?? C.threadUnknownPerson}
-              </span>
+              {/* The name, which is the control now.
+                  Lifted to z-20 so it beats the link covering the row — the
+                  rest of the header still opens the thread, and this does not.
+
+                  No colour of its own. Every author name going accent would
+                  make a feed of links; a photograph and a name being tappable
+                  is the convention this borrows instead, and hover says so
+                  where there is a pointer to say it with. */}
+              {authorHref && post.author_name ? (
+                <Link
+                  href={authorHref}
+                  aria-label={C.roomReachOutAria(post.author_name)}
+                  className={`ease-brand relative z-20 truncate font-medium transition-colors duration-300 hover:text-accent ${nameClass}`}
+                >
+                  {post.author_name}
+                </Link>
+              ) : (
+                <span className={`truncate font-medium ${nameClass}`}>
+                  {post.author_name ?? C.threadUnknownPerson}
+                </span>
+              )}
               {post.anonymous ? (
                 // Said plainly. A pseudonym that does not announce itself is a
                 // name a reader will take for a real one.
@@ -347,8 +394,10 @@ export function PostRow({
               </time>
             </p>
 
-            {/* Lifted above the link covering the row — only this, not the whole
-              header, so the name and the time still open the thread. */}
+            {/* Lifted above the link covering the row — only this and the
+              name, not the whole header, so the TIME still opens the thread.
+              This said "the name and the time" until 2026-09-17, when the name
+              became the way to reach its author. */}
             {/* An article has nobody to report and nobody to block — the block
               control resolves an author from the message and there is none, so
               the menu was a control that could only fail. */}
