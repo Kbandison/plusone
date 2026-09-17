@@ -1,8 +1,8 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
-import { BETA_INSTALL, DRAFT_COPY } from "@plusone/config";
+import { BETA_INSTALL, DRAFT_COPY, betaInstallFor } from "@plusone/config";
 
 import { CheckField, Field } from "@/app/auth-fields";
 
@@ -29,6 +29,18 @@ const C = DRAFT_COPY.waitlist;
  * Optional would reproduce the original problem for anybody who skipped them.
  * The cost is one field at the moment somebody is volunteering to help, and the
  * hint tells them exactly which address — which is the thing they get wrong.
+ *
+ * ── the store address is asked PER PLATFORM, and iOS no longer needs one ─────
+ *
+ * A TestFlight public link enrols the tester itself, so from 2026-09-17 nobody
+ * opens App Store Connect for them and their Apple ID is an identifier held for
+ * nothing. That is the exact thing WAITLIST_NEVER refuses, and a field that
+ * USED to be justified gets no exemption from it.
+ *
+ * Read off `betaInstallFor` rather than a check for "ios", so the day the link
+ * is withdrawn the field comes back on its own — and the day Android gets one,
+ * that field goes. The alternative is a condition that agrees with the config
+ * until somebody changes one of them.
  */
 export function TesterFields({
   wantsBeta,
@@ -44,7 +56,15 @@ export function TesterFields({
   const betaId = useId();
   const storeEmailId = useId();
 
-  const chosen = platform === "ios" || platform === "android" ? platform : null;
+  const initial = platform === "ios" || platform === "android" ? platform : null;
+  // The radio is the live answer, not the prop. The prop is what they saved
+  // last time; whether to ask for an address depends on what they have just
+  // picked, and the field has to appear and disappear as they pick it.
+  const [chosen, setChosen] = useState<"ios" | "android" | null>(initial);
+
+  // Null when that platform's link enrols the tester on its own.
+  const install = chosen ? betaInstallFor(chosen) : null;
+  const accountLabel = install?.accountLabel ?? null;
 
   return (
     <>
@@ -68,7 +88,8 @@ export function TesterFields({
                     type="radio"
                     name="platform"
                     value={id}
-                    defaultChecked={chosen === id}
+                    defaultChecked={initial === id}
+                    onChange={() => setChosen(id)}
                     required
                     className="size-5 shrink-0 accent-accent"
                   />
@@ -79,17 +100,26 @@ export function TesterFields({
             <p className="mt-2 text-[11px] leading-[1.6] text-ink-3">{C.platformHint}</p>
           </fieldset>
 
-          <Field
-            id={storeEmailId}
-            label={C.storeEmailLabel}
-            hint={C.storeEmailHint}
-            name="storeEmail"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            defaultValue={storeEmail ?? ""}
-          />
+          {/* Only where somebody still has to be added by hand. Android's
+              closed-testing list needs a Google account pasted onto it; iOS
+              does not, since the public link enrols the tester. */}
+          {accountLabel ? (
+            <Field
+              id={storeEmailId}
+              label={accountLabel}
+              // The hint is what stops a tester giving the wrong address — it is
+              // the Google account on the phone, not the one they read mail on.
+              // Never absent while a label exists, and typed as though it could
+              // be, so it is spread rather than passed as undefined.
+              {...(install?.accountHint ? { hint: install.accountHint } : {})}
+              name="storeEmail"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              required
+              defaultValue={storeEmail ?? ""}
+            />
+          ) : null}
         </div>
       ) : null}
     </>

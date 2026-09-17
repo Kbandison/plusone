@@ -95,16 +95,21 @@ export const DRAFT_COPY = {
     platformLabel: "Which phone will you test on?",
     platformHint:
       "You can also just use it in a browser, on anything — it is the same app. This is only so we can send you the installable build.",
-    storeEmailLabel: "The email on that phone's app store account",
     /**
-     * The single most common reason a tester never finds the build, said before
-     * they type rather than after it fails. Both stores look up the account
-     * signed in ON THE DEVICE, and for most people that is not the address they
-     * use for mail — and the failure is silent: the store simply says the app
-     * is unavailable.
+     * `storeEmailLabel` and `storeEmailHint` lived here and are gone.
+     *
+     * The field is asked per platform now, so the form uses
+     * `betaInstallFor(platform).accountLabel` and its hint — "The email on your
+     * Google account", which is more use than "the email on that phone's app
+     * store account" ever was.
+     *
+     * And the generic hint had become FALSE. It read "Your Google account on
+     * Android, or your Apple ID on iPhone", and from 2026-09-17 an iPhone
+     * tester is not asked for one at all: the TestFlight public link enrols
+     * them. copy-is-wired is what removed the pair — nothing rendered them, so
+     * the map failed and demanded they go, which is the second time today it
+     * has deleted a string before anybody noticed it was wrong.
      */
-    storeEmailHint:
-      "Your Google account on Android, or your Apple ID on iPhone. It is often not the address you gave above, and if they do not match the store will say Plus One is unavailable rather than telling you why.",
     submit: "Join the list",
     /**
      * The same answer whether the address was already on the list or not.

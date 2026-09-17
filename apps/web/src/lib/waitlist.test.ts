@@ -11,6 +11,7 @@ import {
   METROS,
   PLAY_TESTER_PASTE,
   PLAY_TRACK,
+  betaInstallFor,
   WAITLIST_EMAIL,
   WAITLIST_REMINDER_AFTER_DAYS,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
@@ -1262,5 +1263,46 @@ describe("the reminder is scheduled at a local hour", () => {
     // The filter names reminded_at, so the request fails outright until the
     // migration lands. Nothing due is the safe answer; the next hour asks again.
     expect(due).toMatch(/if \(error\) return \[\]/);
+  });
+});
+
+describe("a store address is asked for only where somebody still adds them", () => {
+  const fields = code("app/waitlist/tester-fields.tsx");
+
+  it("finds the component at all", () => {
+    expect(fields).toMatch(/export function TesterFields/);
+  });
+
+  it("reads the config rather than checking for ios", () => {
+    // The day the TestFlight link is withdrawn the field has to come back, and
+    // the day Android gets one it has to go. A hand-written `platform === "ios"`
+    // agrees with the config until somebody changes one of them.
+    expect(fields).toMatch(/betaInstallFor\(chosen\)/);
+    // Scoped to the DECISION. The first version asserted the file never says
+    // `=== "ios"` anywhere and failed on the line narrowing the prop's type,
+    // which is not a platform branch at all — it is what makes `chosen` a
+    // union rather than a string. No line may decide the account field by
+    // naming a platform.
+    const deciding = fields.split("\n").filter((l) => /accountLabel|accountHint/.test(l));
+    expect(deciding.length).toBeGreaterThan(0);
+    for (const line of deciding) expect(line).not.toMatch(/"ios"|"android"/);
+  });
+
+  it("reacts to what they just picked, not what they saved", () => {
+    // The platform is a radio in the same form. Without state the field is
+    // decided once, from the prop, and never appears or disappears as somebody
+    // changes their mind.
+    expect(fields).toMatch(/useState<"ios" \| "android" \| null>\(initial\)/);
+    expect(fields).toMatch(/onChange=\{\(\) => setChosen\(id\)\}/);
+  });
+
+  it("holds no Apple ID while the public link enrols the tester", () => {
+    // WAITLIST_NEVER refuses an identifier collected for nothing, and a field
+    // that USED to be justified gets no exemption from it.
+    if (BETA_LINKS.ios.publicLink) {
+      expect(betaInstallFor("ios").accountLabel).toBeNull();
+    }
+    // Android still needs one — somebody pastes it onto the closed-testing list.
+    expect(betaInstallFor("android").accountLabel).toMatch(/google/i);
   });
 });

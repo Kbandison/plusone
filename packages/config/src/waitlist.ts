@@ -855,7 +855,24 @@ export const BETA_LINKS = {
     store: "https://play.google.com/store/apps/details?id=app.loveplusone",
   },
   ios: {
-    publicLink: null as string | null,
+    /**
+     * Live since 2026-09-17. An EXTERNAL testing group exists, so the per-tester
+     * step in App Store Connect is gone — and with it the reason to hold an
+     * Apple ID, which `betaInstallFor` drops automatically rather than waiting
+     * for somebody to remember.
+     *
+     * Chosen over sending 42 individual invitations, which Kevin proposed
+     * because we already hold the addresses. The failure mode is the reason
+     * not to: `store_account_email` is what somebody typed into a web form, and
+     * TestFlight delivers to one specific Apple ID. A tester whose phone is
+     * signed in to an @icloud.com they set up years ago never sees the
+     * invitation and cannot install, and neither side finds out why. A public
+     * link has no such case — the device uses whatever account it already has.
+     *
+     * The two are not exclusive. Individual invitations still work on the same
+     * group, which is the way to rescue anybody this does not reach.
+     */
+    publicLink: "https://testflight.apple.com/join/4PUN3Jd7" as string | null,
   },
 } as const;
 
@@ -872,28 +889,30 @@ export const BETA_LINKS = {
  *            adds themselves. What is per-person is putting their Google
  *            account on the closed-testing list, which is a paste into a Google
  *            Group rather than a visit to a console.
- *   ios      PER PERSON, unavoidably, unless a TestFlight PUBLIC LINK exists.
- *            Individual invitations are added by hand in App Store Connect.
+ *   ios      NOTHING, since 2026-09-17. The public link enrols the tester.
+ *            It was per person, unavoidably, until an external group existed.
  *
- * ── and why the public link is safe here, which is unusual ──────────────────
+ * ── the public link is live, and the old argument for it has expired ────────
  *
- * The normal objection to a public TestFlight link is that anybody can install
- * the app. That objection is much weaker for Plus One, because installing is
- * not joining: `/onboarding/phone` refuses to create an account without a beta
- * invitation, so a stranger who follows a public link gets a shell they cannot
- * sign into. The account gate is the real wall and the store track is not doing
- * that work.
+ * This said the link was safe because "installing is not joining:
+ * /onboarding/phone refuses to create an account without a beta invitation, so
+ * a stranger who follows a public link gets a shell they cannot sign into."
+ * That stopped being true on 2026-09-13, when signup opened — the account gate
+ * it rested on is gone.
  *
- * The cost is Apple's: a public link needs an EXTERNAL testing group, and an
- * external group needs the build to pass Beta App Review. That is a one-time
- * gate rather than a per-tester one, which is exactly the right trade — but it
- * is a gate, and with the current 2.1 correspondence unresolved its timing is
- * unknown. Hence null, and hence this comment rather than a promise.
+ * The conclusion survives on different ground: THE WEB APP IS ALREADY OPEN TO
+ * ANYBODY. A public TestFlight link gives an iOS user the same access a browser
+ * already gives the world, so it adds no exposure at all. Worth writing down
+ * rather than quietly keeping the answer, because a right conclusion resting on
+ * a dead premise is the thing that survives review and then fails later.
+ *
+ * Its cost was Apple's and has been paid: an external group needs the build to
+ * pass Beta App Review, once rather than per tester.
  */
 export const BETA_MANUAL_STEP: Record<"android" | "ios", string> = {
   android:
     "Add their Google account to the closed-testing list. The tester opts in themselves from the public link.",
-  ios: "Add their Apple ID in App Store Connect, one at a time. A TestFlight public link would remove this entirely and needs an external group, which needs Beta App Review.",
+  ios: "Nothing. The TestFlight public link enrols them, and they need no invitation from us.",
 };
 
 /**

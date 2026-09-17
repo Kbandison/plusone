@@ -397,11 +397,25 @@ describe("a tester is told how to get the app", () => {
     expect(link === null || /^https:\/\/testflight\.apple\.com\//.test(link)).toBe(true);
   });
 
-  it("says where a human still has to act, and does not claim iOS is automatic", () => {
-    // The asymmetry is the point: Android opt-in is self-serve, TestFlight
-    // invitations are added by hand until a public link exists.
+  it("says where a human still has to act, and tracks whether iOS still needs one", () => {
+    // The asymmetry was the point and it has moved. Android is still
+    // per-person: somebody pastes a Google account onto the closed-testing
+    // list, and the tester opts in themselves. iOS was per-person too, until a
+    // public link existed — and this assertion asserted that state rather than
+    // the rule, so it failed the moment the link was set. Which is correct: the
+    // sentence it guards had become false and had to be rewritten with it.
     expect(BETA_MANUAL_STEP.android.toLowerCase()).toMatch(/themselves|self/);
-    expect(BETA_MANUAL_STEP.ios.toLowerCase()).toMatch(/one at a time|by hand|individual/);
+
+    const ios = BETA_MANUAL_STEP.ios.toLowerCase();
+    if (BETA_LINKS.ios.publicLink) {
+      // Nothing to do, and it must SAY nothing rather than describing work that
+      // no longer exists — an admin reading "add their Apple ID by hand" would
+      // go and do it.
+      expect(ios).not.toMatch(/one at a time|by hand|individual/);
+      expect(ios).toMatch(/nothing|enrol/);
+    } else {
+      expect(ios).toMatch(/one at a time|by hand|individual/);
+    }
   });
 });
 
@@ -509,18 +523,41 @@ describe("the store account is asked for once, at signup", () => {
    */
   const C = DRAFT_COPY.waitlist;
 
-  it("asks which phone and which store account", () => {
+  it("asks which phone, and a store account only where one is still needed", () => {
     expect(C.platformLabel.length).toBeGreaterThan(0);
-    expect(C.storeEmailLabel.length).toBeGreaterThan(0);
+
+    // The label and hint were generic strings on DRAFT_COPY and are now read
+    // per platform, because the answer stopped being the same for both: a
+    // TestFlight public link enrols the tester, so from 2026-09-17 an iPhone
+    // tester is asked for nothing. Holding an Apple ID nobody will use is the
+    // exact thing WAITLIST_NEVER refuses.
+    for (const platform of ["android", "ios"] as const) {
+      const install = betaInstallFor(platform);
+      const enrolsItself = platform === "ios" && BETA_LINKS.ios.publicLink !== null;
+      if (enrolsItself) {
+        expect(install.accountLabel, platform).toBeNull();
+        expect(install.accountHint, platform).toBeNull();
+      } else {
+        expect(install.accountLabel?.length ?? 0, platform).toBeGreaterThan(0);
+      }
+    }
   });
 
   it("warns that it is probably not the address they just gave", () => {
     // The single most common reason a tester never finds the build, and it
-    // fails silently — the store just says the app is unavailable.
-    const hint = C.storeEmailHint.toLowerCase();
-    expect(hint).toMatch(/google/);
-    expect(hint).toMatch(/apple/);
-    expect(hint).toMatch(/not the address|often not/);
+    // fails silently — the store just says the app is unavailable. Asserted on
+    // whichever platforms still ask, rather than on one sentence naming both:
+    // the generic hint said "Your Google account on Android, or your Apple ID
+    // on iPhone" and went FALSE the day iOS stopped being asked.
+    const asking = (["android", "ios"] as const)
+      .map(betaInstallFor)
+      .filter((i) => i.accountHint !== null);
+    expect(asking.length).toBeGreaterThan(0);
+    for (const install of asking) {
+      const hint = install.accountHint!.toLowerCase();
+      expect(hint, install.id).toMatch(/signed in on the phone|signed in on the device/);
+      expect(hint, install.id).toMatch(/not the address|often not/);
+    }
   });
 
   it("says the browser is still an option, so the question is not a barrier", () => {
