@@ -157,10 +157,21 @@ describe("the checklist is the tester's own", () => {
     for (const c of BETA_CHECKLIST) expect(c.href, c.id).toMatch(/^\/app/);
   });
 
-  it("says why each row is worth doing", () => {
+  it("says why each row is worth doing, in as few words as it can", () => {
     // "Send a connect" with no reason is a chore. Half of these exist because a
     // session cannot check them — three engines and another person involved.
-    for (const c of BETA_CHECKLIST) expect(c.why.length, c.id).toBeGreaterThan(40);
+    //
+    // This was `length > 40`, which is a floor on VERBOSITY rather than on
+    // meaning: "Even if nothing is broken." is twenty-six characters and says
+    // the whole thing, and the count is what five of these were padded past on
+    // the way in. A real sentence is the property — some words and a full stop.
+    for (const c of BETA_CHECKLIST) {
+      expect(c.why.trim().split(/\s+/).length, c.id).toBeGreaterThanOrEqual(4);
+      expect(c.why.trim(), c.id).toMatch(/[.?]$/);
+      // And still not a second sentence restating the first. Two is the most
+      // any of these needs, and the second has to add an instruction.
+      expect(c.why.split(/(?<=[.?])\s+/).length, c.id).toBeLessThanOrEqual(2);
+    }
   });
 
   it("has ids that are unique, because they are the storage key", () => {

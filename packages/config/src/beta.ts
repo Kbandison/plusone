@@ -74,8 +74,15 @@ export interface BetaCheck {
   /** Where it is done. A checklist that does not say where is a quiz. */
   readonly href: string;
   /**
-   * Why it is on the list — what breaks here that a tester is uniquely able to
-   * see. Shown, because "send a connect" with no reason reads as a chore.
+   * Why it is on the list, in as few words as the row can carry.
+   *
+   * Shown, because "send a connect" with no reason reads as a chore. Cut back
+   * on 2026-09-17: five of the eight were a second sentence explaining the
+   * first, or admiring the design rather than telling a tester anything — "the
+   * one mechanic nobody expects, and the one most likely to be misread as a
+   * missing feature" says nothing somebody can act on. One of them was worse
+   * than long: "it must never be wrong in the safe direction" is close to
+   * meaningless, and it is now the thing it was trying to say.
    */
   readonly why: string;
 }
@@ -96,37 +103,37 @@ export const BETA_CHECKLIST: readonly BetaCheck[] = [
     id: "profile",
     label: "Finish your profile and answer some prompts",
     href: "/app/profile",
-    why: "The prompts are how anybody reaches you. A profile with none is invisible in practice.",
+    why: "The prompts are how anybody reaches you.",
   },
   {
     id: "drop",
     label: "Open tonight's Drop",
     href: "/app",
-    why: "It may be empty or thin while your area fills up. Worth knowing whether that reads as broken.",
+    why: "It may be thin while your area fills up. Tell us if that reads as broken.",
   },
   {
     id: "connect",
     label: "Send a connect by answering a prompt",
     href: "/app/browse",
-    why: "The one mechanic nobody expects, and the one most likely to be misread as a missing feature.",
+    why: "Nobody expects this one. Tell us how it lands.",
   },
   {
     id: "room",
     label: "Post in a room, and reply to someone",
     href: "/app/rooms",
-    why: "Replies drive the badge on the nav. If a badge stays after you have read something, tell us.",
+    why: "Replies drive the badge on the nav. If one stays after you have read it, tell us.",
   },
   {
     id: "photos",
     label: "Try the photo privacy controls",
     href: "/app/profile",
-    why: "Blurring is the thing people here care most about getting right. It must never be wrong in the safe direction.",
+    why: "It must never show a photo somebody blurred.",
   },
   {
     id: "notifications",
     label: "Turn notifications on, and check one arrives",
     href: "/app/settings/notifications",
-    why: "This behaves differently on iOS, on Android and in a browser, and we cannot test all three from here.",
+    why: "It behaves differently on iOS, on Android and in a browser.",
   },
   {
     id: "report",
@@ -138,7 +145,7 @@ export const BETA_CHECKLIST: readonly BetaCheck[] = [
     id: "feedback",
     label: "Send us one piece of feedback",
     href: "/app/feedback",
-    why: "Even if nothing is broken. It records which of the three apps you are on, which we cannot work out afterwards.",
+    why: "Even if nothing is broken.",
   },
 ];
 

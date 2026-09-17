@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { COOLDOWNS } from "@plusone/config";
+import { COOLDOWNS, DRAFT_COPY } from "@plusone/config";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const page = read("./page.tsx");
@@ -226,6 +226,19 @@ describe("the support-only switch says what it costs", () => {
     // warning can change a decision.
     expect(toggle).toMatch(/mode === "dating" \?/);
     expect(toggle).toMatch(/supportOnlyCooldown\(COOLDOWNS\.datingReentryDays\)/);
+  });
+
+  it("is one sentence", () => {
+    // The same standard the beta checklist rows are held to, applied here
+    // because it was written the same day with the same habit: it read
+    // "…for 30 days. The shield is instant; coming out of it is not." The first
+    // sentence is the warning; the second is a flourish about the design.
+    //
+    // A sabotage put the flourish back and nothing failed, because no guard
+    // covered this string at all. This is that rule, not a new one.
+    const warning = DRAFT_COPY.app.supportOnlyCooldown(COOLDOWNS.datingReentryDays);
+    expect(warning.split(/(?<=[.?])\s+/).length).toBe(1);
+    expect(warning.trim()).toMatch(/\.$/);
   });
 
   it("takes the number from config rather than typing it", () => {

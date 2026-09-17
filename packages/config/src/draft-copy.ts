@@ -1949,7 +1949,7 @@ export const DRAFT_COPY = {
      * while the database says sixty is worse than no warning.
      */
     supportOnlyCooldown: (days: number) =>
-      `Switching back to dating is not available for ${days} days. The shield is instant; coming out of it is not.`,
+      `Switching back to dating is not available for ${days} days.`,
     /** Shown to somebody already in support-only and still inside the window. */
     supportOnlyLockedUntil: (date: string) => `You can switch back to dating on ${date}.`,
     /**
