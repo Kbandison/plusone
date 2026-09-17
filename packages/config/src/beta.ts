@@ -48,8 +48,12 @@ export const BETA_WELCOME = {
      * Not a caveat added afterwards — somebody who reads "free premium" and then
      * finds Settings saying otherwise has been misled, however carefully the
      * second sentence is worded.
+     *
+     * It said "…in your area, not today — your area is still filling up." Kevin
+     * cut the middle: "starts when it opens in your area" already says it is not
+     * today, and saying so twice turns an offer into an apology for itself.
      */
-    body: "It starts when Plus One opens in your area, not today — your area is still filling up. We will tell you the day it does.",
+    body: "It starts when Plus One opens in your area. We will tell you the day it does.",
   },
   mechanics: {
     heading: "Four things that are not like other apps",

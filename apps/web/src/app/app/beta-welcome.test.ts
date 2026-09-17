@@ -86,8 +86,13 @@ describe("the premium promise is one the app can keep", () => {
     // possibly for months. "You qualify for three months free" sends them to
     // Settings to find they are not premium, which reads as broken.
     const said = `${BETA_WELCOME.premium.heading} ${BETA_WELCOME.premium.body}`;
-    expect(said).toMatch(/opens in your area/i);
-    expect(said).toMatch(/not today/i);
+    // The claim, not a phrase. It said "…in your area, not today — your area is
+    // still filling up", and Kevin cut the middle: "starts when it opens in your
+    // area" already says it is not today, and saying so twice turns an offer
+    // into an apology for itself. What must survive is that the copy names a
+    // condition for starting and never says they have it now.
+    expect(said).toMatch(/starts when Plus One opens in your area/i);
+    expect(said).not.toMatch(/on your account now|you (?:have|now have) /i);
     expect(BETA_WELCOME.premium.heading).toContain(String(BETA_THANKS_MONTHS));
   });
 
@@ -133,10 +138,18 @@ describe("the checklist is the tester's own", () => {
     expect(page).not.toMatch(/beta_check|checklist_progress/);
   });
 
-  it("says so on the screen", () => {
-    // The floor under the test above, and the part a tester can act on: a list
-    // that looks like it is being watched changes what somebody ticks.
-    expect(read("app/app/beta/page.tsx")).toMatch(/kept on this device only/);
+  it("does not explain the storage to anybody", () => {
+    // This asserted the OPPOSITE until 2026-09-17 — that the screen says "ticks
+    // are kept on this device only". Kevin cut the sentence: nobody was
+    // wondering, and a screen volunteering what it is NOT doing invites the
+    // thought. The protection is the code above, not a caption.
+    //
+    // Against the comment-stripped source, because the first version of this
+    // stayed GREEN after the sentence was deleted — my own comment recording
+    // what had been removed still contained the words. Fourth time today.
+    expect(code("app/app/beta/page.tsx")).not.toMatch(/kept on this device/);
+    // And the link it sat beside is still there, which is the part a tester acts on.
+    expect(code("app/app/beta/page.tsx")).toMatch(/Tell us what you found/);
   });
 
   it("sends somebody to each row rather than naming it", () => {

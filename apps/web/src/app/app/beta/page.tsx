@@ -40,15 +40,18 @@ export default async function BetaPage() {
 
       <Checklist />
 
+      {/* The link, and nothing explaining the storage.
+          It read "Ticks are kept on this device only — nothing about what you
+          tried is sent to us." Kevin cut it: nobody was wondering, and a screen
+          that volunteers what it is NOT doing invites the thought. The ticks
+          still never leave the device, which beta-welcome.test.ts holds. */}
       <p className="mt-8 text-[12.6px] leading-[1.6] text-ink-3">
-        Ticks are kept on this device only — nothing about what you tried is sent to us.{" "}
         <Link
           href="/app/feedback"
           className="ease-brand text-accent underline decoration-line-2 underline-offset-4 transition-colors duration-300 hover:decoration-accent"
         >
           Tell us what you found
         </Link>
-        .
       </p>
     </main>
   );
