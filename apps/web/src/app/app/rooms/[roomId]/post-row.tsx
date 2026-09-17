@@ -363,15 +363,31 @@ export function PostRow({
                   Lifted to z-20 so it beats the link covering the row — the
                   rest of the header still opens the thread, and this does not.
 
-                  No colour of its own. Every author name going accent would
-                  make a feed of links; a photograph and a name being tappable
-                  is the convention this borrows instead, and hover says so
-                  where there is a pointer to say it with. */}
+                  ── it is UNDERLINED, and that was learned the hard way ──────
+
+                  It had no mark at all, on the argument that a photograph and a
+                  name being tappable is convention enough and every name going
+                  accent would make a feed of links. The second half of that is
+                  still true and is why this is a hairline rather than a colour.
+                  The first half is not: Kevin tapped two names, got nothing, and
+                  reported the feature broken — minutes after it shipped, knowing
+                  it existed. They were anonymous posts, which have no author to
+                  reach and correctly have no link.
+
+                  That is the whole problem. A tappable name and an untappable
+                  one looked identical apart from a badge that explains IDENTITY
+                  rather than tappability, so the difference could only be found
+                  by failing. The labelled control this replaced had it for free:
+                  present on some rows, absent on others.
+
+                  decoration-line-control rather than a heavier one, and the same
+                  treatment the article title above already uses, so a room has
+                  one idea of what a link looks like instead of two. */}
               {authorHref && post.author_name ? (
                 <Link
                   href={authorHref}
                   aria-label={C.roomReachOutAria(post.author_name)}
-                  className={`ease-brand relative z-20 truncate font-medium transition-colors duration-300 hover:text-accent ${nameClass}`}
+                  className={`ease-brand relative z-20 truncate font-medium underline decoration-line-control underline-offset-4 transition-colors duration-300 hover:decoration-accent ${nameClass}`}
                 >
                   {post.author_name}
                 </Link>

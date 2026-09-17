@@ -86,6 +86,33 @@ describe("a room post can be replied to as a person", () => {
     expect(row).toMatch(/relative z-20 truncate font-medium/);
   });
 
+  it("marks the name as tappable when it is, and not when it is not", () => {
+    // Kevin tapped two names, got nothing, and reported the feature broken —
+    // minutes after it shipped, knowing it existed. They were anonymous posts,
+    // which correctly have no author to reach. The fault was that a tappable
+    // name and an untappable one looked identical apart from a badge that
+    // explains identity rather than tappability, so the difference could only
+    // be found by failing. The labelled control this replaced had it for free.
+    const link = /<Link\s+href=\{authorHref\}\s+aria-label([\s\S]*?)>/.exec(row)?.[1] ?? "";
+    expect(link).toMatch(/underline decoration-line-control/);
+
+    // And the plain span must NOT carry it, or the mark says nothing.
+    const span = /<span className=\{`truncate font-medium \$\{nameClass\}`\}>/.exec(row);
+    expect(span).not.toBeNull();
+    expect(row).not.toMatch(
+      /truncate font-medium underline[^`]*\$\{nameClass\}`\}>\s*\{post\.author_name \?\?/,
+    );
+  });
+
+  it("borrows the treatment the room already uses for a link", () => {
+    // decoration-line-control, the same hairline as the article title above it,
+    // so a room has one idea of what a link looks like rather than two. A
+    // colour was refused: every author name going accent is a feed of links.
+    const marks = row.match(/underline decoration-line-control underline-offset-4/g) ?? [];
+    expect(marks.length).toBe(2);
+    expect(row).not.toMatch(/hover:text-accent/);
+  });
+
   it("keeps one size for the name however it is rendered", () => {
     // It is drawn two ways now — a link when reachable, a span when not — and a
     // reader should not be able to tell which by the size of the text.
