@@ -289,12 +289,40 @@ block below pasted over the old one, which does not require resubmitting.
 ```
 The app opens on the "Your number" signup step.
 
-Please do not create a new account. Tap "Sign in" on that same screen, enter
-the email address below, and enter the code sent to it. The account provided
-has already completed onboarding and the one-time identity check, so signing
-in to it is the only way to reach the full app — a new account would stop at
-those steps.
+Please do not create a new account. Tap "Sign in" on that same screen.
+
+Clear the field first, then enter the number exactly as:  +1 800 555 0147
+The field suggests a country code as you type, so entering the number with
+its own leading 1 into a non-empty field produces the wrong number.
+
+The verification code is the one in App Review Information. No SMS is sent
+and nothing needs to arrive.
+
+The account has already completed onboarding and the one-time identity check,
+so signing in to it is the only way to reach the full app — a new account
+would stop at those steps.
 ```
+
+**THE PHONE NUMBER, NOT THE EMAIL. Corrected 2026-09-17 after a Beta App Review
+rejection.** This block told the reviewer to sign in with an email address, and
+the demo account's address is `18005550147@dev.invalid` — `.invalid` is a
+reserved TLD that can never receive mail. The email route was never going to
+work for anybody.
+
+What DOES work is the phone number with Supabase's test-OTP pair, which was
+verified end to end on 2026-08-27 and is live: requesting a code for
+`+18005550147` answers `{"message_id":"test-otp"}`, meaning no SMS is sent and
+the fixed code is accepted. Probed again 2026-09-17.
+
+**The rejection was a doubled country code, and the app now prevents it.** The
+reviewer was given `18005550147`, put it into the empty sign-in field, and the
+field added the suggested `+1` in front — producing `+118005550147`, a different
+number with no test pair behind it. An unconfirmed account row at that number,
+created 14:13 on the 17th, was the receipt; it has been removed.
+
+`applyDialCode` no longer doubles a code given without a plus, so the same paste
+now yields `+18005550147`. The instruction above still says to clear the field,
+because a reviewer should not be relying on us having got that right.
 
 Naming the button is not politeness. `apps/android/README.md` records a round
 trip lost to exactly this: "Get started" and "Sign in" are different doors and

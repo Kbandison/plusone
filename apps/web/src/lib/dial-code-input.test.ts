@@ -38,6 +38,39 @@ describe("the country code appears once the field stops being ambiguous", () => 
     expect(applyDialCode("", "+447911123456", US)).toBeNull();
   });
 
+  /**
+   * The one that cost a rejected App Review, 2026-09-17.
+   *
+   * A reviewer was given the demo number as `18005550147`, pasted it into this
+   * empty field, and got `+118005550147` — a different number with no test-OTP
+   * pair behind it, so Supabase handed it to Twilio and no code ever arrived.
+   * The rejection said "the test number didn't work" and an unconfirmed account
+   * row was the receipt.
+   *
+   * The guard above only caught a plus the member typed. Nobody had considered
+   * the same number WITHOUT one, which is how most people write their own.
+   */
+  it("does not double a country code given without the plus", () => {
+    expect(applyDialCode("", "18005550147", US)).toBe("+18005550147");
+    expect(applyDialCode("", "447700900123", "+44")).toBe("+447700900123");
+  });
+
+  it("still adds the code to a bare national number", () => {
+    // The whole point of the feature, and the case that must not regress: no
+    // NANP national number begins with a 1, so a leading 1 can only ever be the
+    // country code and this stays exact in both directions.
+    expect(applyDialCode("", "8005550147", US)).toBe("+18005550147");
+    expect(applyDialCode("", "7700900123", "+44")).toBe("+447700900123");
+  });
+
+  it("is exact for +1 typed one digit at a time", () => {
+    // First keystroke is a 1: that is the country code, so the field becomes
+    // "+1" and the rest is typed into a non-empty field without interference.
+    // It used to become "+11" and every subsequent digit compounded it.
+    expect(applyDialCode("", "1", US)).toBe("+1");
+    expect(applyDialCode("", "8", US)).toBe("+18");
+  });
+
   /** Off Vercel, or a request Vercel could not place. */
   it("suggests nothing when there is nothing to suggest", () => {
     expect(applyDialCode("", "7", "")).toBeNull();

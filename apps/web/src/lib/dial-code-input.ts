@@ -34,5 +34,37 @@ export function applyDialCode(previous: string, value: string, dialCode: string)
   // An address, a username, or an empty field. Not ours to touch.
   if (!/^[0-9]/.test(value)) return null;
 
+  /**
+   * THEY GAVE THE COUNTRY CODE, WITHOUT THE PLUS. Add the plus; do not add the
+   * code again.
+   *
+   * ── this cost a rejected review ─────────────────────────────────────────────
+   *
+   * An App Review reviewer was given the demo number as `18005550147` and put it
+   * into this field. It was empty and the first character was a digit, so the
+   * code went on the front: `+118005550147`. That is a different number, it has
+   * no Supabase test-OTP pair behind it, so the request went to Twilio and no
+   * code ever arrived. The review came back "the test number didn't work", and
+   * an unconfirmed account row at +118005550147 was the receipt.
+   *
+   * The existing guard only caught `+44...` — a plus the member typed
+   * themselves. Nobody had considered the same number without one, which is how
+   * most people write their own: an American writes 1-800-555-0147.
+   *
+   * ── what this does NOT fix, said rather than implied ────────────────────────
+   *
+   * Digit-by-digit typing of a full international number, where the dial code is
+   * more than one digit. A British member typing `447700900123` gets `+444` on
+   * the first keystroke, because "4" does not start with "44" — and after that
+   * the field is no longer empty and nothing here runs again. That was already
+   * true and is not made worse; pasting the same number is now correct, and
+   * paste is how a number reaches this field on a phone.
+   *
+   * For `+1` it is exact in both directions: no NANP national number begins with
+   * a 1, so a leading 1 can only ever be the country code.
+   */
+  const digits = dialCode.replace(/\D/g, "");
+  if (digits && value.startsWith(digits)) return `+${value}`;
+
   return dialCode + value;
 }
