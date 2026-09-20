@@ -74,6 +74,32 @@ describe("the nudge never spends the one prompt", () => {
     expect(nudge).toMatch(/nativePushPermission\(\)/);
   });
 
+  it("sits above the cards, where somebody will see it", () => {
+    // Kevin moved it there 2026-09-20, and he was right: a Drop is three cards
+    // each carrying a full-width 4:5 photograph, so the foot of that page is a
+    // long way down. A nudge nobody scrolls to is a nudge that does not work,
+    // and people not finding the setting is the whole reason it exists.
+    //
+    // Asserted by ORDER rather than by a class name, because the thing that
+    // matters is what a member reaches first.
+    const page = strip(read("./page.tsx"));
+    // The CARD COMPONENTS, not `drop.cards.map` — that string appears at the
+    // top of the file too, on the line that collects ids for the photo fetch,
+    // and anchoring there compared the nudge against a data line rather than
+    // against anything a member sees. It failed for that reason, which is the
+    // honest failure mode.
+    const nudgeAt = page.indexOf("<NotifyNudge");
+    const cardsAt = Math.min(
+      ...["<FullCard", "<PreviewDropCard"].map((t) => page.indexOf(t)).filter((i) => i > -1),
+    );
+    expect(nudgeAt).toBeGreaterThan(-1);
+    expect(Number.isFinite(cardsAt)).toBe(true);
+    expect(nudgeAt).toBeLessThan(cardsAt);
+    // And below the hint, which teaches what a Drop is before this asides
+    // about being told when one lands.
+    expect(page.indexOf('<Hint id="tonight-is-three" />')).toBeLessThan(nudgeAt);
+  });
+
   it("keeps a way to Settings for the cases it cannot fix", () => {
     expect(nudge).toMatch(/href="\/app\/settings\/notifications"/);
   });

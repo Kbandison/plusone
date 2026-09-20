@@ -76,6 +76,21 @@ export default async function TonightPage() {
           category trains people out of expecting. */}
       <Hint id="tonight-is-three" />
 
+      {/* Above the cards, which is a correction. It was at the foot, on the
+          argument that "somebody opening the app came for the Drop; a card
+          about a setting above it is the thing they have to scroll past".
+          True, and outweighed: a Drop is three cards each carrying a
+          full-width 4:5 photograph, so the foot of this page is a long way
+          down and a tester may never reach it. A nudge nobody scrolls to is a
+          nudge that does not work, and the whole reason this exists is that
+          people were not finding the setting.
+
+          It costs little to put it here: it appears once, only for somebody
+          who has not decided, and it leaves on its own four seconds after it
+          works. After the hint, because that teaches what a Drop IS and this
+          is an aside about being told when one lands. */}
+      <NotifyNudge vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
+
       {/* §6.1 step 2 — the honesty line, shown whenever the search went wider
           than the member asked for. Quietly widening is how apps pretend to be
           busier than they are. */}
@@ -166,14 +181,6 @@ export default async function TonightPage() {
           </p>
         </>
       )}
-
-      {/* Last on the screen, under the cards rather than over them.
-          Somebody opening the app came for the Drop; a card about a setting
-          above it is the thing they have to scroll past to reach what they
-          came for. It appears only for somebody who has not decided about
-          notifications, once, and it never asks for the permission itself —
-          see the component. */}
-      <NotifyNudge vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
     </main>
   );
 }
