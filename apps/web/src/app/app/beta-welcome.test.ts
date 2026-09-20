@@ -38,6 +38,38 @@ describe("the beta welcome", () => {
     expect(flags.length).toBeGreaterThan(400);
   });
 
+  it("is reachable after the welcome is gone", () => {
+    // THE ONE THAT WAS BROKEN. /app/beta was linked from the welcome and from
+    // nowhere else, and the welcome is dismissed permanently the first time it
+    // closes — so in the TWA and the iOS app, which have no address bar, the
+    // checklist became unreachable the moment somebody pressed "Start looking
+    // around". The page's own comment claimed "a tester who wants it back has
+    // it in their history", which is not a route either shell can take.
+    const settings = code("app/app/settings/page.tsx");
+    expect(settings).toMatch(/href="\/app\/beta"/);
+    // Gated, like the admin block it is shaped after: a door only for the
+    // people it is for.
+    expect(settings).toMatch(/profile\?\.joined_in_beta \?/);
+    // And the column is actually fetched, or the gate is always false and the
+    // door silently never appears.
+    expect(settings).toMatch(/select\("cross_community_opt_in, joined_in_beta"\)/);
+  });
+
+  it("does not claim browser history is a route", () => {
+    // A shell has no address bar. This repo has now been burned by that twice —
+    // HANDOFF.md records the first costing an App Review — so the sentence is
+    // refused by name.
+    //
+    // THE RAW FILE, NOT THE STRIPPED ONE, and that is the whole point of this
+    // assertion. Every other guard here reads comment-stripped source, because
+    // prose describing code must never satisfy a claim about the code. This one
+    // is the inverse: the thing being guarded IS a comment — a false sentence
+    // that would tell the next reader the route exists — and stripping comments
+    // made it unfailable. A sabotage caught it passing against the claim
+    // restored verbatim.
+    expect(read("app/app/beta/page.tsx")).not.toMatch(/in their history/);
+  });
+
   it("is shown only to somebody who arrived during the beta", () => {
     // A member who joined afterwards would be thanked for testing and handed a
     // list of chores written for somebody else.

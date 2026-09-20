@@ -1910,6 +1910,28 @@ export const DRAFT_COPY = {
     navSettings: "Settings",
 
     /**
+     * The way back to the testing checklist.
+     *
+     * ── the welcome was the only door, and it opens once ───────────────────
+     *
+     * /app/beta was linked from the beta welcome and from nowhere else, and the
+     * welcome is dismissed permanently the first time it is closed. The comment
+     * on that page said "a tester who wants it back has it in their history",
+     * which is the sentence this repo has been burned by twice: A SHELL HAS NO
+     * ADDRESS BAR. A TWA and a WKWebView cannot navigate to a typed URL, so for
+     * every tester in either app the checklist became unreachable the moment
+     * they pressed "Start looking around".
+     *
+     * Kevin caught it. Settings is the durable door — the drawer a person opens
+     * looking for things about their account and this app — and it is shaped
+     * exactly like the admin section beside it: a block that exists only for
+     * the people it is for.
+     */
+    betaSettingsHeading: "Testing Plus One",
+    betaSettingsBody: "The list of things worth trying, and what you have tried.",
+    betaSettingsLink: "Open the checklist",
+
+    /**
      * The way out of a room, which had no control until 2026-09-16.
      *
      * There is NO VISIBLE LABEL. It was "Reach out", a sixth item in an action

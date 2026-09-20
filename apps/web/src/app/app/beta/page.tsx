@@ -13,10 +13,25 @@ export const dynamic = "force-dynamic";
 /**
  * The tester's own screen.
  *
- * Reachable from the welcome and from nowhere else in the nav, deliberately:
- * five tabs are the places a member goes to do the thing the app is for, and
- * this is not one of them. A tester who wants it back has it in their history,
- * and the welcome links it.
+ * Not in the bottom nav, deliberately: five tabs are the places a member goes
+ * to do the thing the app is for, and this is not one of them. It is reached
+ * from the beta welcome, and from Settings.
+ *
+ * ── the Settings door is a CORRECTION, 2026-09-20 ──────────────────────────
+ *
+ * This comment used to say the welcome links it and that a tester who wanted it
+ * back could reach it through the browser, and both halves were wrong together.
+ * The welcome is dismissed permanently the first time it closes, so it links
+ * this exactly once — and A SHELL HAS NO ADDRESS BAR, so going back through the
+ * browser is not a route a tester in the TWA or the iOS app can take.
+ *
+ * (Described rather than quoted, because a test refuses the old sentence by
+ * name and cannot tell a quotation from a claim.)
+ *
+ * So for every tester in either shell the checklist became unreachable the
+ * moment they pressed "Start looking around". Kevin caught it. It is the same
+ * mistake, in the same words, that HANDOFF.md records costing an App Review:
+ * reasoning about a shell as though it were a browser tab.
  *
  * ── gated on joined_in_beta, and the redirect is the point ─────────────────
  *
@@ -45,6 +60,9 @@ export default async function BetaPage() {
           tried is sent to us." Kevin cut it: nobody was wondering, and a screen
           that volunteers what it is NOT doing invites the thought. The ticks
           still never leave the device, which beta-welcome.test.ts holds. */}
+      {/* Both ways out, because this screen is a destination now rather than a
+          thing the welcome dropped somebody into: one to report what they
+          found, one back to the app they are meant to be testing. */}
       <p className="mt-8 text-[12.6px] leading-[1.6] text-ink-3">
         <Link
           href="/app/feedback"

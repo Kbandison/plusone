@@ -19,7 +19,14 @@ export default async function SettingsPage() {
   if (!auth.user) redirect("/sign-in");
 
   const [{ data: profile }, { data: deletion }, { data: isAdmin }] = await Promise.all([
-    supabase.from("profiles").select("cross_community_opt_in").eq("id", auth.user.id).maybeSingle(),
+    // joined_in_beta rides along rather than taking a second round trip: the
+    // column has been live since 20260909000500, so naming it here cannot fail
+    // the request the way an unshipped one would.
+    supabase
+      .from("profiles")
+      .select("cross_community_opt_in, joined_in_beta")
+      .eq("id", auth.user.id)
+      .maybeSingle(),
     supabase
       .from("deletion_requests")
       .select("purge_after, status")
@@ -65,6 +72,25 @@ export default async function SettingsPage() {
           </p>
           <Link href="/admin" className={buttonClass("secondary", "mt-5 inline-block")}>
             {DRAFT_COPY.app.adminSettingsLink}
+          </Link>
+        </section>
+      ) : null}
+
+      {/* The way back to the checklist, for the people who have one.
+          The beta welcome linked it and nothing else did — and that welcome is
+          dismissed for good the first time it closes. A shell has no address
+          bar, so for every tester in the TWA or the iOS app the list became
+          unreachable the moment they pressed "Start looking around". Shaped
+          like the admin block above it: a door that exists only for the people
+          it is for. */}
+      {profile?.joined_in_beta ? (
+        <section className="mt-10 rounded-xl border border-line-2 bg-surface p-6">
+          <h2 className="text-[0.972rem]">{DRAFT_COPY.app.betaSettingsHeading}</h2>
+          <p className="mt-3 text-[12.2px] leading-[1.65] text-ink-2">
+            {DRAFT_COPY.app.betaSettingsBody}
+          </p>
+          <Link href="/app/beta" className={buttonClass("secondary", "mt-5 inline-block")}>
+            {DRAFT_COPY.app.betaSettingsLink}
           </Link>
         </section>
       ) : null}
