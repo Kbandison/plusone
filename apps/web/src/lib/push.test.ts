@@ -28,6 +28,14 @@ const transport = withoutComments(read("src/lib/web-push.ts"));
 const notifier = withoutComments(read("src/lib/notifier.ts"));
 const fanout = withoutComments(read("src/lib/notify.ts"));
 const toggle = withoutComments(read("src/app/app/settings/push-toggle.tsx"));
+/**
+ * The asking itself, extracted 2026-09-20 when the Drop's nudge became a second
+ * caller. The rule it must keep — that nothing reaches it except a press — now
+ * has to hold across both callers rather than inside one file, which is why the
+ * assertion below walks every effect in each of them.
+ */
+const enablePush = withoutComments(read("src/lib/enable-push.ts"));
+const nudge = withoutComments(read("src/app/app/notify-nudge.tsx"));
 const cron = withoutComments(read("src/app/api/cron/drop-notify/route.ts"));
 const sql = withoutComments(
   read("../../supabase/migrations/20260821000400_telling_people_the_drop_landed.sql"),
@@ -343,10 +351,24 @@ describe("permission is asked for where somebody went looking for it", () => {
     // screen show the true state without spending the one prompt.
     expect(onMount).toMatch(/nativePushPermission/);
 
-    const enable = toggle.slice(toggle.indexOf("function enable()"));
-    const body = enable.slice(0, enable.indexOf("\n  function "));
-    expect(body).toMatch(/requestNativePush/);
-    expect(body).toMatch(/Notification\.requestPermission/);
+    // The asking moved to lib/enable-push.ts on 2026-09-20, when the nudge on
+    // the Drop became a second caller. It is still only ever reached from a
+    // press — both callers put it behind a button — and this checks the same
+    // two prompts in the function that now performs them.
+    expect(enablePush).toMatch(/requestNativePush/);
+    expect(enablePush).toMatch(/Notification\.requestPermission/);
+
+    // And nothing calls it on mount. The whole rule in one line: a press is the
+    // only thing that may reach it, in either caller.
+    for (const [name, src] of [
+      ["toggle", toggle],
+      ["nudge", nudge],
+    ] as const) {
+      const effects = src.match(/useEffect\([\s\S]*?\}, \[[^\]]*\]\);/g) ?? [];
+      for (const block of effects) {
+        expect(block, `${name} asks on mount`).not.toMatch(/enablePush\(/);
+      }
+    }
   });
 
   /**
@@ -385,7 +407,10 @@ describe("permission is asked for where somebody went looking for it", () => {
 
   /** A browser holding a subscription the server never recorded is silent forever. */
   it("rolls the subscription back when the server does not record it", () => {
-    expect(toggle).toMatch(/if \(!result\.ok\) \{[\s\S]{0,200}subscription\.unsubscribe\(\)/);
+    // Moved with the rest of the enable path. A browser subscribed to a push
+    // service we cannot reach is worse than one that is not subscribed at all:
+    // the member is told "on" and never hears anything.
+    expect(enablePush).toMatch(/if \(!result\.ok\) \{[\s\S]{0,240}subscription\.unsubscribe\(\)/);
   });
 
   /** The other order leaves a row pointing at an endpoint the browser discarded. */

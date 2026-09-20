@@ -6,36 +6,11 @@ import { DRAFT_COPY, PUSH_APP_NAME } from "@plusone/config";
 
 import { buttonClass } from "@/app/ui";
 import { registerPushDevice, unregisterPushDevice } from "@/app/app/push-actions";
+import { enablePush, enablePushError } from "@/lib/enable-push";
 import { inNativeShell, isAppleMobile, nativePlatform } from "@/lib/native-shell";
 import { nativePushPermission, registerForNativeToken, requestNativePush } from "@/lib/native-push";
 
 const C = DRAFT_COPY.app;
-
-/**
- * VAPID's public key arrives base64url and PushManager wants bytes.
- *
- * Backed by an explicitly allocated ArrayBuffer rather than `Uint8Array.from`:
- * the latter infers `Uint8Array<ArrayBufferLike>`, which is not a `BufferSource`
- * — the DOM types narrowed when ArrayBuffer became generic, and a view over a
- * SharedArrayBuffer cannot be sent to a push service.
- */
-function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
-  const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4))
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
-  const raw = atob(padded);
-  const bytes = new Uint8Array(new ArrayBuffer(raw.length));
-  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
-  return bytes;
-}
-
-/** The two keys off a PushSubscription, base64url, which is what the DB stores. */
-function keysOf(subscription: PushSubscription): { p256dh: string; auth: string } | null {
-  const json = subscription.toJSON();
-  const p256dh = json.keys?.p256dh;
-  const auth = json.keys?.auth;
-  return p256dh && auth ? { p256dh, auth } : null;
-}
 
 type State = "checking" | "unsupported" | "install-first" | "blocked" | "off" | "on";
 
@@ -158,87 +133,19 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
   function enable() {
     setError(null);
     start(async () => {
-      try {
-        /**
-         * The native path, and the only place this app asks iOS for permission.
-         *
-         * iOS shows that alert once for the life of an install, so it is spent
-         * here — on a member who has come to the settings screen and pressed a
-         * switch — rather than on a cold launch, which is what it did until the
-         * Simulator showed the prompt landing on top of Tonight's Drop.
-         */
-        if (inNativeShell()) {
-          const platform = nativePlatform();
-          if (platform !== "ios" && platform !== "android") {
-            setState("unsupported");
-            return;
-          }
-
-          const permission = await requestNativePush();
-          if (permission !== "granted") {
-            setState(permission === "denied" ? "blocked" : "off");
-            return;
-          }
-
-          // No token means APNs did not answer — offline, or refusing. Left OFF
-          // rather than ON, because a switch that says on while nothing can
-          // reach the device is the failure this whole screen exists to avoid.
-          const token = await registerForNativeToken();
-          if (!token) {
-            setState("off");
-            setError(C.pushFailed);
-            return;
-          }
-
-          const result = await registerPushDevice({ platform, token });
-          if (!result.ok) {
-            setState("off");
-            setError(C.pushFailed);
-            return;
-          }
-
-          setState("on");
-          return;
-        }
-
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          setState(permission === "denied" ? "blocked" : "off");
-          return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.subscribe({
-          // Required to be true by every browser that implements this: a
-          // subscription that could send a silent push is a tracking channel,
-          // so the platforms simply do not allow one.
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey!),
-        });
-
-        const keys = keysOf(subscription);
-        if (!keys) {
-          setError(C.pushFailed);
-          return;
-        }
-
-        const result = await registerPushDevice({
-          platform: "web",
-          endpoint: subscription.endpoint,
-          ...keys,
-        });
-        if (!result.ok) {
-          // Rolled back, so the browser does not hold a subscription the server
-          // has never heard of — that device would be permanently silent while
-          // its own settings said otherwise.
-          await subscription.unsubscribe();
-          setError(C.pushFailed);
-          return;
-        }
+      // The asking lives in lib/enable-push.ts, shared with the nudge on the
+      // Drop. This screen keeps the STATE mapping, because "off" here means a
+      // toggle somebody can press again and there it means a card that goes
+      // away — the same outcome, two different things to draw.
+      const outcome = await enablePush(vapidPublicKey);
+      if (outcome === "on") {
         setState("on");
-      } catch {
-        setError(C.pushFailed);
+        return;
       }
+      setState(
+        outcome === "blocked" ? "blocked" : outcome === "unsupported" ? "unsupported" : "off",
+      );
+      setError(enablePushError(outcome));
     });
   }
 

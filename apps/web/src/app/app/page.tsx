@@ -173,7 +173,7 @@ export default async function TonightPage() {
           came for. It appears only for somebody who has not decided about
           notifications, once, and it never asks for the permission itself —
           see the component. */}
-      <NotifyNudge />
+      <NotifyNudge vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
     </main>
   );
 }

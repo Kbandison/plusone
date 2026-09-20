@@ -1934,8 +1934,21 @@ export const DRAFT_COPY = {
     notifyNudgeHeading: "Know when someone replies",
     notifyNudgeBody:
       "Your Drop lands at 8pm, and a connect or a message can arrive any time. Nothing is on until you say so.",
-    notifyNudgeLink: "Choose what reaches you",
+    notifyNudgeAction: "Turn them on",
     notifyNudgeDismiss: "Not now",
+    /** Said after it works, then the card leaves. */
+    notifyNudgeDone: "Notifications are on.",
+    /**
+     * They refused the browser's own dialogue, which this cannot undo.
+     *
+     * Points at Settings rather than offering the button again: on iOS and
+     * Firefox that refusal is permanent for the origin, so pressing again does
+     * nothing, and the only route back is the device's own settings — which the
+     * notifications screen explains.
+     */
+    notifyNudgeBlocked: "Your browser is blocking them. Settings has the way back.",
+    /** Somewhere to go when the subscription itself failed. */
+    notifyNudgeSettings: "Open notification settings",
 
     /**
      * The way back to the testing checklist.

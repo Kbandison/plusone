@@ -22,14 +22,49 @@ describe("the nudge never spends the one prompt", () => {
     expect(nudge.length).toBeGreaterThan(400);
   });
 
-  it("NEVER asks for the permission", () => {
-    // THE WHOLE POINT. push-toggle refuses to prompt on arrival because
-    // "dismissing it on iOS or Firefox is permanent for the origin — there is
-    // no second ask", and a dialogue before somebody has looked at the app is
-    // the one they dismiss by reflex. A nudge that prompted would spend that
-    // single chance on the worst possible moment.
-    expect(nudge).not.toMatch(/requestPermission/);
-    expect(nudge).not.toMatch(/requestNativePush/);
+  it("never asks except from a press", () => {
+    // Kevin's change, 2026-09-20: the card switches notifications on itself
+    // rather than sending somebody to Settings. So it DOES prompt now — and
+    // the rule it must still keep is the one push-toggle states: not on
+    // arrival, because "dismissing it on iOS or Firefox is permanent for the
+    // origin — there is no second ask".
+    //
+    // A press is the only thing that may reach it. Asserted by walking every
+    // effect rather than by the absence of a word, because the dangerous
+    // version of this is a call that looks identical and sits in a useEffect.
+    expect(nudge).toMatch(/onClick=\{\(\) => start\(async \(\) => setOutcome\(await enablePush/);
+    const effects = nudge.match(/useEffect\([\s\S]*?\}, \[[^\]]*\]\);/g) ?? [];
+    expect(effects.length).toBeGreaterThan(0);
+    for (const block of effects) expect(block).not.toMatch(/enablePush\(/);
+  });
+
+  it("shows the privacy note before the press, not after", () => {
+    // push-toggle's rule was never just "behind a button" — it is "behind a
+    // button, ON A SCREEN where somebody has gone looking for it, with the
+    // privacy note visible before they press". Switching here instead of
+    // redirecting means bringing the note along, or the press is less informed
+    // than it was when it lived on the settings screen.
+    expect(nudge).toMatch(/C\.pushPrivacyNote/);
+    const noteAt = nudge.indexOf("pushPrivacyNote");
+    const pressAt = nudge.indexOf("enablePush(vapidPublicKey)");
+    expect(noteAt).toBeGreaterThan(-1);
+    expect(noteAt).toBeLessThan(pressAt);
+  });
+
+  it("leaves on its own once it worked, and only then", () => {
+    // Kevin asked for it to go away after telling them. A blocked or failed
+    // card stays, because it is telling somebody something they still have to
+    // act on.
+    expect(nudge).toMatch(/if \(outcome !== "on"\) return;/);
+    expect(nudge).toMatch(/setTimeout\(\(\) => add\("seen"\), 4000\)/);
+    expect(nudge).toMatch(/clearTimeout\(timer\)/);
+  });
+
+  it("does not offer a button that cannot work", () => {
+    // Blocked is permanent for the origin on iOS and Firefox, so pressing
+    // again does nothing. It says where the way back is instead.
+    expect(nudge).toMatch(/outcome === "blocked" \? C\.notifyNudgeBlocked/);
+    expect(DRAFT_COPY.app.notifyNudgeBlocked).toMatch(/settings/i);
   });
 
   it("reads the state instead, which is free", () => {
@@ -39,15 +74,18 @@ describe("the nudge never spends the one prompt", () => {
     expect(nudge).toMatch(/nativePushPermission\(\)/);
   });
 
-  it("points at the screen where the real button is", () => {
-    // Next to the privacy note about what a lock screen shows, which somebody
-    // should have read before pressing.
+  it("keeps a way to Settings for the cases it cannot fix", () => {
     expect(nudge).toMatch(/href="\/app\/settings\/notifications"/);
   });
 
-  it("leaves the asking where it was", () => {
-    // The toggle is still the only thing in the app that requests it.
-    expect(toggle).toMatch(/requestNativePush|requestPermission/);
+  it("shares one definition of turning push on", () => {
+    // Sixty lines of subscription machinery — the VAPID conversion, the
+    // two-key read, the unsubscribe-on-failure rollback — and two copies is
+    // how one gets a fix and the other does not.
+    expect(nudge).toMatch(/from "@\/lib\/enable-push"/);
+    expect(toggle).toMatch(/from "@\/lib\/enable-push"/);
+    // And neither still carries the machinery itself.
+    for (const src of [nudge, toggle]) expect(src).not.toMatch(/urlBase64ToUint8Array/);
   });
 
   it("says nothing to somebody who already decided", () => {
@@ -82,7 +120,8 @@ describe("the nudge never spends the one prompt", () => {
 
   it("dismisses itself when acted on, not only when refused", () => {
     // Otherwise somebody who turns them on comes back to a card about the thing
-    // they have just done.
+    // they have just done. The success path does it on the timer; the Settings
+    // link does it on the way through.
     const link = /<Link[\s\S]*?<\/Link>/.exec(nudge)?.[0] ?? "";
     expect(link).toMatch(/onClick=\{\(\) => add\("seen"\)\}/);
   });
