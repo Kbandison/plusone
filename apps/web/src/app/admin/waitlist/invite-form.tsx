@@ -72,11 +72,16 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
    */
   const [includeUnconfirmed, setIncludeUnconfirmed] = useState(false);
   const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set());
-  const [sent, submit, pending] = useActionState(async (_prev: boolean, formData: FormData) => {
-    await invite(formData);
-    setPicked(new Set());
-    return true;
-  }, false);
+  // The COUNT, not a boolean. "Sent." said the same thing for twenty-five
+  // invitations and for none, which is how a dropped override went unnoticed.
+  const [sent, submit, pending] = useActionState(
+    async (_prev: number | null, formData: FormData) => {
+      const count = await invite(formData);
+      setPicked(new Set());
+      return count;
+    },
+    null,
+  );
 
   /**
    * One pass, grouped, and memoised on the two things that can change it.
@@ -126,11 +131,19 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
         holding.
       </p>
 
-      {sent ? (
-        <p className="mt-4 text-body text-ink-2">
-          Sent. The rows move to Invited on the next load.
+      {/* Zero is louder than silence. If the selection produced no sends —
+          a dropped override, a live invitation, somebody already in — this has
+          to say so rather than reporting success. */}
+      {sent === null ? null : sent === 0 ? (
+        <p role="alert" className="mt-4 text-body text-critical">
+          Nothing sent. Everyone selected was already invited, or had not confirmed while the
+          override was off.
         </p>
-      ) : null}
+      ) : (
+        <p role="status" className="mt-4 text-body text-ink-2">
+          Sent {sent}. The rows move to Invited on the next load.
+        </p>
+      )}
 
       <label className="mt-4 flex items-center gap-3 text-[12.2px]">
         <input
@@ -143,9 +156,15 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
       </label>
 
       <label className="mt-3 flex items-center gap-3 text-[12.2px]">
+        {/* No `name`. This box sits ABOVE the form, next to the other filter,
+            and a control outside a <form> is not submitted with it — which is
+            exactly how this shipped broken: the list filtered correctly, an
+            admin selected the people they could see, and the flag never
+            arrived, so the server dropped every unconfirmed row and the screen
+            said "Sent." The value travels as a hidden input INSIDE the form
+            instead. */}
         <input
           type="checkbox"
-          name="allowUnconfirmed"
           checked={includeUnconfirmed}
           onChange={(event) => {
             const on = event.currentTarget.checked;
@@ -171,6 +190,13 @@ export function InviteForm({ rows }: { rows: readonly InviteRow[] }) {
         </p>
       ) : (
         <form action={submit} className="mt-4 flex flex-col gap-6">
+          {/* The override, carried into the submission.
+              The visible control is a filter above this form; a checkbox
+              outside a <form> is never submitted with it. This is the only
+              thing that tells the server the selection may contain people who
+              never confirmed, and without it inviteFromWaitlist refuses every
+              one of them silently. */}
+          {includeUnconfirmed ? <input type="hidden" name="allowUnconfirmed" value="on" /> : null}
           {groups.map((group) => {
             const ids = group.rows.map((r) => r.id);
             const all = ids.every((id) => picked.has(id));

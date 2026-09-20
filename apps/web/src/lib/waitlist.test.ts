@@ -1118,6 +1118,37 @@ describe("the override is asked for, never assumed", () => {
     expect(body).toMatch(/includeUnconfirmed/);
   });
 
+  it("SENDS the override, which this suite watched fail", () => {
+    // 2026-09-20, in production. Kevin ticked the box, saw the eighteen
+    // unconfirmed people appear, selected them, pressed send, and was told it
+    // had sent. None of them were invited.
+    //
+    // The visible checkbox sits ABOVE the <form>, beside the other filter, and
+    // a control outside a form is not submitted with it. So the list filtered
+    // on React state while `allowUnconfirmed` never reached the server,
+    // `includeUnconfirmed` was false on every request, and inviteFromWaitlist
+    // dropped every unconfirmed row.
+    //
+    // The test above passed the whole time. It asserted the action READS the
+    // field — which it did — and nothing asserted anything SENDS it. A guard on
+    // one end of a wire is not a guard on the wire.
+    const open = form.indexOf("<form action={submit}");
+    const close = form.indexOf("</form>");
+    expect(open).toBeGreaterThan(-1);
+    expect(close).toBeGreaterThan(open);
+    const inside = form.slice(open, close);
+    expect(inside).toMatch(/name="allowUnconfirmed"/);
+  });
+
+  it("says how many went, so zero cannot look like success", () => {
+    // What made the bug silent. inviteFromWaitlist has always returned a count
+    // and the action discarded it, so the screen said "Sent." whether it sent
+    // twenty-five invitations or none.
+    expect(actions).toMatch(/export async function invite\(formData: FormData\): Promise<number>/);
+    expect(form).toMatch(/sent === 0 \?/);
+    expect(form).toMatch(/Nothing sent/);
+  });
+
   it("starts the control off", () => {
     expect(form).toMatch(/useState\(false\)/);
     expect(form).toMatch(/name="allowUnconfirmed"/);

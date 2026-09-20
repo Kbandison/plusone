@@ -34,7 +34,7 @@ async function assertAdmin(): Promise<void> {
   if (!isAdmin) redirect("/");
 }
 
-export async function invite(formData: FormData): Promise<void> {
+export async function invite(formData: FormData): Promise<number> {
   await assertAdmin();
 
   const ids = formData.getAll("id").map(String).filter(Boolean);
@@ -44,9 +44,23 @@ export async function invite(formData: FormData): Promise<void> {
   // a POST is itself the permission to send — which is the whole wall, decided
   // by whoever wrote the request.
   const includeUnconfirmed = formData.get("allowUnconfirmed") === "on";
-  await inviteFromWaitlist(ids, { includeUnconfirmed });
+  const sent = await inviteFromWaitlist(ids, { includeUnconfirmed });
 
   revalidatePath("/admin/waitlist");
+
+  /**
+   * HOW MANY, because "Sent." was a lie on 2026-09-20.
+   *
+   * inviteFromWaitlist has always returned a count and this discarded it, so
+   * the screen said the same thing whether it sent twenty-five invitations or
+   * none. That is what made a broken override silent: an admin ticked the box,
+   * saw the people, pressed the button, was told it had sent, and eighteen
+   * invitations were dropped without a word.
+   *
+   * A count cannot be wrong in that direction. It is the number that actually
+   * left, read off the rows the function wrote.
+   */
+  return sent;
 }
 
 /**
