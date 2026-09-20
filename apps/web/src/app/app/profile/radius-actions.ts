@@ -50,3 +50,53 @@ export async function saveRadiusSetting(
   for (const path of ["/app", "/app/browse", "/app/profile"]) revalidatePath(path);
   return { error: null };
 }
+
+/**
+ * Move where the app thinks you are.
+ *
+ * ── this was impossible until 2026-09-20 ────────────────────────────────────
+ *
+ * `set_my_location` had exactly one caller — the onboarding step — so whatever
+ * the browser said that day was permanent. Somebody who refused the prompt, was
+ * on a VPN, or simply moved had no way to correct it, and the app matches on
+ * that column: a wrong location is a Drop full of strangers three states away,
+ * with no control anywhere that would fix it.
+ *
+ * ── deliberately NOT attached to the slider ────────────────────────────────
+ *
+ * `saveRadiusSetting` refuses to ask the browser, and it is right to: "a
+ * permission prompt on every drag of a slider is a thing people learn to
+ * dismiss". This is its own button, pressed on purpose, which is the only shape
+ * that asks for a location permission honestly.
+ *
+ * The bounds live in `set_my_location`, which drops anything out of range
+ * rather than storing it — a wrong location is worse than none, because none
+ * reads as "no matches near you" and wrong reads as a match six thousand miles
+ * away. Nothing is re-checked here; two copies of that rule is how a screen
+ * starts writing what the RPC would refuse.
+ */
+export async function updateMyLocation(
+  _previous: RadiusState,
+  formData: FormData,
+): Promise<RadiusState> {
+  const supabase = await getServerSupabase();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/sign-in");
+
+  const lat = Number(formData.get("lat"));
+  const lon = Number(formData.get("lon"));
+  // The device said nothing. Not an error the member caused, and not a state
+  // worth a red message — the button simply did not get an answer.
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return { error: "We could not get your location. Check the permission and try again." };
+  }
+
+  // Not the service client: set_my_location reads auth.uid(), so it must run as
+  // the member. A definer wrapper here would let one account move another.
+  const { error } = await supabase.rpc("set_my_location", { p_lat: lat, p_lon: lon });
+  if (error) return { error: "That didn't save. Try again." };
+
+  // Every surface that reads distance.
+  for (const path of ["/app", "/app/browse", "/app/profile"]) revalidatePath(path);
+  return { error: null };
+}

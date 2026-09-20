@@ -18,6 +18,7 @@ import { RadiusForm } from "@/app/onboarding/radius/radius-form";
 import { NameEditor } from "./name-editor";
 import { IntentionEditor } from "./intention-editor";
 import { saveRadiusSetting } from "./radius-actions";
+import { UpdateLocation } from "./update-location";
 import { getServerSupabase } from "@/lib/supabase";
 import { MemberPhotoFrame } from "../member-photo";
 import { ModeToggle } from "./mode-toggle";
@@ -320,6 +321,12 @@ export default async function ProfilePage() {
           approximate={approximate}
           save={saveRadiusSetting}
         />
+
+        {/* The other half of the same question. The slider says how far to
+            look; this says where from — and until today nothing could change
+            it after onboarding, so a member who moved matched the wrong city
+            for ever. */}
+        <UpdateLocation approximate={approximate} />
       </section>
 
       {/* The way back to "Skip for now".

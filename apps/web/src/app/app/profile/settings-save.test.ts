@@ -78,9 +78,22 @@ describe("the profile saves as you go", () => {
     expect(radiusAction).toMatch(/revalidatePath/);
   });
 
-  /** The permission prompt belongs to the step that asks; a slider does not. */
-  it("never asks a settled member for their location again", () => {
-    expect(radiusAction).not.toMatch(/set_my_location/);
+  /** The permission prompt belongs to a button pressed on purpose; a slider does not. */
+  it("never asks for a location from the slider", () => {
+    // Scoped to saveRadiusSetting, not the file. It asserted that
+    // radius-actions.ts never mentions set_my_location, which was the same
+    // thing while that file held one function — and stopped being on
+    // 2026-09-20, when `updateMyLocation` joined it and legitimately calls it.
+    //
+    // The claim was always about the SLIDER, which the sentence above it says
+    // outright. A file-level assertion standing in for a function-level one is
+    // how a correct change reads as a regression.
+    const save = radiusAction.slice(
+      radiusAction.indexOf("export async function saveRadiusSetting"),
+      radiusAction.indexOf("export async function updateMyLocation"),
+    );
+    expect(save.length).toBeGreaterThan(200);
+    expect(save).not.toMatch(/set_my_location/);
     expect(page).toMatch(/save=\{saveRadiusSetting\}/);
   });
 });

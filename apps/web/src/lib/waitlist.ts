@@ -969,6 +969,45 @@ export async function acceptBetaInvite(code: string | undefined): Promise<void> 
     .is("accepted_at", null);
 }
 
+/**
+ * Which metro this invitation belongs to, for seeding a new member's location.
+ *
+ * ── why the app did not already know this ───────────────────────────────────
+ *
+ * The waitlist metro and `profiles.location` were never connected: the metro is
+ * a value somebody picked from a dropdown, and the location is whatever their
+ * browser reported at the radius step. Nothing in onboarding had ever read the
+ * waitlist. So a member who refused the location prompt finished signing up
+ * matching NOBODY, while a row in another table said exactly which city they
+ * had told us they were in.
+ *
+ * ── read through, never stored as a link ────────────────────────────────────
+ *
+ * `WAITLIST_NEVER` refuses a `user_id` on this table, and the reasoning is that
+ * binding an address which merely ASKED about an HSV and HIV app to a member
+ * account turns an inference into a fact. That still holds. This reads the
+ * metro at the one moment both halves are in hand — an invitation code on the
+ * request, and an account that has just come into existence — and records
+ * nothing about which row it came from. The link exists for the length of one
+ * function call and then does not exist.
+ *
+ * Returns the id, not coordinates: the caller turns it into a point, so this
+ * file stays about the waitlist.
+ */
+export async function metroForInvite(code: string | undefined): Promise<string | null> {
+  if (!code) return null;
+  const { data } = await serviceClient()
+    .from("waitlist")
+    .select("metro")
+    .eq("invite_code", code)
+    .maybeSingle();
+
+  const metro = data?.metro;
+  // `elsewhere` is a real answer to the form and no answer at all to this
+  // question — it is the option for somebody who would not name a place.
+  return typeof metro === "string" && metro !== "elsewhere" && isMetro(metro) ? metro : null;
+}
+
 /** What we already know, so the invite page does not ask twice. */
 export async function storeAccountFor(
   code: string,

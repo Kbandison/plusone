@@ -129,6 +129,7 @@ export {
   METRO_IDS,
   isMetro,
   metroLabel,
+  metroCentroid,
   WAITLIST_NEVER,
   WAITLIST_DOUBLE_OPT_IN,
   WAITLIST_UNCONFIRMED_TTL_DAYS,

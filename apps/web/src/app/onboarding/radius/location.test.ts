@@ -10,6 +10,16 @@ const actions = read("./actions.ts")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/\/\/.*$/gm, "");
 const form = read("./radius-form.tsx");
+/**
+ * The asking itself, extracted to lib/locate.ts on 2026-09-20 when the
+ * profile's "update my location" button became a second caller.
+ *
+ * These assertions moved with it rather than being deleted. Every one is about
+ * a real failure — a promise that never settles, a prompt on render, a GPS fix
+ * whose precision is thrown away — and none of them stopped mattering because
+ * the code changed file.
+ */
+const locate = read("../../../lib/locate.ts");
 const migration = readFileSync(
   fileURLToPath(
     new URL(
@@ -52,24 +62,28 @@ describe("a member gets a location to be measured from", () => {
    */
   it("asks the device only when the member presses the button", () => {
     // The profile reuses this form with its own action and never asks for a
-    // location, so the prompt now lives in the onboarding branch of a ternary
+    // location, so the prompt lives in the onboarding branch of a ternary
     // rather than being the whole action prop.
-    expect(form).toMatch(/: async \(formData\) => \{[\s\S]{0,200}await locate\(\)/);
+    expect(form).toMatch(/: async \(formData\) => \{[\s\S]{0,200}await askWhere\(\)/);
     expect(form).toMatch(/settings\s*\?\s*action/);
-    expect(form).not.toMatch(/useEffect\([\s\S]{0,120}getCurrentPosition/);
+    // Nothing anywhere asks on render. Checked across both files, because the
+    // prompt moving to lib/locate.ts is exactly how this could come back.
+    for (const src of [form, locate]) {
+      expect(src).not.toMatch(/useEffect\([\s\S]{0,120}getCurrentPosition/);
+    }
   });
 
   it("falls back to the coarse position from the request", () => {
     // Repinned 2026-08-29: the resolve is now behind `done()`, which exists so
     // a settle can happen from either the platform's callbacks or our own
     // timer without racing. Same fallback, one more way to reach it.
-    expect(form).toMatch(/done\(approximate \?\? null\)/);
+    expect(locate).toMatch(/where: approximate \?\? null/);
     expect(read("../../../lib/dial-code.ts")).toMatch(/x-vercel-ip-latitude/);
   });
 
   /** Rounded to ~1km before storage regardless, so a GPS fix is wasted battery. */
   it("does not ask for high accuracy", () => {
-    expect(form).toMatch(/enableHighAccuracy: false/);
+    expect(locate).toMatch(/enableHighAccuracy: false/);
   });
 
   it("tells the member what is being asked and what is kept", () => {
@@ -127,7 +141,12 @@ describe("a country is not a location", () => {
    * onboarding into nothing.
    */
   it("tells the two failures apart on screen", () => {
-    expect(form).toMatch(/setOutcome\(approximate \? "approximate" : "unknown"\)/);
+    // locate() decides WHICH failure it was; the form decides what to say about
+    // it. Split across the two files when the asking was extracted, and both
+    // halves are asserted — a form that ignored the outcome would show nothing,
+    // and a locate() that collapsed the two would leave nothing to show.
+    expect(locate).toMatch(/approximate \? "approximate" : "unknown"/);
+    expect(form).toMatch(/if \(outcome !== "exact"\) setOutcome\(outcome\)/);
     expect(form).toMatch(/outcome === "unknown"/);
     expect(DRAFT_COPY.radius.locationUnknown).toMatch(/could not/i);
     expect(DRAFT_COPY.radius.locationUnknown).toMatch(/allow/i);
@@ -151,10 +170,10 @@ describe("the last step of onboarding cannot become a dead button", () => {
    */
   it("resolves on its own timer, not the platform's", () => {
     // The platform option stays: a browser that honours it should answer first.
-    expect(form).toMatch(/timeout: 8000/);
+    expect(locate).toMatch(/timeout: 8000/);
     // And a timer that does not depend on it honouring anything.
-    expect(form).toMatch(/setTimeout\(giveUp, 12000\)/);
-    expect(form).toMatch(/if \(settled\) return;/);
+    expect(locate).toMatch(/setTimeout\(giveUp, 12000\)/);
+    expect(locate).toMatch(/if \(settled\) return;/);
   });
 
   /**

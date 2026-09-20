@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { DRAFT_COPY, metroCentroid } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
 import { cookies } from "next/headers";
@@ -11,7 +11,7 @@ import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
 import { nextRoute } from "@/lib/onboarding";
-import { acceptBetaInvite } from "@/lib/waitlist";
+import { acceptBetaInvite, metroForInvite } from "@/lib/waitlist";
 
 const E = DRAFT_COPY.phone.errors;
 
@@ -207,6 +207,50 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
       // above is written with.
       if (cohortError) {
         console.error(JSON.stringify({ at: "phone.cohort", problem: cohortError.message }));
+      }
+
+      /**
+       * Seed their location from the metro they told us on the waitlist.
+       *
+       * ── the two halves had never been connected ────────────────────────────
+       *
+       * `waitlist.metro` is a value somebody picked from a dropdown;
+       * `profiles.location` is whatever their browser reported at the radius
+       * step. Nothing in onboarding had ever read the waitlist, so a member who
+       * refused the location prompt finished signing up matching NOBODY — while
+       * a row in another table said which city they had told us they were in.
+       *
+       * This is the one moment both halves are in hand: the invitation code is
+       * still on the request and the account has just come into existence.
+       *
+       * ── a SEED, and only where there is nothing ────────────────────────────
+       *
+       * `.is("location", null)` is what makes this safe to run here. It cannot
+       * overwrite a real position, and the radius step later overwrites THIS
+       * with one the moment a browser gives it — so the ordering is: what they
+       * claimed, then what their device measured, and never the other way.
+       *
+       * Nothing records which waitlist row it came from. WAITLIST_NEVER refuses
+       * a user_id on that table because binding an address that merely ASKED
+       * about an HSV and HIV app to a member account turns an inference into a
+       * fact; reading a value through and keeping no link does not.
+       *
+       * Its own request, allowed to fail, like the stamp above: it writes a
+       * column PostgREST would fail the whole request over, and this one is
+       * bookkeeping on top of an account that already exists.
+       */
+      const metro = await metroForInvite(betaCode);
+      const seed = metro ? metroCentroid(metro) : null;
+      if (seed) {
+        const { error: seedError } = await serviceClient()
+          .from("profiles")
+          .update({ location: `POINT(${seed.lon} ${seed.lat})` })
+          .eq("id", auth.user.id)
+          .is("location", null);
+
+        if (seedError) {
+          console.error(JSON.stringify({ at: "phone.seedLocation", problem: seedError.message }));
+        }
       }
     }
   }

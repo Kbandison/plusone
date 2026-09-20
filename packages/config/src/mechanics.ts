@@ -63,8 +63,35 @@ export const OTP = {
 export const RADIUS = {
   /** Decision #12 — default search radius in miles. */
   defaultMi: 50,
-  /** The ladder the drop climbs when the local pool is too thin. */
-  ladderMi: [50, 100, 150, 250],
+  /**
+   * The ladder the drop climbs when the local pool is too thin.
+   *
+   * ── 350 added 2026-09-20, for the people 250 strands ───────────────────────
+   *
+   * Measured against the real waitlist rather than guessed. At 250 miles, six
+   * confirmed members could see nobody at all; the distance from each to the
+   * nearest person on the list:
+   *
+   *   phoenix         256 mi   las-vegas      — SIX miles past the old rung
+   *   jacksonville    285 mi   atlanta, 4 people
+   *   kansas-city     298 mi   oklahoma-city
+   *   miami           328 mi   jacksonville
+   *   san-francisco   347 mi   los-angeles
+   *   seattle         680 mi   unreachable at any sane number
+   *
+   * So 350 rescues five of the six, and Seattle cannot be fixed by distance.
+   *
+   * It costs nothing to anybody who is not stranded. `resolveRadius` starts at
+   * the member's OWN radius and climbs only while the pool is under `minPool`,
+   * returning the smallest rung that helped — so a member in a dense city
+   * clears twelve candidates at 50 and never sees this rung exist. It is
+   * reached only by somebody who would otherwise open an empty app.
+   *
+   * `maxMi` is deliberately NOT raised with it. That is the furthest a member
+   * may CHOOSE on the slider, which is a different question from how far the
+   * app will look on their behalf when their area is empty.
+   */
+  ladderMi: [50, 100, 150, 250, 350],
   /** §6.1 — expand while candidates fall below this. */
   minPool: 12,
   minMi: 5,

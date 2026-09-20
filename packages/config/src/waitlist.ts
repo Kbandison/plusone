@@ -221,6 +221,36 @@ export function metroLabel(id: string): string | null {
 }
 
 /**
+ * The centroid of a metro, for seeding a new member's location.
+ *
+ * ── a claimed place, not a measured one ─────────────────────────────────────
+ *
+ * Everywhere else in this file the centroids answer one question — which metros
+ * fall within `RADIUS.ladderMi`'s last rung of each other — where being ten
+ * miles out cannot change the answer. This is a second job for them and a more
+ * exacting one: it becomes `profiles.location`, which the Drop measures
+ * distance from.
+ *
+ * It is still the right value, because of what it replaces. A member who
+ * refused the location prompt has NO location and matches nobody; a city-hall
+ * coordinate for the city they told us they live in is wrong by a few miles
+ * against a radius whose smallest rung is fifty. The alternative is not
+ * precision, it is absence.
+ *
+ * And it is only ever a seed. `set_my_location` overwrites it the moment the
+ * browser gives a real position at the radius step, and the profile's update
+ * button overwrites it whenever they press.
+ *
+ * Null for `elsewhere`, which is the option for somebody who would not name a
+ * place and therefore has no centroid to borrow.
+ */
+export function metroCentroid(id: string): { lat: number; lon: number } | null {
+  const metro = METROS.find((m) => m.id === id);
+  if (!metro || metro.lat == null || metro.lng == null) return null;
+  return { lat: metro.lat, lon: metro.lng };
+}
+
+/**
  * What this list must never hold, whatever anybody's reason.
  *
  * Pinned by `waitlist.test.ts`, which reads the migration and fails on a column

@@ -2,6 +2,8 @@
 
 import { useActionState, useId, useRef, useState } from "react";
 
+import { locate } from "@/lib/locate";
+
 import { DRAFT_COPY, RADIUS } from "@plusone/config";
 
 import { saveRadius } from "./actions";
@@ -65,66 +67,18 @@ export function RadiusForm({
    * reflex; one that appears when they press a button labelled with a distance
    * has a reason attached to it.
    *
-   * Never blocks. A refusal, a timeout or a browser without geolocation all
-   * fall through to the coarse IP position, and no position at all still lets
-   * the member finish — they match nobody until one arrives, which is exactly
-   * where they were standing before.
+   * The asking itself is `lib/locate.ts`, shared with the profile's update
+   * button. Never blocks: a refusal, a timeout or a browser without
+   * geolocation all fall through to the coarse IP position, and no position at
+   * all still lets the member finish — they match nobody until one arrives,
+   * which is exactly where they were standing before.
    */
-  async function locate(): Promise<{ lat: number; lon: number } | null> {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setOutcome(approximate ? "approximate" : "unknown");
-      return approximate ?? null;
-    }
-
-    return new Promise((resolve) => {
-      /**
-       * Our own timer, because the platform's `timeout` is not a promise.
-       *
-       * In WKWebView — the iOS shell — `getCurrentPosition` can call NEITHER
-       * callback, ever. Not success, not error, and the 8000 below is ignored
-       * because the request never starts: iOS will not ask for a permission the
-       * app has not declared, and it says nothing about refusing. Measured in
-       * the Simulator on 2026-08-29, and the app's Info.plist was missing
-       * NSLocationWhenInUseUsageDescription at the time.
-       *
-       * That string is added now, so this should not happen. This timer stays
-       * anyway, because the failure it prevents is the worst shape a bug can
-       * take: this promise never settling means the form action is never
-       * dispatched, so Finish does nothing at all — no error, no pending state,
-       * no clue — on the last step of onboarding. A member cannot finish
-       * signing up and has nothing to report but "the button is broken".
-       *
-       * A comment two lines above this used to say "Never blocks". It did.
-       */
-      let settled = false;
-      const done = (where: { lat: number; lon: number } | null) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(fallback);
-        resolve(where);
-      };
-      const giveUp = () => {
-        // Told apart on purpose: "we used your rough area" and "we have no
-        // idea where you are" have completely different consequences, and
-        // only the second one leaves the app empty.
-        setOutcome(approximate ? "approximate" : "unknown");
-        done(approximate ?? null);
-      };
-
-      // Longer than the platform's own timeout, so a browser that honours
-      // its contract still gets to answer first and this never pre-empts it.
-      const fallback = setTimeout(giveUp, 12000);
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => done({ lat: position.coords.latitude, lon: position.coords.longitude }),
-        giveUp,
-        // Low accuracy on purpose: the answer is rounded to about a kilometre
-        // the moment it lands, so asking for a GPS fix would spend a member's
-        // battery and seconds to produce digits that are then thrown away.
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 },
-      );
-    });
+  async function askWhere(): Promise<{ lat: number; lon: number } | null> {
+    const { where, outcome } = await locate(approximate);
+    if (outcome !== "exact") setOutcome(outcome);
+    return where;
   }
+
   // RADIUS.defaultMi is `as const`, so it infers as the literal 50 and the state
   // would refuse every other value.
   //
@@ -143,7 +97,7 @@ export function RadiusForm({
           : async (formData) => {
               setLocating(true);
               try {
-                const where = await locate();
+                const where = await askWhere();
                 if (where) {
                   formData.set("lat", String(where.lat));
                   formData.set("lon", String(where.lon));
