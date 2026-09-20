@@ -1199,9 +1199,16 @@ describe("the override is asked for, never assumed", () => {
 
   it("does not remind somebody who was invited instead", () => {
     // Two emails in a week from an app they may not have asked about.
-    expect(fnBody(lib, "export async function dueForReminder")).toMatch(
-      /\.is\("invited_at", null\)/,
-    );
+    //
+    // BOTH READERS, which is the correction. The cron had this and the admin
+    // screen did not, so on 2026-09-20 seventeen of eighteen rows in the
+    // "never confirmed" section carried a live reminder button for somebody who
+    // had already been invited — the smaller email chasing the larger one into
+    // the same inbox. A rule enforced on the schedule and not on the button is
+    // enforced by whoever remembers.
+    for (const fn of ["dueForReminder", "unconfirmedWaitlist"]) {
+      expect(fnBody(lib, `export async function ${fn}`), fn).toMatch(/\.is\("invited_at", null\)/);
+    }
   });
 
   it("counts everybody in the density table, and never hides the confirmed share", () => {

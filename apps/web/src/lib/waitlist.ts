@@ -601,6 +601,22 @@ export async function unconfirmedWaitlist(): Promise<UnconfirmedRow[]> {
     .from("waitlist")
     .select("id, email, metro, created_at, confirm_sent_at")
     .is("confirmed_at", null)
+    // ...and not already invited.
+    //
+    // `dueForReminder` has always had this and the screen did not, which is
+    // exactly the split that bites: the cron would not remind an invited
+    // person, and the admin screen showed them anyway with a live button.
+    //
+    // On 2026-09-20 that was seventeen of eighteen rows. Pressing it would have
+    // asked somebody to confirm their address AFTER sending them "you are
+    // invited to the beta" — the smaller email chasing the larger one, into the
+    // same inbox, about the same thing.
+    //
+    // Invited-and-unconfirmed is still visible: the Invite section lists them,
+    // which is the screen whose job that is. This section is "people we are
+    // still waiting on, and the one thing you can do about it", and for these
+    // there is nothing left to do.
+    .is("invited_at", null)
     .order("created_at", { ascending: true });
 
   const floorMs = WAITLIST_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
