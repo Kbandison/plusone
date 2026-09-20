@@ -81,6 +81,12 @@ export const FEEDBACK_BODY_MAX = 2000;
  * facts about the software and none about them, and the surest way to make that
  * true is to let them read it.
  *
+ * It ended "Nothing else — no message, no profile, and nothing about who you
+ * are beyond the account this is sent from." Kevin cut it: the three facts are
+ * listed directly above and the member can count them, so the sentence only
+ * volunteers what we are NOT doing — which invites the thought rather than
+ * settling it. Third time this habit has been cut this week.
+ *
  * `page` is the route SHAPE and never the path. `/app/chats/3f2a…` identifies a
  * conversation, and a conversation here is two people and a diagnosis;
  * `/app/chats/[id]` says exactly as much about where the bug is and nothing
@@ -88,13 +94,20 @@ export const FEEDBACK_BODY_MAX = 2000;
  * constraint, and pinned by a test that plants a uuid.
  */
 export const FEEDBACK_CONTEXT_NOTE =
-  "Sent with this: which screen you were on, which version of the app, and whether you are in a browser or an installed app. Nothing else — no message, no profile, and nothing about who you are beyond the account this is sent from.";
+  "Sent with this: which screen you were on, which version of the app, and whether you are in a browser or an installed app.";
 
 /**
- * Where somebody who cannot sign in is meant to go.
+ * `FEEDBACK_FALLBACK_EMAIL` lived here and is gone.
  *
- * The form needs a session, which makes it useless for the report most worth
- * having during a beta — "I cannot get in". Naming an address is the whole fix
- * and it costs a line.
+ * It rendered at the foot of the form as "Cannot sign in, or would rather
+ * email? support@loveplusone.app", to catch the report most worth having during
+ * a beta — "I cannot get in".
+ *
+ * THE FIRST HALF COULD NEVER BE READ BY ITS AUDIENCE. This form is at
+ * /app/feedback, behind a session, so somebody who cannot sign in cannot reach
+ * the screen that tells them where to go instead.
+ *
+ * Nothing is lost: `BRAND.supportEmail` is the same address and renders in
+ * `site-footer.tsx`, which is on the signed-OUT pages — where a person locked
+ * out actually is. Checked before removing rather than assumed.
  */
-export const FEEDBACK_FALLBACK_EMAIL = "support@loveplusone.app";

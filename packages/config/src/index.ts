@@ -166,7 +166,6 @@ export {
   FEEDBACK_STATUS_LABELS,
   FEEDBACK_BODY_MAX,
   FEEDBACK_CONTEXT_NOTE,
-  FEEDBACK_FALLBACK_EMAIL,
 } from "./feedback";
 export type { FeedbackKind, FeedbackStatus, FeedbackKindOption } from "./feedback";
 

@@ -5,7 +5,6 @@ import { useActionState, useId, useState } from "react";
 import {
   FEEDBACK_BODY_MAX,
   FEEDBACK_CONTEXT_NOTE,
-  FEEDBACK_FALLBACK_EMAIL,
   FEEDBACK_KINDS,
   type FeedbackKind,
 } from "@plusone/config";
@@ -132,12 +131,6 @@ export function FeedbackForm({ from }: { from: string }) {
       </div>
 
       <Submit label="Send" pending={pending} />
-
-      {/* The report most worth having during a beta is "I cannot get in", and
-          this form needs a session. Naming an address is the whole fix. */}
-      <p className="text-[11px] leading-[1.6] text-ink-3">
-        Cannot sign in, or would rather email? {FEEDBACK_FALLBACK_EMAIL}
-      </p>
     </form>
   );
 }
