@@ -180,5 +180,15 @@ export const BETA_CHECK_IDS: readonly string[] = BETA_CHECKLIST.map((c) => c.id)
  * and an iPad is thanked twice, which is a thing to read again rather than a
  * fault.
  */
+/**
+ * The notification nudge's dismissal.
+ *
+ * Here rather than in `notifications.ts` because it is the same kind of thing
+ * as the two below it — a flag about what one device has been shown, which
+ * never leaves that device. HINTS_STORAGE_KEY carries the full argument for
+ * why none of this is in the database.
+ */
+export const NOTIFY_NUDGE_STORAGE_KEY = "plusone.notify.nudged";
+
 export const BETA_WELCOME_STORAGE_KEY = "plusone.beta.welcomed";
 export const BETA_CHECKLIST_STORAGE_KEY = "plusone.beta.checked";

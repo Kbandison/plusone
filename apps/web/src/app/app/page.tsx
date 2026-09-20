@@ -9,6 +9,7 @@ import { getServerSupabase } from "@/lib/supabase";
 import { FullCard, PreviewDropCard } from "./drop-card";
 import { redirect } from "next/navigation";
 import { Hint } from "./hint";
+import { NotifyNudge } from "./notify-nudge";
 
 // COPY.drop.header is spec copy (§3.4). DRAFT_COPY must never shadow it.
 export const metadata: Metadata = { title: COPY.drop.header };
@@ -165,6 +166,14 @@ export default async function TonightPage() {
           </p>
         </>
       )}
+
+      {/* Last on the screen, under the cards rather than over them.
+          Somebody opening the app came for the Drop; a card about a setting
+          above it is the thing they have to scroll past to reach what they
+          came for. It appears only for somebody who has not decided about
+          notifications, once, and it never asks for the permission itself —
+          see the component. */}
+      <NotifyNudge />
     </main>
   );
 }

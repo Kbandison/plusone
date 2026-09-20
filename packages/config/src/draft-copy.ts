@@ -1910,6 +1910,34 @@ export const DRAFT_COPY = {
     navSettings: "Settings",
 
     /**
+     * The nudge toward notifications, which is NOT a permission prompt.
+     *
+     * ── why this is a card and not a dialogue ──────────────────────────────
+     *
+     * `push-toggle.tsx` refuses to ask on arrival, and the reason is not
+     * politeness: "a permission dialogue on arrival is the one people dismiss
+     * by reflex, and dismissing it on iOS or Firefox is permanent for the
+     * origin — there is no second ask." Spending that one chance on somebody
+     * who has not looked at the app yet is how a member ends up unable to turn
+     * notifications on at all.
+     *
+     * So this spends nothing. It reads the permission state, which both the web
+     * and the native bridge expose WITHOUT prompting, and if nobody has decided
+     * yet it shows a card pointing at the screen where the real button lives —
+     * beside the privacy note that explains what a lock screen shows.
+     *
+     * Kevin asked for it 2026-09-20 so testers would not have to remember. The
+     * body says what they get rather than asking them to enable something: a
+     * member who has not gone looking does not know what "notifications" would
+     * even be about here.
+     */
+    notifyNudgeHeading: "Know when someone replies",
+    notifyNudgeBody:
+      "Your Drop lands at 8pm, and a connect or a message can arrive any time. Nothing is on until you say so.",
+    notifyNudgeLink: "Choose what reaches you",
+    notifyNudgeDismiss: "Not now",
+
+    /**
      * The way back to the testing checklist.
      *
      * ── the welcome was the only door, and it opens once ───────────────────
