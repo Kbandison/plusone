@@ -40,6 +40,20 @@ export const BETA_WELCOME = {
   /** Said first, because it is the only thing here they did not expect. */
   opening:
     "You are one of the first people in here. Some of it will be thin, some of it will be broken, and we want to hear about both.",
+  /**
+   * Where to report, named in the welcome because it CANNOT BE DISCOVERED.
+   *
+   * The control is a speech bubble in the header with no visible label — an
+   * aria-label, so a screen reader announces it and a sighted person meets a
+   * shape. That is fine for a member who will eventually wonder; it is not fine
+   * for a tester, whose whole job is the sentence above this one. Asking people
+   * to report bugs without saying where is asking them to go looking.
+   *
+   * Kevin, 2026-09-20. It is also the `why` on the checklist's last row, which
+   * is where somebody is actually about to do it — two places, because this is
+   * the one instruction in the app that has to survive being skimmed.
+   */
+  reporting: "The speech bubble at the top of any screen sends a report from wherever you are.",
   premium: {
     heading: `${BETA_THANKS_MONTHS} months of Premium, free`,
     /**
@@ -145,7 +159,7 @@ export const BETA_CHECKLIST: readonly BetaCheck[] = [
     id: "feedback",
     label: "Send us one piece of feedback",
     href: "/app/feedback",
-    why: "Even if nothing is broken.",
+    why: "Even if nothing is broken. It is the speech bubble at the top of any screen.",
   },
 ];
 

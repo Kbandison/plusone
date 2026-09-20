@@ -49,6 +49,11 @@ export function BetaWelcome() {
         <div className="mt-4 flex flex-col gap-6">
           <p className="text-body leading-[1.7] text-ink-2">{BETA_WELCOME.opening}</p>
 
+          {/* Directly under the sentence asking for reports, because it answers
+              the question that sentence raises. The control is an unlabelled
+              speech bubble; a tester cannot be expected to find it. */}
+          <p className="-mt-3 text-[13px] leading-[1.6] text-ink-3">{BETA_WELCOME.reporting}</p>
+
           {/* The premium promise, and the timing in the same breath as it.
               Somebody who reads "free premium" and then finds Settings saying
               otherwise has been misled, however carefully a later sentence is

@@ -58,6 +58,39 @@ describe("the beta welcome", () => {
     expect(welcome).toMatch(/onDismiss=\{\(\) => add\("seen"\)\}/);
   });
 
+  it("says where the report button is", () => {
+    // Kevin, 2026-09-20. The control is a speech bubble in the header with an
+    // aria-label and no visible text — announced to a screen reader, a bare
+    // shape to everybody else. The welcome asks for bug reports in the sentence
+    // directly above; asking without saying where is asking people to go
+    // looking, and a tester who cannot find it reports nothing at all.
+    expect(BETA_WELCOME.reporting).toMatch(/speech bubble/i);
+    expect(BETA_WELCOME.reporting).toMatch(/top of any screen|header/i);
+    expect(welcome).toMatch(/BETA_WELCOME\.reporting/);
+  });
+
+  it("says it again where somebody is about to do it", () => {
+    // Two places on purpose. The welcome is read once and skimmed; the
+    // checklist row is open at the moment they are being asked to send one.
+    const row = BETA_CHECKLIST.find((c) => c.id === "feedback");
+    expect(row?.why).toMatch(/speech bubble/i);
+  });
+
+  it("describes the control the header actually draws", () => {
+    // If the icon is ever redrawn, the copy naming it is wrong everywhere and
+    // nothing else would notice — a tester hunting a speech bubble that is now
+    // an envelope is worse off than one who was told nothing.
+    // Scoped to what the Link RENDERS, not what the file defines. The first
+    // version matched /SpeechIcon/ anywhere and passed against a component
+    // rendering an envelope, because the unused speech function was still
+    // sitting below it. A sabotage found that.
+    const link = read("app/app/feedback-link.tsx");
+    const rendered = /<Link[\s\S]*?<\/Link>/.exec(link)?.[0] ?? "";
+    expect(rendered.length).toBeGreaterThan(80);
+    expect(rendered).toMatch(/<SpeechIcon \/>/);
+    expect(rendered).toMatch(/aria-label=\{DRAFT_COPY\.app\.feedbackLabel\}/);
+  });
+
   it("carries no list of mechanics of its own", () => {
     // Kevin asked for the four named here AND kept as hints in context, which
     // is two copies of one sentence — and hints.ts says a second copy drifts.
