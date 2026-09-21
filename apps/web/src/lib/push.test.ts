@@ -27,6 +27,7 @@ const sw = withoutComments(read("public/sw.js"));
 const transport = withoutComments(read("src/lib/web-push.ts"));
 const notifier = withoutComments(read("src/lib/notifier.ts"));
 const fanout = withoutComments(read("src/lib/notify.ts"));
+const MIGRATIONS = join(import.meta.dirname, "..", "..", "..", "..", "supabase", "migrations");
 const toggle = withoutComments(read("src/app/app/settings/push-toggle.tsx"));
 /**
  * The asking itself, extracted 2026-09-20 when the Drop's nudge became a second
@@ -939,5 +940,83 @@ describe("what arrives silently, and what may make a sound", () => {
     for (const event of ["nearby_joins", "activity_nearby", "like_received"] as const) {
       expect(PUSH_SILENT, `${event} is the app deciding you should come back`).toContain(event);
     }
+  });
+});
+
+/**
+ * "Tonight's Drop is ready" must not fire when it is not.
+ *
+ * Found by Kevin on 2026-09-21, looking at the first five people through the
+ * beta: every one of them had ZERO candidates at the ladder's furthest rung,
+ * and the claim would have told all of them their Drop had landed. Four are
+ * women seeking men; the only men on the app are seeded accounts in Atlanta,
+ * 488 to 1574 miles away.
+ *
+ * A nightly push promising something that is not there is the worst kind this
+ * app could send. §3.3 bans engagement bait, and a notification that reliably
+ * opens onto an empty screen teaches a member to ignore the one channel we
+ * have.
+ */
+describe("the drop notification needs a drop", () => {
+  const sql = readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith(".sql"))
+    .map((f) => readFileSync(join(MIGRATIONS, f), "utf8"))
+    .filter((t) => t.includes("claim_drop_notifications"))
+    .join("\n");
+
+  it("finds the migrations", () => {
+    expect(sql).toMatch(/claim_drop_notifications/);
+    expect(sql.length).toBeGreaterThan(1000);
+  });
+
+  it("asks whether there is anybody before stamping", () => {
+    // Inside the claim, not in the route. The claim STAMPS
+    // drop_notified_night — checking afterwards would mark a member as told,
+    // skip the send, and leave them unnotified for the rest of the night even
+    // if the pool filled at nine o'clock.
+    const latest = sql.slice(
+      sql.lastIndexOf("create or replace function public.claim_drop_notifications"),
+    );
+    expect(latest).toMatch(/drop_has_candidates\(c\.id, p_radius_mi\)/);
+    const dueEnd = latest.indexOf("claimed as (");
+    expect(latest.indexOf("drop_has_candidates")).toBeLessThan(dueEnd);
+  });
+
+  it("reuses the matching rule rather than restating it", () => {
+    // drop_candidates is mutual gender, mutual age, mutual intention, community
+    // scope, blocks, existing connects and recent service. A second answer to
+    // "who can this person see" is two answers that drift.
+    const wrapper = sql.slice(sql.indexOf("function public.drop_has_candidates"));
+    expect(wrapper).toMatch(/from public\.drop_candidates\(p_radius_mi\)/);
+    expect(wrapper).not.toMatch(/gender|age_min|intention/);
+  });
+
+  it("puts the caller's identity back", () => {
+    // It impersonates to ask, because drop_candidates is invoker and reads
+    // auth.uid(). Without the restore the rest of the transaction would run as
+    // whoever was asked about.
+    const wrapper = sql.slice(sql.indexOf("function public.drop_has_candidates"));
+    expect(wrapper).toMatch(/v_previous text := current_setting\('request\.jwt\.claims', true\)/);
+    expect(wrapper).toMatch(/set_config\(\s*'request\.jwt\.claims',\s*coalesce\(v_previous, ''\)/);
+  });
+
+  it("answers about somebody else, so no member may call it", () => {
+    expect(sql).toMatch(
+      /revoke all on function public\.drop_has_candidates\(uuid, integer\) from public, anon, authenticated/,
+    );
+  });
+
+  it("drops the old signature rather than overloading it", () => {
+    // A new parameter is a new FUNCTION. Leaving both means
+    // claim_drop_notifications(20) — how the cron calls it — fails with
+    // "function is not unique", and the nightly notification stops entirely.
+    // The dry run does not catch that: both objects resolve, and what breaks is
+    // a CALLER.
+    expect(sql).toMatch(/drop function if exists public\.claim_drop_notifications\(integer\)/);
+  });
+
+  it("takes the reach from config rather than the SQL default", () => {
+    const route = withoutComments(read("src/app/api/cron/drop-notify/route.ts"));
+    expect(route).toMatch(/p_radius_mi: RADIUS\.ladderMi\[RADIUS\.ladderMi\.length - 1\]/);
   });
 });

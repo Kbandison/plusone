@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { DROP } from "@plusone/config";
+import { DROP, RADIUS } from "@plusone/config";
 
 import { isAuthorisedCron, serviceClient } from "@/lib/cron";
 import { notifier } from "@/lib/notifier";
@@ -57,6 +57,15 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase.rpc("claim_drop_notifications", {
     p_hour: DROP.hourLocal,
+    /**
+     * How far the Drop can reach, which decides whether there is one.
+     *
+     * The claim now refuses to notify a member who would be shown nobody, and
+     * "nobody" depends on the widest rung the Drop will climb to. Passed rather
+     * than defaulted in SQL so RADIUS stays the one place that number lives —
+     * the same reason p_hour comes from DROP.hourLocal.
+     */
+    p_radius_mi: RADIUS.ladderMi[RADIUS.ladderMi.length - 1] ?? RADIUS.maxMi,
   });
 
   if (error) {
