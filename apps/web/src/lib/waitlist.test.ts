@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { type WaitlistRow, countByMetro, testerList } from "./waitlist";
 
 import {
+  NOTIFICATIONS,
   BETA_INSTALL,
   BETA_LINKS,
   METROS,
@@ -390,22 +391,29 @@ describe("the beta alert reaches admins and names nobody", () => {
   });
 
   it("sends to the admin roster and to nobody else", () => {
-    const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
+    // The shared body. alertAdminsOfBetaSignup and alertAdminsOfBetaJoin are
+    // one-line delegates now — they differed by a single string, and the parts
+    // that matter are the roster read, the empty check and the swallow. This
+    // pointed at the signup function and failed when that happened, which is
+    // the right failure: the claim had to move to where the code went.
+    const fn = fnBody(lib, "async function alertAdmins(event");
     expect(fn.length).toBeGreaterThan(200);
     expect(fn).toMatch(/from\("admin_users"\)/);
-    expect(fn).toMatch(/notify\("beta_signup", admins\)/);
+    expect(fn).toMatch(/notify\(event, admins\)/);
+    // And the event can only ever be one of the two, not an arbitrary string.
+    expect(lib).toMatch(/event: "beta_signup" \| "beta_joined"/);
   });
 
   it("passes no address, id or count to the notification", () => {
     // An admin's lock screen is still a lock screen: read over a shoulder, on a
     // shared desk, in front of whoever is in the room. The address is one tap
     // away in /admin/waitlist, behind a session and a roster check.
-    const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
+    const fn = fnBody(lib, "async function alertAdmins(event");
 
     // notify() takes (event, recipients, refs). Exactly two arguments means no
-    // actor and no subject travel with it — and the template itself carries no
+    // actor and no subject travel with it — and neither template carries any
     // interpolation, so there is nothing for one to fill.
-    expect(fn).toMatch(/notify\("beta_signup", admins\);/);
+    expect(fn).toMatch(/notify\(event, admins\);/);
 
     // The roster read takes the id and nothing else. Selecting the row would
     // put an address in scope one edit away from the payload.
@@ -413,11 +421,14 @@ describe("the beta alert reaches admins and names nobody", () => {
     expect(fn).not.toMatch(/select\("\*"\)/);
   });
 
-  it("cannot turn a confirmed signup into an error", () => {
-    // A courtesy attached to something that already succeeded.
-    const fn = fnBody(lib, "async function alertAdminsOfBetaSignup");
+  it("cannot turn a confirmed signup, or a verified phone, into an error", () => {
+    // A courtesy attached to something that already succeeded. It covers both
+    // alerts now: the join one fires from the phone step, where a throw would
+    // cost a member their session on the screen that just verified them.
+    const fn = fnBody(lib, "async function alertAdmins(event");
     expect(fn).toMatch(/try \{/);
     expect(fn).toMatch(/catch/);
+    expect(fn).toMatch(/console\.error/);
   });
 });
 
@@ -1342,5 +1353,51 @@ describe("a store address is asked for only where somebody still adds them", () 
     }
     // Android still needs one — somebody pastes it onto the closed-testing list.
     expect(betaInstallFor("android").accountLabel).toMatch(/google/i);
+  });
+});
+
+describe("the admin alerts name the event that happened", () => {
+  const lib = code("lib/waitlist.ts");
+  const phone = code("app/onboarding/phone/actions.ts");
+
+  it("stops calling a waitlist confirmation a join", () => {
+    // 2026-09-22. beta_signup fires from confirmWaitlist — the click in the
+    // confirm-your-address email — and said "Someone joined the beta". Nobody
+    // has an account at that moment and may not for weeks, so Kevin got one,
+    // went looking for a new member, and there was none. A notification that
+    // names the wrong event sends somebody to a screen that cannot show what
+    // they were told about.
+    expect(NOTIFICATIONS.beta_signup.body).toMatch(/waitlist/i);
+    expect(NOTIFICATIONS.beta_signup.body).not.toMatch(/joined the beta/i);
+  });
+
+  it("fires the confirmation alert from the confirmation", () => {
+    expect(fnBody(lib, "export async function confirmWaitlist")).toMatch(
+      /alertAdminsOfBetaSignup\(\)/,
+    );
+  });
+
+  it("fires the join alert where an account comes into existence", () => {
+    // Not from confirmWaitlist. The phone step is the one call in the app that
+    // can mint an account, and this sits inside the invitation branch so it
+    // fires once, for somebody who came through one.
+    expect(phone).toMatch(/alertAdminsOfBetaJoin\(\)/);
+    expect(lib).not.toMatch(/alertAdminsOfBetaJoin\(\);[\s\S]{0,40}confirmWaitlist/);
+  });
+
+  it("points each alert at the screen that can show it", () => {
+    // beta_signup is somebody to invite; beta_joined is somebody who is in.
+    expect(NOTIFICATIONS.beta_signup.path).toBe("/admin/waitlist");
+    expect(NOTIFICATIONS.beta_joined.path).toBe("/admin/members");
+  });
+
+  it("names nobody, in either", () => {
+    // §8. An admin's lock screen is still a lock screen, and no metro either —
+    // "someone joined in Houston" is one person on a list this small.
+    for (const e of ["beta_signup", "beta_joined"] as const) {
+      const body = NOTIFICATIONS[e].body;
+      expect(body, e).not.toMatch(/HSV|HIV|diagnos|@/i);
+      expect(body, e).not.toMatch(/\d/);
+    }
   });
 });

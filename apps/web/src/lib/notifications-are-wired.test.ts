@@ -61,12 +61,22 @@ describe("every event has something that fires it", () => {
    *   notify("connect_received", …)          — the ordinary call site
    *   notifyMember("drop_ready", recipients) — the cron's import alias
    *   tellTheOther(chatId, "plan_confirmed") — a helper that takes the event
+   *   alertAdmins("beta_joined")             — the admin pair's shared body
    *
    * The optional leading identifier is what covers the third. A bare string
    * anywhere in the file would not count, which is the point: a comment
    * mentioning an event is not a trigger for it.
+   *
+   * The fourth was added on 2026-09-22, when the two admin alerts collapsed
+   * into one body and their literal `notify("beta_signup", …)` became
+   * `notify(event, admins)`. Both events really are dispatched, from
+   * `alertAdmins("beta_signup")` and `alertAdmins("beta_joined")` — so this
+   * failing was correct and widening it is the fix rather than a weakening. A
+   * dispatch through a named wrapper is still a dispatch; the rule that has to
+   * hold is that a STRING somewhere near the word is not.
    */
-  const CALL = /\b(?:notify|notifyMember|tellTheOther)\(\s*(?:[A-Za-z0-9_.]+,\s*)?"(\w+)"/g;
+  const CALL =
+    /\b(?:notify|notifyMember|tellTheOther|alertAdmins)\(\s*(?:[A-Za-z0-9_.]+,\s*)?"(\w+)"/g;
 
   const fired = new Set<string>();
   for (const text of ALL) {

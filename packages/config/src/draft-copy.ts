@@ -2184,6 +2184,7 @@ export const NOTIFICATION_LINES: Record<NotificationEvent, NotificationLine> = {
   verification_decided: () => "Your verification has been reviewed.",
   premium_expiring: () => "Your premium is ending soon.",
   beta_thanks_started: () => "Your premium has started.",
+  beta_joined: () => "Someone joined the app.",
   nearby_joins: () => "New members joined near you.",
   /**
    * No count, and no "right now" either. The alert fires on a live number and
@@ -2230,6 +2231,7 @@ export const NOTIFICATION_EVENT_LABELS: Record<NotificationEvent, string> = {
   referral_converted: "Someone you invited joins",
   beta_signup: "Someone joins the beta",
   beta_thanks_started: "Your tester premium starts",
+  beta_joined: "Someone joins the app",
 };
 
 /** DRAFT — Claude's words. The three columns, named for the header row. */

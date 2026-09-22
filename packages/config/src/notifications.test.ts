@@ -77,11 +77,15 @@ describe("notification payloads are content-blind", () => {
    * A third entry here needs its own sentence. "Not switchable" is the kind of
    * exception that accumulates quietly once there is more than one.
    */
-  it("offers a switch for every event but the two nobody should silence", () => {
+  it("offers a switch for every event but the three nobody should silence", () => {
     for (const event of MUTABLE_EVENTS) expect(NOTIFICATIONS).toHaveProperty(event);
     const all = Object.keys(NOTIFICATION_DEFAULTS);
     expect(all.filter((e) => !MUTABLE_EVENTS.includes(e as never)).sort()).toEqual([
+      // Operational, to an admin. A member-facing switch for either would be a
+      // control over something they never receive.
+      "beta_joined",
       "beta_signup",
+      // Silencing it strands the member mid-onboarding.
       "verification_decided",
     ]);
   });
@@ -262,15 +266,20 @@ describe("every switch is a switch for something that happens", () => {
    * nothing to do but check, and a switch for it is a switch for stranding
    * themselves. set_notification_mute refuses it in the database too.
    */
-  it("withholds exactly two switches, and says which", () => {
-    // Named, never counted. The two are unswitchable for different reasons —
-    // verification_decided because silencing it strands the member, beta_signup
-    // because it is operational and never reaches one — and a third would need
-    // its own sentence rather than a bumped number.
+  it("withholds exactly three switches, and says which", () => {
+    // Named, never counted, and each one has its own sentence rather than a
+    // bumped number: verification_decided because silencing it strands the
+    // member; beta_signup and beta_joined because both are operational and
+    // reach an admin rather than a member, so a member-facing switch for them
+    // would be a control over something they never receive.
     const missing = Object.keys(NOTIFICATION_DEFAULTS).filter(
       (event) => !(MUTABLE_EVENTS as readonly string[]).includes(event),
     );
-    expect(missing.sort()).toEqual(["beta_signup", "verification_decided"]);
+    // THREE now. beta_joined is the third, and it is the same kind as
+    // beta_signup beside it: operational, and it never reaches a member — only
+    // an admin, who cannot usefully be offered a switch for it on a screen
+    // built for members.
+    expect(missing.sort()).toEqual(["beta_joined", "beta_signup", "verification_decided"]);
   });
 
   it("keeps every notification in the app even when the phone is silenced", () => {

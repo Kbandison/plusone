@@ -310,15 +310,42 @@ export async function confirmWaitlist(token: string): Promise<Confirmation> {
  * wrapped for the same reason.
  */
 async function alertAdminsOfBetaSignup(): Promise<void> {
+  await alertAdmins("beta_signup");
+}
+
+/**
+ * Somebody created an account, which is a different event from the one above.
+ *
+ * `beta_signup` fires when a waitlist row is CONFIRMED — the click in the
+ * confirm-your-address email. Nobody has an account at that moment and may not
+ * for weeks. Its body used to say "Someone joined the beta", so on 2026-09-22
+ * Kevin got one, went looking for a new member, and there was none.
+ *
+ * This is the event he thought he was getting. Exported because it fires from
+ * onboarding rather than from anything in this file.
+ */
+export async function alertAdminsOfBetaJoin(): Promise<void> {
+  await alertAdmins("beta_joined");
+}
+
+/**
+ * Tell every admin, and never throw.
+ *
+ * One body for both, because the two differed by a single string and the parts
+ * that matter — the roster read, the empty check, the swallow — are the same.
+ * A courtesy attached to something that already succeeded must not turn a
+ * confirmed signup, or a verified phone, into an error the member sees.
+ */
+async function alertAdmins(event: "beta_signup" | "beta_joined"): Promise<void> {
   try {
     const { data } = await serviceClient().from("admin_users").select("user_id");
     const admins = (data ?? []).map((row) => row.user_id as string).filter(Boolean);
     if (admins.length === 0) return;
-    await notify("beta_signup", admins);
+    await notify(event, admins);
   } catch (cause) {
     console.error(
       JSON.stringify({
-        at: "waitlist.betaAlert",
+        at: "waitlist.adminAlert",
         problem: cause instanceof Error ? cause.message : "unknown",
       }),
     );

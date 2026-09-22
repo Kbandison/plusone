@@ -11,7 +11,7 @@ import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
 import { nextRoute } from "@/lib/onboarding";
-import { acceptBetaInvite, metroForInvite } from "@/lib/waitlist";
+import { acceptBetaInvite, alertAdminsOfBetaJoin, metroForInvite } from "@/lib/waitlist";
 
 const E = DRAFT_COPY.phone.errors;
 
@@ -239,6 +239,20 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
        * column PostgREST would fail the whole request over, and this one is
        * bookkeeping on top of an account that already exists.
        */
+      /**
+       * Tell the admins somebody is actually in.
+       *
+       * Here rather than in confirmWaitlist, which is where `beta_signup`
+       * fires — that one is a waitlist row being confirmed, and nobody has an
+       * account at that moment. This is the moment one exists.
+       *
+       * Inside the `betaCode` branch and after the cohort stamp, so it fires
+       * once per new account and only for somebody who came through an
+       * invitation. It never throws: notify() swallows, and an admin courtesy
+       * must not cost a member their session.
+       */
+      await alertAdminsOfBetaJoin();
+
       const metro = await metroForInvite(betaCode);
       const seed = metro ? metroCentroid(metro) : null;
       if (seed) {

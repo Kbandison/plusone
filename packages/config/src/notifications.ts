@@ -33,7 +33,8 @@ export type NotificationEvent =
    * `verification_decided` is, and never appears among a member's switches.
    */
   | "beta_signup"
-  | "beta_thanks_started";
+  | "beta_thanks_started"
+  | "beta_joined";
 
 export interface NotificationTemplate {
   readonly event: NotificationEvent;
@@ -230,8 +231,37 @@ export const NOTIFICATIONS: Record<NotificationEvent, NotificationTemplate> = {
    */
   beta_signup: {
     event: "beta_signup",
-    body: "Someone joined the beta",
+    /**
+     * IT SAYS WAITLIST NOW, because it fires on a waitlist confirmation.
+     *
+     * It read "Someone joined the beta" and that is not the event: it is sent
+     * from `confirmWaitlist`, when somebody clicks the link in the
+     * confirm-your-address email and has ticked the testing box. Nobody has an
+     * account at that moment, and nobody may have one for weeks.
+     *
+     * Kevin got one on 2026-09-22, went looking for a new member, and there was
+     * none — a notification that names the wrong event sends somebody to check
+     * a screen that cannot show what they were told about.
+     */
+    body: "Someone joined the waitlist for the beta",
     path: "/admin/waitlist",
+  },
+  /**
+   * Somebody actually created an account.
+   *
+   * The event Kevin thought he was already getting, and the more useful of the
+   * two now that invitations are out: a confirmation means somebody to invite,
+   * and this means somebody who is IN, whose onboarding can stall and whose
+   * first Drop may be empty.
+   *
+   * Content-blind like the rest, and for the reason beta_signup states: an
+   * admin's lock screen is still a lock screen. No metro either — "someone
+   * joined in Houston" is one person on a small list.
+   */
+  beta_joined: {
+    event: "beta_joined",
+    body: "Someone joined the app",
+    path: "/admin/members",
   },
   /**
    * The thank-you landing, to the tester it landed for.
@@ -358,6 +388,7 @@ export const NOTIFICATION_ICONS: Record<NotificationEvent, string> = {
   verification_decided: "/icons/n-drop.png",
   beta_signup: "/icons/n-drop.png",
   beta_thanks_started: "/icons/n-drop.png",
+  beta_joined: "/icons/n-drop.png",
 };
 
 export const PUSH_SILENT: readonly NotificationEvent[] = [
@@ -539,6 +570,14 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationEvent, readonly Notificat
    * it announces is visible in the app for the next three months.
    */
   beta_thanks_started: ["push", "in_app"],
+
+  /**
+   * Same shape as beta_signup beside it: push for the lock screen, in_app as
+   * the record that survives a dismissed push, and no email — this fires once
+   * per new member and an inbox is the wrong place for something already on a
+   * lock screen and already visible on /admin/members.
+   */
+  beta_joined: ["push", "in_app"],
 };
 
 /**
