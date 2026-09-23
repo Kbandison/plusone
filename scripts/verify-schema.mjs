@@ -244,7 +244,35 @@ if (!DB_URL) {
 //                                          distinct names declared by some
 //                                          migration, is_admin still the only
 //                                          overload.
-const EXPECT = { tables: 37, views: 5, functions: 143, enums: 31, rooms: 7, config: 23 };
+//
+// functions 143 -> 144                     20260921000100 — drop_has_candidates,
+//                                          so "Tonight's Drop is ready" only goes
+//                                          to somebody who would be shown anyone.
+//                                          claim_drop_notifications was DROPPED and
+//                                          recreated with a second argument, net
+//                                          zero — a new parameter is a new
+//                                          function, and leaving the old one made
+//                                          the cron's one-argument call ambiguous.
+//                                          20260923000100 is a column only.
+//
+//                                          Read off the live database after
+//                                          applying: 144 procs, 143 distinct
+//                                          names, is_admin still the only
+//                                          overload.
+//
+//                                          The "every declared function exists"
+//                                          line below says 142, not 143, and that
+//                                          is a PARSER limit rather than a missing
+//                                          function. 20260911000100 creates the new
+//                                          admin_post_article and then drops the
+//                                          OLD overload by signature;
+//                                          declaredEverywhere keys on the name
+//                                          alone, so it reads the drop as removing
+//                                          the function outright. It has been one
+//                                          short since 2026-09-11 and never went
+//                                          red, because that check asks only that
+//                                          what is declared is live.
+const EXPECT = { tables: 37, views: 5, functions: 144, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that
