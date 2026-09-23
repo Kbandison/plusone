@@ -20,7 +20,7 @@ import {
   waitingOnInvitation,
 } from "@/lib/waitlist";
 import { InviteForm } from "./invite-form";
-import { NudgeForm } from "./nudge-form";
+import { NudgeStatus } from "./nudge-status";
 import { RemindForm } from "./remind-form";
 
 export const metadata: Metadata = { title: "Waitlist" };
@@ -125,7 +125,8 @@ export default async function AdminWaitlistPage() {
     email: r.email,
     label: metroLabel(r.metro) ?? r.metro,
     expiresInDays: r.expires_in_days,
-    nudgeable: r.nudgeable,
+    nudgesSent: r.nudges_sent,
+    nextNudge: r.next_nudge,
   }));
 
   const remindRows = (await unconfirmedWaitlist()).map((r) => ({
@@ -305,7 +306,7 @@ export default async function AdminWaitlistPage() {
           this point is about letting people IN; this is about the ones who
           never finished asking, and the only thing offered is asking again. */}
       <h2 className="mt-12 text-h3">3 · Invited, not joined</h2>
-      <NudgeForm rows={nudgeRows} />
+      <NudgeStatus rows={nudgeRows} />
 
       <h2 className="mt-12 text-h3">4 · The ones who never confirmed</h2>
       <RemindForm rows={remindRows} />

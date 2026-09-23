@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getServerSupabase } from "@/lib/supabase";
-import { inviteFromWaitlist, nudgeWaitingOnInvitation, remindUnconfirmed } from "@/lib/waitlist";
+import { inviteFromWaitlist, remindUnconfirmed } from "@/lib/waitlist";
 
 /**
  * The wall, and why it has to be HERE rather than where the write is.
@@ -77,24 +77,4 @@ export async function remind(formData: FormData): Promise<void> {
   await remindUnconfirmed(ids);
 
   revalidatePath("/admin/waitlist");
-}
-
-/**
- * Nudge the people holding a code they have not used.
- *
- * Same wall, first line, for the reason at the top of this file: `waitlist` has
- * no RLS to fall back on, so every exported action carries its own.
- *
- * Returns the count for the same reason `invite` does — "Sent." said the same
- * thing for twenty-five invitations and for none, and that is how a dropped
- * override went unnoticed for a day.
- */
-export async function nudgeInvited(formData: FormData): Promise<number> {
-  await assertAdmin();
-
-  const ids = formData.getAll("id").map(String).filter(Boolean);
-  const sent = await nudgeWaitingOnInvitation(ids);
-
-  revalidatePath("/admin/waitlist");
-  return sent;
 }

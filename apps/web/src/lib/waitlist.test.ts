@@ -946,13 +946,17 @@ describe("an invitation that ran out can be issued again", () => {
     // shared. inviteHasExpired now asks inviteExpiresAt, which is the one place
     // the TTL is turned into a moment.
     expect(fnBody(lib, "function inviteHasExpired")).toMatch(/inviteExpiresAt\(invitedAt\)/);
-    expect(fnBody(lib, "function inviteExpiresAt")).toMatch(/WAITLIST_INVITE_TTL_DAYS/);
-    // And nobody else does the arithmetic themselves.
-    // Still exactly one. Three callers now — the gate, the screen and the nudge
-    // email's deadline — and this caught all three when the arithmetic was
-    // copied instead of shared. inviteExpiresAt is the one place it lives.
-    const inline = lib.match(/WAITLIST_INVITE_TTL_DAYS \* 24 \* 60 \* 60 \* 1000/g) ?? [];
-    expect(inline).toHaveLength(1);
+    // And nobody else does the arithmetic themselves. Still exactly one copy —
+    // but in CONFIG since 2026-09-23, because the nudge schedule there has to
+    // ask the same moment the gate here does, and a pure function in the shared
+    // package is the only place both can reach. This guard caught three copies
+    // once already; it counts both files so a fourth cannot hide in either.
+    const config = code("../../../packages/config/src/waitlist.ts");
+    const TTL = /WAITLIST_INVITE_TTL_DAYS \* 24 \* 60 \* 60 \* 1000/g;
+    expect(lib.match(TTL) ?? []).toHaveLength(0);
+    expect(config.match(TTL) ?? []).toHaveLength(1);
+    expect(fnBody(config, "export function inviteExpiresAt")).toMatch(TTL);
+    expect(lib).toMatch(/\binviteExpiresAt,\n/);
   });
 });
 
@@ -1307,8 +1311,13 @@ describe("the reminder is scheduled at a local hour", () => {
     // the property instead of the vocabulary.
     expect(due).toMatch(/=== WAITLIST_REMINDER_HOUR/);
     expect(due).not.toMatch(/<=? WAITLIST_REMINDER_HOUR|WAITLIST_REMINDER_HOUR >=?/);
-    // And the route asks for now, never for a window.
-    expect(route).toMatch(/dueForReminder\(\)/);
+    // And the route asks for now, never for a window. Since 2026-09-23 "now" is
+    // one `at` shared with the nudges, so the property is that `at` is the
+    // clock unshifted — no Date built from an argument, and no arithmetic on it.
+    expect(route).toMatch(/const at = new Date\(\);/);
+    expect(route).toMatch(/dueForReminder\(at\)/);
+    expect(route).not.toMatch(/new Date\([^)]/);
+    expect(route).not.toMatch(/at\.getTime\(\)|at\s*[-+]/);
   });
 
   it("reports counts and never who", () => {
@@ -1412,84 +1421,125 @@ describe("the admin alerts name the event that happened", () => {
 
 describe("the people holding a link they never used", () => {
   const lib = code("lib/waitlist.ts");
-  const form = code("app/admin/waitlist/nudge-form.tsx");
+  const route = code("app/api/cron/waitlist-reminders/route.ts");
+  const status = read("app/admin/waitlist/nudge-status.tsx");
   const actions = code("app/admin/waitlist/actions.ts");
-  const nudge = fnBody(lib, "export async function nudgeWaitingOnInvitation");
+  const page = code("app/admin/waitlist/page.tsx");
+  const send = fnBody(lib, "export async function sendDueInviteNudges");
 
   it("finds it at all", () => {
-    expect(nudge.length).toBeGreaterThan(400);
-    expect(form).toMatch(/export function NudgeForm/);
+    expect(send.length).toBeGreaterThan(800);
+    expect(status).toMatch(/export function NudgeStatus/);
   });
 
-  it("only lists people whose code still works", () => {
-    // An expired code is a different problem with a different fix: it
-    // reappears in the invite list and is re-issued. Nudging somebody toward a
-    // dead link sends them to a screen that refuses them.
-    const read = fnBody(lib, "export async function waitingOnInvitation");
-    expect(read).toMatch(/\.not\("invited_at", "is", null\)/);
-    expect(read).toMatch(/\.is\("accepted_at", null\)/);
-    expect(read).toMatch(/!inviteHasExpired\(r\.invited_at\)/);
+  it("is sent by the hourly cron, against one instant for the whole run", () => {
+    // Every row's hour, stage and stamp decided against the same `at`, so a
+    // slow run cannot decide a stage on one side of a boundary and stamp it on
+    // the other.
+    expect(route).toMatch(/const at = new Date\(\);/);
+    expect(route).toMatch(/await dueForReminder\(at\)/);
+    expect(route).toMatch(/await sendDueInviteNudges\(at\)/);
+    // §9.6: the log carries counts and nothing else.
+    expect(route).toMatch(/nudgesDue: nudges\.due,\s*nudgesSent: nudges\.sent,/);
   });
 
-  it("re-checks every condition at send time", () => {
-    // A code can expire, or be spent, between a page rendering and a button
-    // being pressed. The screen narrows the work; it does not authorise it.
-    expect(nudge).toMatch(/if \(row\.accepted_at\) continue/);
-    expect(nudge).toMatch(/if \(inviteHasExpired\(row\.invited_at\)\) continue/);
-    expect(nudge).toMatch(/if \(nudged\.get\(row\.id\)\) continue/);
-  });
-
-  it("sends exactly one, ever", () => {
-    // A cooldown would be nine nudges over the life of a code. The column is
-    // what makes "one" true rather than intended.
-    expect(nudge).toMatch(/\.update\(\{ invite_nudged_at: stamped \}\)/);
-    expect(nudge).toMatch(/\.is\("invite_nudged_at", null\)/);
-  });
-
-  it("claims the window before sending", () => {
-    const stamp = nudge.indexOf("invite_nudged_at: stamped");
-    const send = nudge.indexOf("sendDirectEmail");
-    expect(stamp).toBeGreaterThan(-1);
-    expect(send).toBeGreaterThan(stamp);
-  });
-
-  it("refuses to send while the column is missing", () => {
-    // Code reaches production before the schema here as a matter of course. A
-    // nudge sent without the ledger has no guarantee behind it.
-    expect(nudge).toMatch(/if \(!nudged\) return 0/);
-  });
-
-  it("does not mint a second code", () => {
-    // They already have a working link. Re-inviting would orphan it, which
-    // inviteFromWaitlist refuses on a line of its own — so this screen must not
-    // offer that as a way out.
-    // The UPDATE calls, not the words. /invited_at: / matched the Candidate
-    // interface declared inside the function, which reads the column and writes
-    // nothing — the same slip as /confirmed_at:/ made earlier this week.
-    expect(nudge).not.toMatch(/mintInviteCode/);
-    const updates = nudge.match(/\.update\(\{[^}]*\}/g) ?? [];
-    expect(updates.length).toBeGreaterThan(0);
-    for (const u of updates) expect(u).not.toMatch(/invited_at|invite_code/);
-    const imported = form.match(/import \{([^}]*)\} from "\.\/actions"/)?.[1] ?? "";
-    expect(imported).toContain("nudgeInvited");
-    expect(imported).not.toContain("invite,");
-  });
-
-  it("says the deadline from THIS row, not a fixed number", () => {
-    // "Soon" is not actionable and fourteen days is wrong for anybody invited
-    // on a different day.
-    expect(nudge).toMatch(/inviteDaysLeft\(row\.invited_at\)/);
-    expect(nudge).toMatch(/The link stops working in \$\{days\}/);
-  });
-
-  it("reports how many went, so zero cannot look like success", () => {
-    expect(actions).toMatch(
-      /export async function nudgeInvited\(formData: FormData\): Promise<number>/,
+  it("asks the config schedule, at 7pm where the person is", () => {
+    expect(send).toMatch(
+      /localHourIn\(metroTimezone\(row\.metro\), at\) !== WAITLIST_REMINDER_HOUR\) continue/,
     );
-    expect(form).toMatch(/sent === 0 \?/);
+    expect(send).toMatch(/const stage = inviteNudgeDue\(row\.invited_at, at\)/);
+    expect(send).toMatch(
+      /stage === 0 \|\| stage <= inviteNudgeSent\(row\.invited_at, row\.invite_nudged_at\)\) continue/,
+    );
   });
 
-  it("offers no select-all", () => {
-    expect(form).not.toMatch(/toggleGroup|Select all|selectAll/);
+  it("only looks at invitations nobody has used", () => {
+    expect(send).toMatch(/\.not\("invited_at", "is", null\)\s*\.is\("accepted_at", null\)/);
+  });
+
+  it("claims against everything it just read, and stamps the decided instant", () => {
+    // `at`, not a fresh clock: the stage is read back off this timestamp.
+    expect(send).toMatch(/\.update\(\{ invite_nudged_at: at\.toISOString\(\) \}\)/);
+    expect(send).toMatch(/\.eq\("invited_at", row\.invited_at\)/);
+    expect(send).toMatch(/\.is\("accepted_at", null\);/);
+    expect(send).toMatch(/claim\.eq\("invite_nudged_at", row\.invite_nudged_at\)/);
+    expect(send).toMatch(/claim\.is\("invite_nudged_at", null\)/);
+  });
+
+  it("reads the claim back before sending", () => {
+    // An update matching no row is not an error. Only the rows actually moved
+    // say whether this run won.
+    expect(send).toMatch(/\.select\("id"\);\s*if \(!claimed\?\.length\) continue;/);
+    const claim = send.indexOf('.select("id")');
+    expect(claim).toBeGreaterThan(-1);
+    expect(send.indexOf("sendDirectEmail")).toBeGreaterThan(claim);
+  });
+
+  it("never mints a code — the link is the one they were invited with", () => {
+    expect(send).not.toMatch(/mintInviteCode/);
+    const updates = send.match(/\.update\(\{[^}]*\}/g) ?? [];
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).not.toMatch(/invited_at|invite_code/);
+    expect(send).toMatch(/\/beta\/\$\{row\.invite_code\}/);
+  });
+
+  it("sends the stage's own email, and the number only in the first", () => {
+    // ONE lookup, and both halves of the email read from it. Review found the
+    // first version of this would pass with the subject from the right stage
+    // and every body from stage 1.
+    expect(send).toMatch(/const email = WAITLIST_EMAIL\[INVITE_NUDGE_EMAIL\[stage\]\];/);
+    expect(send).toMatch(/subject: email\.subject,/);
+    expect(send).toMatch(/: email\.body;/);
+    expect(send).not.toMatch(/WAITLIST_EMAIL\.nudge|WAITLIST_EMAIL\["nudge/);
+    expect(send.match(/WAITLIST_EMAIL\[/g) ?? []).toHaveLength(1);
+    expect(send).toMatch(/stage === 1\s*\?/);
+    // Rounded DOWN, from config — never a promised day that does not exist.
+    expect(send).toMatch(/inviteNudgeDeadline\(inviteNudgeDaysLeft\(row\.invited_at, at\)\)/);
+    // Body only: the preview is the opening sentence and must not be printed
+    // above it a second time.
+    expect(send).not.toMatch(/\$\{preview\}/);
+  });
+
+  it("has no button — the cron is the only sender", () => {
+    // Kevin, 2026-09-23: status only. A manual send would be a fourth path
+    // into a schedule built around three.
+    expect(status).not.toMatch(/"use client"|<form|<button|Submit|action=/);
+    expect(actions).not.toMatch(/nudge/i);
+    expect(lib).not.toMatch(/export async function nudgeWaitingOnInvitation/);
+    expect(page).toMatch(/<NudgeStatus rows=\{nudgeRows\} \/>/);
+  });
+
+  it("shows the cron's own next step, not a description of it", () => {
+    const waiting = fnBody(lib, "export async function waitingOnInvitation");
+    expect(waiting).toMatch(/nextInviteNudge\(r\.invited_at, r\.invite_nudged_at, tz, now\)/);
+    expect(waiting).toMatch(/nudges_sent: inviteNudgeSent\(r\.invited_at, r\.invite_nudged_at\)/);
+    expect(waiting).toMatch(/\.filter\(\(r\) => !inviteHasExpired\(r\.invited_at\)\)/);
+  });
+});
+
+describe("a claim is only a claim if it is read back", () => {
+  // Found 2026-09-23. All three claim-before-send updates checked `error` and
+  // nothing else — but an UPDATE that matches no row is not an error, so the
+  // loser of a race carried on and sent. For an invitation that meant a second
+  // email holding a code that was never saved: a dead link.
+  const lib = code("lib/waitlist.ts");
+
+  it("the confirmation reminder", () => {
+    const fn = fnBody(lib, "export async function remindUnconfirmed");
+    expect(fn).toMatch(
+      /\.is\("reminded_at", null\)\s*\.select\("id"\);\s*if \(!claimed\?\.length\) continue;/,
+    );
+    expect(fn).not.toMatch(/if \(error\) continue;/);
+  });
+
+  it("the invitation", () => {
+    const fn = fnBody(lib, "export async function inviteFromWaitlist");
+    expect(fn).toMatch(/\)\.select\("id"\);\s*if \(!claimed\?\.length\) continue;/);
+    expect(fn).not.toMatch(/if \(error\) continue;/);
+  });
+
+  it("the nudges", () => {
+    const fn = fnBody(lib, "export async function sendDueInviteNudges");
+    expect(fn).toMatch(/if \(!claimed\?\.length\) continue;/);
   });
 });

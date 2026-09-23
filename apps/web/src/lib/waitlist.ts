@@ -4,16 +4,22 @@ import { randomBytes } from "node:crypto";
 
 import {
   DRAFT_COPY,
+  INVITE_NUDGE_EMAIL,
   METROS,
   WAITLIST_EMAIL,
-  WAITLIST_INVITE_TTL_DAYS,
   WAITLIST_REMINDER_AFTER_DAYS,
   WAITLIST_REMINDER_HOUR,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
+  inviteExpiresAt,
+  inviteNudgeDaysLeft,
+  inviteNudgeDeadline,
+  inviteNudgeDue,
+  inviteNudgeSent,
   isMetro,
   localHourIn,
   metroLabel,
   metroTimezone,
+  nextInviteNudge,
   parseClientEnv,
 } from "@plusone/config";
 
@@ -748,13 +754,21 @@ export async function remindUnconfirmed(ids: readonly string[]): Promise<number>
     // one reminder, which is the right way round. A reminder nobody received is
     // a person who gets no second email; two reminders is a promise broken to
     // somebody who never asked for the first.
+    //
+    // AND THE CLAIM HAS TO BE READ BACK. An UPDATE that matches no row is not an
+    // error — PostgREST answers 200 with nothing in it — so checking `error`
+    // alone let the loser of a race carry on and send anyway. That was the
+    // shape here until 2026-09-23, and the paragraph above described a
+    // guarantee the code did not have. `.select("id")` returns the rows
+    // actually moved; none means somebody else took it.
     const stamped = new Date().toISOString();
-    const { error } = await supabase
+    const { data: claimed } = await supabase
       .from("waitlist")
       .update({ reminded_at: stamped, confirm_sent_at: stamped })
       .eq("id", row.id)
-      .is("reminded_at", null);
-    if (error) continue;
+      .is("reminded_at", null)
+      .select("id");
+    if (!claimed?.length) continue;
 
     if (await sendConfirmation(row.email, row.token, "remind")) sent += 1;
   }
@@ -862,161 +876,174 @@ export interface WaitingRow {
   readonly metro: string;
   /** Days until the code stops working, so the screen can say it. */
   readonly expires_in_days: number;
-  /** False once the one nudge has gone. */
-  readonly nudgeable: boolean;
+  /** The last nudge this code has had, 0 to 3. */
+  readonly nudges_sent: number;
+  /** When the cron will send the next one, in the person's own zone, or null. */
+  readonly next_nudge: string | null;
 }
 
 /**
- * Invited, never used it, code still live.
+ * Invited, never used it, code still live — with where each person is in the
+ * three nudges.
  *
- * Kevin asked to reach "the ones that haven't joined yet based on where they
- * are in the steps". This is the only step where a nudge is both possible and
- * worth sending: they have a working link they have not clicked, and it expires.
+ * STATUS ONLY, Kevin's call 2026-09-23. The cron is the only sender, so the
+ * screen shows what it has done and what it will do next, and offers nothing
+ * that could step on it. "Next" comes from nextInviteNudge, which asks the same
+ * two functions the cron does — the screen cannot describe a schedule the cron
+ * is not running.
  *
- * NOT the people who made an account and stalled. All six who created one
- * signed up by PHONE, so `auth.users.email` is null for every one of them, and
- * the two who are stuck mid-onboarding have no push subscription either. There
- * is no channel to those two at all until they add an address in Settings, and
- * inventing one by matching them back to a waitlist row is exactly the link
+ * NOT the people who made an account and stalled. Everybody who created one
+ * signed up by PHONE, so `auth.users.email` is null for them, and inventing an
+ * address by matching them back to a waitlist row is exactly the link
  * WAITLIST_NEVER refuses.
  *
  * An EXPIRED code is a different problem with a different fix: it reappears in
- * the invite list and gets re-issued. Nudging somebody about a dead link would
- * send them to a screen that refuses them.
+ * the invite list and gets re-issued, and the new code starts its own three.
  */
-export async function waitingOnInvitation(): Promise<WaitingRow[]> {
+export async function waitingOnInvitation(now: Date = new Date()): Promise<WaitingRow[]> {
   const { data } = await serviceClient()
     .from("waitlist")
-    .select("id, email, metro, invited_at")
+    .select("id, email, metro, invited_at, invite_nudged_at")
     .not("invited_at", "is", null)
     .is("accepted_at", null)
     .order("invited_at", { ascending: true });
 
-  const rows = (data ?? []) as { id: string; email: string; metro: string; invited_at: string }[];
-
-  // Allowed to fail, and null means "the column is not there yet" rather than
-  // "nobody has been nudged" — the two must not look alike, because the first
-  // has to stop every send. Same shape as remindedAtByIdOrNull above it.
-  const nudged = await nudgedAtByIdOrNull(rows.map((r) => r.id));
+  const rows = (data ?? []) as {
+    id: string;
+    email: string;
+    metro: string;
+    invited_at: string;
+    invite_nudged_at: string | null;
+  }[];
 
   return rows
     .filter((r) => !inviteHasExpired(r.invited_at))
-    .map((r) => ({
-      id: r.id,
-      email: r.email,
-      metro: r.metro,
-      expires_in_days: inviteDaysLeft(r.invited_at),
-      nudgeable: Boolean(nudged) && !nudged?.get(r.id),
-    }));
-}
-
-/** `invite_nudged_at`, read in a request that is ALLOWED TO FAIL. See remindedAtByIdOrNull. */
-async function nudgedAtByIdOrNull(
-  ids: readonly string[],
-): Promise<Map<string, string | null> | null> {
-  if (ids.length === 0) return new Map();
-  const { data, error } = await serviceClient()
-    .from("waitlist")
-    .select("id, invite_nudged_at")
-    .in("id", ids as string[]);
-
-  if (error) {
-    if (error.code !== "PGRST204" && error.code !== "42703") {
-      console.error(JSON.stringify({ at: "waitlist.nudgedAt", problem: error.code ?? "unknown" }));
-    }
-    return null;
-  }
-  return new Map(
-    (data as { id: string; invite_nudged_at: string | null }[]).map((r) => [
-      r.id,
-      r.invite_nudged_at,
-    ]),
-  );
+    .map((r) => {
+      const tz = metroTimezone(r.metro);
+      const next = nextInviteNudge(r.invited_at, r.invite_nudged_at, tz, now);
+      return {
+        id: r.id,
+        email: r.email,
+        metro: r.metro,
+        expires_in_days: inviteDaysLeft(r.invited_at),
+        nudges_sent: inviteNudgeSent(r.invited_at, r.invite_nudged_at),
+        next_nudge: next
+          ? new Intl.DateTimeFormat("en-US", {
+              timeZone: tz,
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            }).format(next.at)
+          : null,
+      };
+    });
 }
 
 /**
- * Tell them the link is still there, once.
+ * Send every invitation nudge that is due this hour. The cron's half.
  *
- * The deadline is the content. A code expires and nothing else tells them, so
- * this is a fact they cannot otherwise see rather than a reason to come back —
- * §3.3's line, and the same one BETA_WELCOME's premium block sits on.
+ * ── three, on a schedule ───────────────────────────────────────────────────
  *
- * Claimed before sending, on `invite_nudged_at`, for the reason the
- * confirmation reminder spells out: the send is the slow part, and two
- * reminders are not recoverable while one that failed is.
+ * Kevin, 2026-09-23: three days after the invitation, with a week left, and in
+ * the final 24 hours, each at WAITLIST_REMINDER_HOUR in the person's metro. The
+ * schedule lives in config as inviteNudgeDue; this asks it of every waiting
+ * row at the instant the cron was called and sends what it says.
  *
- * Every condition is re-checked here rather than trusted from the screen. The
- * TTL especially — a code can expire between a page rendering and a button
- * being pressed, and nudging somebody toward a dead link is worse than silence.
+ * ── `at` is the stamp, not the clock ──────────────────────────────────────
+ *
+ * The claim writes `at` — the same instant the stage was decided on — rather
+ * than whatever the clock says a few sends later. inviteNudgeSent reads the
+ * stage back off that timestamp, so a stamp taken seconds past a boundary would
+ * record a different nudge from the one that went, and the next would be
+ * skipped.
+ *
+ * ── the claim ─────────────────────────────────────────────────────────────
+ *
+ * Optimistic against everything just read: the same invitation (a re-issue in
+ * between moves invited_at), still unaccepted, and the same last nudge. Read
+ * BACK, because an update matching no row is not an error — see
+ * remindUnconfirmed. Claimed before sending, so a failed send costs that
+ * person one email rather than a second run sending it twice.
+ *
+ * Never mints a code. The link in every nudge is the one they were invited
+ * with; a second code would kill the first.
  */
-export async function nudgeWaitingOnInvitation(ids: readonly string[]): Promise<number> {
-  if (ids.length === 0) return 0;
+export async function sendDueInviteNudges(
+  at: Date = new Date(),
+): Promise<{ readonly due: number; readonly sent: number }> {
   const supabase = serviceClient();
-
-  const { data: rows } = await supabase
+  const { data, error } = await supabase
     .from("waitlist")
-    .select("id, email, token, invite_code, invited_at, accepted_at")
-    .in("id", ids as string[]);
-
-  const nudged = await nudgedAtByIdOrNull(ids);
-  if (!nudged) return 0;
+    .select("id, email, token, metro, invite_code, invited_at, invite_nudged_at")
+    .not("invited_at", "is", null)
+    .is("accepted_at", null);
+  // Nothing due is the safe answer to a failed read. The next hour asks again.
+  if (error) return { due: 0, sent: 0 };
 
   interface Candidate {
     readonly id: string;
     readonly email: string;
     readonly token: string;
+    readonly metro: string;
     readonly invite_code: string | null;
-    readonly invited_at: string | null;
-    readonly accepted_at: string | null;
+    readonly invited_at: string;
+    readonly invite_nudged_at: string | null;
   }
 
+  let due = 0;
   let sent = 0;
-  for (const row of (rows ?? []) as Candidate[]) {
-    // Joined between the page rendering and the press. Nothing to nudge.
-    if (row.accepted_at) continue;
-    if (!row.invited_at || !row.invite_code) continue;
-    // Expired while the screen was open. The invite list re-issues these; a
-    // nudge would point at a link that refuses them.
-    if (inviteHasExpired(row.invited_at)) continue;
-    if (nudged.get(row.id)) continue;
+  for (const row of (data ?? []) as Candidate[]) {
+    if (!row.invite_code) continue;
+    if (localHourIn(metroTimezone(row.metro), at) !== WAITLIST_REMINDER_HOUR) continue;
+    const stage = inviteNudgeDue(row.invited_at, at);
+    if (stage === 0 || stage <= inviteNudgeSent(row.invited_at, row.invite_nudged_at)) continue;
+    due += 1;
 
-    const stamped = new Date().toISOString();
-    const { error } = await supabase
+    const claim = supabase
       .from("waitlist")
-      .update({ invite_nudged_at: stamped })
+      .update({ invite_nudged_at: at.toISOString() })
       .eq("id", row.id)
-      .is("invite_nudged_at", null);
-    if (error) continue;
+      .eq("invited_at", row.invited_at)
+      .is("accepted_at", null);
+    const { data: claimed } = await (
+      row.invite_nudged_at
+        ? claim.eq("invite_nudged_at", row.invite_nudged_at)
+        : claim.is("invite_nudged_at", null)
+    ).select("id");
+    if (!claimed?.length) continue;
 
-    const { subject, preview, body } = WAITLIST_EMAIL.nudge;
-    const link = `${appOrigin()}/beta/${row.invite_code}`;
-    const days = inviteDaysLeft(row.invited_at);
-    // The date, computed from THIS row's invited_at. "Soon" is not actionable
-    // and a fixed number is wrong for anybody invited on a different day.
-    const deadline = `The link stops working in ${days} ${days === 1 ? "day" : "days"}.`;
+    // ONE lookup for the whole email, so the subject and the body cannot come
+    // from different stages.
+    const email = WAITLIST_EMAIL[INVITE_NUDGE_EMAIL[stage]];
+    const text =
+      stage === 1
+        ? // Only the first carries a number, from THIS row and rounded DOWN —
+          // see inviteNudgeDaysLeft. "10 days" for the cohort invited on 20
+          // September, which had 10.8 left when it went.
+          [
+            `${email.body.join(" ")} ${inviteNudgeDeadline(inviteNudgeDaysLeft(row.invited_at, at))}`,
+          ]
+        : email.body;
     const ok = await sendDirectEmail({
       to: row.email,
-      subject,
-      text: `${preview}\n\n${body.join("\n\n")}\n\n${deadline}\n\n${link}${footer(row.token)}`,
+      subject: email.subject,
+      text: `${text.join("\n\n")}\n\n${appOrigin()}/beta/${row.invite_code}${footer(row.token)}`,
     });
     if (ok) sent += 1;
   }
-  return sent;
+  return { due, sent };
 }
 
 /**
  * Has this invitation run out?
  *
- * ONE home for the TTL comparison, because there are now two callers and they
- * must never disagree. `betaInviteIsOpen` decides whether a link still works
- * and `inviteFromWaitlist` decides whether to issue another — so a mismatch
- * would either re-issue over a live code, orphaning a link somebody is holding,
- * or refuse to replace a dead one and strand them. Same argument as metro_for.
+ * ONE comparison, over the one moment inviteExpiresAt in config computes,
+ * because every caller must agree. `betaInviteIsOpen` decides whether a link
+ * still works, `inviteFromWaitlist` whether to issue another, and the nudges
+ * whether there is anything left to remind about — so a mismatch would re-issue
+ * over a live code, refuse to replace a dead one, or nudge somebody toward a
+ * link the gate then refuses. Same argument as metro_for.
  */
-function inviteExpiresAt(invitedAt: string): number {
-  return Date.parse(invitedAt) + WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
-}
-
 function inviteHasExpired(invitedAt: string): boolean {
   return Date.now() > inviteExpiresAt(invitedAt);
 }
@@ -1028,8 +1055,8 @@ function inviteHasExpired(invitedAt: string): boolean {
  * nudge email quotes — computed from THIS row, because a fixed fourteen is
  * wrong for anybody invited on a different day.
  */
-function inviteDaysLeft(invitedAt: string): number {
-  return Math.ceil((inviteExpiresAt(invitedAt) - Date.now()) / 86_400_000);
+function inviteDaysLeft(invitedAt: string, at: Date = new Date()): number {
+  return Math.ceil((inviteExpiresAt(invitedAt) - at.getTime()) / 86_400_000);
 }
 
 /**
@@ -1113,14 +1140,19 @@ export async function inviteFromWaitlist(
     // first issue matches null, a re-issue matches the stamp it is replacing.
     // Two admins pressing at once means the second update matches no row and
     // the second email is never sent, rather than two codes racing.
+    //
+    // That sentence was false until 2026-09-23, and in the worst available way.
+    // Matching no row is not an error, so the loser carried on and emailed a
+    // code it had just minted and never saved: a second invitation holding a
+    // dead link. The rows moved are read back now, and none means stop.
     const claim = supabase
       .from("waitlist")
       .update({ invite_code: code, invited_at: new Date().toISOString() })
       .eq("id", row.id);
-    const { error } = await (row.invited_at
-      ? claim.eq("invited_at", row.invited_at)
-      : claim.is("invited_at", null));
-    if (error) continue;
+    const { data: claimed } = await (
+      row.invited_at ? claim.eq("invited_at", row.invited_at) : claim.is("invited_at", null)
+    ).select("id");
+    if (!claimed?.length) continue;
 
     const { subject, preview, body } = WAITLIST_EMAIL.invite;
     const link = `${appOrigin()}/beta/${code}`;

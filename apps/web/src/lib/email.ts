@@ -91,17 +91,39 @@ export async function sendDirectEmail(message: {
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      // Text AND html. Its own footer, because this recipient is not a member:
-      // there is no switch to point them at and no account behind the address.
-      body: JSON.stringify({
-        from,
-        ...message,
-        html: brandEmailHtml({ body: message.text, footer: EMAIL_DIRECT_FOOTER }),
-      }),
+    // Text AND html. Its own footer, because this recipient is not a member:
+    // there is no switch to point them at and no account behind the address.
+    const body = JSON.stringify({
+      from,
+      ...message,
+      html: brandEmailHtml({ body: message.text, footer: EMAIL_DIRECT_FOOTER }),
     });
+    const send = () =>
+      fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body,
+      });
+
+    /**
+     * A 429 is waited out, twice at most.
+     *
+     * Every caller CLAIMS before it sends — the reminder, the invitation, the
+     * nudges — so a send that fails has already spent that person's turn, and a
+     * rate limit is the one failure that is certain to clear by itself. The
+     * nudge cron is the case that made it matter: every waiting person in one
+     * timezone goes in one run, twenty-odd on the first night, back to back.
+     *
+     * Resend allows ten a second per team and says how long to wait in
+     * `retry-after`. Honoured, capped at two seconds so a daily-quota 429 —
+     * which no wait fixes — cannot hold a cron run open, and twice so it ends.
+     */
+    let response = await send();
+    for (let retry = 0; response.status === 429 && retry < 2; retry += 1) {
+      const wait = Math.min(Number(response.headers.get("retry-after")) || 1, 2);
+      await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+      response = await send();
+    }
     if (!response.ok) {
       // Status only. Resend echoes the request back in an error body, and both
       // the subject and the recipient are things that must not reach a log

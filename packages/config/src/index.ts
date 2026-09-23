@@ -135,6 +135,17 @@ export {
   WAITLIST_UNCONFIRMED_TTL_DAYS,
   WAITLIST_EMAIL,
   WAITLIST_INVITE_TTL_DAYS,
+  WAITLIST_NUDGE_AFTER_DAYS,
+  WAITLIST_NUDGE_WEEK_LEFT_DAYS,
+  WAITLIST_NUDGE_LAST_HOURS,
+  WAITLIST_CRON_MINUTE,
+  INVITE_NUDGE_EMAIL,
+  inviteExpiresAt,
+  inviteNudgeDue,
+  inviteNudgeSent,
+  nextInviteNudge,
+  inviteNudgeDeadline,
+  inviteNudgeDaysLeft,
   WAITLIST_REMINDER_AFTER_DAYS,
   WAITLIST_REMINDER_HOUR,
   WAITLIST_REMINDER_TZ,
@@ -152,7 +163,7 @@ export {
   metrosWithin,
   PLAY_TRACK,
 } from "./waitlist";
-export type { Metro, WaitlistEmail, BetaInstall, BetaPlatform } from "./waitlist";
+export type { Metro, WaitlistEmail, BetaInstall, BetaPlatform, InviteNudgeStage } from "./waitlist";
 export {
   BETA_WELCOME,
   BETA_CHECKLIST,

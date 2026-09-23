@@ -346,7 +346,10 @@ export interface WaitlistEmail {
   readonly body: readonly string[];
 }
 
-export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind" | "nudge", WaitlistEmail> = {
+export const WAITLIST_EMAIL: Record<
+  "confirm" | "invite" | "remind" | "nudge" | "nudgeWeek" | "nudgeLastDay",
+  WaitlistEmail
+> = {
   confirm: {
     subject: "Confirm your email address",
     preview: "One tap to confirm, or ignore this and nothing happens.",
@@ -356,33 +359,52 @@ export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind" | "nudge", W
     ],
   },
   /**
-   * Your invitation is still waiting, and it will not wait for ever.
+   * Three nudges about an invitation nobody has used, in the copy Kevin chose on
+   * 2026-09-23. Stage by stage: `nudge` three days in, `nudgeWeek` with a week
+   * left, `nudgeLastDay` in the final 24 hours. The schedule is
+   * `inviteNudgeDue` below; the cron in /api/cron/waitlist-reminders sends it.
    *
-   * ── what makes this a fair email to send ───────────────────────────────────
+   * ── what makes these fair emails to send ───────────────────────────────────
    *
-   * It goes to somebody who asked for an invitation, confirmed or was sent one
+   * Each goes to somebody who asked for an invitation, confirmed or was sent one
    * anyway, and has held a working code without using it. The code EXPIRES, and
-   * saying so is the whole content — this is a deadline they cannot otherwise
-   * see, not a reason to come back.
+   * that deadline is the whole content — a fact they cannot otherwise see, not
+   * a reason to come back. §3.3 bans the app manufacturing one;
+   * `claim_nearby_joins` names "come back, there are new people" as the shape.
+   * None of these says anything about who is on the app, because we do not
+   * know that it is anything: their Drop may well be empty.
    *
-   * §3.3 bans the app manufacturing a reason to return; `claim_nearby_joins`
-   * names "come back, there are new people" as the shape. This says nothing
-   * about who is on the app or what they are missing, because we do not know
-   * that it is anything: their Drop may well be empty.
+   * ── the preview IS the opening sentence ───────────────────────────────────
    *
-   * ── the date is passed in, not described ──────────────────────────────────
+   * Unlike the other emails, the nudge text is the body alone, with no preview
+   * line printed above it — the words Kevin approved are exactly the words that
+   * arrive. A mail client shows the first line beside the subject anyway, so
+   * `preview` is that opening sentence rather than a second line of copy, and a
+   * test holds the two together.
    *
-   * "Soon" is not actionable and "in fourteen days" is wrong for everybody
-   * whose code was issued on a different day. The caller computes it from
-   * invited_at, so the sentence cannot drift from the TTL the gate enforces.
+   * The first one used to say "it is the only reminder". It is not any more,
+   * and the last one is the one that says so.
    */
   nudge: {
     subject: "Your Plus One invitation is still open",
-    preview: "The link is waiting, and it expires.",
-    body: [
-      "You asked to try Plus One early and we sent you a link. It has not been used yet, and it stops working soon.",
-      "If you still want in, the link below is yours. If you have changed your mind, ignore this — it is the only reminder, and you can leave the list at any time.",
-    ],
+    preview: "You asked to try Plus One early and we sent you a link.",
+    // The deadline sentence is appended from THIS row's invited_at by
+    // inviteNudgeDeadline — "11 days" for today's cohort, not a fixed number.
+    body: ["You asked to try Plus One early and we sent you a link. It has not been used yet."],
+  },
+  nudgeWeek: {
+    subject: "One week left on your Plus One invitation",
+    preview: "Your invitation to the beta is still waiting.",
+    // "One more week" is only true inside a one-day window, and that is the
+    // window inviteNudgeDue gives it. A missed run skips this email rather
+    // than sending it three days late with a sentence that has stopped being
+    // true.
+    body: ["Your invitation to the beta is still waiting. The link works for one more week."],
+  },
+  nudgeLastDay: {
+    subject: "Last day for your Plus One invitation",
+    preview: "Your link stops working within 24 hours.",
+    body: ["Your link stops working within 24 hours. This is the last reminder we will send."],
   },
 
   /**
@@ -426,11 +448,168 @@ export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind" | "nudge", W
 export const WAITLIST_INVITE_TTL_DAYS = 14;
 
 /**
+ * The moment an invitation stops working, in epoch ms.
+ *
+ * THE ONE HOME for turning the TTL into a moment. The gate that refuses an
+ * expired link, the invite list that re-issues one, the admin screen's "days
+ * left", every nudge's deadline and the nudge schedule itself all ask this — so
+ * a link cannot be refused by one of them and nudged about by another.
+ */
+export function inviteExpiresAt(invitedAt: string): number {
+  return Date.parse(invitedAt) + WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/** Days after the invitation that the first nudge becomes due. Kevin, 2026-09-23. */
+export const WAITLIST_NUDGE_AFTER_DAYS = 3;
+
+/** How much is left on the link when the second nudge goes. */
+export const WAITLIST_NUDGE_WEEK_LEFT_DAYS = 7;
+
+/** How much is left on the link when the third and last goes. */
+export const WAITLIST_NUDGE_LAST_HOURS = 24;
+
+/**
+ * The minute past each hour the waitlist cron runs, from `apps/web/vercel.json`.
+ *
+ * Here because `nextInviteNudge` has to predict the cron's own instants: a
+ * window that opens at 19:03 is caught by the 19:05 run, and a prediction
+ * made on the hour would put it a day later. A test reads vercel.json and
+ * fails if the two ever disagree.
+ */
+export const WAITLIST_CRON_MINUTE = 5;
+
+export type InviteNudgeStage = 1 | 2 | 3;
+
+/** Which email each stage sends. */
+export const INVITE_NUDGE_EMAIL: Readonly<
+  Record<InviteNudgeStage, "nudge" | "nudgeWeek" | "nudgeLastDay">
+> = { 1: "nudge", 2: "nudgeWeek", 3: "nudgeLastDay" };
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * Which nudge, if any, is due at this instant. 0 means none.
+ *
+ * Three WINDOWS, and a nudge is sent at the first WAITLIST_REMINDER_HOUR inside
+ * its own window, in the person's metro:
+ *
+ *   1  from three days after the invitation until a week is left
+ *   2  the ONE day between seven and six days left
+ *   3  the last 24 hours
+ *
+ * The second is a day AND AN HOUR, and the hour is the autumn clock change. On
+ * the night the clocks fall back, two consecutive 7pm-local runs are 25 hours
+ * apart, so a window of exactly a day can fall between them and hold no 7pm at
+ * all — found by review on 2026-09-23, for invitations issued in a one-hour
+ * band on two days a year. Twenty-five hours always holds one. In spring the
+ * gap is 23 hours and the window can hold two; `stage <= sent` refuses the
+ * second. It is short on purpose otherwise: its copy says "one more week",
+ * which is only true near that point, so a run missed in the window skips the
+ * email rather than sending it days late with a sentence that has stopped being
+ * true. Between the windows nothing is due, which is the other half of "a
+ * missed one skips ahead" — nobody gets two back to back.
+ *
+ * THE THIRD IS STILL EXACTLY 24 HOURS, and that is known rather than missed. It
+ * has two open problems that share a fix and the fix changes Kevin's approved
+ * copy, so it is his call: for anybody invited in their own evening the only
+ * 7pm in the last day falls minutes before the link dies, and on the autumn
+ * night it can hold no 7pm. Neither touches the 20 September cohort.
+ */
+export function inviteNudgeDue(invitedAt: string, at: Date): InviteNudgeStage | 0 {
+  const now = at.getTime();
+  const left = inviteExpiresAt(invitedAt) - now;
+  if (left <= 0) return 0;
+  if (left <= WAITLIST_NUDGE_LAST_HOURS * 60 * 60 * 1000) return 3;
+  const week = WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY_MS;
+  if (left <= week) return left > week - DAY_MS - HOUR_MS ? 2 : 0;
+  return now - Date.parse(invitedAt) >= WAITLIST_NUDGE_AFTER_DAYS * DAY_MS ? 1 : 0;
+}
+
+/**
+ * Which nudge was the last one sent, read off `invite_nudged_at` alone. 0 means
+ * none for THIS code.
+ *
+ * ── no stage column, and that is deliberate ────────────────────────────────
+ *
+ * A nudge is only ever sent inside its own window, so the moment it went says
+ * which one it was: more than a week left is the first, more than a day is the
+ * second, anything later the third. Bucketed by those boundaries rather than
+ * the windows themselves, so a send at an unexpected moment — the manual button
+ * this replaced, pressed before it was removed — still counts as the stage it
+ * fell in and cannot be followed by a duplicate.
+ *
+ * And it resets itself. A re-issued invitation writes a NEW invited_at, so the
+ * old code's last nudge is earlier than the new code's birth and reads as 0.
+ * A stage column would have needed clearing in the same write as the re-issue,
+ * which is one more thing for that write to forget.
+ */
+export function inviteNudgeSent(invitedAt: string, nudgedAt: string | null): InviteNudgeStage | 0 {
+  if (!nudgedAt) return 0;
+  const sentAt = Date.parse(nudgedAt);
+  if (sentAt < Date.parse(invitedAt)) return 0;
+  const left = inviteExpiresAt(invitedAt) - sentAt;
+  if (left > WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY_MS) return 1;
+  if (left > WAITLIST_NUDGE_LAST_HOURS * 60 * 60 * 1000) return 2;
+  return 3;
+}
+
+/**
+ * When the cron will next send this person a nudge, and which one — or null.
+ *
+ * Walks the cron's own instants (five past every hour) forward from `now`
+ * through the same two functions the cron calls, so the admin screen's "next"
+ * is the cron's decision rather than a second description of it. A test runs
+ * the whole fourteen days hour by hour and holds the prediction to the send.
+ */
+export function nextInviteNudge(
+  invitedAt: string,
+  nudgedAt: string | null,
+  tz: string,
+  now: Date,
+): { readonly stage: InviteNudgeStage; readonly at: Date } | null {
+  const sent = inviteNudgeSent(invitedAt, nudgedAt);
+  if (sent === 3) return null;
+  const hour = 60 * 60 * 1000;
+  let t = Math.floor(now.getTime() / hour) * hour + WAITLIST_CRON_MINUTE * 60 * 1000;
+  if (t <= now.getTime()) t += hour;
+  for (const end = inviteExpiresAt(invitedAt); t < end; t += hour) {
+    const at = new Date(t);
+    if (localHourIn(tz, at) !== WAITLIST_REMINDER_HOUR) continue;
+    const due = inviteNudgeDue(invitedAt, at);
+    if (due > sent) return { stage: due as InviteNudgeStage, at };
+  }
+  return null;
+}
+
+/**
+ * Whole days left on a link, for an email to promise. Rounded DOWN.
+ *
+ * The admin screen rounds up — "11 days left" there is a count of calendar
+ * days somebody still has. An email is different: it is a promise to a
+ * stranger about when they can still act, and rounding up promised up to a day
+ * that did not exist. A first nudge goes with between ten and eleven days left,
+ * so rounding up said 11 to everybody and was wrong by up to a day for anybody
+ * invited in their evening. Found by review, 2026-09-23. Down never promises
+ * more than there is.
+ */
+export function inviteNudgeDaysLeft(invitedAt: string, at: Date): number {
+  return Math.floor((inviteExpiresAt(invitedAt) - at.getTime()) / DAY_MS);
+}
+
+/** The sentence the first nudge ends on, from THIS row's days left. */
+export function inviteNudgeDeadline(days: number): string {
+  return `It stops working in ${days} ${days === 1 ? "day" : "days"}.`;
+}
+
+/**
  * How long to leave an unconfirmed row alone before a reminder may be sent.
  *
  * Three days, against a 30-day TTL, so there is room for one reminder and a
- * long silence after it rather than a drip. The admin screen is the only
- * trigger; nothing sends this on a schedule.
+ * long silence after it rather than a drip. Sent by the hourly cron at
+ * WAITLIST_REMINDER_HOUR in the person's metro, or early from the button on
+ * /admin/waitlist — this sentence said "nothing sends this on a schedule" for a
+ * week after the cron shipped.
  *
  * A REMINDER MUST NOT EXTEND THE TTL, and the shape of the data is what
  * guarantees it: `sweepUnconfirmed` keys off `created_at`, which a reminder
@@ -492,6 +671,13 @@ export function metroTimezone(id: string): string {
 }
 
 /**
+ * One formatter per zone. Building an Intl.DateTimeFormat is the expensive
+ * part, and `nextInviteNudge` walks every hour of a fourteen-day code for every
+ * row on the admin screen — a few thousand calls on a list of forty.
+ */
+const HOUR_FORMATS = new Map<string, Intl.DateTimeFormat>();
+
+/**
  * The hour of the day it is in a metro right now, 0–23.
  *
  * `Intl` rather than an offset table, so DST is the runtime's problem and not
@@ -500,11 +686,12 @@ export function metroTimezone(id: string): string {
  * as "24", which compares as a number nobody expects.
  */
 export function localHourIn(tz: string, at: Date): number {
-  return Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(
-      at,
-    ),
-  );
+  let format = HOUR_FORMATS.get(tz);
+  if (!format) {
+    format = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" });
+    HOUR_FORMATS.set(tz, format);
+  }
+  return Number(format.format(at));
 }
 
 /**
