@@ -346,7 +346,7 @@ export interface WaitlistEmail {
   readonly body: readonly string[];
 }
 
-export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind", WaitlistEmail> = {
+export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind" | "nudge", WaitlistEmail> = {
   confirm: {
     subject: "Confirm your email address",
     preview: "One tap to confirm, or ignore this and nothing happens.",
@@ -355,6 +355,36 @@ export const WAITLIST_EMAIL: Record<"confirm" | "invite" | "remind", WaitlistEma
       "If it was not you, ignore this email. Nothing has been added, the address is removed on its own within 30 days, and the most you will hear from us before then is one reminder.",
     ],
   },
+  /**
+   * Your invitation is still waiting, and it will not wait for ever.
+   *
+   * ── what makes this a fair email to send ───────────────────────────────────
+   *
+   * It goes to somebody who asked for an invitation, confirmed or was sent one
+   * anyway, and has held a working code without using it. The code EXPIRES, and
+   * saying so is the whole content — this is a deadline they cannot otherwise
+   * see, not a reason to come back.
+   *
+   * §3.3 bans the app manufacturing a reason to return; `claim_nearby_joins`
+   * names "come back, there are new people" as the shape. This says nothing
+   * about who is on the app or what they are missing, because we do not know
+   * that it is anything: their Drop may well be empty.
+   *
+   * ── the date is passed in, not described ──────────────────────────────────
+   *
+   * "Soon" is not actionable and "in fourteen days" is wrong for everybody
+   * whose code was issued on a different day. The caller computes it from
+   * invited_at, so the sentence cannot drift from the TTL the gate enforces.
+   */
+  nudge: {
+    subject: "Your Plus One invitation is still open",
+    preview: "The link is waiting, and it expires.",
+    body: [
+      "You asked to try Plus One early and we sent you a link. It has not been used yet, and it stops working soon.",
+      "If you still want in, the link below is yours. If you have changed your mind, ignore this — it is the only reminder, and you can leave the list at any time.",
+    ],
+  },
+
   /**
    * The one reminder, and the sentence in `confirm` that had to change for it
    * to exist.

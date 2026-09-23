@@ -156,17 +156,26 @@ describe("the metro list", () => {
 });
 
 describe("no email we send outs the person receiving it", () => {
-  const CONDITION_WORDS = [
-    "hsv",
-    "hiv",
-    "herpes",
-    "positive",
-    "diagnosis",
-    "std",
-    "sti",
-    "status",
-    "u=u",
-  ];
+  /**
+   * Two lists, because two of these are three letters long and live inside
+   * ordinary English.
+   *
+   * SUBSTRING is the stricter test and stays the default: it is what catches
+   * "seropositive", which a word-boundary match would let through, and nothing
+   * innocent contains "hsv" or "herpes".
+   *
+   * "sti" and "std" cannot be tested that way. "sti" is inside STILL, stick,
+   * distinct, destination; on 2026-09-23 it failed the subject "Your Plus One
+   * invitation is still open", which names no condition at all. A guard that
+   * cries wolf on plain English gets worked around, and the workaround is
+   * always to reword the innocent copy — so the rule is worth narrowing rather
+   * than the sentence.
+   *
+   * Word boundaries still catch every real use: "STI", "an STI", "STI status",
+   * "STD/STI", "HIV-positive". Checked by sabotage below.
+   */
+  const CONDITION_SUBSTRINGS = ["hsv", "hiv", "herpes", "positive", "diagnosis", "status", "u=u"];
+  const CONDITION_WORDS = ["sti", "std"];
 
   /**
    * A subject line is read by more people than the email is.
@@ -181,8 +190,13 @@ describe("no email we send outs the person receiving it", () => {
   for (const [name, email] of Object.entries(WAITLIST_EMAIL)) {
     it(`${name}: the subject names no condition`, () => {
       const subject = email.subject.toLowerCase();
-      for (const word of CONDITION_WORDS) {
+      for (const word of CONDITION_SUBSTRINGS) {
         expect(subject, `"${email.subject}" names ${word}`).not.toContain(word);
+      }
+      for (const word of CONDITION_WORDS) {
+        expect(subject, `"${email.subject}" names ${word}`).not.toMatch(
+          new RegExp(`\\b${word}\\b`),
+        );
       }
       expect(email.subject.length).toBeGreaterThan(0);
       expect(email.subject.length).toBeLessThanOrEqual(78);
@@ -190,8 +204,11 @@ describe("no email we send outs the person receiving it", () => {
 
     it(`${name}: the preview line names no condition either`, () => {
       const preview = email.preview.toLowerCase();
-      for (const word of CONDITION_WORDS) {
+      for (const word of CONDITION_SUBSTRINGS) {
         expect(preview, `the preview names ${word}`).not.toContain(word);
+      }
+      for (const word of CONDITION_WORDS) {
+        expect(preview, `the preview names ${word}`).not.toMatch(new RegExp(`\\b${word}\\b`));
       }
     });
 

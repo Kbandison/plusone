@@ -941,8 +941,16 @@ describe("an invitation that ran out can be issued again", () => {
     // Two callers now — the link check and the re-issue — and they must never
     // disagree, or one orphans a live code and the other refuses a dead one.
     expect(fnBody(lib, "export async function betaInviteIsOpen")).toMatch(/inviteHasExpired/);
-    expect(fnBody(lib, "function inviteHasExpired")).toMatch(/WAITLIST_INVITE_TTL_DAYS/);
+    // The arithmetic moved down one level on 2026-09-23, when a third caller
+    // appeared and this guard caught the constant being copied instead of
+    // shared. inviteHasExpired now asks inviteExpiresAt, which is the one place
+    // the TTL is turned into a moment.
+    expect(fnBody(lib, "function inviteHasExpired")).toMatch(/inviteExpiresAt\(invitedAt\)/);
+    expect(fnBody(lib, "function inviteExpiresAt")).toMatch(/WAITLIST_INVITE_TTL_DAYS/);
     // And nobody else does the arithmetic themselves.
+    // Still exactly one. Three callers now — the gate, the screen and the nudge
+    // email's deadline — and this caught all three when the arithmetic was
+    // copied instead of shared. inviteExpiresAt is the one place it lives.
     const inline = lib.match(/WAITLIST_INVITE_TTL_DAYS \* 24 \* 60 \* 60 \* 1000/g) ?? [];
     expect(inline).toHaveLength(1);
   });
@@ -1399,5 +1407,89 @@ describe("the admin alerts name the event that happened", () => {
       expect(body, e).not.toMatch(/HSV|HIV|diagnos|@/i);
       expect(body, e).not.toMatch(/\d/);
     }
+  });
+});
+
+describe("the people holding a link they never used", () => {
+  const lib = code("lib/waitlist.ts");
+  const form = code("app/admin/waitlist/nudge-form.tsx");
+  const actions = code("app/admin/waitlist/actions.ts");
+  const nudge = fnBody(lib, "export async function nudgeWaitingOnInvitation");
+
+  it("finds it at all", () => {
+    expect(nudge.length).toBeGreaterThan(400);
+    expect(form).toMatch(/export function NudgeForm/);
+  });
+
+  it("only lists people whose code still works", () => {
+    // An expired code is a different problem with a different fix: it
+    // reappears in the invite list and is re-issued. Nudging somebody toward a
+    // dead link sends them to a screen that refuses them.
+    const read = fnBody(lib, "export async function waitingOnInvitation");
+    expect(read).toMatch(/\.not\("invited_at", "is", null\)/);
+    expect(read).toMatch(/\.is\("accepted_at", null\)/);
+    expect(read).toMatch(/!inviteHasExpired\(r\.invited_at\)/);
+  });
+
+  it("re-checks every condition at send time", () => {
+    // A code can expire, or be spent, between a page rendering and a button
+    // being pressed. The screen narrows the work; it does not authorise it.
+    expect(nudge).toMatch(/if \(row\.accepted_at\) continue/);
+    expect(nudge).toMatch(/if \(inviteHasExpired\(row\.invited_at\)\) continue/);
+    expect(nudge).toMatch(/if \(nudged\.get\(row\.id\)\) continue/);
+  });
+
+  it("sends exactly one, ever", () => {
+    // A cooldown would be nine nudges over the life of a code. The column is
+    // what makes "one" true rather than intended.
+    expect(nudge).toMatch(/\.update\(\{ invite_nudged_at: stamped \}\)/);
+    expect(nudge).toMatch(/\.is\("invite_nudged_at", null\)/);
+  });
+
+  it("claims the window before sending", () => {
+    const stamp = nudge.indexOf("invite_nudged_at: stamped");
+    const send = nudge.indexOf("sendDirectEmail");
+    expect(stamp).toBeGreaterThan(-1);
+    expect(send).toBeGreaterThan(stamp);
+  });
+
+  it("refuses to send while the column is missing", () => {
+    // Code reaches production before the schema here as a matter of course. A
+    // nudge sent without the ledger has no guarantee behind it.
+    expect(nudge).toMatch(/if \(!nudged\) return 0/);
+  });
+
+  it("does not mint a second code", () => {
+    // They already have a working link. Re-inviting would orphan it, which
+    // inviteFromWaitlist refuses on a line of its own — so this screen must not
+    // offer that as a way out.
+    // The UPDATE calls, not the words. /invited_at: / matched the Candidate
+    // interface declared inside the function, which reads the column and writes
+    // nothing — the same slip as /confirmed_at:/ made earlier this week.
+    expect(nudge).not.toMatch(/mintInviteCode/);
+    const updates = nudge.match(/\.update\(\{[^}]*\}/g) ?? [];
+    expect(updates.length).toBeGreaterThan(0);
+    for (const u of updates) expect(u).not.toMatch(/invited_at|invite_code/);
+    const imported = form.match(/import \{([^}]*)\} from "\.\/actions"/)?.[1] ?? "";
+    expect(imported).toContain("nudgeInvited");
+    expect(imported).not.toContain("invite,");
+  });
+
+  it("says the deadline from THIS row, not a fixed number", () => {
+    // "Soon" is not actionable and fourteen days is wrong for anybody invited
+    // on a different day.
+    expect(nudge).toMatch(/inviteDaysLeft\(row\.invited_at\)/);
+    expect(nudge).toMatch(/The link stops working in \$\{days\}/);
+  });
+
+  it("reports how many went, so zero cannot look like success", () => {
+    expect(actions).toMatch(
+      /export async function nudgeInvited\(formData: FormData\): Promise<number>/,
+    );
+    expect(form).toMatch(/sent === 0 \?/);
+  });
+
+  it("offers no select-all", () => {
+    expect(form).not.toMatch(/toggleGroup|Select all|selectAll/);
   });
 });

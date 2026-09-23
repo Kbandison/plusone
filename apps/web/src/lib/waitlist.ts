@@ -856,6 +856,154 @@ export async function dueForReminder(at: Date = new Date()): Promise<string[]> {
     .map((row) => row.id);
 }
 
+export interface WaitingRow {
+  readonly id: string;
+  readonly email: string;
+  readonly metro: string;
+  /** Days until the code stops working, so the screen can say it. */
+  readonly expires_in_days: number;
+  /** False once the one nudge has gone. */
+  readonly nudgeable: boolean;
+}
+
+/**
+ * Invited, never used it, code still live.
+ *
+ * Kevin asked to reach "the ones that haven't joined yet based on where they
+ * are in the steps". This is the only step where a nudge is both possible and
+ * worth sending: they have a working link they have not clicked, and it expires.
+ *
+ * NOT the people who made an account and stalled. All six who created one
+ * signed up by PHONE, so `auth.users.email` is null for every one of them, and
+ * the two who are stuck mid-onboarding have no push subscription either. There
+ * is no channel to those two at all until they add an address in Settings, and
+ * inventing one by matching them back to a waitlist row is exactly the link
+ * WAITLIST_NEVER refuses.
+ *
+ * An EXPIRED code is a different problem with a different fix: it reappears in
+ * the invite list and gets re-issued. Nudging somebody about a dead link would
+ * send them to a screen that refuses them.
+ */
+export async function waitingOnInvitation(): Promise<WaitingRow[]> {
+  const { data } = await serviceClient()
+    .from("waitlist")
+    .select("id, email, metro, invited_at")
+    .not("invited_at", "is", null)
+    .is("accepted_at", null)
+    .order("invited_at", { ascending: true });
+
+  const rows = (data ?? []) as { id: string; email: string; metro: string; invited_at: string }[];
+
+  // Allowed to fail, and null means "the column is not there yet" rather than
+  // "nobody has been nudged" — the two must not look alike, because the first
+  // has to stop every send. Same shape as remindedAtByIdOrNull above it.
+  const nudged = await nudgedAtByIdOrNull(rows.map((r) => r.id));
+
+  return rows
+    .filter((r) => !inviteHasExpired(r.invited_at))
+    .map((r) => ({
+      id: r.id,
+      email: r.email,
+      metro: r.metro,
+      expires_in_days: inviteDaysLeft(r.invited_at),
+      nudgeable: Boolean(nudged) && !nudged?.get(r.id),
+    }));
+}
+
+/** `invite_nudged_at`, read in a request that is ALLOWED TO FAIL. See remindedAtByIdOrNull. */
+async function nudgedAtByIdOrNull(
+  ids: readonly string[],
+): Promise<Map<string, string | null> | null> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await serviceClient()
+    .from("waitlist")
+    .select("id, invite_nudged_at")
+    .in("id", ids as string[]);
+
+  if (error) {
+    if (error.code !== "PGRST204" && error.code !== "42703") {
+      console.error(JSON.stringify({ at: "waitlist.nudgedAt", problem: error.code ?? "unknown" }));
+    }
+    return null;
+  }
+  return new Map(
+    (data as { id: string; invite_nudged_at: string | null }[]).map((r) => [
+      r.id,
+      r.invite_nudged_at,
+    ]),
+  );
+}
+
+/**
+ * Tell them the link is still there, once.
+ *
+ * The deadline is the content. A code expires and nothing else tells them, so
+ * this is a fact they cannot otherwise see rather than a reason to come back —
+ * §3.3's line, and the same one BETA_WELCOME's premium block sits on.
+ *
+ * Claimed before sending, on `invite_nudged_at`, for the reason the
+ * confirmation reminder spells out: the send is the slow part, and two
+ * reminders are not recoverable while one that failed is.
+ *
+ * Every condition is re-checked here rather than trusted from the screen. The
+ * TTL especially — a code can expire between a page rendering and a button
+ * being pressed, and nudging somebody toward a dead link is worse than silence.
+ */
+export async function nudgeWaitingOnInvitation(ids: readonly string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const supabase = serviceClient();
+
+  const { data: rows } = await supabase
+    .from("waitlist")
+    .select("id, email, token, invite_code, invited_at, accepted_at")
+    .in("id", ids as string[]);
+
+  const nudged = await nudgedAtByIdOrNull(ids);
+  if (!nudged) return 0;
+
+  interface Candidate {
+    readonly id: string;
+    readonly email: string;
+    readonly token: string;
+    readonly invite_code: string | null;
+    readonly invited_at: string | null;
+    readonly accepted_at: string | null;
+  }
+
+  let sent = 0;
+  for (const row of (rows ?? []) as Candidate[]) {
+    // Joined between the page rendering and the press. Nothing to nudge.
+    if (row.accepted_at) continue;
+    if (!row.invited_at || !row.invite_code) continue;
+    // Expired while the screen was open. The invite list re-issues these; a
+    // nudge would point at a link that refuses them.
+    if (inviteHasExpired(row.invited_at)) continue;
+    if (nudged.get(row.id)) continue;
+
+    const stamped = new Date().toISOString();
+    const { error } = await supabase
+      .from("waitlist")
+      .update({ invite_nudged_at: stamped })
+      .eq("id", row.id)
+      .is("invite_nudged_at", null);
+    if (error) continue;
+
+    const { subject, preview, body } = WAITLIST_EMAIL.nudge;
+    const link = `${appOrigin()}/beta/${row.invite_code}`;
+    const days = inviteDaysLeft(row.invited_at);
+    // The date, computed from THIS row's invited_at. "Soon" is not actionable
+    // and a fixed number is wrong for anybody invited on a different day.
+    const deadline = `The link stops working in ${days} ${days === 1 ? "day" : "days"}.`;
+    const ok = await sendDirectEmail({
+      to: row.email,
+      subject,
+      text: `${preview}\n\n${body.join("\n\n")}\n\n${deadline}\n\n${link}${footer(row.token)}`,
+    });
+    if (ok) sent += 1;
+  }
+  return sent;
+}
+
 /**
  * Has this invitation run out?
  *
@@ -865,9 +1013,23 @@ export async function dueForReminder(at: Date = new Date()): Promise<string[]> {
  * would either re-issue over a live code, orphaning a link somebody is holding,
  * or refuse to replace a dead one and strand them. Same argument as metro_for.
  */
+function inviteExpiresAt(invitedAt: string): number {
+  return Date.parse(invitedAt) + WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
+}
+
 function inviteHasExpired(invitedAt: string): boolean {
-  const ageMs = Date.now() - Date.parse(invitedAt);
-  return ageMs > WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() > inviteExpiresAt(invitedAt);
+}
+
+/**
+ * Whole days left on a code, rounded up.
+ *
+ * Rounded up so "1 day" never means "in four minutes", and it is the number the
+ * nudge email quotes — computed from THIS row, because a fixed fourteen is
+ * wrong for anybody invited on a different day.
+ */
+function inviteDaysLeft(invitedAt: string): number {
+  return Math.ceil((inviteExpiresAt(invitedAt) - Date.now()) / 86_400_000);
 }
 
 /**

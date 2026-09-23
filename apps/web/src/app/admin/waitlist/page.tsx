@@ -12,8 +12,15 @@ import {
 const LAST_RUNG_MI = RADIUS.ladderMi[RADIUS.ladderMi.length - 1] ?? 250;
 
 import { Card } from "@/app/ui";
-import { countByMetro, invitableWaitlist, testerList, unconfirmedWaitlist } from "@/lib/waitlist";
+import {
+  countByMetro,
+  invitableWaitlist,
+  testerList,
+  unconfirmedWaitlist,
+  waitingOnInvitation,
+} from "@/lib/waitlist";
 import { InviteForm } from "./invite-form";
+import { NudgeForm } from "./nudge-form";
 import { RemindForm } from "./remind-form";
 
 export const metadata: Metadata = { title: "Waitlist" };
@@ -105,6 +112,21 @@ export default async function AdminWaitlistPage() {
    * with it about who is worth showing.
    */
   const uninvited = rows.filter((r) => !r.accepted_at && (!r.invited_at || r.invite_expired));
+
+  /**
+   * Invited and never used it — the step Kevin asked to reach.
+   *
+   * The other unreached step, an account that stalled in onboarding, is NOT
+   * here and cannot be: everybody who created one signed up by phone, so we
+   * hold no address for them at all.
+   */
+  const nudgeRows = (await waitingOnInvitation()).map((r) => ({
+    id: r.id,
+    email: r.email,
+    label: metroLabel(r.metro) ?? r.metro,
+    expiresInDays: r.expires_in_days,
+    nudgeable: r.nudgeable,
+  }));
 
   const remindRows = (await unconfirmedWaitlist()).map((r) => ({
     id: r.id,
@@ -282,7 +304,10 @@ export default async function AdminWaitlistPage() {
       {/* Last, because it is a different job from the one above. Everything to
           this point is about letting people IN; this is about the ones who
           never finished asking, and the only thing offered is asking again. */}
-      <h2 className="mt-12 text-h3">3 · The ones who never confirmed</h2>
+      <h2 className="mt-12 text-h3">3 · Invited, not joined</h2>
+      <NudgeForm rows={nudgeRows} />
+
+      <h2 className="mt-12 text-h3">4 · The ones who never confirmed</h2>
       <RemindForm rows={remindRows} />
     </main>
   );
