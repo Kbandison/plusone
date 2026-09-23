@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
 import { onboarding } from "@plusone/logic";
 
+import { recordActivity } from "@/lib/last-active";
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
@@ -122,6 +124,27 @@ export default async function AppLayout({
 
   const step = onboarding.resolveStep(await loadFacts(data.user.id));
   if (step !== "done") redirect(STEP_ROUTES[step]);
+
+  /**
+   * They are here, so today counts as a day they were active.
+   *
+   * Nothing wrote last_active_at until 2026-09-23, so every real member looked
+   * inactive from the day after they signed up and fell out of everybody's Drop
+   * after a fortnight. lastActiveStamp has the full story.
+   *
+   * Below the onboarding gate, so only a finished member is recorded — nobody
+   * else is in visible_profiles to be seen as active. In after(), so the page
+   * never waits on it; and AWAITED inside, because a Postgrest builder is a
+   * thenable that sends nothing unless something awaits it — the notifications
+   * page has the story of four read markers that sat at nought that way.
+   *
+   * The layout runs on a full page load, not on every client-side navigation,
+   * which is plenty for a value that only ever records the day.
+   */
+  const userId = data.user.id;
+  after(async () => {
+    await recordActivity(userId);
+  });
 
   const [{ data: me }, { data: unreadData }, { data: navCounts }] = await Promise.all([
     supabase

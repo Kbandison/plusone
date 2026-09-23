@@ -276,3 +276,36 @@ export const RETENTION = {
  * database's would have been true.
  */
 export const MAX_DISPLAY_NAME = 40;
+
+/**
+ * What `profiles.last_active_at` holds: the DAY a member was last in the app,
+ * as midnight UTC. Never the time.
+ *
+ * ── it was never written at all ────────────────────────────────────────────
+ *
+ * Until 2026-09-23 nothing in the app wrote this column. It took the default
+ * `now()` at signup and kept it, so every real member's "last active" was the
+ * moment they signed up — measured: 16 of 16. Browse sorts and filters on it,
+ * "people active this week" counts it, and the Drop EXCLUDES anybody inactive
+ * for DROP.activeWithinDays — so a fortnight after signing up, every real
+ * member vanished from everybody else's Drop whether they used the app daily or
+ * not. Only the seeding script ever set it, which is why the seeded accounts
+ * looked alive and the people did not.
+ *
+ * ── why a day and not a moment ────────────────────────────────────────────
+ *
+ * It is readable by any member who can see the profile: visible_profiles and
+ * matched_profiles both carry it and both are granted to `authenticated`. A
+ * precise timestamp there is a "last seen at 2:47pm", readable by an ex, on an
+ * app whose members are disclosing a diagnosis. Every consumer already works in
+ * days — Browse's today, week and month, the Drop's fortnight, "active this
+ * week" — so the day is everything the product uses and nothing more.
+ *
+ * The cost, stated: "active today" in Browse means active since midnight UTC
+ * yesterday at the edges, up to a day of blur. That is the point.
+ */
+export function lastActiveStamp(at: Date): string {
+  const day = new Date(at.getTime());
+  day.setUTCHours(0, 0, 0, 0);
+  return day.toISOString();
+}

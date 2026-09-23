@@ -24,6 +24,7 @@ export {
   OTP,
   RETENTION,
   MAX_DISPLAY_NAME,
+  lastActiveStamp,
 } from "./mechanics";
 
 export {
