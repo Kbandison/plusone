@@ -39,6 +39,7 @@ export type PlayDataType =
   | "Personal info → User IDs"
   | "Personal info → Phone number"
   | "Personal info → Sexual orientation"
+  | "Personal info → Political or religious beliefs"
   | "Financial info → Purchase history"
   | "Health and fitness → Health info"
   | "Messages → Other in-app messages"
@@ -101,6 +102,27 @@ export const PLAY_DATA_SAFETY: readonly PlayDataSafetyEntry[] = [
     optional: false,
     purposes: ["App functionality"],
     why: "Never asked for directly. Gender and seeking amount to it in a dating context, and both stores name the category explicitly.",
+  },
+  {
+    /**
+     * Declared 2026-09-23. It sat in PLAY_NOT_COLLECTED — a claim, not a blank —
+     * for three and a half weeks after `profiles.religion` and
+     * `profiles.politics` were added on 29 August, and the Apple side had
+     * declared both under Sensitive Info since 10 September.
+     *
+     * Nothing caught it because the cross-check worked at CATEGORY level:
+     * "every Apple category has some Play entry". Apple's one Sensitive Info
+     * label is several Play types, and Sexual orientation alone satisfied it.
+     * PLAY_TYPE_FOR_SENSITIVE_COLUMN below closes that for these columns.
+     */
+    type: "Personal info → Political or religious beliefs",
+    fromAppleCategory: "Sensitive Info",
+    collected: true,
+    shared: false,
+    processedEphemerally: false,
+    optional: true,
+    purposes: ["App functionality"],
+    why: "Religion and political views, which a member may add to their profile to show a match and leave blank.",
   },
   {
     type: "Personal info → Phone number",
@@ -249,12 +271,34 @@ export const PLAY_SECURITY = {
  * Play data types answered NO, where saying no is a claim worth being able to
  * defend rather than a blank left unticked.
  */
+/**
+ * Where Play files each column Apple calls Sensitive Info.
+ *
+ * Apple has ONE Sensitive Info label; Play splits the same ground into several
+ * types. The old cross-check asked only that some Play entry mapped to the
+ * Apple category, so one covered column hid the rest — which is how religion
+ * and politics were declared NOT collected on Play while the app collected
+ * them. A column here must name a Play type the form actually declares.
+ *
+ * Two columns are deliberately absent and the test says so by name:
+ * `relationship_structure` and `languages`. Apple files them as Sensitive by
+ * inference, and Play has no type that fits either except "Other info" — which
+ * this form does not declare at all, and whose own definition also names date
+ * of birth and gender identity. Whether to declare it is a store-form question
+ * for Kevin and counsel, not a tidy-up, so it is held rather than guessed at.
+ */
+export const PLAY_TYPE_FOR_SENSITIVE_COLUMN: Readonly<Record<string, PlayDataType>> = {
+  "profiles.gender": "Personal info → Sexual orientation",
+  "profiles.seeking": "Personal info → Sexual orientation",
+  "profiles.religion": "Personal info → Political or religious beliefs",
+  "profiles.politics": "Personal info → Political or religious beliefs",
+};
+
 export const PLAY_NOT_COLLECTED = [
   "Location → Precise location",
   "Financial info → User payment info",
   "Financial info → Credit score",
   "Personal info → Race and ethnicity",
-  "Personal info → Political or religious beliefs",
   "Personal info → Address",
   "App activity → App interactions, in-app search history, installed apps",
   "App info and performance → Crash logs, diagnostics, other performance data",

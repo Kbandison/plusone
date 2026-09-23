@@ -456,8 +456,10 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   // It reads `add column` too now. The eight after them are 20260829000100.
   //
   // Nothing here declares a NEW Apple category: every one resolves to a
-  // category PRIVACY_LABELS already carries, which is why play-data-safety.ts
-  // is untouched by any of it.
+  // category PRIVACY_LABELS already carries. That does NOT mean Play is
+  // untouched — this comment used to say it did. Play splits several Apple
+  // categories into finer types, so a column in an existing Apple category can
+  // still need a Play type of its own. See PLAY_TYPE_FOR_SENSITIVE_COLUMN.
 
   // A search preference. It says who this member wants to see, not anything
   // about the member — the same reason search_radius_mi is operational.
@@ -536,10 +538,13 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   // "political opinion" outright, and GDPR Article 9 puts both in the same tier
   // as the health data this product is built around.
   //
-  // Still no NEW category, since Sensitive Info is already declared — so
-  // play-data-safety.ts does not move for these either. What they DO oblige is
-  // the policy: Kevin 1 is open, and religious and political belief should be
-  // named there among what a member may choose to publish. They are not yet.
+  // No new APPLE category, since Sensitive Info is already declared. This said
+  // "so play-data-safety.ts does not move for these either", and that was
+  // wrong for three and a half weeks: Play has its own type, "Political or
+  // religious beliefs", and its form listed it as NOT collected. Declared on
+  // 2026-09-23. They also oblige the policy: Kevin 1 is open, and religious and
+  // political belief should be named there among what a member may choose to
+  // publish.
   religion: "Sensitive Info",
   politics: "Sensitive Info",
 

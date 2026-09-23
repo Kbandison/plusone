@@ -4,6 +4,7 @@ import {
   APPLE_CATEGORIES_COVERED,
   PLAY_DATA_SAFETY,
   PLAY_NOT_COLLECTED,
+  PLAY_TYPE_FOR_SENSITIVE_COLUMN,
   PLAY_NO_ADVERTISING,
   PLAY_SECURITY,
 } from "./play-data-safety";
@@ -29,6 +30,39 @@ describe("the Play answers cover the same facts as the Apple ones", () => {
     for (const category of APPLE_CATEGORIES_COVERED) {
       expect(mapped, `no Play data type maps to "${category}"`).toContain(category);
     }
+  });
+
+  it("gives every Sensitive Info column a Play type the form declares", () => {
+    // Category-level coverage let one column hide the rest: Sexual orientation
+    // satisfied "Sensitive Info is represented", and religion and politics were
+    // declared NOT collected on Play for three and a half weeks.
+    const apple = PRIVACY_LABELS.find((l) => l.category === "Sensitive Info")!;
+    const declared = new Set(PLAY_DATA_SAFETY.map((e) => e.type));
+    // Held for Kevin and counsel, by name — see PLAY_TYPE_FOR_SENSITIVE_COLUMN.
+    // Play's only fit is "Other info", which this form does not declare.
+    const held = new Set(["profiles.relationship_structure", "profiles.languages"]);
+    const columns = apple.justifiedBy.filter((c) => c.startsWith("profiles.") && !held.has(c));
+    // The liveness pair is Play's ephemeral Photos row, not a profile field.
+    const fields = columns.filter((c) => c !== "profiles.liveness_passed_at");
+    expect(fields.length).toBeGreaterThanOrEqual(4);
+    for (const column of fields) {
+      const type = PLAY_TYPE_FOR_SENSITIVE_COLUMN[column];
+      expect(type, `${column} has no Play type`).toBeDefined();
+      expect(declared, `${column} maps to ${type}, which the form does not declare`).toContain(
+        type,
+      );
+    }
+  });
+
+  it("never lists a type as both collected and not collected", () => {
+    const declared = new Set<string>(PLAY_DATA_SAFETY.map((e) => e.type));
+    for (const no of PLAY_NOT_COLLECTED) {
+      expect(declared.has(no), `${no} is declared collected AND not collected`).toBe(false);
+    }
+    // The specific one that was wrong.
+    expect(PLAY_NOT_COLLECTED as readonly string[]).not.toContain(
+      "Personal info → Political or religious beliefs",
+    );
   });
 
   it("keeps the Apple label list as the source, not a copy", () => {

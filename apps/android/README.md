@@ -294,7 +294,14 @@ in `packages/config/src/play-data-safety.ts`:
 
 `play-data-safety.test.ts` fails when these stop agreeing with the Apple labels,
 which are themselves held against the migrations. So the chain runs from a new
-column all the way to both stores, and the two forms cannot drift apart.
+column all the way to both stores.
+
+It said "and the two forms cannot drift apart", and they did: religion and
+politics were declared NOT collected on Play from 29 August to 23 September,
+because the check matched Apple CATEGORIES and Play splits one Apple category
+into several types. `PLAY_TYPE_FOR_SENSITIVE_COLUMN` now names a Play type per
+Sensitive Info column. **If the form was submitted before 2026-09-23, "Political
+or religious beliefs" needs changing to collected in the console.**
 
 Two things in there worth knowing before you open the form:
 
