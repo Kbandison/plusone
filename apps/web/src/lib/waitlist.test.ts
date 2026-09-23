@@ -1546,3 +1546,47 @@ describe("a claim is only a claim if it is read back", () => {
     expect(fn).toMatch(/if \(!claimed\?\.length\) continue;/);
   });
 });
+
+describe("the beta mark needs a code actually spent", () => {
+  // Found 2026-09-23. `joined_in_beta` — a claim on three months of Premium —
+  // was stamped on the invitation cookie merely existing. The proxy sets it for
+  // any sixteen hex characters after /beta/, so an edited link marked its
+  // holder; a forwarded, already-spent link marked its second holder; and a
+  // fortnight-old cookie re-fired "Someone joined the app" on a re-verify.
+  const lib = code("lib/waitlist.ts");
+  const actions = body("app/onboarding/phone/actions.ts");
+
+  it("says whether this call spent a code, read back", () => {
+    const accept = fnBody(lib, "export async function acceptBetaInvite");
+    expect(accept).toMatch(/Promise<boolean>/);
+    expect(accept).toMatch(/\.is\("accepted_at", null\)\s*\.select\("id"\);/);
+    expect(accept).toMatch(/return Boolean\(data\?\.length\);/);
+  });
+
+  it("gates the mark, the alert and the seed on the spend, not the cookie", () => {
+    const gate = actions.indexOf("if (spent && betaCode) {");
+    expect(gate).toBeGreaterThan(-1);
+    expect(actions).toMatch(/const spent = await acceptBetaInvite\(betaCode\);/);
+    expect(actions).not.toMatch(/if \(betaCode\) \{/);
+    const gated = actions.slice(gate);
+    for (const step of [
+      "joined_in_beta: true",
+      "alertAdminsOfBetaJoin()",
+      "metroForInvite(betaCode)",
+    ]) {
+      expect(actions.indexOf(step), step).toBeGreaterThan(gate);
+      expect(gated, step).toContain(step);
+    }
+  });
+
+  it("spends only after the promote, so a failed promote keeps the code", () => {
+    const promote = actions.indexOf('verification_status: "phone_verified"');
+    const promoteFail = actions.indexOf("return { error: E.sendFailed", promote);
+    const spend = actions.indexOf("acceptBetaInvite(betaCode)");
+    expect(promote).toBeGreaterThan(-1);
+    expect(promoteFail).toBeGreaterThan(promote);
+    expect(spend).toBeGreaterThan(promoteFail);
+    // Exactly one spend.
+    expect(actions.match(/acceptBetaInvite\(/g) ?? []).toHaveLength(1);
+  });
+});

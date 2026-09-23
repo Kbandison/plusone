@@ -123,21 +123,7 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
   // them tells someone guessing which half they got right.
   if (error) return { error: E.codeInvalid, sentTo: phone };
 
-  /**
-   * Spend the invitation, now that the account it authorised actually exists.
-   *
-   * AFTER the OTP, never before. Marking it accepted at send time would burn an
-   * invitation for anybody who reached the code screen and stopped — a mistyped
-   * number, a text that never arrived, a closed tab — and they would have to
-   * ask for another one that nothing in the product can issue.
-   *
-   * Not awaited for its result and not allowed to fail the signup: the account
-   * is made either way, and refusing a verified member their session because a
-   * bookkeeping update failed would be the worst possible trade. The cost of
-   * missing it is one invitation reusable once more, which the TTL still bounds.
-   */
   const betaCode = (await cookies()).get("plusone_beta")?.value;
-  await acceptBetaInvite(betaCode);
 
   // Record on the profile what the OTP just proved.
   //
@@ -193,7 +179,32 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
     // what keeps it to accounts being created right now — an existing member who
     // still has an invitation cookie is signing IN, not joining, and is not part
     // of the cohort.
-    if (betaCode) {
+    /**
+     * Spend the invitation, now that the account it authorised exists AND has
+     * been promoted — and do the three beta things only if this call spent one.
+     *
+     * AFTER the OTP, never before. Marking it accepted at send time would burn
+     * an invitation for anybody who reached the code screen and stopped — a
+     * mistyped number, a text that never arrived, a closed tab — and they would
+     * have to ask for another.
+     *
+     * After the PROMOTE too, since 2026-09-23. It used to run straight after
+     * the OTP, so a promote that failed returned an error with the code
+     * already spent, and the retry found nothing left to spend and lost the
+     * mark. A failed promote now leaves the code where it was.
+     *
+     * `spent`, not `betaCode`. The cookie is a claim, not a credential: the
+     * proxy sets it for any sixteen hex characters, it outlives the spend by a
+     * fortnight, and a forwarded link carries one that was spent already. The
+     * mark is a claim on three months of Premium and the alert says somebody
+     * new is in; both rest on a real code being spent, here, now.
+     *
+     * Not allowed to fail the signup: acceptBetaInvite answers false rather
+     * than throwing, and the account is made either way.
+     */
+    const spent = await acceptBetaInvite(betaCode);
+
+    if (spent && betaCode) {
       const { error: cohortError } = await serviceClient()
         .from("profiles")
         .update({ joined_in_beta: true })

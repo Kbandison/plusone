@@ -1182,22 +1182,37 @@ export async function betaInviteIsOpen(code: string | undefined): Promise<boolea
 }
 
 /**
- * Spend the invitation, once the account it authorised actually exists.
+ * Spend the invitation, once the account it authorised actually exists — and
+ * say whether THIS call spent one.
  *
  * Called AFTER the OTP verifies, not before. An invitation consumed by somebody
  * who then abandoned the form at the code screen is an invitation burned for
  * nothing, and the person it was sent to would have to ask for another.
  *
  * `.is("accepted_at", null)` makes the spend atomic: two devices racing the
- * same link produce one account, and the second update matches no row.
+ * same link produce one spend, and the second update matches no row.
+ *
+ * ── the answer is what the beta mark rests on ─────────────────────────────
+ *
+ * True only when a real, unspent code was spent just now. It returned nothing
+ * until 2026-09-23, and the caller stamped `joined_in_beta` — a claim on three
+ * months of Premium — on the cookie merely EXISTING. The proxy sets that cookie
+ * for any sixteen hex characters after /beta/, so anybody who had seen one
+ * invitation link could edit it and mark themselves; a forwarded link that had
+ * already been spent marked its second holder too; and a member re-verifying
+ * with a fortnight-old cookie fired "Someone joined the app" again. Read back,
+ * like every other claim in this file, because an UPDATE matching no row is
+ * not an error.
  */
-export async function acceptBetaInvite(code: string | undefined): Promise<void> {
-  if (!code) return;
-  await serviceClient()
+export async function acceptBetaInvite(code: string | undefined): Promise<boolean> {
+  if (!code) return false;
+  const { data } = await serviceClient()
     .from("waitlist")
     .update({ accepted_at: new Date().toISOString() })
     .eq("invite_code", code)
-    .is("accepted_at", null);
+    .is("accepted_at", null)
+    .select("id");
+  return Boolean(data?.length);
 }
 
 /**
