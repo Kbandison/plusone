@@ -1444,12 +1444,14 @@ describe("the people holding a link they never used", () => {
   });
 
   it("asks the config schedule, at 7pm where the person is", () => {
+    // One zone per row, asked once and passed to all three: the hour check, the
+    // stage due and the stage sent must agree on where the person is, or a row
+    // could be judged at 7pm in one zone and scheduled in another.
+    expect(send).toMatch(/const tz = metroTimezone\(row\.metro\);/);
+    expect(send).toMatch(/if \(localHourIn\(tz, at\) !== WAITLIST_REMINDER_HOUR\) continue;/);
+    expect(send).toMatch(/const stage = inviteNudgeDue\(row\.invited_at, at, tz\)/);
     expect(send).toMatch(
-      /localHourIn\(metroTimezone\(row\.metro\), at\) !== WAITLIST_REMINDER_HOUR\) continue/,
-    );
-    expect(send).toMatch(/const stage = inviteNudgeDue\(row\.invited_at, at\)/);
-    expect(send).toMatch(
-      /stage === 0 \|\| stage <= inviteNudgeSent\(row\.invited_at, row\.invite_nudged_at\)\) continue/,
+      /stage === 0 \|\| stage <= inviteNudgeSent\(row\.invited_at, row\.invite_nudged_at, tz\)\) continue/,
     );
   });
 
@@ -1483,21 +1485,20 @@ describe("the people holding a link they never used", () => {
     expect(send).toMatch(/\/beta\/\$\{row\.invite_code\}/);
   });
 
-  it("sends the stage's own email, and the number only in the first", () => {
-    // ONE lookup, and both halves of the email read from it. Review found the
-    // first version of this would pass with the subject from the right stage
-    // and every body from stage 1.
+  it("sends the stage's own email, filled in by config", () => {
+    // ONE lookup for the subject, and the body from inviteNudgeBody — the same
+    // function config's tests render the cohort's exact emails with, so what is
+    // tested there is what is sent here. Review found an earlier version would
+    // pass with every body taken from stage 1.
     expect(send).toMatch(/const email = WAITLIST_EMAIL\[INVITE_NUDGE_EMAIL\[stage\]\];/);
     expect(send).toMatch(/subject: email\.subject,/);
-    expect(send).toMatch(/: email\.body;/);
-    expect(send).not.toMatch(/WAITLIST_EMAIL\.nudge|WAITLIST_EMAIL\["nudge/);
+    expect(send).toMatch(/const text = inviteNudgeBody\(stage, row\.invited_at, at, tz\);/);
+    expect(send).toMatch(/\$\{text\.join\("\\n\\n"\)\}/);
+    expect(send).not.toMatch(/email\.body|WAITLIST_EMAIL\.nudge|WAITLIST_EMAIL\["nudge/);
     expect(send.match(/WAITLIST_EMAIL\[/g) ?? []).toHaveLength(1);
-    expect(send).toMatch(/stage === 1\s*\?/);
-    // Rounded DOWN, from config — never a promised day that does not exist.
-    expect(send).toMatch(/inviteNudgeDeadline\(inviteNudgeDaysLeft\(row\.invited_at, at\)\)/);
     // Body only: the preview is the opening sentence and must not be printed
     // above it a second time.
-    expect(send).not.toMatch(/\$\{preview\}/);
+    expect(send).not.toMatch(/\$\{preview\}|email\.preview/);
   });
 
   it("has no button — the cron is the only sender", () => {
@@ -1512,7 +1513,9 @@ describe("the people holding a link they never used", () => {
   it("shows the cron's own next step, not a description of it", () => {
     const waiting = fnBody(lib, "export async function waitingOnInvitation");
     expect(waiting).toMatch(/nextInviteNudge\(r\.invited_at, r\.invite_nudged_at, tz, now\)/);
-    expect(waiting).toMatch(/nudges_sent: inviteNudgeSent\(r\.invited_at, r\.invite_nudged_at\)/);
+    expect(waiting).toMatch(
+      /nudges_sent: inviteNudgeSent\(r\.invited_at, r\.invite_nudged_at, tz\)/,
+    );
     expect(waiting).toMatch(/\.filter\(\(r\) => !inviteHasExpired\(r\.invited_at\)\)/);
   });
 });

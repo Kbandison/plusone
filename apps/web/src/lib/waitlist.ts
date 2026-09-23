@@ -11,8 +11,7 @@ import {
   WAITLIST_REMINDER_HOUR,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
   inviteExpiresAt,
-  inviteNudgeDaysLeft,
-  inviteNudgeDeadline,
+  inviteNudgeBody,
   inviteNudgeDue,
   inviteNudgeSent,
   isMetro,
@@ -926,7 +925,7 @@ export async function waitingOnInvitation(now: Date = new Date()): Promise<Waiti
         email: r.email,
         metro: r.metro,
         expires_in_days: inviteDaysLeft(r.invited_at),
-        nudges_sent: inviteNudgeSent(r.invited_at, r.invite_nudged_at),
+        nudges_sent: inviteNudgeSent(r.invited_at, r.invite_nudged_at, tz),
         next_nudge: next
           ? new Intl.DateTimeFormat("en-US", {
               timeZone: tz,
@@ -944,10 +943,11 @@ export async function waitingOnInvitation(now: Date = new Date()): Promise<Waiti
  *
  * ── three, on a schedule ───────────────────────────────────────────────────
  *
- * Kevin, 2026-09-23: three days after the invitation, with a week left, and in
- * the final 24 hours, each at WAITLIST_REMINDER_HOUR in the person's metro. The
- * schedule lives in config as inviteNudgeDue; this asks it of every waiting
- * row at the instant the cron was called and sends what it says.
+ * Kevin, 2026-09-23: three days after the invitation, then at the 7pm nearest
+ * to a week before it expires, then at the 7pm nearest to a day before — each
+ * at WAITLIST_REMINDER_HOUR in the person's metro. The schedule lives in config
+ * as inviteNudgeDue; this asks it of every waiting row at the instant the cron
+ * was called and sends what it says.
  *
  * ── `at` is the stamp, not the clock ──────────────────────────────────────
  *
@@ -994,9 +994,10 @@ export async function sendDueInviteNudges(
   let sent = 0;
   for (const row of (data ?? []) as Candidate[]) {
     if (!row.invite_code) continue;
-    if (localHourIn(metroTimezone(row.metro), at) !== WAITLIST_REMINDER_HOUR) continue;
-    const stage = inviteNudgeDue(row.invited_at, at);
-    if (stage === 0 || stage <= inviteNudgeSent(row.invited_at, row.invite_nudged_at)) continue;
+    const tz = metroTimezone(row.metro);
+    if (localHourIn(tz, at) !== WAITLIST_REMINDER_HOUR) continue;
+    const stage = inviteNudgeDue(row.invited_at, at, tz);
+    if (stage === 0 || stage <= inviteNudgeSent(row.invited_at, row.invite_nudged_at, tz)) continue;
     due += 1;
 
     const claim = supabase
@@ -1012,18 +1013,11 @@ export async function sendDueInviteNudges(
     ).select("id");
     if (!claimed?.length) continue;
 
-    // ONE lookup for the whole email, so the subject and the body cannot come
-    // from different stages.
+    // The subject from the stage's own email, the body from inviteNudgeBody —
+    // the one function that fills in the number and the moment, and the one
+    // the tests read, so what is tested is what arrives.
     const email = WAITLIST_EMAIL[INVITE_NUDGE_EMAIL[stage]];
-    const text =
-      stage === 1
-        ? // Only the first carries a number, from THIS row and rounded DOWN —
-          // see inviteNudgeDaysLeft. "10 days" for the cohort invited on 20
-          // September, which had 10.8 left when it went.
-          [
-            `${email.body.join(" ")} ${inviteNudgeDeadline(inviteNudgeDaysLeft(row.invited_at, at))}`,
-          ]
-        : email.body;
+    const text = inviteNudgeBody(stage, row.invited_at, at, tz);
     const ok = await sendDirectEmail({
       to: row.email,
       subject: email.subject,

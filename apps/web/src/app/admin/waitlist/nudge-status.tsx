@@ -27,8 +27,8 @@ export function NudgeStatus({ rows }: { rows: readonly NudgeRow[] }) {
     <Card className="mt-8">
       <p className="text-[11.7px] leading-[1.6] text-ink-3">
         {rows.length} {rows.length === 1 ? "person is" : "people are"} holding a link they have not
-        used. Each gets three reminders at 7pm their time: three days in, with a week left, and on
-        the last day.
+        used. Each gets three reminders at 7pm their time: three days in, a week before it expires,
+        and the day before.
       </p>
 
       <ul className="mt-4 flex flex-col gap-2">

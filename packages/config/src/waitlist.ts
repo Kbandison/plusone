@@ -403,8 +403,11 @@ export const WAITLIST_EMAIL: Record<
   },
   nudgeLastDay: {
     subject: "Last day for your Plus One invitation",
-    preview: "Your link stops working within 24 hours.",
-    body: ["Your link stops working within 24 hours. This is the last reminder we will send."],
+    // {when} is the moment the link dies in the person's own zone, filled by
+    // inviteNudgeExpiry: "Sunday at 2:49 PM EDT". It used to say "within 24
+    // hours", which was true and useless for somebody told with minutes left.
+    preview: "Your link stops working on {when}.",
+    body: ["Your link stops working on {when}. This is the last reminder we will send."],
   },
 
   /**
@@ -462,10 +465,18 @@ export function inviteExpiresAt(invitedAt: string): number {
 /** Days after the invitation that the first nudge becomes due. Kevin, 2026-09-23. */
 export const WAITLIST_NUDGE_AFTER_DAYS = 3;
 
-/** How much is left on the link when the second nudge goes. */
+/**
+ * The second nudge goes at the 7pm NEAREST to this many days before the link
+ * dies. Kevin, 2026-09-23: "one at 7 days".
+ */
 export const WAITLIST_NUDGE_WEEK_LEFT_DAYS = 7;
 
-/** How much is left on the link when the third and last goes. */
+/**
+ * The third and last goes at the 7pm NEAREST to this many hours before the link
+ * dies. Kevin, 2026-09-23: "24 hours before, not within 24 hours" — the first
+ * version sent it at whichever 7pm fell inside the last day, which for anybody
+ * invited in their own evening was minutes before expiry.
+ */
 export const WAITLIST_NUDGE_LAST_HOURS = 24;
 
 /**
@@ -489,41 +500,94 @@ const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
 /**
- * Which nudge, if any, is due at this instant. 0 means none.
+ * The waitlist cron's run at 7pm in `tz` nearest to `target`, in epoch ms. An
+ * earlier run wins a tie.
  *
- * Three WINDOWS, and a nudge is sent at the first WAITLIST_REMINDER_HOUR inside
- * its own window, in the person's metro:
- *
- *   1  from three days after the invitation until a week is left
- *   2  the ONE day between seven and six days left
- *   3  the last 24 hours
- *
- * The second is a day AND AN HOUR, and the hour is the autumn clock change. On
- * the night the clocks fall back, two consecutive 7pm-local runs are 25 hours
- * apart, so a window of exactly a day can fall between them and hold no 7pm at
- * all — found by review on 2026-09-23, for invitations issued in a one-hour
- * band on two days a year. Twenty-five hours always holds one. In spring the
- * gap is 23 hours and the window can hold two; `stage <= sent` refuses the
- * second. It is short on purpose otherwise: its copy says "one more week",
- * which is only true near that point, so a run missed in the window skips the
- * email rather than sending it days late with a sentence that has stopped being
- * true. Between the windows nothing is due, which is the other half of "a
- * missed one skips ahead" — nobody gets two back to back.
- *
- * THE THIRD IS STILL EXACTLY 24 HOURS, and that is known rather than missed. It
- * has two open problems that share a fix and the fix changes Kevin's approved
- * copy, so it is his call: for anybody invited in their own evening the only
- * 7pm in the last day falls minutes before the link dies, and on the autumn
- * night it can hold no 7pm. Neither touches the 20 September cohort.
+ * "Nearest" rather than "first after", because Kevin asked for a nudge AT seven
+ * days and AT a day before, and a 7pm up to twelve hours either side of that is
+ * the closest the 7pm rule allows. Searched over the cron's own instants (five
+ * past each hour) forty hours either way, which spans any gap between two 7pms
+ * — 23 hours when the clocks go forward, 25 when they go back.
  */
-export function inviteNudgeDue(invitedAt: string, at: Date): InviteNudgeStage | 0 {
+export function eveningNearest(target: number, tz: string): number {
+  const base = Math.floor(target / HOUR_MS) * HOUR_MS + WAITLIST_CRON_MINUTE * 60 * 1000;
+  let best = Number.NaN;
+  for (let k = -40; k <= 40; k += 1) {
+    const t = base + k * HOUR_MS;
+    if (localHourIn(tz, new Date(t)) !== WAITLIST_REMINDER_HOUR) continue;
+    if (Number.isNaN(best) || Math.abs(t - target) < Math.abs(best - target)) best = t;
+  }
+  return best;
+}
+
+/** The two fixed sends for one invitation in one zone, as cron-run instants. */
+export interface InviteNudgeSchedule {
+  /** The 7pm nearest to seven days before expiry. */
+  readonly week: number;
+  /** The 7pm nearest to 24 hours before expiry. Always ahead of it: 11 to 37 hours. */
+  readonly lastDay: number;
+}
+
+/**
+ * Remembered, because every call below needs it and it never changes for a row:
+ * the cron asks once an hour, the admin screen asks for every hour of a
+ * fortnight, and the tests ask for every hour of thousands of fortnights.
+ */
+const SCHEDULES = new Map<string, InviteNudgeSchedule>();
+
+export function inviteNudgeSchedule(invitedAt: string, tz: string): InviteNudgeSchedule {
+  const key = `${invitedAt}|${tz}`;
+  const known = SCHEDULES.get(key);
+  if (known) return known;
+  const expires = inviteExpiresAt(invitedAt);
+  const schedule = {
+    week: eveningNearest(expires - WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY_MS, tz),
+    lastDay: eveningNearest(expires - WAITLIST_NUDGE_LAST_HOURS * HOUR_MS, tz),
+  };
+  if (SCHEDULES.size > 5000) SCHEDULES.clear();
+  SCHEDULES.set(key, schedule);
+  return schedule;
+}
+
+/**
+ * Which cron run an instant belongs to. The route stamps the moment it actually
+ * ran — 23:05:02, not 23:05:00 — so "is this the scheduled run" is asked of the
+ * hour, never of the exact instant.
+ */
+function runHour(t: number): number {
+  return Math.floor(t / HOUR_MS);
+}
+
+/**
+ * Which nudge, if any, is due at this instant in this zone. 0 means none. The
+ * caller has already checked that it is 7pm there.
+ *
+ *   1  at a 7pm from three days after the invitation, until the week-left run
+ *   2  AT the 7pm nearest to seven days before expiry
+ *   3  AT the 7pm nearest to 24 hours before expiry
+ *
+ * The second and third are single runs, not windows. A missed one is skipped
+ * rather than sent late: the week-left copy says "one more week" and the last
+ * one names the moment the link dies, and neither should arrive a day after it
+ * stopped being the right email. The first is a window because "three days
+ * after" is a floor, not a moment — its copy carries its own number.
+ *
+ * No window-length arithmetic anywhere, which is what the first two versions
+ * got wrong: a window of exactly a day holds no 7pm on the night the clocks go
+ * back, and a window ending at expiry put the last email minutes before it.
+ * The nearest 7pm is found by looking, so both problems have nothing to hold on
+ * to.
+ */
+export function inviteNudgeDue(invitedAt: string, at: Date, tz: string): InviteNudgeStage | 0 {
   const now = at.getTime();
-  const left = inviteExpiresAt(invitedAt) - now;
-  if (left <= 0) return 0;
-  if (left <= WAITLIST_NUDGE_LAST_HOURS * 60 * 60 * 1000) return 3;
-  const week = WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY_MS;
-  if (left <= week) return left > week - DAY_MS - HOUR_MS ? 2 : 0;
-  return now - Date.parse(invitedAt) >= WAITLIST_NUDGE_AFTER_DAYS * DAY_MS ? 1 : 0;
+  if (now >= inviteExpiresAt(invitedAt)) return 0;
+  const { week, lastDay } = inviteNudgeSchedule(invitedAt, tz);
+  if (runHour(now) === runHour(lastDay)) return 3;
+  if (runHour(now) === runHour(week)) return 2;
+  if (runHour(now) < runHour(week)) {
+    return now - Date.parse(invitedAt) >= WAITLIST_NUDGE_AFTER_DAYS * DAY_MS ? 1 : 0;
+  }
+  return 0;
 }
 
 /**
@@ -532,26 +596,28 @@ export function inviteNudgeDue(invitedAt: string, at: Date): InviteNudgeStage | 
  *
  * ── no stage column, and that is deliberate ────────────────────────────────
  *
- * A nudge is only ever sent inside its own window, so the moment it went says
- * which one it was: more than a week left is the first, more than a day is the
- * second, anything later the third. Bucketed by those boundaries rather than
- * the windows themselves, so a send at an unexpected moment — the manual button
- * this replaced, pressed before it was removed — still counts as the stage it
- * fell in and cannot be followed by a duplicate.
+ * The moment a nudge went says which one it was: before the week-left run is
+ * the first, from it the second, from the last-day run the third. Read by the
+ * RUN HOUR, the same way inviteNudgeDue decides, so a stamp taken a few seconds
+ * into the run reads back as the stage that was sent.
  *
  * And it resets itself. A re-issued invitation writes a NEW invited_at, so the
  * old code's last nudge is earlier than the new code's birth and reads as 0.
  * A stage column would have needed clearing in the same write as the re-issue,
  * which is one more thing for that write to forget.
  */
-export function inviteNudgeSent(invitedAt: string, nudgedAt: string | null): InviteNudgeStage | 0 {
+export function inviteNudgeSent(
+  invitedAt: string,
+  nudgedAt: string | null,
+  tz: string,
+): InviteNudgeStage | 0 {
   if (!nudgedAt) return 0;
   const sentAt = Date.parse(nudgedAt);
   if (sentAt < Date.parse(invitedAt)) return 0;
-  const left = inviteExpiresAt(invitedAt) - sentAt;
-  if (left > WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY_MS) return 1;
-  if (left > WAITLIST_NUDGE_LAST_HOURS * 60 * 60 * 1000) return 2;
-  return 3;
+  const { week, lastDay } = inviteNudgeSchedule(invitedAt, tz);
+  if (runHour(sentAt) >= runHour(lastDay)) return 3;
+  if (runHour(sentAt) >= runHour(week)) return 2;
+  return 1;
 }
 
 /**
@@ -568,7 +634,7 @@ export function nextInviteNudge(
   tz: string,
   now: Date,
 ): { readonly stage: InviteNudgeStage; readonly at: Date } | null {
-  const sent = inviteNudgeSent(invitedAt, nudgedAt);
+  const sent = inviteNudgeSent(invitedAt, nudgedAt, tz);
   if (sent === 3) return null;
   const hour = 60 * 60 * 1000;
   let t = Math.floor(now.getTime() / hour) * hour + WAITLIST_CRON_MINUTE * 60 * 1000;
@@ -576,7 +642,7 @@ export function nextInviteNudge(
   for (const end = inviteExpiresAt(invitedAt); t < end; t += hour) {
     const at = new Date(t);
     if (localHourIn(tz, at) !== WAITLIST_REMINDER_HOUR) continue;
-    const due = inviteNudgeDue(invitedAt, at);
+    const due = inviteNudgeDue(invitedAt, at, tz);
     if (due > sent) return { stage: due as InviteNudgeStage, at };
   }
   return null;
@@ -600,6 +666,50 @@ export function inviteNudgeDaysLeft(invitedAt: string, at: Date): number {
 /** The sentence the first nudge ends on, from THIS row's days left. */
 export function inviteNudgeDeadline(days: number): string {
   return `It stops working in ${days} ${days === 1 ? "day" : "days"}.`;
+}
+
+/**
+ * When the link dies, as the last nudge says it: "Sunday at 2:49 PM EDT".
+ *
+ * The zone is named because `elsewhere` falls back to New York time, and a
+ * bare "2:49 PM" to somebody in Denver would be an hour wrong with nothing to
+ * say so. Assembled from parts rather than one format string, because what
+ * `Intl` puts between the weekday and the time has changed between ICU
+ * versions — a comma, "at", nothing — and this sentence was approved word for
+ * word.
+ */
+export function inviteNudgeExpiry(invitedAt: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  }).formatToParts(new Date(inviteExpiresAt(invitedAt)));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("weekday")} at ${part("hour")}:${part("minute")} ${part("dayPeriod")} ${part("timeZoneName")}`;
+}
+
+/**
+ * The body of one nudge, exactly as it is sent. The only place the numbers and
+ * the moment are filled in, so the test of what arrives and the cron that sends
+ * it read the same function.
+ */
+export function inviteNudgeBody(
+  stage: InviteNudgeStage,
+  invitedAt: string,
+  at: Date,
+  tz: string,
+): readonly string[] {
+  const { body } = WAITLIST_EMAIL[INVITE_NUDGE_EMAIL[stage]];
+  if (stage === 1) {
+    return [`${body.join(" ")} ${inviteNudgeDeadline(inviteNudgeDaysLeft(invitedAt, at))}`];
+  }
+  if (stage === 3)
+    return body.map((line) => line.replace("{when}", inviteNudgeExpiry(invitedAt, tz)));
+  return body;
 }
 
 /**

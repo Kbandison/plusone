@@ -26,6 +26,10 @@ import {
   inviteExpiresAt,
   inviteNudgeDeadline,
   inviteNudgeDaysLeft,
+  inviteNudgeBody,
+  inviteNudgeExpiry,
+  inviteNudgeSchedule,
+  eveningNearest,
   inviteNudgeDue,
   inviteNudgeSent,
   nextInviteNudge,
@@ -816,14 +820,20 @@ describe("the one reminder is scheduled, not dripped", () => {
 /**
  * Three nudges about an unused invitation — Kevin, 2026-09-23.
  *
+ *   1  three days after the invitation
+ *   2  the 7pm nearest to seven days before it expires
+ *   3  the 7pm nearest to 24 hours before it expires
+ *
  * Tested by RUNNING the schedule rather than reading it: every one of the
- * cron's instants across a whole fourteen-day link, hour by hour, in several
- * zones and at every hour of the day an invitation might have gone out. A
- * schedule is exactly the thing that reads right and misbehaves at 2am on the
- * day the clocks change.
+ * cron's instants across a whole fourteen-day link, in seven zones, for
+ * invitations issued at every five minutes of the day and across both clock
+ * changes. The first version of this schedule passed a suite that sampled one
+ * invitation time per hour, and review then found two ways it was wrong at the
+ * minutes that suite never tried.
  */
 describe("the invitation nudges", () => {
-  const HOUR = 60 * 60 * 1000;
+  const MIN = 60 * 1000;
+  const HOUR = 60 * MIN;
   const DAY = 24 * HOUR;
   const ZONES = [
     "America/New_York",
@@ -840,126 +850,135 @@ describe("the invitation nudges", () => {
     readonly at: number;
   }
 
-  /** Run the cron from invitation to expiry, the way the route does. */
+  /**
+   * Run the cron from invitation to expiry, the way the route does: the hour
+   * first, then the stage, then the stamp. `jitter` is how late into its minute
+   * the route actually runs — the real one stamps 23:05:02, not 23:05:00.
+   */
   function simulate(
     invitedAt: string,
     tz: string,
-    skip?: (at: number) => boolean,
-    { predict = true }: { predict?: boolean } = {},
+    {
+      skip,
+      predict = true,
+      jitter = 0,
+    }: { skip?: (at: number) => boolean; predict?: boolean; jitter?: number } = {},
   ) {
     const sends: Send[] = [];
     const predictions: { made: number; stage: number; at: number }[] = [];
     let nudgedAt: string | null = null;
-    const start = Math.ceil(Date.parse(invitedAt) / HOUR) * HOUR + WAITLIST_CRON_MINUTE * 60_000;
+    const start = Math.ceil(Date.parse(invitedAt) / HOUR) * HOUR + WAITLIST_CRON_MINUTE * MIN;
     for (let t = start; t < inviteExpiresAt(invitedAt) + DAY; t += HOUR) {
-      const at = new Date(t);
-      // What the admin screen would say at this moment.
-      const next = predict ? nextInviteNudge(invitedAt, nudgedAt, tz, new Date(t - 60_000)) : null;
+      const at = new Date(t + jitter);
+      const next = predict ? nextInviteNudge(invitedAt, nudgedAt, tz, new Date(t - MIN)) : null;
       if (next) predictions.push({ made: t, stage: next.stage, at: next.at.getTime() });
       if (skip?.(t)) continue;
       if (localHourIn(tz, at) !== WAITLIST_REMINDER_HOUR) continue;
-      const stage = inviteNudgeDue(invitedAt, at);
-      if (stage === 0 || stage <= inviteNudgeSent(invitedAt, nudgedAt)) continue;
+      const stage = inviteNudgeDue(invitedAt, at, tz);
+      if (stage === 0 || stage <= inviteNudgeSent(invitedAt, nudgedAt, tz)) continue;
       sends.push({ stage, at: t });
       nudgedAt = at.toISOString();
     }
     return { sends, predictions };
   }
 
-  it("sends exactly three, in order, at 7pm local, inside their windows", () => {
+  /** Every 7pm-local cron run within two days of a target, to check "nearest" by hand. */
+  function eveningsAround(target: number, tz: string): number[] {
+    const out: number[] = [];
+    const base = Math.floor(target / HOUR) * HOUR + WAITLIST_CRON_MINUTE * MIN;
+    for (let k = -48; k <= 48; k += 1) {
+      const t = base + k * HOUR;
+      if (localHourIn(tz, new Date(t)) === WAITLIST_REMINDER_HOUR) out.push(t);
+    }
+    return out;
+  }
+
+  function checkSends(invitedAt: string, tz: string, sends: readonly Send[]) {
+    const label = `${tz} invited ${invitedAt}`;
+    const expires = inviteExpiresAt(invitedAt);
+    expect(
+      sends.map((x) => x.stage),
+      label,
+    ).toEqual([1, 2, 3]);
+    for (const x of sends) expect(localHourIn(tz, new Date(x.at)), label).toBe(19);
+    const [first, week, last] = sends as [Send, Send, Send];
+
+    // 1: at least three days in, and the FIRST 7pm that is.
+    expect(first.at - Date.parse(invitedAt), label).toBeGreaterThanOrEqual(
+      WAITLIST_NUDGE_AFTER_DAYS * DAY,
+    );
+    expect(first.at - Date.parse(invitedAt), label).toBeLessThan(
+      (WAITLIST_NUDGE_AFTER_DAYS + 1) * DAY + HOUR,
+    );
+
+    // 2 and 3: the NEAREST 7pm to their target — checked against every 7pm
+    // either side, not against a window this test also has to trust.
+    for (const [send, target] of [
+      [week, expires - WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY],
+      [last, expires - WAITLIST_NUDGE_LAST_HOURS * HOUR],
+    ] as const) {
+      const distance = Math.abs(send.at - target);
+      for (const other of eveningsAround(target, tz)) {
+        expect(distance, `${label}: a nearer 7pm existed`).toBeLessThanOrEqual(
+          Math.abs(other - target),
+        );
+      }
+    }
+
+    // And the last never lands on top of the expiry — the review's finding.
+    expect(expires - last.at, label).toBeGreaterThan(11 * HOUR);
+  }
+
+  it("sends three, in order, at 7pm local, and the fixed ones at the nearest 7pm", () => {
     let cases = 0;
     for (const tz of ZONES) {
-      for (let h = 0; h < 24; h += 1) {
-        const invitedAt = new Date(Date.UTC(2026, 8, 20, h, 49)).toISOString();
-        const { sends } = simulate(invitedAt, tz);
-        const expires = inviteExpiresAt(invitedAt);
-        expect(
-          sends.map((x) => x.stage),
-          `${tz} invited ${h}:49Z`,
-        ).toEqual([1, 2, 3]);
-        for (const x of sends) {
-          expect(localHourIn(tz, new Date(x.at))).toBe(WAITLIST_REMINDER_HOUR);
-        }
-        const [first, week, last] = sends as [Send, Send, Send];
-        expect(first.at - Date.parse(invitedAt)).toBeGreaterThanOrEqual(
-          WAITLIST_NUDGE_AFTER_DAYS * DAY,
-        );
-        expect(first.at - Date.parse(invitedAt)).toBeLessThan(
-          (WAITLIST_NUDGE_AFTER_DAYS + 1) * DAY,
-        );
-        expect(expires - week.at).toBeLessThanOrEqual(WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY);
-        expect(expires - week.at).toBeGreaterThan((WAITLIST_NUDGE_WEEK_LEFT_DAYS - 1) * DAY);
-        expect(expires - last.at).toBeLessThanOrEqual(WAITLIST_NUDGE_LAST_HOURS * HOUR);
-        expect(expires - last.at).toBeGreaterThan(0);
+      for (let m = 0; m < 24 * 60; m += 5) {
+        const invitedAt = new Date(Date.UTC(2026, 8, 20) + m * MIN).toISOString();
+        checkSends(invitedAt, tz, simulate(invitedAt, tz, { predict: false }).sends);
         cases += 1;
       }
     }
-    expect(cases).toBe(ZONES.length * 24);
-  });
+    expect(cases).toBe(ZONES.length * 288);
+  }, 60_000);
 
-  it("holds across both clock changes", () => {
-    // 2026-03-08 springs forward and 2026-11-01 falls back in the US. An
-    // invitation whose fourteen days cross either still gets three, each at
-    // 7pm on the wall clock rather than 6 or 8.
+  it("holds across both clock changes, for every invitation minute either side", () => {
+    // 2026-03-08 springs forward and 2026-11-01 falls back in the US. The
+    // first version used 24-hour windows, and on the autumn night two 7pms are
+    // 25 hours apart — so a window could hold none and a nudge vanished. The
+    // nearest 7pm is found by looking, so there is no window to fall between.
+    for (const tz of [
+      "America/New_York",
+      "America/Chicago",
+      "America/Los_Angeles",
+      "America/Denver",
+    ]) {
+      for (const from of [Date.UTC(2026, 1, 20), Date.UTC(2026, 9, 15)]) {
+        for (let t = from; t < from + 18 * DAY; t += 20 * MIN) {
+          const invitedAt = new Date(t).toISOString();
+          checkSends(invitedAt, tz, simulate(invitedAt, tz, { predict: false }).sends);
+        }
+      }
+    }
+  }, 120_000);
+
+  it("reads a stamp taken seconds into the run as the stage that was sent", () => {
+    // The route stamps the moment it ran. A schedule compared to the exact
+    // minute would call 23:05:37 a different run from 23:05:00 and send twice.
     for (const tz of ZONES) {
-      for (const day of ["2026-02-28T15:00:00.000Z", "2026-10-25T15:00:00.000Z"]) {
-        const { sends } = simulate(day, tz);
-        expect(
-          sends.map((x) => x.stage),
-          `${tz} from ${day}`,
-        ).toEqual([1, 2, 3]);
-        for (const x of sends) expect(localHourIn(tz, new Date(x.at))).toBe(19);
-      }
+      const invitedAt = "2026-09-20T18:49:00.000Z";
+      const late = simulate(invitedAt, tz, { predict: false, jitter: 37_000 }).sends;
+      const onTime = simulate(invitedAt, tz, { predict: false }).sends;
+      expect(late).toEqual(onTime);
     }
-  });
-
-  it("never loses the week-left nudge to the autumn clock change", () => {
-    // Review, 2026-09-23: on the night the clocks fall back, two 7pm-local runs
-    // are 25 hours apart, and a week-left window of exactly a day could sit
-    // between them. The single 15:00Z sample above never landed on that hour,
-    // so this sweeps every five minutes across the fortnight either side.
-    //
-    // The LAST-DAY window still has the problem and is not asserted here: its
-    // fix changes Kevin's approved copy and is waiting on him.
-    for (const tz of ["America/New_York", "America/Los_Angeles", "America/Chicago"]) {
-      // Every invitation from 15 to 29 October, five minutes apart — the whole
-      // fortnight either side, not only the days that look like they matter.
-      const from = Date.UTC(2026, 9, 15);
-      for (let t = from; t < from + 14 * DAY; t += 5 * 60_000) {
-        const stages = simulate(new Date(t).toISOString(), tz, undefined, {
-          predict: false,
-        }).sends.map((x) => x.stage);
-        expect(stages, `${tz} invited ${new Date(t).toISOString()}`).toContain(2);
-      }
-    }
-    // Three zones by 4,032 invitation times, each a fourteen-day run. About
-    // three seconds here, so it gets its own budget rather than the default
-    // five and a flaky CI.
-  }, 30_000);
-
-  it("never promises a day that does not exist", () => {
-    // Rounded down. A first nudge goes with ten-point-something days left, and
-    // rounding up told everybody 11.
-    for (let h = 0; h < 24; h += 1) {
-      for (const m of [0, 10, 40]) {
-        const invitedAt = new Date(Date.UTC(2026, 8, 20, h, m)).toISOString();
-        const [first] = simulate(invitedAt, "America/New_York").sends;
-        const left = (inviteExpiresAt(invitedAt) - first!.at) / DAY;
-        const promised = inviteNudgeDaysLeft(invitedAt, new Date(first!.at));
-        expect(promised, invitedAt).toBeLessThanOrEqual(left);
-        expect(promised, invitedAt).toBeGreaterThan(left - 1);
-      }
-    }
-    // The cohort Kevin saw the copy for: 10.8 days left, told 10.
-    expect(
-      inviteNudgeDaysLeft("2026-09-20T18:49:00.000Z", new Date("2026-09-23T23:05:00.000Z")),
-    ).toBe(10);
   });
 
   it("matches what Kevin was told for the 20 September cohort", () => {
-    // Invited 2026-09-20 at 18:49 UTC. New York: tonight, Saturday 27, Friday 3.
-    // "A week left" opens at 27 Sep 18:49 UTC, so its first 7pm is the 27th —
-    // this test was first written saying the 26th and the schedule was right.
+    // Invited Sunday 2026-09-20 at 18:49 UTC, so the link dies Sunday 4 October
+    // at 2:49pm Eastern. Tonight, Sunday 27 September, Saturday 3 October.
+    //
+    // Kevin was told Saturday, Friday and Saturday respectively, all afternoon —
+    // every weekday one short, worked out by hand. The dates were right and the
+    // code names the day through Intl; the test below is what caught it.
     const { sends } = simulate("2026-09-20T18:49:00.000Z", "America/New_York");
     expect(sends.map((x) => new Date(x.at).toISOString())).toEqual([
       "2026-09-23T23:05:00.000Z",
@@ -968,25 +987,34 @@ describe("the invitation nudges", () => {
     ]);
   });
 
-  it("skips a missed nudge rather than sending two back to back", () => {
-    // The cron is down for the whole of the week-left window. The first and
-    // last still go; the second does not arrive late with "one more week" in
-    // it; and nothing lands within a day of anything else.
+  it("skips a missed nudge rather than sending it late", () => {
     const invitedAt = "2026-09-20T18:49:00.000Z";
-    const expires = inviteExpiresAt(invitedAt);
-    const outage = (t: number) =>
-      expires - t <= WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY &&
-      expires - t > (WAITLIST_NUDGE_WEEK_LEFT_DAYS - 1) * DAY;
     for (const tz of ZONES) {
-      const { sends } = simulate(invitedAt, tz, outage);
+      const { week, lastDay } = inviteNudgeSchedule(invitedAt, tz);
+      // The week-left run is down: the first and last still go, and the
+      // second does not turn up the next evening.
+      const noWeek = simulate(invitedAt, tz, {
+        predict: false,
+        skip: (t) => Math.floor(t / HOUR) === Math.floor(week / HOUR),
+      });
       expect(
-        sends.map((x) => x.stage),
+        noWeek.sends.map((x) => x.stage),
         tz,
       ).toEqual([1, 3]);
+      // The last-day run is down: nothing arrives after it.
+      const noLast = simulate(invitedAt, tz, {
+        predict: false,
+        skip: (t) => Math.floor(t / HOUR) === Math.floor(lastDay / HOUR),
+      });
+      expect(
+        noLast.sends.map((x) => x.stage),
+        tz,
+      ).toEqual([1, 2]);
     }
-    // And a first nudge missed entirely goes straight to the week-left one.
-    const late = (t: number) => expires - t > WAITLIST_NUDGE_WEEK_LEFT_DAYS * DAY;
-    expect(simulate(invitedAt, "America/Chicago", late).sends.map((x) => x.stage)).toEqual([2, 3]);
+    // The first missed entirely goes straight to the week-left one.
+    const { week } = inviteNudgeSchedule(invitedAt, "America/Chicago");
+    const late = simulate(invitedAt, "America/Chicago", { predict: false, skip: (t) => t < week });
+    expect(late.sends.map((x) => x.stage)).toEqual([2, 3]);
   });
 
   it("predicts the cron exactly, so the admin screen cannot describe another schedule", () => {
@@ -1001,63 +1029,80 @@ describe("the invitation nudges", () => {
           `${tz} send ${x.stage}`,
         ).toBe(true);
       }
-      // Every prediction made before a send names that send, to the minute.
       for (const p of predictions) {
         const actual = sends.find((x) => x.at >= p.made);
         expect(actual, `${tz} prediction at ${new Date(p.made).toISOString()}`).toBeDefined();
         expect({ stage: p.stage, at: p.at }).toEqual({ stage: actual!.stage, at: actual!.at });
       }
-      // And once the last has gone there is nothing left to predict.
       const last = sends.at(-1)!;
       expect(predictions.some((p) => p.made > last.at)).toBe(false);
     }
   });
 
   it("starts over for a re-issued invitation", () => {
-    // The old code's last nudge is earlier than the new code's invited_at, so
-    // it reads as nothing sent — no column to clear in the re-issue.
     const oldNudge = "2026-10-03T23:05:00.000Z";
     const reissued = "2026-10-05T16:00:00.000Z";
-    expect(inviteNudgeSent(reissued, oldNudge)).toBe(0);
+    expect(inviteNudgeSent(reissued, oldNudge, "America/New_York")).toBe(0);
     expect(simulate(reissued, "America/New_York").sends.map((x) => x.stage)).toEqual([1, 2, 3]);
   });
 
   it("counts a stray send as the stage it fell in, so it cannot be followed by a duplicate", () => {
     const invitedAt = "2026-09-20T18:49:00.000Z";
-    const expires = inviteExpiresAt(invitedAt);
-    expect(inviteNudgeSent(invitedAt, new Date(Date.parse(invitedAt) + HOUR).toISOString())).toBe(
-      1,
-    );
-    expect(inviteNudgeSent(invitedAt, new Date(expires - 3 * DAY).toISOString())).toBe(2);
-    expect(inviteNudgeSent(invitedAt, new Date(expires - HOUR).toISOString())).toBe(3);
-    expect(inviteNudgeSent(invitedAt, null)).toBe(0);
+    const tz = "America/New_York";
+    const { week, lastDay } = inviteNudgeSchedule(invitedAt, tz);
+    const at = (t: number) => new Date(t).toISOString();
+    expect(inviteNudgeSent(invitedAt, at(Date.parse(invitedAt) + HOUR), tz)).toBe(1);
+    expect(inviteNudgeSent(invitedAt, at(week - MIN * 10), tz)).toBe(1);
+    // A run that fires a second EARLY still belongs to its hour. Compared to
+    // the exact instant instead, this reads back as the first nudge, and the
+    // admin screen says "1 of 3" after the second went.
+    expect(inviteNudgeSent(invitedAt, at(week - 1000), tz)).toBe(2);
+    expect(inviteNudgeSent(invitedAt, at(lastDay - 1000), tz)).toBe(3);
+    expect(inviteNudgeSent(invitedAt, at(week + MIN * 30), tz)).toBe(2);
+    expect(inviteNudgeSent(invitedAt, at(lastDay - DAY), tz)).toBe(2);
+    expect(inviteNudgeSent(invitedAt, at(lastDay + MIN * 30), tz)).toBe(3);
+    expect(inviteNudgeSent(invitedAt, null, tz)).toBe(0);
   });
 
   it("sends nothing after the link has run out", () => {
     const invitedAt = "2026-09-20T18:49:00.000Z";
     const after = new Date(inviteExpiresAt(invitedAt) + 1);
-    expect(inviteNudgeDue(invitedAt, after)).toBe(0);
+    expect(inviteNudgeDue(invitedAt, after, "America/New_York")).toBe(0);
     expect(
       nextInviteNudge(invitedAt, "2026-10-03T23:05:00.000Z", "America/New_York", after),
     ).toBeNull();
   });
 
-  it("gives every window room for a 7pm", () => {
-    // Each window must be at least a day long or some zone gets no 7pm in it —
-    // and the week-left one a day and an hour, for the autumn night when two
-    // 7pms are 25 hours apart (swept above).
-    expect(WAITLIST_NUDGE_LAST_HOURS).toBeGreaterThanOrEqual(24);
-    expect(
-      WAITLIST_INVITE_TTL_DAYS - WAITLIST_NUDGE_AFTER_DAYS - WAITLIST_NUDGE_WEEK_LEFT_DAYS,
-    ).toBeGreaterThanOrEqual(1);
-    expect(WAITLIST_NUDGE_WEEK_LEFT_DAYS - 1).toBeGreaterThanOrEqual(
-      WAITLIST_NUDGE_LAST_HOURS / 24,
+  it("finds the nearest 7pm, and the earlier one on a tie", () => {
+    // New York, 7:05pm EDT is 23:05 UTC. A target exactly between two of them
+    // takes the earlier, so the email is never later than the promise.
+    const ny = "America/New_York";
+    expect(eveningNearest(Date.parse("2026-09-26T20:00:00.000Z"), ny)).toBe(
+      Date.parse("2026-09-26T23:05:00.000Z"),
+    );
+    expect(eveningNearest(Date.parse("2026-09-27T11:05:00.000Z"), ny)).toBe(
+      Date.parse("2026-09-26T23:05:00.000Z"),
+    );
+    expect(eveningNearest(Date.parse("2026-09-27T11:06:00.000Z"), ny)).toBe(
+      Date.parse("2026-09-27T23:05:00.000Z"),
     );
   });
 
+  it("never promises a day that does not exist", () => {
+    for (let m = 0; m < 24 * 60; m += 10) {
+      const invitedAt = new Date(Date.UTC(2026, 8, 20) + m * MIN).toISOString();
+      const [first] = simulate(invitedAt, "America/New_York", { predict: false }).sends;
+      const left = (inviteExpiresAt(invitedAt) - first!.at) / DAY;
+      const promised = inviteNudgeDaysLeft(invitedAt, new Date(first!.at));
+      expect(promised, invitedAt).toBeLessThanOrEqual(left);
+      expect(promised, invitedAt).toBeGreaterThan(left - 1);
+    }
+    expect(
+      inviteNudgeDaysLeft("2026-09-20T18:49:00.000Z", new Date("2026-09-23T23:05:00.000Z")),
+    ).toBe(10);
+  });
+
   it("agrees with the cron's real schedule", () => {
-    // nextInviteNudge walks the cron's own instants. If vercel.json moves the
-    // minute and this does not, the screen predicts runs that never happen.
     const vercel = JSON.parse(
       readFileSync(
         fileURLToPath(new URL("../../../apps/web/vercel.json", import.meta.url)),
@@ -1070,6 +1115,7 @@ describe("the invitation nudges", () => {
 
   describe("the copy Kevin chose", () => {
     const emails = ([1, 2, 3] as const).map((stage) => WAITLIST_EMAIL[INVITE_NUDGE_EMAIL[stage]]);
+    const cohort = "2026-09-20T18:49:00.000Z";
 
     it("is word for word what was approved", () => {
       expect(emails.map((e) => e.subject)).toEqual([
@@ -1080,10 +1126,40 @@ describe("the invitation nudges", () => {
       expect(emails.map((e) => e.body.join(" "))).toEqual([
         "You asked to try Plus One early and we sent you a link. It has not been used yet.",
         "Your invitation to the beta is still waiting. The link works for one more week.",
-        "Your link stops working within 24 hours. This is the last reminder we will send.",
+        "Your link stops working on {when}. This is the last reminder we will send.",
       ]);
       expect(inviteNudgeDeadline(10)).toBe("It stops working in 10 days.");
       expect(inviteNudgeDeadline(1)).toBe("It stops working in 1 day.");
+    });
+
+    it("arrives filled in, exactly", () => {
+      // What the 20 September cohort actually receives, from the function the
+      // cron calls.
+      const ny = "America/New_York";
+      expect(inviteNudgeBody(1, cohort, new Date("2026-09-23T23:05:00.000Z"), ny)).toEqual([
+        "You asked to try Plus One early and we sent you a link. It has not been used yet. It stops working in 10 days.",
+      ]);
+      expect(inviteNudgeBody(2, cohort, new Date("2026-09-27T23:05:00.000Z"), ny)).toEqual([
+        "Your invitation to the beta is still waiting. The link works for one more week.",
+      ]);
+      expect(inviteNudgeBody(3, cohort, new Date("2026-10-03T23:05:00.000Z"), ny)).toEqual([
+        "Your link stops working on Sunday at 2:49 PM EDT. This is the last reminder we will send.",
+      ]);
+      // In the person's own zone, named — `elsewhere` falls back to New York.
+      expect(inviteNudgeExpiry(cohort, "America/Los_Angeles")).toBe("Sunday at 11:49 AM PDT");
+      expect(inviteNudgeExpiry(cohort, "America/Chicago")).toBe("Sunday at 1:49 PM CDT");
+    });
+
+    it("leaves no placeholder behind", () => {
+      for (const stage of [1, 2, 3] as const) {
+        const body = inviteNudgeBody(
+          stage,
+          cohort,
+          new Date("2026-10-03T23:05:00.000Z"),
+          "America/Denver",
+        );
+        expect(body.join(" "), `stage ${stage}`).not.toMatch(/[{}]/);
+      }
     });
 
     it("opens with its own preview line, so nothing unapproved is printed above it", () => {
