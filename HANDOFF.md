@@ -489,6 +489,56 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
 
+### 2026-09-27 · WSL · three nudges, and what a review found in them
+
+**HELD, UNCOMMITTED, ON THIS MACHINE ONLY: the backup email screen.**
+`/onboarding/email` between the phone code and the face check, confirmed by a
+code typed in the app. Files: `apps/web/src/app/onboarding/email/`,
+`BACKUP_EMAIL_ROUTE` in `lib/step-routes.ts`, the phone action's final redirect,
+`DRAFT_COPY.backupEmail`, and both Supabase templates files. Gated green with
+the rest of the tree. **Waiting on Kevin** for one thing: the privacy policy
+(`legal.ts:46`) says an added email is for sign-in and notifications "never
+anything more", and the screen says "we can reach you here". Proposed line and
+an effective-date bump are in the conversation, not in the tree. Kevin says the
+change-email template is already pasted into the dashboard.
+
+**Migration 20260927000100 is written and NOT applied.** It revokes members'
+SELECT on `profiles.updated_at` — which leaked the exact moment of every
+profile write, the daily activity write included, to anybody who can view the
+profile — and moves `claim_activity_alerts` onto the day rule. No new function,
+so `EXPECT` does not move.
+
+**The invitation nudges run on the waitlist cron:** three emails per unused
+invitation (three days in; the 7pm nearest seven days before expiry; the 7pm
+nearest a day before). The 20 September cohort got #1 on 23 September (35
+stamps), #2 tonight, #3 on 3 October. The stage is read off `invite_nudged_at`
+alone, by run hour — there is no stage column, on purpose.
+
+Traps, each paid for this week:
+
+- **An UPDATE that matches no row is not an error.** Three "claim before
+  sending" writes checked only `error`, so the loser of a race sent anyway. Read
+  the claim back with `.select("id")`.
+- **Any exact timestamp on `profiles` is readable by other members** through
+  the "visible profiles are readable" policy plus column grants. A presence
+  signal there is a stalker's tool on this app. Store days, and check what
+  `set_updated_at` does to the row.
+- **A day-stamped column compared to an instant window** is wrong for part of
+  every day. `activeFloor` in config is the one rule; SQL states it with
+  `date_trunc`.
+- **Supabase renders template tags inside HTML comments.** Do not write the
+  token placeholder in a comment in a template.
+- **To commit part of a mixed working tree:** tar the changed paths, stage the
+  subset, `git stash push --keep-index --include-untracked`, run the gate on
+  exactly the commit, pop, and `cmp` every held file against the tarball.
+
+Also in the conversation and held for Kevin: the Play console answer for
+political and religious beliefs (now collected); two confirmed store-form
+problems that predate this week — liveness declared as a second Photos row
+when Play takes one answer per type and it is a video, and "App interactions"
+declared NOT collected while per-member post views and likes are stored; and
+whether to declare Play's "Other info" at all.
+
 ### 2026-09-09 · WSL · a room frozen by one missing predicate, and four sheets that opened on the tap
 
 **Left off:** tree clean, in sync, nothing claimed, nothing in flight. 15 tasks
@@ -571,42 +621,3 @@ code — the 2.1 reply needs three dashboard things done first (an email on the
 reviewer account, `{{ .Token }}` in the Magic Link template, SMTP on Resend so a
 second code is not rate-limited), and Android verification of tonight's beta
 work needs the device, same blocker as the Play re-read.
-
-### 2026-09-01 · WSL · Android v5, and an invitation that could not cross engines
-
-**Left off:** tree clean, in sync, nothing claimed, nothing in flight. Forced run
-of 15 tasks — test, typecheck, lint — nothing cached, plus format:check.
-
-Android **v5 is signed and with Kevin**; `PlusOne-v5-signed.aab` is staged in
-Downloads. It carries the redrawn status-bar mark, verified from inside the built
-APK at all five densities rather than from the source that generates it — v4
-shipped the retired logo because the mark changed on 08-28 and `badgeSvg` never
-followed, so no rebuild alone was ever going to fix it.
-
-**The one thing that is genuinely outstanding is a device.** The whole beta
-invitation path — claimed `/beta/*`, the reordered iOS steps, the shell branch —
-is verified in WKWebView by macOS and in NO Android shell at all. `adb` cannot
-reach the phone from here, same blocker as the Play catalogue re-read, Kevin 17.
-Backlog server 28 has the honest split.
-
-**A shell-detection branch is not verified until both engines have been asked,
-and tonight both of us skipped that in the same hour.** macOS wrote one, checked
-it in WKWebView, and shipped it — and it showed an Android tester who already had
-the app installed a screen explaining how to install it. The asymmetry that made
-it wrong was the same one whose iOS half we had just spent the evening fixing.
-The specific gap is now a bullet in `AGENTS.md`: only one of the two engines
-enumerates its deep-link paths, and reasoning about Android as though it had an
-allowlist is what did it.
-
-**Put the floor UNDER the claim, not beside it.** A floor beside a
-source-scanning test asks "did this read anything" and catches a blinded scan. It
-cannot tell you the claim stopped being the RIGHT claim. `inTwa()` is only the
-right question while the Android manifest has no path filter — so the test reads
-the manifest, and whoever adds one is sent to reread the reasoning instead of
-watching it quietly outlive its premise.
-
-**When two sessions write the same file, the one that LOOKED wins.** We both
-rewrote `APP_REVIEW_NOTES.md` within three minutes, neither having claimed it. I
-dropped mine: same conclusion, but theirs was read off the Simulator against the
-build being submitted and mine was inferred from the layout. Better tiebreak than
-seniority or timestamp, and it cost one commit to learn.
