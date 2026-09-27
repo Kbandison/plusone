@@ -25,6 +25,8 @@ export {
   RETENTION,
   MAX_DISPLAY_NAME,
   lastActiveStamp,
+  activeFloor,
+  ACTIVITY_PING_STORAGE_KEY,
 } from "./mechanics";
 
 export {

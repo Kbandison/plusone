@@ -10,6 +10,7 @@ import { recordActivity } from "@/lib/last-active";
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { getServerSupabase } from "@/lib/supabase";
 import { Wordmark } from "@/app/ui";
+import { ActivityPing } from "./activity-ping";
 import { AppBadge } from "./app-badge";
 import { AppHeader } from "./app-header";
 import { BetaWelcome } from "./beta-welcome";
@@ -378,6 +379,12 @@ export default async function AppLayout({
           nothing had ever written the column — so every timestamp in the app
           was rendered in the wrong zone and the 8pm drop landed at 8pm UTC. */}
       <Timezone current={(me?.timezone as string | null) ?? "UTC"} />
+
+      {/* Nothing either. The after() above records a visit on a full page
+          load; this records one when a shell comes back from the background
+          without a load, which is how most daily visits in the TWA and the iOS
+          shell actually happen. */}
+      <ActivityPing />
 
       {/* Renders nothing. It measures the bar above and publishes the height,
           because the one thing that has to sit flush on top of it cannot be

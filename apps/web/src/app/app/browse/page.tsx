@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
+  activeFloor,
   COPY,
   DRAFT_COPY,
   INTENTION_LABELS,
@@ -138,7 +139,10 @@ export default async function BrowsePage({
   // and they all come off this.
   // eslint-disable-next-line react-hooks/purity -- Server Component: one render per request, on the server. The rule models a client re-render, which this has none of.
   const now = Date.now();
-  const since = (days: number) => new Date(now - days * DAY).toISOString();
+  // Day against day, not instant against day: last_active_at holds midnight
+  // UTC, so an instant cutoff emptied "Today" every US evening. activeFloor is
+  // the one rule Browse, the Drop and the activity alert share.
+  const since = (days: number) => new Date(activeFloor(now, days * DAY)).toISOString();
   /** The stat and the card marker, both of which describe a week whatever the filter asks. */
   const weekAgo = since(7);
 

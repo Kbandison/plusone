@@ -816,7 +816,13 @@ describe("who came in during the beta", () => {
     // is satisfied by the bug. Caught by sabotaging it.
     const between = actions.slice(promote, cohort);
     expect(between).toMatch(/\.update\(/);
-    expect(between).not.toMatch(/joined_in_beta/);
+    // The promote's own object, exactly — not "no mention of the column in
+    // between", which a READ of joined_in_beta (the spend's new-account check,
+    // 2026-09-27) tripped while guarding nothing extra.
+    expect(actions).toMatch(/\.update\(\{ verification_status: "phone_verified" \}\)/);
+    for (const w of between.match(/\.update\(\{[^}]*\}/g) ?? []) {
+      if (w.includes("verification_status")) expect(w).not.toMatch(/joined_in_beta/);
+    }
   });
 
   it("never fails the signup over it", () => {
@@ -1566,7 +1572,9 @@ describe("the beta mark needs a code actually spent", () => {
   it("gates the mark, the alert and the seed on the spend, not the cookie", () => {
     const gate = actions.indexOf("if (spent && betaCode) {");
     expect(gate).toBeGreaterThan(-1);
-    expect(actions).toMatch(/const spent = await acceptBetaInvite\(betaCode\);/);
+    expect(actions).toMatch(
+      /const spent = creating \? await acceptBetaInvite\(betaCode\) : false;/,
+    );
     expect(actions).not.toMatch(/if \(betaCode\) \{/);
     const gated = actions.slice(gate);
     for (const step of [
@@ -1579,6 +1587,30 @@ describe("the beta mark needs a code actually spent", () => {
     }
   });
 
+  it("spends only for an account being created, and asks that first", () => {
+    // Review, 2026-09-23: an existing verified member re-verifying with an
+    // unspent invitation on the device spent it and fired the admin alert,
+    // and could never be marked — the stamp only matches phone_verified.
+    const read = actions.indexOf('.select("verification_status, joined_in_beta")');
+    const spend = actions.indexOf("acceptBetaInvite(betaCode)");
+    expect(read).toBeGreaterThan(-1);
+    expect(spend).toBeGreaterThan(read);
+    expect(actions).toMatch(
+      /const creating =\s*account\?\.verification_status === "phone_verified" && account\?\.joined_in_beta === false;/,
+    );
+    expect(actions).toMatch(
+      /const spent = creating \? await acceptBetaInvite\(betaCode\) : false;/,
+    );
+  });
+
+  it("says when a spend fails, since that now decides the mark", () => {
+    const accept = fnBody(lib, "export async function acceptBetaInvite");
+    expect(accept).toMatch(/const \{ data, error \} = await serviceClient\(\)/);
+    expect(accept).toMatch(
+      /if \(error\)\s*console\.error\(\s*JSON\.stringify\(\{\s*at: "waitlist\.acceptInvite"/,
+    );
+  });
+
   it("spends only after the promote, so a failed promote keeps the code", () => {
     const promote = actions.indexOf('verification_status: "phone_verified"');
     const promoteFail = actions.indexOf("return { error: E.sendFailed", promote);
@@ -1588,5 +1620,25 @@ describe("the beta mark needs a code actually spent", () => {
     expect(spend).toBeGreaterThan(promoteFail);
     // Exactly one spend.
     expect(actions.match(/acceptBetaInvite\(/g) ?? []).toHaveLength(1);
+  });
+});
+
+describe("an invited row keeps its metro", () => {
+  // Review, 2026-09-23: the nudge schedule reads the row's metro for its zone,
+  // and a second waitlist submission rewrote the metro on an unconfirmed row —
+  // which Kevin's override invites. Moving it re-read every stamp in another
+  // zone and could send a nudge twice.
+  const lib = code("lib/waitlist.ts");
+  const join = fnBody(lib, "export async function joinWaitlist");
+
+  it("reads whether the row was invited", () => {
+    expect(join).toMatch(/\.select\("id, token, confirmed_at, confirm_sent_at, invited_at"\)/);
+  });
+
+  it("writes the metro only on a row nobody has invited", () => {
+    expect(join).toMatch(/\.\.\.\(existing\.invited_at \? \{\} : \{ metro \}\),/);
+    // And nowhere else in that update.
+    const update = join.slice(join.indexOf(".update({"), join.indexOf('.eq("id", existing.id)'));
+    expect(update.match(/\bmetro\b/g) ?? []).toHaveLength(1);
   });
 });

@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { lastActiveStamp } from "@plusone/config";
+import { activeFloor, lastActiveStamp } from "@plusone/config";
 
 /**
  * last_active_at was never written. Every real member's "last active" was the
@@ -133,5 +133,112 @@ describe("where it is recorded", () => {
     walk("app");
     walk("lib");
     expect(writers).toEqual(["lib/last-active.ts"]);
+  });
+});
+
+/**
+ * Review, 2026-09-23: a day stamp compared against an instant is wrong for part
+ * of every day. After midnight UTC — the US evening — everybody active on the
+ * previous UTC day fell out of Browse's "Today" and out of the activity alert's
+ * count. activeFloor makes every reader compare day against day.
+ */
+describe("reading a day stamp", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it("counts the day the window starts in", () => {
+    // 8:30pm Eastern on 27 September is 00:30 UTC on the 28th. Somebody in at
+    // 3pm Eastern that afternoon holds the stamp for the 27th, and is "Today".
+    const now = Date.parse("2026-09-28T00:30:00.000Z");
+    const floor = activeFloor(now, DAY);
+    expect(new Date(floor).toISOString()).toBe("2026-09-27T00:00:00.000Z");
+    const stamp = Date.parse(lastActiveStamp(new Date("2026-09-27T19:00:00.000Z")));
+    expect(stamp).toBeGreaterThanOrEqual(floor);
+    // Two days back is out.
+    expect(Date.parse("2026-09-26T00:00:00.000Z")).toBeLessThan(floor);
+  });
+
+  it("is never later than the instant cutoff it replaced", () => {
+    // Generous by up to a day, never stricter.
+    for (let h = 0; h < 48; h += 1) {
+      const now = Date.parse("2026-09-27T00:00:00.000Z") + h * 60 * 60 * 1000;
+      for (const days of [1, 7, 14, 30]) {
+        const floor = activeFloor(now, days * DAY);
+        expect(floor).toBeLessThanOrEqual(now - days * DAY);
+        expect(now - days * DAY - floor).toBeLessThan(DAY);
+      }
+    }
+  });
+
+  const SRC = join(import.meta.dirname, "..");
+  const code = (p: string) =>
+    readFileSync(join(SRC, p), "utf8")
+      .replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, "")
+      .replace(/^[ \t]*\/\/.*$/gm, "");
+
+  it("is how Browse reads it, for the filter, the count and the mark", () => {
+    const browse = code("app/app/browse/page.tsx");
+    expect(browse).toMatch(
+      /const since = \(days: number\) => new Date\(activeFloor\(now, days \* DAY\)\)\.toISOString\(\);/,
+    );
+    // Every comparison on the column goes through `since`.
+    for (const m of browse.matchAll(/\.gte\("last_active_at", ([^)]+)\)/g)) {
+      expect(m[1], m[0]).toMatch(/^since\(|^weekAgo$/);
+    }
+    expect(browse).toMatch(/const weekAgo = since\(7\);/);
+  });
+
+  it("is how the activity alert reads it, in SQL", () => {
+    const dir = join(SRC, "..", "..", "..", "supabase", "migrations");
+    const latest = readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => readFileSync(join(dir, f), "utf8"))
+      .filter((t) => /function public\.claim_activity_alerts/.test(t))
+      .at(-1)!;
+    expect(latest).toMatch(
+      /n\.last_active_at >= date_trunc\(\s*'day',\s*\(now\(\) - make_interval\(hours => p_window_hours\)\) at time zone 'UTC'\s*\) at time zone 'UTC'/,
+    );
+    expect(latest).not.toMatch(/n\.last_active_at >= now\(\) - make_interval/);
+  });
+});
+
+describe("the moment stays private", () => {
+  // Review, 2026-09-23: every UPDATE on profiles moves updated_at to now(), so
+  // the daily activity write put the exact time of a member's first visit into
+  // a column any member who can see them could read. Nothing in the app reads
+  // it, so the read goes.
+  it("revokes members' read of profiles.updated_at", () => {
+    const dir = join(import.meta.dirname, "..", "..", "..", "..", "supabase", "migrations");
+    const all = readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => readFileSync(join(dir, f), "utf8"))
+      .join("\n");
+    expect(all).toMatch(/revoke select \(updated_at\) on public\.profiles from authenticated;/);
+    // And nothing after grants it back.
+    const after = all.slice(all.lastIndexOf("revoke select (updated_at) on public.profiles"));
+    expect(after).not.toMatch(/grant select[^;]*updated_at[^;]*on public\.profiles/i);
+  });
+
+  it("is not something the app reads", () => {
+    const SRC = join(import.meta.dirname, "..");
+    const hits: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(join(SRC, dir), { withFileTypes: true })) {
+        const rel = `${dir}/${e.name}`;
+        if (e.isDirectory()) walk(rel);
+        else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) {
+          const text = readFileSync(join(SRC, rel), "utf8");
+          for (const m of text.matchAll(
+            /from\("profiles"\)[\s\S]{0,160}?\.select\(\s*"([^"]*)"/g,
+          )) {
+            if (/\bupdated_at\b|\*/.test(m[1]!)) hits.push(rel);
+          }
+        }
+      }
+    };
+    walk("app");
+    walk("lib");
+    expect(hits).toEqual([]);
   });
 });

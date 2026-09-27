@@ -62,6 +62,17 @@ describe("filtering (§6.1 step 1)", () => {
     expect(isEligible(candidate(over), NOW)).toBe(false);
   });
 
+  it("reads a day-stamped member day against day, not instant against day", () => {
+    // last_active_at holds midnight UTC (lastActiveStamp). An instant cutoff
+    // dropped a member up to a day early — review, 2026-09-23. At 00:30 UTC on
+    // 28 September a member last in on 14 September is inside a 14-day window
+    // by day, though 14 days and 30 minutes by the clock.
+    const now = Date.parse("2026-09-28T00:30:00.000Z");
+    const on = (iso: string) => candidate({ lastActiveAt: Date.parse(iso) });
+    expect(isEligible(on("2026-09-14T00:00:00.000Z"), now)).toBe(true);
+    expect(isEligible(on("2026-09-13T00:00:00.000Z"), now)).toBe(false);
+  });
+
   it("keeps someone served 31 days ago", () => {
     expect(isEligible(candidate({ lastServedToViewerAt: NOW - 31 * DAY }), NOW)).toBe(true);
   });

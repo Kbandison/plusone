@@ -140,7 +140,7 @@ export async function joinWaitlist({
   // here.
   const { data: existing } = await supabase
     .from("waitlist")
-    .select("id, token, confirmed_at, confirm_sent_at")
+    .select("id, token, confirmed_at, confirm_sent_at, invited_at")
     .eq("email", normalised)
     .maybeSingle();
 
@@ -159,7 +159,14 @@ export async function joinWaitlist({
     await supabase
       .from("waitlist")
       .update({
-        metro,
+        // An INVITED row keeps the metro it was invited for. Kevin's override
+        // invites unconfirmed rows, and an unconfirmed row is the one this path
+        // rewrites — so a second submission with another area used to move it.
+        // The metro seeds the new member's location, and since 2026-09-23 it is
+        // also the zone the invitation's nudges are scheduled in: moving it
+        // re-reads every stamp in a different zone, and review found that
+        // could send a nudge twice, the "last reminder" included.
+        ...(existing.invited_at ? {} : { metro }),
         wants_beta: wantsBeta,
         ...storeFields(wantsBeta, storePlatform, storeEmail),
         confirm_sent_at: new Date().toISOString(),
@@ -1206,12 +1213,18 @@ export async function betaInviteIsOpen(code: string | undefined): Promise<boolea
  */
 export async function acceptBetaInvite(code: string | undefined): Promise<boolean> {
   if (!code) return false;
-  const { data } = await serviceClient()
+  const { data, error } = await serviceClient()
     .from("waitlist")
     .update({ accepted_at: new Date().toISOString() })
     .eq("invite_code", code)
     .is("accepted_at", null)
     .select("id");
+  // Said out loud, because it now decides the mark: a spend that failed looks
+  // exactly like a code that was never real. §9.6 — the code, never the value.
+  if (error)
+    console.error(
+      JSON.stringify({ at: "waitlist.acceptInvite", problem: error.code ?? "unknown" }),
+    );
   return Boolean(data?.length);
 }
 

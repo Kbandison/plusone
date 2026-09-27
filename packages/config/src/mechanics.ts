@@ -309,3 +309,31 @@ export function lastActiveStamp(at: Date): string {
   day.setUTCHours(0, 0, 0, 0);
   return day.toISOString();
 }
+
+/**
+ * The earliest `last_active_at` that counts as active within `windowMs` of
+ * `nowMs`: midnight UTC of the day the window STARTS in. The one rule every
+ * reader of last_active_at uses — Browse, the Drop, and claim_activity_alerts
+ * in SQL, which states the same thing with date_trunc.
+ *
+ * Because the column holds a day (lastActiveStamp), comparing it to an instant
+ * is wrong for part of every day. Review found it on 2026-09-23: after
+ * midnight UTC — the US evening — everybody active on the previous UTC day fell
+ * out of Browse's "Today" filter, which emptied it every night, and out of the
+ * activity alert's count. The floor makes the comparison day against day: up to
+ * a day generous, never falsely empty. The generosity is the same blur the day
+ * stamp exists to give.
+ */
+export function activeFloor(nowMs: number, windowMs: number): number {
+  const floor = new Date(nowMs - windowMs);
+  floor.setUTCHours(0, 0, 0, 0);
+  return floor.getTime();
+}
+
+/**
+ * The UTC day this device last told the server "I was here", so a resumed
+ * shell asks at most once a day. A per-device convenience only: the server
+ * throttles for itself (`.lt(day)` in recordActivity), and nothing here is
+ * about what a member did — just which day the question was last asked.
+ */
+export const ACTIVITY_PING_STORAGE_KEY = "plusone.activity.day";

@@ -202,7 +202,22 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
      * Not allowed to fail the signup: acceptBetaInvite answers false rather
      * than throwing, and the account is made either way.
      */
-    const spent = await acceptBetaInvite(betaCode);
+    //
+    // AND ONLY FOR AN ACCOUNT BEING CREATED. Review, 2026-09-23: an existing,
+    // already-verified member signing back in with an unspent invitation still
+    // on the device spent it, fired "Someone joined the app", and got no mark —
+    // the stamp below only ever matches phone_verified. So the spend asks the
+    // same question the stamp does, first: is this account phone_verified and
+    // not yet marked? A retry by the same new account after a failed spend is
+    // still both, so it tries again.
+    const { data: account } = await serviceClient()
+      .from("profiles")
+      .select("verification_status, joined_in_beta")
+      .eq("id", auth.user.id)
+      .maybeSingle();
+    const creating =
+      account?.verification_status === "phone_verified" && account?.joined_in_beta === false;
+    const spent = creating ? await acceptBetaInvite(betaCode) : false;
 
     if (spent && betaCode) {
       const { error: cohortError } = await serviceClient()

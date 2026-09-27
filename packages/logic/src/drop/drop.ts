@@ -1,4 +1,4 @@
-import { DROP, RADIUS } from "@plusone/config";
+import { DROP, RADIUS, activeFloor } from "@plusone/config";
 
 import { intentionCompat, quizCompat, recencyActive, underexposure } from "./scoring";
 import type { DropCandidate, DropConfig, DropResult, DropViewer, ScoredCandidate } from "./types";
@@ -29,7 +29,9 @@ export function isEligible(
   if (candidate.blocked) return false;
   if (candidate.reportPending) return false;
   if (candidate.alreadyConnected) return false;
-  if (now - candidate.lastActiveAt > config.activeWithinDays * DAY_MS) return false;
+  // Day against day — last_active_at holds a day, so an instant cutoff dropped
+  // a member up to a day early. activeFloor is the rule every reader shares.
+  if (candidate.lastActiveAt < activeFloor(now, config.activeWithinDays * DAY_MS)) return false;
   if (
     candidate.lastServedToViewerAt !== null &&
     now - candidate.lastServedToViewerAt < config.suppressRecentlyServedDays * DAY_MS
