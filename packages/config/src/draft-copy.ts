@@ -345,6 +345,32 @@ export const DRAFT_COPY = {
    * remember which they used, and a phone/email toggle makes them guess before
    * there is any reason to make them.
    */
+  /**
+   * The backup email, offered once between the phone code and the face check.
+   * Kevin's copy, 2026-09-23, word for word.
+   *
+   * WHY IT EXISTS: every member signs up by phone, and until this screen there
+   * was nowhere to give an email before onboarding was finished — Settings sits
+   * behind the onboarding gate. So a member who stalled at the face check could
+   * not be reached by anything: no email, no push, and texts are promised to be
+   * codes only. Two real testers were exactly that on the day it was written.
+   *
+   * "We can reach you here" is a promise about Kevin reaching a stuck member by
+   * hand from /admin/members. Nothing emails them automatically — that was
+   * offered and not chosen — and the address carries no notification unless a
+   * member switches one on, which §8's defaults are unchanged about.
+   */
+  backupEmail: {
+    heading: "Add a backup email",
+    intro:
+      "Optional. If you get stuck signing up, we can reach you here, and you can sign in with it instead of a text code.",
+    emailLabel: "Email address",
+    sendLabel: "Send code",
+    skipLabel: "Skip for now",
+    codePrompt: (email: string) => `Enter the code we sent to ${email}.`,
+    confirmLabel: "Confirm",
+  },
+
   signIn: {
     heading: "Welcome back",
     intro: "Enter your number or your email and we will send you a code.",
@@ -1885,8 +1911,10 @@ export const DRAFT_COPY = {
      *
      * Phrased as what it does rather than as "add an email", because members
      * reasonably assume an email on file means email FROM us. It does not —
-     * §8's notification rules are unchanged and this address is used for one
-     * thing.
+     * §8's notification rules are unchanged. Since 2026-09-23 the same address
+     * can also be given during onboarding (`backupEmail`), where it is offered
+     * as a way for Kevin to reach a member who gets stuck signing up; that is
+     * by hand, never automatic.
      */
     emailHeading: "A second way to sign in",
     emailBody:

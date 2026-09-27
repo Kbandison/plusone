@@ -5,10 +5,10 @@ in this project, so nothing here is applied by a script or checked by CI. They
 live in the repo so the markup is reviewable and so the next person does not
 rebuild it from a screenshot.
 
-| file                | dashboard location                             | mechanism |
-| ------------------- | ---------------------------------------------- | --------- |
-| `magic-link.html`   | Authentication → Emails → Magic Link           | a code    |
-| `change-email.html` | Authentication → Emails → Change Email Address | a link    |
+| file                | dashboard location                             | mechanism          |
+| ------------------- | ---------------------------------------------- | ------------------ |
+| `magic-link.html`   | Authentication → Emails → Magic Link           | a code             |
+| `change-email.html` | Authentication → Emails → Change Email Address | a code, and a link |
 
 Those are the only two Supabase sends for this app. Sign-in is `signInWithOtp`
 (Magic Link) and Settings is `updateUser({ email })` (Change Email Address);
@@ -23,11 +23,18 @@ server that this address opened a message from ⁺One, at a time, from an IP.
 These two templates are styled and still request nothing remote, which
 `email-templates.test.ts` pins.
 
-**`change-email.html` is a LINK and cannot be a code.** The app has no screen to
-type an email-change token into, so `/auth/callback` handling
-`?token_hash=&type=` is the whole mechanism — which means it depends on Site URL
-being right, in a way the sign-in email deliberately does not. While Site URL is
-`http://localhost:3000` (Kevin item 6), **this email is broken**.
+**`change-email.html` carries a CODE and a link, since 2026-09-23.** It was a
+link only, because the app had no screen to type an email-change token into.
+The backup email screen in onboarding is that screen: it confirms with
+`verifyOtp({ type: "email_change" })`, which needs `{{ .Token }}` in this
+template. **Paste this file into the dashboard before that screen ships** — with
+the old template the member is asked for a code the email does not contain.
+
+Why a code there and not the link: the link opens wherever the phone opens
+links, which on iOS is Safari rather than the app, and the PKCE exchange behind
+it only completes in the browser that asked. The link stays for Settings, whose
+confirmation lands on `/auth/callback`. (This paragraph used to say Site URL was
+still `http://localhost:3000`; BACKLOG Kevin 6 records it fixed on 2026-09-08.)
 
 ## magic-link.html
 

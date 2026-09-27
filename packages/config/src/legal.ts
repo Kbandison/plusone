@@ -17,7 +17,13 @@
 
 import { BRAND } from "./brand";
 
-export const PRIVACY_POLICY_EFFECTIVE = "2026-08-14";
+/**
+ * Moved on 2026-09-27 for one change, Kevin's wording: an added email may be
+ * used to help somebody who gets stuck signing up. The backup email screen in
+ * onboarding promises exactly that, and the line it replaced said "never
+ * anything more" than sign-in and notifications.
+ */
+export const PRIVACY_POLICY_EFFECTIVE = "2026-09-27";
 
 /** Where §9.1's consent screen links. Kept here so the anchor cannot drift. */
 export const HEALTH_DATA_ANCHOR = "health-data";
@@ -43,7 +49,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
     ],
     list: [
       "Your phone number, used to sign you in.",
-      "An email address, if you choose to add one. It signs you in with a code, and carries notifications if you switch them on for it — the same deliberately vague ones described below, never anything more. It is never shown to other members.",
+      "An email address, if you choose to add one. It signs you in with a code, and if you get stuck signing up we may use it to help you finish. It carries notifications only if you switch them on for it — the same deliberately vague ones described below, never anything more. It is never shown to other members.",
       "The name you choose to display. It does not have to be your legal name, and we never ask for one.",
       "Your date of birth. Other members see an age, never the date.",
       "Your community and condition type, and the U=U badge if you turn it on.",

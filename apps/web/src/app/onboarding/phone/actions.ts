@@ -10,7 +10,7 @@ import { cookies } from "next/headers";
 import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
-import { nextRoute } from "@/lib/onboarding";
+import { BACKUP_EMAIL_ROUTE } from "@/lib/step-routes";
 import { acceptBetaInvite, alertAdminsOfBetaJoin, metroForInvite } from "@/lib/waitlist";
 
 const E = DRAFT_COPY.phone.errors;
@@ -295,5 +295,9 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
     }
   }
 
-  redirect(nextRoute("phone"));
+  // On to the backup email, which then hands on to the face check. Everybody
+  // comes through here, members signing back in included — the page sends on
+  // anybody who is further along or already has an address, so a returning
+  // member costs one redirect and sees nothing new.
+  redirect(BACKUP_EMAIL_ROUTE);
 }

@@ -42,3 +42,12 @@ export const STEP_ROUTES: Record<Step, string> = {
 export function nextRoute(step: Step): string {
   return STEP_ROUTES[onboarding.nextStep(step)];
 }
+
+/**
+ * The backup email screen, which the phone step hands on to.
+ *
+ * Not in STEP_ROUTES: it is not a step and the resolver never sends anybody
+ * here — see the page. It lives beside the map so the phone action and the
+ * page name one path between them.
+ */
+export const BACKUP_EMAIL_ROUTE = "/onboarding/email";
