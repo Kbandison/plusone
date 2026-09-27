@@ -44,8 +44,10 @@ export type PlayDataType =
   | "Health and fitness → Health info"
   | "Messages → Other in-app messages"
   | "Photos and videos → Photos"
+  | "Photos and videos → Videos"
   | "Audio files → Voice or sound recordings"
   | "App activity → Other user-generated content"
+  | "App activity → App interactions"
   | "Device or other IDs → Device or other IDs";
 
 /** Play's purpose list. Only the ones this app can honestly tick. */
@@ -225,6 +227,24 @@ export const PLAY_DATA_SAFETY: readonly PlayDataSafetyEntry[] = [
     why: "Bio, prompts, quiz answers, and the text of a report.",
   },
   {
+    /**
+     * Declared 2026-09-27. PLAY_NOT_COLLECTED said "App interactions" were not
+     * collected, and review found per-member post views (room_post_views, one
+     * row per member per post), likes, read positions, and since c3425a3 the
+     * day a member was last in. Play's definition — how a user interacts with
+     * the app, such as page views or taps — is those.
+     */
+    type: "App activity → App interactions",
+    fromAppleCategory: "Usage Data → Product Interaction",
+    collected: true,
+    shared: false,
+    processedEphemerally: false,
+    // Recorded as the app is used, not something a member chooses to give.
+    optional: false,
+    purposes: ["App functionality"],
+    why: "Which room posts a member has seen and liked, where they last read up to, and the day they were last in the app — so the app can show what is new and who is active. Never the time of day, and no analytics package.",
+  },
+  {
     type: "Financial info → Purchase history",
     fromAppleCategory: "Purchases",
     collected: true,
@@ -239,14 +259,19 @@ export const PLAY_DATA_SAFETY: readonly PlayDataSafetyEntry[] = [
      * The entry Apple's form cannot express, and the reason this file is not
      * just a translation table.
      */
-    type: "Photos and videos → Photos",
-    fromAppleCategory: null,
+    // VIDEOS, and mapped to Apple's Sensitive Info, since 2026-09-27. It was a
+    // second "Photos" row with different answers from the profile photos above
+    // it — and the console takes ONE set of answers per data type, so the form
+    // could only ever say one of them. The check streams video, so it is Videos
+    // by Play's own definition, and a type of its own besides.
+    type: "Photos and videos → Videos",
+    fromAppleCategory: "Sensitive Info",
     collected: true,
     shared: false,
     processedEphemerally: true,
     optional: false,
     purposes: ["Fraud prevention, security, and compliance"],
-    why: "The liveness selfie. Streams to the verification provider and nothing survives it — no face collection, no matching, OutputConfig unset so there is nowhere to write, AuditImagesLimit at its default of 0. Declared here as processed ephemerally, which is Play's own category for exactly this and which Apple's form has no equivalent of. That is why it sits in NOT_COLLECTED on the Apple side with a note held for counsel; the two forms are not in conflict, they have different resolution.",
+    why: "The liveness check. A short video streams to the verification provider and nothing survives it — no face collection, no matching, OutputConfig unset so there is nowhere to write, AuditImagesLimit at its default of 0. Processed ephemerally, which is Play's own answer for exactly this. Apple has no ephemeral answer and declares it under Sensitive Info; the two forms are shaped differently and say the same thing.",
   },
 ];
 
@@ -300,7 +325,9 @@ export const PLAY_NOT_COLLECTED = [
   "Financial info → Credit score",
   "Personal info → Race and ethnicity",
   "Personal info → Address",
-  "App activity → App interactions, in-app search history, installed apps",
+  // Split 2026-09-27: App interactions are collected and declared above.
+  "App activity → In-app search history",
+  "App activity → Installed apps",
   "App info and performance → Crash logs, diagnostics, other performance data",
   "Web browsing → Web browsing history",
   "Contacts",

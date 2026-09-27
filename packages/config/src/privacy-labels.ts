@@ -33,6 +33,7 @@ export type AppleDataCategory =
   | "User Content → Audio Data"
   | "User Content → Other User Content"
   | "Identifiers → User ID"
+  | "Usage Data → Product Interaction"
   | "Purchases";
 
 export interface PrivacyLabel {
@@ -168,6 +169,28 @@ export const PRIVACY_LABELS: readonly PrivacyLabel[] = [
     linkedToUser: true,
   },
   {
+    category: "Usage Data → Product Interaction",
+    what:
+      "Which room posts a member has seen and liked, where they last read up to in each " +
+      "chat, room and thread, and the DAY they were last in the app — never the time. Kept " +
+      "so rooms can show what is new, unread counts are right, and Browse and the Drop know " +
+      "who is active. The app's own tables; there is no analytics package. DECLARED " +
+      "2026-09-27 after review found it answered NO on both forms: room_post_views was " +
+      "noted as 'aggregate' and stores a row per member per post, and Apple's own definition " +
+      "of this type names 'saved place in a game, video, or song' — which is what a read " +
+      "position is.",
+    justifiedBy: [
+      "room_post_views",
+      "room_likes",
+      "room_reads",
+      "thread_reads",
+      "chat_reads",
+      "profiles.last_active_at",
+    ],
+    purpose: "App Functionality",
+    linkedToUser: true,
+  },
+  {
     category: "Purchases",
     what: "Subscription state and referral rewards. No card details — see NOT_COLLECTED.",
     justifiedBy: ["subscriptions", "premium_grants", "referral_rewards"],
@@ -194,7 +217,11 @@ export const NOT_COLLECTED = [
       "On iOS, StoreKit holds them instead. Purchases are declared; payment details are not.",
   },
   {
-    category: "Diagnostics, Usage Data, Browsing History, Search History, Contacts",
+    // "Usage Data" was here whole until 2026-09-27. Product Interaction is
+    // collected and declared above; the rest of Usage Data — advertising data,
+    // other usage data — is still collected by nothing.
+    category:
+      "Diagnostics, Browsing History, Search History, Contacts, Usage Data → Advertising Data and Other Usage Data",
     because: "No SDK collects any of it. There is no analytics package in the app at all.",
   },
 ] as const;
@@ -318,20 +345,38 @@ export const TABLE_CLASSIFICATION: Readonly<
   referral_conversions: { feeds: ["Identifiers → User ID"], note: "Which invite converted." },
 
   chats: { feeds: ["Identifiers → User ID"], note: "Who is talking to whom; no content." },
-  chat_reads: { feeds: ["Identifiers → User ID"], note: "Read position. No content." },
+  chat_reads: {
+    feeds: ["Identifiers → User ID", "Usage Data → Product Interaction"],
+    note: "Read position. No content — and a saved place is Product Interaction by Apple's own definition.",
+  },
   connects: { feeds: ["Identifiers → User ID"], note: "Who reached out to whom." },
   connect_budgets: { feeds: [], note: "A daily counter per member. No content, no profile field." },
   drops: { feeds: ["Identifiers → User ID"], note: "Who was shown to whom." },
   blocks: { feeds: ["Identifiers → User ID"], note: "Who blocked whom." },
   room_members: { feeds: ["Identifiers → User ID"], note: "Membership of a room." },
-  room_likes: { feeds: ["Identifiers → User ID"], note: "Who liked a post." },
-  room_reads: { feeds: [], note: "Read position within a room." },
-  // Same shape as room_reads and classified the same way: a position, not a
-  // fact about the member. Separate from room_post_views because that table
-  // counts a post being SEEN in a feed and never advances, which is right for
-  // "seen by" and useless as a read marker.
-  thread_reads: { feeds: [], note: "Read position within one thread." },
-  room_post_views: { feeds: [], note: "View counts. Aggregate." },
+  room_likes: {
+    feeds: ["Identifiers → User ID", "Usage Data → Product Interaction"],
+    note: "Who liked a post.",
+  },
+  room_reads: {
+    feeds: ["Usage Data → Product Interaction"],
+    note: "Read position within a room — a saved place, which is Product Interaction.",
+  },
+  // Same shape as room_reads and classified the same way. Separate from
+  // room_post_views because that table records a post being SEEN in a feed and
+  // never advances, which is right for "seen by" and useless as a read marker.
+  // This used to say a position is "not a fact about the member"; Apple's
+  // definition of Product Interaction names a saved place outright.
+  thread_reads: {
+    feeds: ["Usage Data → Product Interaction"],
+    note: "Read position within one thread — a saved place, which is Product Interaction.",
+  },
+  room_post_views: {
+    feeds: ["Usage Data → Product Interaction"],
+    // It said "View counts. Aggregate." until 2026-09-27. It stores a row per
+    // member per post with the moment first seen — per member, not aggregate.
+    note: "Which posts each member has seen, and when first. One row per member per post.",
+  },
   notifications: {
     feeds: ["Identifiers → User ID"],
     note: "Content-blind by construction (§9.6) — an event kind and an id, never a body.",
@@ -446,7 +491,10 @@ export const PROFILE_COLUMN_CLASSIFICATION: Readonly<
   hide_read_receipts: "operational",
   verification_status: "operational",
   verified_at: "operational",
-  last_active_at: "operational",
+  // The day a member was last in the app. Operational until 2026-09-27, when
+  // it became real (c3425a3) and review asked the obvious question: how a
+  // member uses the app is Product Interaction.
+  last_active_at: "Usage Data → Product Interaction",
   created_at: "operational",
   updated_at: "operational",
 
@@ -591,5 +639,6 @@ export const MANIFEST_DATA_TYPE: Readonly<Record<AppleDataCategory, string>> = {
   "User Content → Audio Data": "NSPrivacyCollectedDataTypeAudioData",
   "User Content → Other User Content": "NSPrivacyCollectedDataTypeOtherUserContent",
   "Identifiers → User ID": "NSPrivacyCollectedDataTypeUserID",
+  "Usage Data → Product Interaction": "NSPrivacyCollectedDataTypeProductInteraction",
   Purchases: "NSPrivacyCollectedDataTypePurchaseHistory",
 };

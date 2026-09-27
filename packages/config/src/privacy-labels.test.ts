@@ -458,3 +458,30 @@ describe("every classified column justifies its label", () => {
     },
   );
 });
+
+describe("the Product Interaction label cites what it covers", () => {
+  // Declared 2026-09-27. Every table and profiles column filed under it must be
+  // cited by the label, the same rule Sensitive and Health follow — and the
+  // table note that called room_post_views "aggregate" must not come back.
+  const label = PRIVACY_LABELS.find((l) => l.category === "Usage Data → Product Interaction");
+  const tables = Object.entries(TABLE_CLASSIFICATION)
+    .filter(([, e]) => (e.feeds as readonly string[]).includes("Usage Data → Product Interaction"))
+    .map(([t]) => t);
+  const columns = Object.entries(PROFILE_COLUMN_CLASSIFICATION)
+    .filter(([, c]) => c === "Usage Data → Product Interaction")
+    .map(([c]) => `profiles.${c}`);
+
+  it("exists, and something is filed under it", () => {
+    expect(label).toBeDefined();
+    expect(tables.length).toBeGreaterThanOrEqual(5);
+    expect(columns).toContain("profiles.last_active_at");
+  });
+
+  it.each([...tables, ...columns])("cites %s", (source) => {
+    expect(label?.justifiedBy).toContain(source);
+  });
+
+  it("does not call per-member views aggregate", () => {
+    expect(TABLE_CLASSIFICATION.room_post_views?.note).not.toMatch(/aggregate/i);
+  });
+});

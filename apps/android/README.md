@@ -305,11 +305,15 @@ or religious beliefs" needs changing to collected in the console.**
 
 Two things in there worth knowing before you open the form:
 
-- **The liveness selfie is declared on Play and not on Apple**, and that is
-  correct rather than inconsistent. Play has a "processed ephemerally" answer —
-  collected, used, never retained — which is exactly what the check does. Apple's
-  form has no such option, which is why that one sits in `NOT_COLLECTED` with a
-  note held for counsel.
+- **The liveness check is declared on both forms, shaped differently.** Play
+  files it under **Videos** — it streams video — with its "processed
+  ephemerally" answer: collected, used, never retained. Apple has no ephemeral
+  answer and declares it under Sensitive Info. This bullet said Apple left it
+  out until 2026-09-27; Apple has declared it since 2026-09-10.
+- **Changed 2026-09-27, so a form submitted before then is wrong in two
+  places:** the liveness row moved from Photos to **Videos**, and **App
+  interactions** are now answered collected (posts seen and liked, read
+  positions, and the day a member was last in).
 - **Play needs a deletion URL that works without the app installed**, separately
   from the in-app path. That is `PLAY_SECURITY.deletionUrl` and it points at the
   policy's deletion section. The in-app half is Settings, which `requestDeletion`

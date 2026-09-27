@@ -491,16 +491,10 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ### 2026-09-27 · WSL · three nudges, and what a review found in them
 
-**HELD, UNCOMMITTED, ON THIS MACHINE ONLY: the backup email screen.**
-`/onboarding/email` between the phone code and the face check, confirmed by a
-code typed in the app. Files: `apps/web/src/app/onboarding/email/`,
-`BACKUP_EMAIL_ROUTE` in `lib/step-routes.ts`, the phone action's final redirect,
-`DRAFT_COPY.backupEmail`, and both Supabase templates files. Gated green with
-the rest of the tree. **Waiting on Kevin** for one thing: the privacy policy
-(`legal.ts:46`) says an added email is for sign-in and notifications "never
-anything more", and the screen says "we can reach you here". Proposed line and
-an effective-date bump are in the conversation, not in the tree. Kevin says the
-change-email template is already pasted into the dashboard.
+**The backup email screen shipped (3ba91ed).** `/onboarding/email`, between the
+phone code and the face check, confirmed by a code typed in the app — the
+Change Email template carries it and Kevin has pasted it. The privacy policy
+says what the screen promises, effective 2026-09-27. Not seen in either engine.
 
 **Migration 20260927000100 is written and NOT applied.** It revokes members'
 SELECT on `profiles.updated_at` — which leaked the exact moment of every
@@ -532,12 +526,13 @@ Traps, each paid for this week:
   subset, `git stash push --keep-index --include-untracked`, run the gate on
   exactly the commit, pop, and `cmp` every held file against the tarball.
 
-Also in the conversation and held for Kevin: the Play console answer for
-political and religious beliefs (now collected); two confirmed store-form
-problems that predate this week — liveness declared as a second Photos row
-when Play takes one answer per type and it is a video, and "App interactions"
-declared NOT collected while per-member post views and likes are stored; and
-whether to declare Play's "Other info" at all.
+**Both store forms changed on 2026-09-27 and the consoles have not caught up —
+Kevin's:** Play gains "Political or religious beliefs" (collected) and "App
+interactions" (collected), and the liveness row moves from Photos to Videos;
+Apple gains Usage Data → Product Interaction. **The iOS privacy manifest
+changed with it** and was committed with `[ci skip]` — it ships in the next
+deliberate iOS build, not an automatic one on a stale build number. Still held
+for Kevin and counsel: whether to declare Play's "Other info" at all.
 
 ### 2026-09-09 · WSL · a room frozen by one missing predicate, and four sheets that opened on the tap
 

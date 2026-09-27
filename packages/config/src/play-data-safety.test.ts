@@ -8,6 +8,7 @@ import {
   PLAY_NO_ADVERTISING,
   PLAY_SECURITY,
 } from "./play-data-safety";
+import { PRIVACY_POLICY } from "./legal";
 import { NOT_COLLECTED, PRIVACY_LABELS, TRACKING } from "./privacy-labels";
 
 /**
@@ -169,5 +170,46 @@ describe("every entry is answerable by a person filling the form", () => {
       expect(entry.why.length, `${entry.type} has no reasoning`).toBeGreaterThan(40);
       expect(entry.purposes.length, `${entry.type} has no purpose`).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * Review, 2026-09-23, both confirmed:
+ *
+ *   - the liveness check was a second "Photos" row with different answers from
+ *     the profile photos, and the console takes ONE set of answers per type;
+ *   - "App interactions" was answered NOT collected while the app stores per-
+ *     member post views, likes, read positions and the day a member was last in.
+ */
+describe("one answer per type, and interactions declared", () => {
+  it("never gives two answers for one data type", () => {
+    const types = PLAY_DATA_SAFETY.map((e) => e.type);
+    expect(
+      new Set(types).size,
+      `duplicated: ${types.filter((t, i) => types.indexOf(t) !== i)}`,
+    ).toBe(types.length);
+  });
+
+  it("files the liveness check as a video, processed ephemerally", () => {
+    const liveness = PLAY_DATA_SAFETY.find((e) => e.processedEphemerally);
+    expect(liveness?.type).toBe("Photos and videos → Videos");
+    expect(liveness?.fromAppleCategory).toBe("Sensitive Info");
+    // And the row no longer claims Apple leaves it out.
+    expect(liveness?.why).not.toMatch(/NOT_COLLECTED on the Apple side/);
+  });
+
+  it("declares app interactions on both forms, and says so in the policy", () => {
+    const play = PLAY_DATA_SAFETY.find((e) => e.type === "App activity → App interactions");
+    expect(play?.collected).toBe(true);
+    expect(play?.fromAppleCategory).toBe("Usage Data → Product Interaction");
+    expect(PRIVACY_LABELS.map((l) => l.category)).toContain("Usage Data → Product Interaction");
+    for (const no of PLAY_NOT_COLLECTED) expect(no).not.toMatch(/App interactions/);
+    // No bare "Usage Data" item any more, and nothing claiming Product
+    // Interaction — "Other Usage Data" as a qualified remainder is fine.
+    for (const no of NOT_COLLECTED) {
+      expect(no.category).not.toMatch(/Product Interaction/);
+      expect(no.category).not.toMatch(/(^|, )Usage Data(,|$)/);
+    }
+    expect(JSON.stringify(PRIVACY_POLICY)).toMatch(/room posts you have opened and liked/);
   });
 });

@@ -18,10 +18,12 @@
 import { BRAND } from "./brand";
 
 /**
- * Moved on 2026-09-27 for one change, Kevin's wording: an added email may be
- * used to help somebody who gets stuck signing up. The backup email screen in
+ * Moved on 2026-09-27 for two changes. Kevin's wording: an added email may be
+ * used to help somebody who gets stuck signing up — the backup email screen in
  * onboarding promises exactly that, and the line it replaced said "never
- * anything more" than sign-in and notifications.
+ * anything more" than sign-in and notifications. And the interaction data both
+ * store forms now declare: posts seen and liked, read positions, and the day a
+ * member was last in, which the policy had never mentioned.
  */
 export const PRIVACY_POLICY_EFFECTIVE = "2026-09-27";
 
@@ -61,6 +63,7 @@ export const PRIVACY_POLICY: readonly PolicySection[] = [
       "Your photos, prompts, bio, and search radius.",
       "Whether you are verified, and when.",
       "Your messages, and the connects you send and receive.",
+      "Which room posts you have opened and liked, and where you last read up to in each chat and room, so the app can show you what is new. And the day you were last in the app, never the time.",
     ],
   },
   {
