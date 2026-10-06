@@ -209,3 +209,27 @@ describe("the receipt is live, and stops meaning anything once they reply", () =
     expect(migrations).toMatch(/alter publication supabase_realtime add table public\.chat_reads/);
   });
 });
+
+/**
+ * Kevin, 2026-10-06: a blank space under your own message read as the receipt
+ * being broken. It was a member who had not opened the chat yet — so the line
+ * now says "Sent" until it can say "Read".
+ */
+describe("your latest message says Sent until it says Read", () => {
+  const page = read("../../chats/[id]/page.tsx").replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("shows the line whether or not there is a read marker", () => {
+    // The old guard: no marker, no line. A null marker now means "Sent".
+    expect(page).not.toMatch(/if \(!theyReadAt\) return null;/);
+    expect(page).toMatch(/C\.chatSentAt\(chatLogic\.messageTimeLabel\(sentMs, now, zone\)\)/);
+  });
+
+  it("says Read only once their marker reaches the message", () => {
+    expect(page).toMatch(/readMs >= sentMs\s*\?\s*C\.chatReadAt/);
+  });
+
+  /** NaN compares false, so no marker and hidden receipts both stay at Sent. */
+  it("treats a missing marker as not read, never as read", () => {
+    expect(page).toMatch(/theyReadAt \? Date\.parse\(theyReadAt as string\) : Number\.NaN/);
+  });
+});

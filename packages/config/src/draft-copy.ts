@@ -1076,6 +1076,12 @@ export const DRAFT_COPY = {
      * rather than as a person. This says what actually happened.
      */
     chatReadAt: (time: string) => `Read ${time}`,
+    /**
+     * The same line before they have read it. Kevin, 2026-10-06: a blank space
+     * under your message read as the receipt being broken. Hidden receipts also
+     * stay at "Sent", so this tells nobody more than the blank did.
+     */
+    chatSentAt: (time: string) => `Sent ${time}`,
     unsendLabel: "Unsend",
     unsendConfirm: "Unsend it",
     unsendCancel: "Keep it",

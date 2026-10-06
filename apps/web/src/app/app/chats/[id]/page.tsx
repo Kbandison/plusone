@@ -473,12 +473,16 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
        * copies of one fact. It answers "did they see it", which is a question
        * about the latest thing you sent.
        *
-       * Only for a message of MINE, and only when their marker is at or past
-       * it. Null covers not-read, hidden, and the function not existing yet;
-       * the screen cannot tell those apart, which is deliberate — a member who
-       * could would be probing for the flag. */}
+       * Only for a message of MINE. "Sent" until their marker is at or past it,
+       * then "Read". A null marker covers not-read, hidden, and the function
+       * not existing yet, and all three stay at "Sent"; the screen cannot tell
+       * them apart, which is deliberate — a member who could would be probing
+       * for the flag.
+       *
+       * "Sent" is new (Kevin, 2026-10-06). The line used to appear only once
+       * read, and a blank space under your own message read as the receipt
+       * being broken rather than as nobody having opened it yet. */}
       {(() => {
-        if (!theyReadAt) return null;
         // The LAST message, not my last message.
         //
         // Keying it on mine meant the receipt survived their reply: they read,
@@ -487,11 +491,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         // receipt, so once one arrives the receipt has nothing left to say.
         const last = (messages ?? []).at(-1);
         if (!last || last.sender_id !== me) return null;
-        const readMs = Date.parse(theyReadAt as string);
-        if (!(readMs >= Date.parse(last.created_at as string))) return null;
+        const sentMs = Date.parse(last.created_at as string);
+        const readMs = theyReadAt ? Date.parse(theyReadAt as string) : Number.NaN;
         return (
           <p className="mt-2 text-right text-[11px] text-ink-3">
-            {C.chatReadAt(chatLogic.messageTimeLabel(readMs, now, zone))}
+            {readMs >= sentMs
+              ? C.chatReadAt(chatLogic.messageTimeLabel(readMs, now, zone))
+              : C.chatSentAt(chatLogic.messageTimeLabel(sentMs, now, zone))}
           </p>
         );
       })()}
