@@ -513,6 +513,12 @@ hit on 5 October.
 **The profile sheet leads with the photo** at 4:5, chats link to it, and
 connected people get "Open chat" instead of a form. NOT SEEN IN EITHER ENGINE.
 
+**Kevin's account (…5353, BandoOneBillion) is permanently premium**, at his
+ask: a `premium_grants` row, source `founder_permanent`, expiring 9999-12-31.
+So that account never sees the buy screen again — and the buy screen is where
+Play's `?diag=1` panel and both purchase flows live. Test purchases on another
+account, or delete that one row for the duration.
+
 Traps, both paid for today:
 
 - **A slot keeps its last render across a soft navigation it does not match.**
