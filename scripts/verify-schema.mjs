@@ -272,7 +272,25 @@ if (!DB_URL) {
 //                                          short since 2026-09-11 and never went
 //                                          red, because that check asks only that
 //                                          what is declared is live.
-const EXPECT = { tables: 37, views: 5, functions: 144, enums: 31, rooms: 7, config: 23 };
+//
+// functions 144 -> 147                     20261006000100 — drop_notification_due,
+//                                          drop_candidates_for and
+//                                          stamp_drop_notifications, so the drop
+//                                          push is decided by selectDrop rather
+//                                          than by drop_has_candidates, which
+//                                          counted people the Drop then hides.
+//                                          claim_drop_notifications and
+//                                          drop_has_candidates are KEPT for the
+//                                          route's fallback, so nothing is net
+//                                          zero here. 20260927000100, applied the
+//                                          same day, is a revoke and a function
+//                                          body — no new object.
+//
+//                                          Read off the live database after
+//                                          applying: 147 procs, 146 distinct
+//                                          names, is_admin still the only
+//                                          overload.
+const EXPECT = { tables: 37, views: 5, functions: 147, enums: 31, rooms: 7, config: 23 };
 
 // Tables that deliberately hold no policy AND no grant to anon or
 // authenticated. Reachable only by the service client, from a server path that

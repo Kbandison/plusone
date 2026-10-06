@@ -491,12 +491,17 @@ touch it at all, which is why 16 goes first regardless of who takes what.
 
 ### 2026-10-06 · WSL · an empty Drop announced, and a profile that was a thumbnail
 
-**Two migrations are written and NOT applied:** 20260927000100 (from the block
-below) and now **20261006000100**, which moves the drop notification onto
-selectDrop. Independent of each other. Dry-run clean, and the new one was also
-exercised as the cron calls it, in a rolled-back transaction. Applying it adds
-three functions, so `check:db`'s EXPECT moves +3. Until it is applied the cron
-falls back to the old claim, which can still announce an empty Drop.
+**Nothing is pending.** Kevin applied 20260927000100 and **20261006000100** the
+same evening; the ledger holds both (106 of 126), EXPECT is 147 with the delta
+attributed, and `check:db` is green. Production answered the drop cron with the
+new shape, not `legacy: true`, and a read-only forecast with the real
+`wouldHaveDrop` put one of seven members on tonight's push — the two hit on 5
+October are not.
+
+**The legacy fallback in the drop cron can go**, along with
+`claim_drop_notifications` and `drop_has_candidates`. Nothing calls them now
+the new functions are live; deleting them is a code change plus a migration,
+and was offered to Kevin rather than done.
 
 **The empty-Drop push had a fix, and the fix asked half the question.**
 `drop_candidates` applies the walls and RETURNS already-connected, last-active
@@ -536,7 +541,7 @@ phone code and the face check, confirmed by a code typed in the app — the
 Change Email template carries it and Kevin has pasted it. The privacy policy
 says what the screen promises, effective 2026-09-27. Not seen in either engine.
 
-**Migration 20260927000100 is written and NOT applied.** It revokes members'
+**Migration 20260927000100 is APPLIED (2026-10-06).** It revokes members'
 SELECT on `profiles.updated_at` — which leaked the exact moment of every
 profile write, the daily activity write included, to anybody who can view the
 profile — and moves `claim_activity_alerts` onto the day rule. No new function,
