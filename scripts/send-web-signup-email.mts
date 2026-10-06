@@ -75,17 +75,45 @@ const db = new pg.Client({
   ssl: { rejectUnauthorized: false },
 });
 await db.connect();
-const { rows } = await db.query<{ id: string; email: string; token: string; metro: string }>(
-  `select id, email, token, metro from public.waitlist
-    where invited_at is not null
-      and accepted_at is null
-      and store_platform = 'ios'
-    order by metro, id`,
+/**
+ * Nobody who already has an account. Kevin, 2026-10-06: an email asking
+ * somebody to sign up for an account they hold is the wrong email.
+ *
+ * Matched here, in the query, and nowhere else — against both the waitlist
+ * address and the Apple ID they gave for TestFlight. The match is used to
+ * EXCLUDE and is then gone: nothing records which waitlist row belongs to which
+ * account, and only a count is printed. That is the line WAITLIST_NEVER draws —
+ * it bans STORING the binding, because a stored one turns "this address asked
+ * about an HSV and HIV app" into a fact about a member.
+ *
+ * It can only see accounts with an email on them. Most members sign up by
+ * phone, and the waitlist holds no phone by design, so a member who never
+ * added an email is not matched and will still receive this.
+ */
+const { rows } = await db.query<{
+  id: string;
+  email: string;
+  token: string;
+  metro: string;
+  has_account: boolean;
+}>(
+  `select w.id, w.email, w.token, w.metro,
+          exists (
+            select 1 from auth.users u
+             where u.email is not null and u.email <> ''
+               and lower(u.email) in (lower(w.email), lower(coalesce(w.store_account_email, '')))
+          ) as has_account
+     from public.waitlist w
+    where w.invited_at is not null
+      and w.accepted_at is null
+      and w.store_platform = 'ios'
+    order by w.metro, w.id`,
 );
 await db.end();
 
+const members = rows.filter((row) => row.has_account).length;
 const already = new Set<string>(existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, "utf8")) : []);
-const pending = rows.filter((row) => !already.has(row.id));
+const pending = rows.filter((row) => !row.has_account && !already.has(row.id));
 
 const byMetro = new Map<string, number>();
 for (const row of pending) byMetro.set(row.metro, (byMetro.get(row.metro) ?? 0) + 1);
@@ -95,7 +123,9 @@ const text = (token: string) => `${BODY.join("\n\n")}\n\n${LINK}${footer(token)}
 console.log(`from     ${PRODUCTION.RESEND_FROM}`);
 console.log(`subject  ${SUBJECT}`);
 console.log(`\n${text("<their-token>")}`);
-console.log(`\nrecipients: ${pending.length} (already sent: ${rows.length - pending.length})`);
+console.log(
+  `\nrecipients: ${pending.length} of ${rows.length} (already members, skipped: ${members}; already sent: ${rows.length - members - pending.length})`,
+);
 console.log([...byMetro].map(([metro, n]) => `  ${metro} ${n}`).join("\n"));
 
 if (!send) {
