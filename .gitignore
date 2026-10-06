@@ -110,3 +110,4 @@ copy-review.html
 # git history every time anybody regenerated.
 apps/android/store-screenshots/play/
 apps/android/store-screenshots/app-store-iphone/
+scripts/.web-signup-sent.json

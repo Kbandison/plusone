@@ -87,8 +87,11 @@ function appOrigin(): string {
  * without the app installed, and this is it for anybody who never installs
  * anything. It is also the thing that makes the confirmation email honest —
  * "ignore this" is only true if there is a way out that does not need us.
+ *
+ * Exported for one-off sends in `scripts/`, so an email outside the crons
+ * still carries the same way out rather than a second copy of it.
  */
-function footer(token: string): string {
+export function footer(token: string): string {
   // "Change or leave", not "unsubscribe". The same page does both, and naming
   // only the destructive half means somebody who just wanted to move city or
   // opt into testing takes the exit instead — the only door they were shown.
