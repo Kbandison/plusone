@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { DRAFT_COPY } from "@plusone/config";
+import { DRAFT_COPY, formatInviteCode } from "@plusone/config";
 
 import { buttonClass, Card, PublicShell } from "@/app/ui";
 import { betaInviteIsOpen, storeAccountFor } from "@/lib/waitlist";
@@ -49,6 +49,20 @@ export default async function BetaInvitePage({ params }: { params: Promise<{ cod
       <Card className="mt-12">
         <h1 className="text-h2">{open ? C.heading : C.expiredHeading}</h1>
         <p className="mt-3 text-body leading-[1.7] text-ink-2">{open ? C.body : C.expiredBody}</p>
+
+        {/* The code, shown. It was always in the URL and never on the page — so
+            somebody who opened this in Safari and then signed up in the iPhone
+            app had no way to carry the invitation across (BACKLOG 32). Only for
+            an open invitation: betaInviteIsOpen has just confirmed the value is
+            a real code, so nothing typed into the URL is echoed back. */}
+        {open ? (
+          <p className="mt-4 text-[13px] leading-[1.7] text-ink-2">
+            {C.codeIntro}{" "}
+            <span className="font-mono tracking-[0.08em] whitespace-nowrap text-ink">
+              {formatInviteCode(code)}
+            </span>
+          </p>
+        ) : null}
 
         {/* Only for somebody we have no install path for. A tester whose
             platform came from signup gets the steps for their own phone

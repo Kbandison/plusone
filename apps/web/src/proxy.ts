@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { parseClientEnv } from "@plusone/config";
 import { createServerSupabase } from "@plusone/db";
 
+import { BETA_COOKIE, BETA_COOKIE_OPTIONS } from "@/lib/beta-cookie";
+
 /**
  * Keeps the session alive.
  *
@@ -89,16 +91,9 @@ export async function proxy(request: NextRequest) {
   // database, on every send. A cookie is a claim, not a credential.
   const beta = /^\/beta\/([0-9a-f]{16})$/.exec(request.nextUrl.pathname);
   if (beta?.[1]) {
-    response.cookies.set("plusone_beta", beta[1], {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: true,
-      path: "/",
-      // Matches WAITLIST_INVITE_TTL_DAYS. The database is what actually
-      // expires it; this only stops a stale cookie outliving the invitation it
-      // names by months.
-      maxAge: 60 * 60 * 24 * 14,
-    });
+    // Shared with the signup screen's code field (lib/beta-cookie.ts), which
+    // sets the same cookie for somebody whose link opened in the wrong app.
+    response.cookies.set(BETA_COOKIE, beta[1], BETA_COOKIE_OPTIONS);
   }
 
   return response;

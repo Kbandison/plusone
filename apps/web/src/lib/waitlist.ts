@@ -10,6 +10,7 @@ import {
   WAITLIST_REMINDER_AFTER_DAYS,
   WAITLIST_REMINDER_HOUR,
   WAITLIST_UNCONFIRMED_TTL_DAYS,
+  inviteCodeLine,
   inviteExpiresAt,
   inviteNudgeBody,
   inviteNudgeDue,
@@ -1031,7 +1032,7 @@ export async function sendDueInviteNudges(
     const ok = await sendDirectEmail({
       to: row.email,
       subject: email.subject,
-      text: `${text.join("\n\n")}\n\n${appOrigin()}/beta/${row.invite_code}${footer(row.token)}`,
+      text: `${text.join("\n\n")}\n\n${appOrigin()}/beta/${row.invite_code}\n\n${inviteCodeLine(row.invite_code)}${footer(row.token)}`,
     });
     if (ok) sent += 1;
   }
@@ -1163,7 +1164,9 @@ export async function inviteFromWaitlist(
     const ok = await sendDirectEmail({
       to: row.email,
       subject,
-      text: `${preview}\n\n${body.join("\n\n")}\n\n${link}${footer(row.token)}`,
+      // The code under the link, for whoever signs up somewhere the link did
+      // not open — an iPhone's installed app, most of all (BACKLOG 32).
+      text: `${preview}\n\n${body.join("\n\n")}\n\n${link}\n\n${inviteCodeLine(code)}${footer(row.token)}`,
     });
     if (ok) sent += 1;
   }

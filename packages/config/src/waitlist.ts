@@ -462,6 +462,44 @@ export function inviteExpiresAt(invitedAt: string): number {
   return Date.parse(invitedAt) + WAITLIST_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
 }
 
+/**
+ * The invitation code, as a person reads it: "3F9A 1C2B 77D0 E4A1".
+ *
+ * ── why a code is shown at all (BACKLOG 32) ─────────────────────────────────
+ *
+ * An invitation is a cookie set when `/beta/<code>` opens. On an iPhone the
+ * email link opens SAFARI, and the installed app's WKWebView keeps a separate
+ * jar — so everybody who signed up in the iPhone app arrived unmarked: 0 of 8
+ * marked members used it, 3 of 4 unmarked ones did. Re-opening the link inside
+ * the app was the documented step and nobody took it.
+ *
+ * A code a person can SEE and type works in any engine, because typing it sets
+ * the same cookie in whichever app or browser they are signing up in. It was
+ * always in the link; it just was never shown.
+ */
+export function formatInviteCode(code: string): string {
+  return code.toUpperCase().replace(/(.{4})(?=.)/g, "$1 ");
+}
+
+/**
+ * What somebody typed or pasted, as the code the database holds — or null.
+ *
+ * Forgiving on purpose: any case, spaces or dashes from the grouping, and a
+ * whole pasted invitation link, since long-pressing the link in the email and
+ * choosing Copy is the easiest way to get it on a phone. Strict about the
+ * result, which is the same sixteen hex characters the proxy accepts.
+ */
+export function parseInviteCode(input: string): string | null {
+  const fromLink = /\/beta\/([0-9a-f]{16})(?![0-9a-f])/i.exec(input)?.[1];
+  const raw = (fromLink ?? input).replace(/[\s-]/g, "").toLowerCase();
+  return /^[0-9a-f]{16}$/.test(raw) ? raw : null;
+}
+
+/** The line under the link in every invitation email and nudge. */
+export function inviteCodeLine(code: string): string {
+  return `Signing up in the app? Enter this code on the first screen: ${formatInviteCode(code)}`;
+}
+
 /** Days after the invitation that the first nudge becomes due. Kevin, 2026-09-23. */
 export const WAITLIST_NUDGE_AFTER_DAYS = 3;
 

@@ -180,10 +180,14 @@ describe("the closed beta has exactly one door", () => {
 
 describe("the beta cookie is carried, not trusted", () => {
   const proxy = code("proxy.ts");
+  // The name and options live in one file since BACKLOG 32, because the signup
+  // screen's code field is a second writer of the same cookie.
+  const cookie = code("lib/beta-cookie.ts");
 
   it("sets it from a narrow path pattern", () => {
-    expect(proxy).toMatch(/plusone_beta/);
+    expect(proxy).toMatch(/response\.cookies\.set\(BETA_COOKIE, beta\[1\], BETA_COOKIE_OPTIONS\)/);
     expect(proxy).toMatch(/\\\/beta\\\/\(\[0-9a-f\]\{16\}\)/);
+    expect(cookie).toMatch(/export const BETA_COOKIE = "plusone_beta";/);
   });
 
   it("keeps it separate from the referral cookie", () => {
@@ -191,14 +195,26 @@ describe("the beta cookie is carried, not trusted", () => {
     // operator admitting somebody. One namespace would let a member mint a way
     // through the gate.
     expect(proxy).toMatch(/plusone_ref/);
-    expect(proxy.match(/plusone_beta/g)?.length).toBe(1);
+    expect(proxy).not.toMatch(/plusone_beta/);
+    expect(cookie).not.toMatch(/plusone_ref/);
   });
 
   it("is httpOnly, secure and same-site", () => {
-    const block = /plusone_beta[\s\S]{0,320}?\}\);/.exec(proxy)?.[0] ?? "";
+    const block = /BETA_COOKIE_OPTIONS = \{[\s\S]*?\} as const;/.exec(cookie)?.[0] ?? "";
+    expect(block.length).toBeGreaterThan(40);
     expect(block).toMatch(/httpOnly:\s*true/);
     expect(block).toMatch(/secure:\s*true/);
     expect(block).toMatch(/sameSite:\s*"lax"/);
+  });
+
+  /** Nothing else may spell the name, or a rename leaves a writer behind. */
+  it("is named in exactly one place", () => {
+    const writersAndReaders = [
+      "proxy.ts",
+      "app/onboarding/phone/actions.ts",
+      "app/onboarding/phone/invite-actions.ts",
+    ].map(code);
+    for (const source of writersAndReaders) expect(source).not.toMatch(/"plusone_beta"/);
   });
 
   it("makes no authorisation decision in the proxy", () => {

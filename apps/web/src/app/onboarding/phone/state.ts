@@ -14,3 +14,11 @@ export type PhoneState = {
 };
 
 export const PHONE_INITIAL: PhoneState = { error: null, sentTo: null };
+
+/** The invitation code field (BACKLOG 32). */
+export type InviteCodeState = {
+  readonly attached: boolean;
+  readonly error: string | null;
+};
+
+export const INVITE_CODE_INITIAL: InviteCodeState = { attached: false, error: null };

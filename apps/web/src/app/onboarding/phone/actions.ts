@@ -7,6 +7,7 @@ import { verification } from "@plusone/logic";
 
 import { cookies } from "next/headers";
 
+import { BETA_COOKIE } from "@/lib/beta-cookie";
 import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
@@ -123,7 +124,7 @@ export async function verifyCode(previous: PhoneState, formData: FormData): Prom
   // them tells someone guessing which half they got right.
   if (error) return { error: E.codeInvalid, sentTo: phone };
 
-  const betaCode = (await cookies()).get("plusone_beta")?.value;
+  const betaCode = (await cookies()).get(BETA_COOKIE)?.value;
 
   // Record on the profile what the OTP just proved.
   //

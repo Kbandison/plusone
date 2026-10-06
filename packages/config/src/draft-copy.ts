@@ -217,6 +217,12 @@ export const DRAFT_COPY = {
      */
     worksNow:
       "You can start right now, in this browser. The store version is the same app and the same account — installing gets you an icon and notifications.",
+    /**
+     * Before the code itself (BACKLOG 32). Opening this page attaches the
+     * invitation to THIS browser only; on an iPhone that is Safari, and the
+     * installed app never sees it. The code is how it crosses.
+     */
+    codeIntro: "Signing up in the app? Enter this code on the first screen:",
     start: "Start",
 
     whichDevice: "Which will you use it on?",
@@ -275,6 +281,20 @@ export const DRAFT_COPY = {
      */
     already: "Already have an account?",
     signIn: "Sign in",
+    /**
+     * The invitation, typed rather than followed (BACKLOG 32). On an iPhone the
+     * email link opens Safari, and the installed app never sees it — so the
+     * code under the link is the way in from any app or browser. Folded away:
+     * most people signing up have no code and should not be asked for one.
+     */
+    inviteSummary: "Have an invitation code?",
+    inviteLabel: "Invitation code",
+    inviteHint: "It is in your invitation email, under the link.",
+    inviteSubmit: "Use code",
+    inviteAttached: "Your invitation is attached. Carry on with your number.",
+    // One answer for malformed, unknown, used and expired — the same stance as
+    // the /beta page, which does not say which either.
+    inviteInvalid: "That code is not one we recognise, or it has expired.",
     intro:
       "We text you a code to sign in. Your number is never shown to anyone, and it is not used to find you.",
     phoneLabel: "Mobile number",

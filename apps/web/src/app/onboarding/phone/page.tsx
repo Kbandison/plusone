@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { DRAFT_COPY } from "@plusone/config";
@@ -8,7 +9,10 @@ import { onboarding } from "@plusone/logic";
 
 import { STEP_ROUTES, loadFacts } from "@/lib/onboarding";
 import { suggestedDialCode } from "@/lib/dial-code";
+import { BETA_COOKIE } from "@/lib/beta-cookie";
 import { getServerSupabase } from "@/lib/supabase";
+import { betaInviteIsOpen } from "@/lib/waitlist";
+import { InviteCodeField } from "./invite-code-field";
 import { PhoneForm } from "./phone-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -37,6 +41,13 @@ export default async function PhonePage() {
           plain editable input and normalizePhone still refuses to invent a
           country code for anybody who clears it. */}
       <PhoneForm suggestedDialCode={await suggestedDialCode()} />
+      {/* The invitation, for anybody whose link opened somewhere else — an
+          iPhone's email link opens Safari, not the installed app (BACKLOG 32).
+          Asked about the cookie that is actually HERE, so the confirmation
+          means this app or browser has it, not merely that a link was opened. */}
+      <InviteCodeField
+        attached={await betaInviteIsOpen((await cookies()).get(BETA_COOKIE)?.value)}
+      />
     </StepShell>
   );
 }
