@@ -516,7 +516,12 @@ hit on 5 October.
 `DROP_REACH_MI`.
 
 **The profile sheet leads with the photo** at 4:5, chats link to it, and
-connected people get "Open chat" instead of a form. NOT SEEN IN EITHER ENGINE.
+connected people get "Open chat" instead of a form; the inbox decision links to
+it too. **Seen working by Kevin in the TWA on his Android phone, 2026-10-06** —
+the large photo, "Open chat" closing the sheet (so the catch-all works), and
+"See their profile" from an inbox request. **NOT SEEN IN WKWebView.** The one
+worth checking on the iPad is the inbox case: a route sheet opened over a
+native `showModal()` dialog is two stacked top-layer dialogs.
 
 **Kevin's account (…5353, BandoOneBillion) is permanently premium**, at his
 ask: a `premium_grants` row, source `founder_permanent`, expiring 9999-12-31.
