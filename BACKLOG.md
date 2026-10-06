@@ -2022,7 +2022,8 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     which is worth deciding about separately — the HSV room is currently fed
     only by general publishers.
 
-32. **The beta mark never reaches the iPhone app.** Found 2026-10-06 asking why
+32. ~~**The beta mark never reaches the iPhone app.**~~ — **decided and built
+    2026-10-06; unverified on an iPhone.** Found 2026-10-06 asking why
     a member Kevin is chatting with was not marked as a tester.
 
     She had a live invitation and used the iPhone app: joined 7:04 AM on 4
@@ -2050,13 +2051,23 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     because an app signup never marks the invitation used either. Those members
     kept receiving "your invitation expires" nudges after joining.
 
-    **Held for Kevin, 2026-10-06:** whether she, and anyone else this
-    happened to, counts as a beta tester. His first call was no — "she didn't
-    sign up with her link" — made before it was known that she had tried to,
-    and he asked to come back to it. Two questions, not one: what to do for the
-    people already affected, and whether to fix the route (for example a code
-    field at signup, which works in any engine) before anybody else is invited
-    on an iPhone.
+    **Kevin's call, 2026-10-06, once it was known she HAD tried her link:** all
+    three iPhone-app members are marked — AshleyLG, Natalie and Leshhh, so 11
+    testers in all. His first answer had been no, on the premise that she had
+    not used her link.
+
+    **The route is fixed in `fd7bbea`, for invitations from here on.** The code
+    was always the sixteen characters at the end of the link and was never
+    shown, so a "have a code?" field alone would have asked for something nobody
+    had. Now it is shown under the link in the invitation and every reminder,
+    and on the invitation page; "Have an invitation code?" on the signup screen
+    sets the same cookie the link sets, in whichever app or browser the person
+    is in. `verifyCode` still does the spending, so there is one path to the
+    mark.
+
+    **Not seen on an iPhone, and that is the engine it exists for.** The check:
+    a fresh invitation, the link opened in Safari, the code typed in the
+    installed app, an account created, and `joined_in_beta` true afterwards.
 
 ## Lane: Kevin
 
