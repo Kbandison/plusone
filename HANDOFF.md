@@ -472,10 +472,10 @@ Claim before you start, not after — `BACKLOG.md` and `AGENTS.md` both send you
 here, and a claim written afterwards is a description rather than a claim. One
 line per session; clear it when you finish or abandon the item.
 
-| session | item                                                     | since      |
-| ------- | -------------------------------------------------------- | ---------- |
-| _macOS_ | the App Review demo recording (shells 11 / submission)   | 2026-09-13 |
-| _WSL_   | drop notify on an empty Drop; profile photos + chat link | 2026-10-06 |
+| session | item                                                   | since      |
+| ------- | ------------------------------------------------------ | ---------- |
+| _macOS_ | the App Review demo recording (shells 11 / submission) | 2026-09-13 |
+| _WSL_   | —                                                      | —          |
 
 **Kevin has authorised the macOS session into the server lane for server 16–19
 only**, said 2026-08-29, because this is one body of work he wants done in
@@ -488,6 +488,40 @@ whichever lands second replays against a shape it did not write. 16 does not
 touch it at all, which is why 16 goes first regardless of who takes what.
 
 ## Sessions
+
+### 2026-10-06 · WSL · an empty Drop announced, and a profile that was a thumbnail
+
+**Two migrations are written and NOT applied:** 20260927000100 (from the block
+below) and now **20261006000100**, which moves the drop notification onto
+selectDrop. Independent of each other. Dry-run clean, and the new one was also
+exercised as the cron calls it, in a rolled-back transaction. Applying it adds
+three functions, so `check:db`'s EXPECT moves +3. Until it is applied the cron
+falls back to the old claim, which can still announce an empty Drop.
+
+**The empty-Drop push had a fix, and the fix asked half the question.**
+`drop_candidates` applies the walls and RETURNS already-connected, last-active
+and last-served as columns for `isEligible` to filter. The SQL check counted
+rows, so a member who had met or been shown everyone in reach was told their
+Drop had landed. The migration comment and the test pinning it both said
+drop_candidates excluded those. It does not. Two of seven real members were
+hit on 5 October.
+
+**The 350-mile rung never worked on the Drop.** a90f617 raised the ladder and
+`lib/drop.ts` kept fetching at `RADIUS.maxMi` (250). One constant now,
+`DROP_REACH_MI`.
+
+**The profile sheet leads with the photo** at 4:5, chats link to it, and
+connected people get "Open chat" instead of a form. NOT SEEN IN EITHER ENGINE.
+
+Traps, both paid for today:
+
+- **A slot keeps its last render across a soft navigation it does not match.**
+  `@modal/[...catchAll]` now returns null so "Open chat" closes the sheet. The
+  same rule means BACKLOG 27c's redirect-to-inbox could not have closed the
+  sheet before this, whatever that entry says. Worth confirming on a device.
+- **A test that slices from an `indexOf` goes vacuous when the anchor moves.**
+  The drop cron's counts-only test sliced from a line that no longer existed,
+  checked one character, and passed. Assert the index first.
 
 ### 2026-09-27 · WSL · three nudges, and what a review found in them
 
@@ -579,40 +613,3 @@ revisit where the client cache may have served it.
 **All 8 non-seed accounts are accounted for** — five test rows, two Kevin's, one
 literally named "Test account". Every one predates the beta gate and no waitlist
 row has `accepted_at`. Nobody has come through an invitation yet.
-
-### 2026-09-01 · macOS · a build Apple accepted, and a link that could not cross engines
-
-**1.0 (202609020240) is uploaded and was ACCEPTED**, archived here with
-`/Applications/Xcode-beta.app` on macOS 27 beta. "Analyzing package" is where
-ITMS-90111 fires and it passed, so **this Mac can produce a submittable binary**
-and Xcode Cloud is a convenience rather than the only route. BACKLOG 21; that
-retires most of Kevin 18. The build-number bump is still manual and still a
-floor — bump it in a commit before archiving or the upload dies at the end.
-
-**What the archive carries:** 137d358, the shell's start URL moving to `/app`.
-Verified before building, including the half with the risk in it — a page
-OUTSIDE `/app` renders inside the shell, so `allowNavigation` does what its
-comment claims. Launching at `/app` is not enough on its own to trust it.
-
-**Two bugs came out of writing the App Review reply, not out of reading code.**
-Both are the shape worth keeping: a signed-out launch now lands on
-`/onboarding/phone`, and the only `/sign-in` link on that screen sat inside the
-closed-beta refusal card. A shell has no address bar, so the sole route to
-signing in began with being rejected. Then `/beta/*` was unclaimed in the
-association file, so an invitation opened Safari and the cookie landed in a jar
-WKWebView cannot see. Neither is visible from the code alone; both are obvious
-the moment you ask what a person opening the app actually meets.
-
-**I broke the two-engines rule while fixing a two-engines bug.** The install
-block I taught to detect the shell used `inNativeShell()`, which cannot see a
-TWA — so Android testers got the screen the commit existed to prevent. WSL
-caught it. The specific thing I did not know is now a bullet in `AGENTS.md`:
-only iOS enumerates its deep-link paths, Android's intent filter has none, so
-every path on the host opens in the TWA once assetlinks verifies.
-
-**Left off:** tree clean, five gates green, nothing claimed, nothing in flight.
-The build is processing. Everything outstanding is Kevin's and none of it is
-code — the 2.1 reply needs three dashboard things done first (an email on the
-reviewer account, `{{ .Token }}` in the Magic Link template, SMTP on Resend so a
-second code is not rate-limited), and Android verification of tonight's beta
-work needs the device, same blocker as the Play re-read.
