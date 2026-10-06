@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { DROP, RADIUS } from "@plusone/config";
 import { drop as dropLogic } from "@plusone/logic";
 
@@ -22,8 +24,14 @@ type ConfigRow = Record<string, unknown>;
 
 const num = configNumber;
 
-export async function dropConfig(): Promise<dropLogic.DropConfig> {
-  const supabase = await getServerSupabase();
+/**
+ * `client` is for a caller with no member session — the drop-notify cron.
+ * `tunable_config` is granted to authenticated and the service role, not anon,
+ * so the cookie client there would read nothing and decide on compiled
+ * defaults while the Drop itself used the tuned values.
+ */
+export async function dropConfig(client?: SupabaseClient): Promise<dropLogic.DropConfig> {
+  const supabase = client ?? (await getServerSupabase());
   const { data } = await supabase.rpc("tunable_config");
   const config = (data ?? {}) as ConfigRow;
 

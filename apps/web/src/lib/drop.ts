@@ -4,6 +4,7 @@ import { DROP, RADIUS, promptQuestion } from "@plusone/config";
 import { drop as dropLogic } from "@plusone/logic";
 
 import { serviceClient } from "./cron";
+import { DROP_REACH_MI, toDropCandidates } from "./drop-candidates";
 import { getServerSupabase } from "./supabase";
 import { dropConfig } from "./tunables";
 
@@ -196,8 +197,12 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
     };
   }
 
+  // Out to the ladder's top rung, not RADIUS.maxMi. maxMi is the furthest a
+  // member may choose; the ladder is how far the Drop looks for them when their
+  // area is empty, and fetching less than it reaches left the last rung
+  // climbing over a pool that stopped short of it.
   const { data: rows } = await supabase.rpc("drop_candidates", {
-    p_max_radius_mi: RADIUS.maxMi,
+    p_max_radius_mi: DROP_REACH_MI,
   });
 
   // A preview is a preview OF DATING MEMBERS.
@@ -249,23 +254,9 @@ export async function getTonightsDrop(userId: string, now = new Date()): Promise
     vectors.set(row.user_id, row.trait_vector?.length ? row.trait_vector : null);
   }
 
-  const candidates = candidateRows.map((row) => ({
-    id: row.id,
-    distanceMi: row.distance_mi ?? Number.POSITIVE_INFINITY,
-    intention: (row.intention ?? "open_to_either") as never,
-    quizVector: vectors.get(row.id) ?? null,
-    lastActiveAt: new Date(row.last_active_at).getTime(),
-    timesServed: Number(row.times_served ?? 0),
-    // The RPC reads visible_profiles, which has already applied every wall, so
-    // anything that reaches here is verified and unblocked by construction.
-    verified: true,
-    blocked: false,
-    reportPending: false,
-    alreadyConnected: row.already_connected,
-    lastServedToViewerAt: row.last_served_to_viewer_at
-      ? new Date(row.last_served_to_viewer_at).getTime()
-      : null,
-  }));
+  // Shared with the drop-notify cron, so "is there a Drop" is asked of the same
+  // candidates the Drop is built from.
+  const candidates = toDropCandidates(candidateRows, vectors);
 
   // §7.3 — hot-read, not compiled in. An admin changing the weights should
   // change tonight's Drop.

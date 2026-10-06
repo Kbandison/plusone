@@ -455,10 +455,18 @@ describe("the drop tells people it landed", () => {
     // left side became -1 — which is less than everything, so the test went on
     // passing while checking nothing.
     const built = cron.indexOf("notifier();");
-    const claimed = cron.indexOf("claim_drop_notifications");
     expect(built).toBeGreaterThan(-1);
-    expect(claimed).toBeGreaterThan(-1);
-    expect(built).toBeLessThan(claimed);
+    // Every way this route can stamp: the due read that starts the new path,
+    // its stamp, and the legacy claim it falls back to.
+    for (const claim of [
+      "drop_notification_due",
+      "stamp_drop_notifications",
+      "claim_drop_notifications",
+    ]) {
+      const at = cron.indexOf(claim);
+      expect(at, claim).toBeGreaterThan(-1);
+      expect(built, claim).toBeLessThan(at);
+    }
   });
 
   /**
@@ -479,8 +487,17 @@ describe("the drop tells people it landed", () => {
   /** §9.6 — counts, never ids. */
   it("returns numbers and nothing else", () => {
     expect(cron).toMatch(/claimed: recipients\.length/);
-    const body = cron.slice(cron.indexOf("return NextResponse.json({ claimed"));
-    expect(body).not.toMatch(/recipients\.join|recipients\[0\]|user_id/);
+    // Every response body, not a slice from one of them. This sliced from
+    // `return NextResponse.json({ claimed` — and when that line changed shape
+    // the indexOf went to -1, the slice became the last character of the file,
+    // and the assertion went on passing while checking nothing.
+    const bodies = [...cron.matchAll(/NextResponse\.json\(\{([\s\S]*?)\}/g)].map((m) => m[1]!);
+    expect(bodies.length).toBeGreaterThan(3);
+    for (const body of bodies) {
+      // A list may appear only as its length.
+      const lists = body.replace(/\b(recipients|dueRows|withDrop)\.length\b/g, "");
+      expect(lists, body).not.toMatch(/recipients|dueRows|withDrop|user_id|viewer_id/);
+    }
   });
 });
 
@@ -982,11 +999,30 @@ describe("the drop notification needs a drop", () => {
     expect(latest.indexOf("drop_has_candidates")).toBeLessThan(dueEnd);
   });
 
+  /**
+   * The wrapper as 20260921000100 wrote it — read from that file alone, not
+   * from "every migration mentioning the claim" sliced to the end, which runs
+   * on into whatever file is newest.
+   */
+  const legacy = readFileSync(
+    join(MIGRATIONS, "20260921000100_no_drop_no_notification.sql"),
+    "utf8",
+  );
+  const wrapper = legacy.slice(
+    legacy.indexOf("function public.drop_has_candidates"),
+    legacy.indexOf("function public.claim_drop_notifications("),
+  );
+
   it("reuses the matching rule rather than restating it", () => {
     // drop_candidates is mutual gender, mutual age, mutual intention, community
-    // scope, blocks, existing connects and recent service. A second answer to
-    // "who can this person see" is two answers that drift.
-    const wrapper = sql.slice(sql.indexOf("function public.drop_has_candidates"));
+    // scope and blocks. A second answer to "who can this person see" is two
+    // answers that drift.
+    //
+    // NOT existing connects and recent service, which this comment used to
+    // claim. drop_candidates RETURNS those as columns for isEligible to filter,
+    // and believing otherwise is how this wrapper came to announce empty Drops
+    // — see "the Drop decides its own notification" below.
+    expect(wrapper.length).toBeGreaterThan(100);
     expect(wrapper).toMatch(/from public\.drop_candidates\(p_radius_mi\)/);
     expect(wrapper).not.toMatch(/gender|age_min|intention/);
   });
@@ -995,7 +1031,6 @@ describe("the drop notification needs a drop", () => {
     // It impersonates to ask, because drop_candidates is invoker and reads
     // auth.uid(). Without the restore the rest of the transaction would run as
     // whoever was asked about.
-    const wrapper = sql.slice(sql.indexOf("function public.drop_has_candidates"));
     expect(wrapper).toMatch(/v_previous text := current_setting\('request\.jwt\.claims', true\)/);
     expect(wrapper).toMatch(/set_config\(\s*'request\.jwt\.claims',\s*coalesce\(v_previous, ''\)/);
   });
@@ -1016,7 +1051,110 @@ describe("the drop notification needs a drop", () => {
   });
 
   it("takes the reach from config rather than the SQL default", () => {
+    // DROP_REACH_MI is the ladder's top rung, and the Drop fetches with the
+    // same constant — see drop-candidates.test.ts.
     const route = withoutComments(read("src/app/api/cron/drop-notify/route.ts"));
-    expect(route).toMatch(/p_radius_mi: RADIUS\.ladderMi\[RADIUS\.ladderMi\.length - 1\]/);
+    expect(route).toMatch(/p_radius_mi: DROP_REACH_MI/);
+  });
+});
+
+/**
+ * ...and the drop it needs is the one the Drop would actually show.
+ *
+ * 20260921000100 asked whether drop_candidates returned any row. That function
+ * applies the walls and RETURNS already-connected, last-active and last-served
+ * as columns for isEligible to filter, so two of seven real members were told
+ * on 2026-10-05 that their Drop had landed, onto an empty screen.
+ *
+ * 20261006000100 splits the claim so selectDrop can decide in the middle. The
+ * properties worth pinning are the ones that fail silently.
+ */
+describe("the Drop decides its own notification", () => {
+  const migration = readFileSync(
+    join(MIGRATIONS, "20261006000100_the_drop_decides_its_own_notification.sql"),
+    "utf8",
+  );
+  const code = withoutComments(migration);
+  const route = withoutComments(read("src/app/api/cron/drop-notify/route.ts"));
+  const fn = (name: string) =>
+    code.slice(
+      code.indexOf(`function public.${name}(`),
+      code.indexOf(`revoke all on function public.${name}(`),
+    );
+
+  it("decides with selectDrop before stamping anybody", () => {
+    const decided = route.indexOf("wouldHaveDrop(");
+    const stamped = route.indexOf('rpc("stamp_drop_notifications"');
+    expect(decided).toBeGreaterThan(route.indexOf('rpc("drop_notification_due"'));
+    expect(stamped).toBeGreaterThan(decided);
+    // The stamp is handed the decided ids and nothing wider.
+    expect(route).toMatch(/p_user_ids: withDrop/);
+  });
+
+  it("sends to who was stamped, not to who was decided", () => {
+    // An overlapping run that stamped first has already told them; the stamp
+    // returns nobody for those, and sending to withDrop would buzz them twice.
+    expect(route).toMatch(/const recipients = \(\(stamped\.data/);
+  });
+
+  it("stamps nothing while it is still asking who is due", () => {
+    expect(fn("drop_notification_due").length).toBeGreaterThan(100);
+    expect(fn("drop_notification_due")).not.toMatch(/\bupdate\b/i);
+    expect(fn("drop_candidates_for")).not.toMatch(/\bupdate\b/i);
+  });
+
+  /**
+   * The UPDATE must own the night predicate. A second overlapping run blocks
+   * on the first's row lock and then re-checks ITS OWN where clause against the
+   * new row — a predicate only inside the due read is never re-checked, and
+   * both runs stamp and send.
+   */
+  it("is self-consuming in the update itself", () => {
+    const stamp = fn("stamp_drop_notifications");
+    const update = stamp.slice(stamp.indexOf("update public.profiles p"));
+    expect(update).toMatch(/and p\.drop_notified_night is distinct from due\.night/);
+    expect(stamp).toMatch(/where d\.user_id = any \(coalesce\(p_user_ids/);
+  });
+
+  it("puts the caller's identity back after impersonating", () => {
+    const read = fn("drop_candidates_for");
+    expect(read).toMatch(/v_previous text := current_setting\('request\.jwt\.claims', true\)/);
+    expect(read).toMatch(/set_config\('request\.jwt\.claims', coalesce\(v_previous, ''\), true\)/);
+    // After the loop, not inside it, or every member after the first would be
+    // read as the cron.
+    expect(read.indexOf("coalesce(v_previous")).toBeGreaterThan(read.indexOf("end loop"));
+  });
+
+  it("returns eligibility facts about other members and nothing that names them", () => {
+    const columns = fn("drop_candidates_for").slice(
+      0,
+      fn("drop_candidates_for").indexOf("language"),
+    );
+    expect(columns).not.toMatch(/display_name|\bage\b|age_band|photo/);
+  });
+
+  it("answers about somebody else, so no member may call any of it", () => {
+    for (const signature of [
+      "drop_notification_due\\(integer\\)",
+      "drop_candidates_for\\(uuid\\[\\], integer\\)",
+      "stamp_drop_notifications\\(integer, uuid\\[\\]\\)",
+    ]) {
+      expect(migration).toMatch(
+        new RegExp(`revoke all on function public\\.${signature} from public, anon, authenticated`),
+      );
+    }
+  });
+
+  /**
+   * The fallback exists for the hours between this deploying and the migration
+   * being applied by hand. Narrow, because a catch-all would route a real
+   * failure around the new rule and quietly go back to announcing empty Drops.
+   */
+  it("falls back to the old claim only when the new functions are missing", () => {
+    expect(route).toMatch(
+      /if \(due\.error\?\.code === "PGRST202" \|\| due\.error\?\.code === "42883"\) \{\s*return legacyClaim\(supabase\);/,
+    );
+    // One call and one definition — nowhere else reaches it.
+    expect(route.match(/legacyClaim\(/g)).toHaveLength(2);
   });
 });
