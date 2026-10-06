@@ -182,9 +182,14 @@ export async function ConnectPanel({
       ) : standing.kind === "waiting_on_you" ? (
         <>
           <p className="mt-8 text-[13px] leading-[1.7] text-ink-2">{C.connectWaitingOnYou}</p>
-          <Link href="/app/inbox" className={buttonClass("secondary", "mt-4 inline-flex")}>
-            {C.connectGoToInbox}
-          </Link>
+          {/* Not when this was opened FROM the inbox's decision sheet, which is
+              still open underneath — closing is the way back there, and a link
+              to the page you are already on only reloads it. */}
+          {source !== "inbox" ? (
+            <Link href="/app/inbox" className={buttonClass("secondary", "mt-4 inline-flex")}>
+              {C.connectGoToInbox}
+            </Link>
+          ) : null}
         </>
       ) : (
         <>

@@ -102,3 +102,32 @@ describe("leaving the sheet closes it", () => {
     expect(noComments(read(catchAll))).toMatch(/return null/);
   });
 });
+
+/**
+ * Kevin, 2026-10-06: keep the decision sheet as it is, but link to the profile.
+ * Accepting cannot be undone, and the person behind the reply was one tap away
+ * from nowhere.
+ */
+describe("the inbox decision opens who sent it", () => {
+  const dialog = noComments(read("../../inbox/decision-dialog.tsx"));
+  const inbox = noComments(read("../../inbox/page.tsx"));
+
+  it("links to their profile sheet from the decision", () => {
+    expect(dialog).toMatch(/href=\{`\/app\/connect\/\$\{decision\.profileId\}\?source=inbox`\}/);
+    expect(dialog).toMatch(/\{decision\.profileId \? \(\s*<Link/);
+  });
+
+  it("keeps the decision on the reply, with the small photo", () => {
+    expect(dialog).toMatch(/<MemberPhotoFrame photo=\{decision\.photo\} size=\{52\} \/>/);
+  });
+
+  /** visible_profiles named them, or there is no profile to open. */
+  it("only names a profile the inbox could see", () => {
+    expect(inbox).toMatch(/profileId: nameById\.has\(otherId\) \? otherId : null/);
+  });
+
+  it("does not send somebody from the inbox back to the inbox", () => {
+    const waiting = panel.slice(panel.indexOf('standing.kind === "waiting_on_you"'));
+    expect(waiting).toMatch(/source !== "inbox" \? \(\s*<Link href="\/app\/inbox"/);
+  });
+});

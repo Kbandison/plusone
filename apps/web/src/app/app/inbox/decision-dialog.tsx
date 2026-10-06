@@ -2,12 +2,15 @@
 
 import { useRef } from "react";
 
+import Link from "next/link";
+
 import { DRAFT_COPY } from "@plusone/config";
 
 import type { MemberPhoto } from "@/lib/photo-urls";
 import { MemberPhotoFrame } from "../member-photo";
 import { AcceptForm, DeclineForm } from "./inbox-forms";
 import { CloseIcon } from "@/app/modal";
+import { buttonClass } from "@/app/ui";
 
 const C = DRAFT_COPY.app;
 
@@ -17,6 +20,8 @@ export interface Decision {
   readonly question: string | null;
   readonly reply: string;
   readonly photo: MemberPhoto | undefined;
+  /** Whose profile to open, or null when visible_profiles did not name them. */
+  readonly profileId: string | null;
 }
 
 /**
@@ -76,7 +81,22 @@ export function DecisionBubble({ decision }: { decision: Decision }) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <MemberPhotoFrame photo={decision.photo} size={52} />
-            <h2 className="text-h3">{decision.name}</h2>
+            <div className="min-w-0">
+              <h2 className="text-h3">{decision.name}</h2>
+              {/* The decision is made on what they said, so the sheet stays
+                  about the reply — but accepting cannot be undone, and the
+                  rest of them is one press away. Opens over this sheet through
+                  the intercepted route; closing it comes back here, still
+                  open, with the decision still to make. */}
+              {decision.profileId ? (
+                <Link
+                  href={`/app/connect/${decision.profileId}?source=inbox`}
+                  className={buttonClass("quiet", "-my-2")}
+                >
+                  {C.decisionViewProfile}
+                </Link>
+              ) : null}
+            </div>
           </div>
 
           {/* method="dialog" closes without any JavaScript of ours, and keeps

@@ -1053,6 +1053,8 @@ export const DRAFT_COPY = {
      * and neither of the two buttons below is safe to press by accident.
      */
     decisionDismiss: "Close",
+    /** Under the name in the decision sheet. Opens their full profile over it. */
+    decisionViewProfile: "See their profile",
     chatsHeading: "Chats",
     /**
      * The two message lists were the only ones in the app with no empty state,

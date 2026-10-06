@@ -248,12 +248,16 @@ export default async function InboxPage() {
 
   const decisions: Decision[] = pending.map((thread) => {
     const connect = connectById.get(thread.id)!;
+    const otherId = connect.initiator_id === me ? connect.target_id : connect.initiator_id;
     return {
       id: thread.id,
       name: thread.name,
       question: promptQuestion(connect.prompt_id),
       reply: connect.prompt_reply,
       photo: thread.photo,
+      // Only somebody visible_profiles named has a profile to open — the same
+      // read that gave them a name above. Anyone else would be a 404.
+      profileId: nameById.has(otherId) ? otherId : null,
     };
   });
 
