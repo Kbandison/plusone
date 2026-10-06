@@ -48,7 +48,15 @@ function boundary(rel: string): string {
  * on screen in front of them.
  */
 describe("every intercepting slot has its own loading state", () => {
-  const slots = routes().filter((r) => r.split("/").some((seg) => seg.startsWith("@")));
+  // Intercepted routes inside a slot — the sheets. `@modal/[...catchAll]`
+  // renders null to close them and has nothing to load, so a slot alone is not
+  // enough to qualify; the `(.)` marker is.
+  const slots = routes().filter((r) => {
+    const segments = r.split("/");
+    return (
+      segments.some((seg) => seg.startsWith("@")) && segments.some((seg) => /^\(\.+\)/.test(seg))
+    );
+  });
 
   it("finds the slots, so a rename does not empty this test", () => {
     // The floor. Without it, changing the @modal convention makes every

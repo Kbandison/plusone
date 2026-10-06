@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { after } from "next/server";
 import { notFound, redirect } from "next/navigation";
 
@@ -238,10 +239,29 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         {/* A face with the name. Every other surface that names a member shows
             them — the inbox rows, the Drop, the connect screen — and the chat,
             the one place you are actually talking to them, showed a string. */}
-        <div className="flex min-w-0 items-center gap-3">
-          <MemberPhotoFrame photo={otherPhoto} size={34} />
-          <h1 className="truncate text-h3">{otherName ?? C.chatsHeading}</h1>
-        </div>
+        {/* ...and pressing it opens who they are. The header named them and
+            went nowhere, so once you were talking to somebody there was no
+            screen left that showed more of them than this circle. The profile
+            sheet opens over the chat through the same intercepted route the
+            Drop and Browse use, and offers the way back.
+
+            Only when visible_profiles named them: a member who has since
+            blocked you or left dating has no profile to open, and a link to
+            one would land on a 404. */}
+        {other && otherName ? (
+          <Link
+            href={`/app/connect/${other}?source=chat`}
+            className="flex min-h-tap min-w-0 items-center gap-3"
+          >
+            <MemberPhotoFrame photo={otherPhoto} size={34} />
+            <h1 className="truncate text-h3">{otherName}</h1>
+          </Link>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">
+            <MemberPhotoFrame photo={otherPhoto} size={34} />
+            <h1 className="truncate text-h3">{otherName ?? C.chatsHeading}</h1>
+          </div>
+        )}
 
         {/* Report and block hung off the live-chat branch, so they vanished the
             moment a chat closed — taking them away from the member most likely

@@ -1907,6 +1907,15 @@ export const DRAFT_COPY = {
       "This member has not answered any prompts yet, so there is nothing to reply to.",
     connectReplyLabel: "Your reply",
     /**
+     * The profile sheet for somebody you already have a connect with — opened
+     * from the chat header, or from a Browse card for a person you are already
+     * talking to. The form would only fail on submit, so it is replaced.
+     */
+    connectOpenChat: "Open chat",
+    connectWaitingOnThem: "Your connect is with them. They have seven days to reply.",
+    connectWaitingOnYou: "They have sent you a connect. It is waiting in your inbox.",
+    connectGoToInbox: "Go to inbox",
+    /**
      * The second way in (Settings).
      *
      * Phrased as what it does rather than as "add an email", because members
