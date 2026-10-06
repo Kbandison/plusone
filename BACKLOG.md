@@ -2022,6 +2022,42 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     which is worth deciding about separately — the HSV room is currently fed
     only by general publishers.
 
+32. **The beta mark never reaches the iPhone app.** Found 2026-10-06 asking why
+    a member Kevin is chatting with was not marked as a tester.
+
+    She had a live invitation and used the iPhone app: joined 7:04 AM on 4
+    October, eight hours before every invitation expired, her address on the
+    waitlist. Not marked. And she is not alone:
+
+    | accounts since 2026-09-20 | count | use the iPhone app |
+    | ------------------------- | ----- | ------------------ |
+    | marked `joined_in_beta`   | 8     | **0**              |
+    | not marked                | 4     | **3**              |
+
+    All four unmarked were created before expiry. Nobody who signed up in the
+    iPhone app has ever been marked. Only she can be tied to an invitation —
+    the other two carry no email, and the waitlist holds no phone by design.
+
+    **Why, as far as the code says:** the invitation is a cookie set when
+    `/beta/<code>` opens. On an iPhone the email link opens SAFARI, and the
+    shell's WKWebView has its own jar. BACKLOG 28's steps say install first and
+    re-open the invitation LAST, inside the app — which is the step people skip,
+    and nothing recovers it afterwards. Unconfirmed on a device which of
+    "never re-opened" and "re-opened but the universal link went to Safari" it
+    is; macOS can tell.
+
+    It also skews the iPhone conversion figure: "1 of 29 used" undercounts,
+    because an app signup never marks the invitation used either. Those members
+    kept receiving "your invitation expires" nudges after joining.
+
+    **Held for Kevin, 2026-10-06:** whether she, and anyone else this
+    happened to, counts as a beta tester. His first call was no — "she didn't
+    sign up with her link" — made before it was known that she had tried to,
+    and he asked to come back to it. Two questions, not one: what to do for the
+    people already affected, and whether to fix the route (for example a code
+    field at signup, which works in any engine) before anybody else is invited
+    on an iPhone.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
