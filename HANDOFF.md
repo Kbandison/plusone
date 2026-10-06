@@ -524,6 +524,12 @@ So that account never sees the buy screen again — and the buy screen is where
 Play's `?diag=1` panel and both purchase flows live. Test purchases on another
 account, or delete that one row for the duration.
 
+**The "Plus One works in Safari" email went to 26 iPhone invitees** on
+2026-10-06 (`scripts/send-web-signup-email.mts`): every unused iPhone
+invitation, minus 2 matched to existing accounts. **Do not re-send from the Mac.**
+The ledger of who got it is `scripts/.web-signup-sent.json` on the WSL machine
+only, gitignored on purpose, so a run anywhere else would send all 26 again.
+
 Traps, both paid for today:
 
 - **A slot keeps its last render across a soft navigation it does not match.**
