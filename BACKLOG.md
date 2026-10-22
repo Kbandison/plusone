@@ -2647,9 +2647,11 @@ not optional.
        the app, the reviewer account included.
 
     **The junk accounts are still there.** 134 `auth.users` rows, each with a
-    `profiles` row. They matter beyond tidiness: they EXIST, so `/sign-in`
-    will text them, because sign-in sends to any number with an account behind
-    it. Kevin approved deleting them; the session's guard refused a production
+    `profiles` row. Our own screens can no longer text them — the country
+    check refuses +375 on sign-in as well as signup — but a direct call to
+    `/auth/v1/otp` with the public key never meets that check, and an account
+    that exists is one Supabase will send to until steps 1 and 4 are done.
+    Kevin approved deleting them; the session's guard refused a production
     mass-delete, rightly, so this is for the SQL editor. It aborts unless it
     matches exactly 134, and everything below `auth.users` cascades:
 

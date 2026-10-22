@@ -509,8 +509,11 @@ subframes through and sends only top-level off-list navigations to Safari, so
 the iframe should stay inside — read, not watched.
 
 **The 134 junk accounts are still in `auth.users`**, each with a profile. The
-session's guard refused the mass delete, so the SQL is in Kevin 23. They are
-not inert: `/sign-in` texts any number that has an account.
+session's guard refused the mass delete, so the SQL is in Kevin 23. Our own
+screens can no longer text them — the country check refuses +375 on sign-in
+too — but a direct `/auth/v1/otp` call with the public key never meets that
+check, and until Kevin 23's steps 1 and 4 an existing account is one it will
+send to.
 
 Traps, all three paid for today:
 
