@@ -67,6 +67,19 @@ export const clientEnvSchema = z.object({
    * cannot send.
    */
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+
+  /**
+   * Cloudflare Turnstile's site key, for the CAPTCHA on every screen that sends
+   * a code. Public by design, like the VAPID key. Its SECRET half is not an env
+   * var here at all — it goes in Supabase (Authentication → Attack Protection),
+   * because Supabase is what checks the token.
+   *
+   * Optional, and absent means no widget and no token, which Supabase accepts
+   * for exactly as long as its own CAPTCHA setting is off. So the order is: set
+   * this, deploy, see the widget, THEN switch Supabase on. The other order
+   * refuses every sign-in.
+   */
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
 });
 
 export const serverEnvSchema = z

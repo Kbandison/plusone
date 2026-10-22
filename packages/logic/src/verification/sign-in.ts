@@ -165,6 +165,15 @@ export type SendFailureAction =
   | "rate_limited"
   /** The provider would not accept that number. Retrying will not help. */
   | "undeliverable"
+  /**
+   * Supabase refused the CAPTCHA token, or there was none. Said as itself
+   * rather than as `failed`: a fresh token is one retry away, and "we could not
+   * send a code" would send somebody hunting for a fault in their number.
+   *
+   * Never `pretend_sent`, which matters on /sign-in: the token is checked
+   * before Supabase looks for an account, so this says nothing about one.
+   */
+  | "captcha_failed"
   /** Anything else. */
   | "failed";
 
@@ -199,8 +208,12 @@ const RATE_LIMITED: readonly string[] = [
   "over_request_rate_limit",
 ];
 
+/** What Supabase answers when CAPTCHA protection is on and the token fails. */
+const CAPTCHA_FAILED: readonly string[] = ["captcha_failed"];
+
 export function classifySendFailure(code: string | undefined | null): SendFailureAction {
   if (!code) return "failed";
+  if (CAPTCHA_FAILED.includes(code)) return "captcha_failed";
   if (NO_SUCH_ACCOUNT.includes(code)) return "pretend_sent";
   if (NOT_CONFIGURED.includes(code)) return "not_configured";
   if (RATE_LIMITED.includes(code)) return "rate_limited";

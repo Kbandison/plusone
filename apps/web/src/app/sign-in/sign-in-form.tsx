@@ -6,13 +6,20 @@ import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { DRAFT_COPY, OTP } from "@plusone/config";
 
 import { Field, RESEND_COOLDOWN_SECONDS, Submit } from "@/app/auth-fields";
+import { Turnstile } from "@/app/turnstile";
 import { applyDialCode } from "@/lib/dial-code-input";
 import { sendSignInCode, verifySignInCode } from "./actions";
 import { SIGN_IN_INITIAL, type SignInState } from "./state";
 
 const C = DRAFT_COPY.signIn;
 
-export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: string }) {
+export function SignInForm({
+  suggestedDialCode = "",
+  turnstileSiteKey = null,
+}: {
+  suggestedDialCode?: string;
+  turnstileSiteKey?: string | null;
+}) {
   const [sendState, send, sending] = useActionState(sendSignInCode, SIGN_IN_INITIAL);
   const [changing, setChanging] = useState(false);
   const identifierId = useId();
@@ -21,7 +28,13 @@ export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: str
   const before = useRef("");
 
   if (sendState.sentTo && !changing) {
-    return <CodeForm sent={sendState} onChange={() => setChanging(true)} />;
+    return (
+      <CodeForm
+        sent={sendState}
+        onChange={() => setChanging(true)}
+        turnstileSiteKey={turnstileSiteKey}
+      />
+    );
   }
 
   return (
@@ -70,6 +83,9 @@ export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: str
           opted in when they joined. */}
       <p className="text-[11px] leading-[1.6] text-ink-3">{C.smsConsent}</p>
 
+      {/* Email sends too: Supabase's CAPTCHA covers every OTP, not only SMS. */}
+      <Turnstile siteKey={turnstileSiteKey} resetKey={sendState} />
+
       <Submit label={C.sendLabel} pending={sending} />
 
       <p className="text-[11.7px] text-ink-2">
@@ -89,7 +105,15 @@ export function SignInForm({ suggestedDialCode = "" }: { suggestedDialCode?: str
   );
 }
 
-function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void }) {
+function CodeForm({
+  sent,
+  onChange,
+  turnstileSiteKey,
+}: {
+  sent: SignInState;
+  onChange: () => void;
+  turnstileSiteKey: string | null;
+}) {
   const [state, verify, verifying] = useActionState(verifySignInCode, sent);
   const [resendState, resend, resending] = useActionState(sendSignInCode, sent);
   const codeId = useId();
@@ -139,6 +163,7 @@ function CodeForm({ sent, onChange }: { sent: SignInState; onChange: () => void 
           }}
         >
           <input type="hidden" name="identifier" value={sent.sentTo?.value ?? ""} />
+          <Turnstile siteKey={turnstileSiteKey} resetKey={resendState} />
           <button
             type="submit"
             disabled={resending || cooldown > 0}

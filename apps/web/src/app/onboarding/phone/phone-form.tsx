@@ -6,19 +6,32 @@ import { useActionState, useEffect, useId, useState } from "react";
 import { DRAFT_COPY } from "@plusone/config";
 
 import { Field, RESEND_COOLDOWN_SECONDS, Submit } from "@/app/auth-fields";
+import { Turnstile } from "@/app/turnstile";
 import { sendCode, verifyCode } from "./actions";
 import { type PhoneState } from "./state";
 import { PHONE_INITIAL } from "./state";
 
 const C = DRAFT_COPY.phone;
 
-export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: string }) {
+export function PhoneForm({
+  suggestedDialCode = "",
+  turnstileSiteKey = null,
+}: {
+  suggestedDialCode?: string;
+  turnstileSiteKey?: string | null;
+}) {
   const [sendState, send, sending] = useActionState(sendCode, PHONE_INITIAL);
   const [changingNumber, setChangingNumber] = useState(false);
   const phoneId = useId();
 
   if (sendState.sentTo && !changingNumber) {
-    return <CodeForm sent={sendState} onChangeNumber={() => setChangingNumber(true)} />;
+    return (
+      <CodeForm
+        sent={sendState}
+        onChangeNumber={() => setChangingNumber(true)}
+        turnstileSiteKey={turnstileSiteKey}
+      />
+    );
   }
 
   return (
@@ -77,6 +90,8 @@ export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: stri
         </Link>
       </p>
 
+      <Turnstile siteKey={turnstileSiteKey} resetKey={sendState} />
+
       <Submit label={C.sendLabel} pending={sending} />
 
       {/* The way back in, BEFORE being refused rather than only after.
@@ -107,7 +122,15 @@ export function PhoneForm({ suggestedDialCode = "" }: { suggestedDialCode?: stri
   );
 }
 
-function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: () => void }) {
+function CodeForm({
+  sent,
+  onChangeNumber,
+  turnstileSiteKey,
+}: {
+  sent: PhoneState;
+  onChangeNumber: () => void;
+  turnstileSiteKey: string | null;
+}) {
   const [state, verify, verifying] = useActionState(verifyCode, sent);
   const [resendState, resend, resending] = useActionState(sendCode, sent);
   const codeId = useId();
@@ -157,6 +180,8 @@ function CodeForm({ sent, onChangeNumber }: { sent: PhoneState; onChangeNumber: 
           }}
         >
           <input type="hidden" name="phone" value={sent.sentTo ?? ""} />
+          {/* A resend is another paid SMS, so it needs its own token. */}
+          <Turnstile siteKey={turnstileSiteKey} resetKey={resendState} />
           <button
             type="submit"
             disabled={resending || cooldown > 0}

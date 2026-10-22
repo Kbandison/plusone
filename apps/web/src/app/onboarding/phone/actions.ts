@@ -8,6 +8,7 @@ import { verification } from "@plusone/logic";
 import { cookies } from "next/headers";
 
 import { BETA_COOKIE } from "@/lib/beta-cookie";
+import { captchaTokenOption } from "@/lib/captcha";
 import { serviceClient } from "@/lib/cron";
 import { getServerSupabase } from "@/lib/supabase";
 import type { PhoneState } from "./state";
@@ -34,6 +35,13 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
   // because guessing one sends someone's code to a stranger.
   const phone = verification.normalizePhone(raw);
   if (!phone) return { error: E.phoneInvalid, sentTo: null };
+
+  // Before Supabase is asked anything, because asking is what costs money.
+  // From 2026-10-20 a bot sent 134 codes to Belarus through this exact call
+  // until Twilio's balance ran out — see isSmsDestinationAllowed.
+  if (!verification.isSmsDestinationAllowed(phone)) {
+    return { error: E.unsupportedCountry, sentTo: null };
+  }
 
   /**
    * The one call in the app that can bring an account into existence.
@@ -72,7 +80,9 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
   const supabase = await getServerSupabase();
   const { error } = await supabase.auth.signInWithOtp({
     phone,
-    options: { shouldCreateUser: true },
+    // The token is checked by Supabase, not here — see app/turnstile.tsx for
+    // why that is the half that also covers a direct call to /auth/v1/otp.
+    options: { shouldCreateUser: true, ...captchaTokenOption(formData) },
   });
 
   if (error) {
@@ -87,6 +97,8 @@ export async function sendCode(_previous: PhoneState, formData: FormData): Promi
         return { error: E.rateLimited, sentTo: null };
       case "undeliverable":
         return { error: E.undeliverable, sentTo: null };
+      case "captcha_failed":
+        return { error: E.captchaFailed, sentTo: null };
       // `pretend_sent` is Supabase refusing to create an account, which needs
       // `shouldCreateUser: false` — and this screen now passes true. So the
       // branch is unreachable again, as it was before the gate, and it is kept

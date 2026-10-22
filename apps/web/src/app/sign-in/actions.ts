@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { DRAFT_COPY } from "@plusone/config";
 import { verification } from "@plusone/logic";
 
+import { captchaTokenOption } from "@/lib/captcha";
 import { getServerSupabase } from "@/lib/supabase";
 import type { SignInState } from "./state";
 
@@ -33,16 +34,24 @@ export async function sendSignInCode(
   const identifier = verification.classifyIdentifier(raw, verification.normalizePhone);
   if (!identifier) return { error: E.identifierInvalid, sentTo: null };
 
+  // Before Supabase is asked anything, as on /onboarding/phone. Safe to say
+  // plainly: it is about the number's country, and holds for every number
+  // whether or not an account sits behind it.
+  if (identifier.method === "phone" && !verification.isSmsDestinationAllowed(identifier.value)) {
+    return { error: E.unsupportedCountry, sentTo: null };
+  }
+
+  const captcha = captchaTokenOption(formData);
   const supabase = await getServerSupabase();
   const { error } =
     identifier.method === "email"
       ? await supabase.auth.signInWithOtp({
           email: identifier.value,
-          options: { shouldCreateUser: false },
+          options: { shouldCreateUser: false, ...captcha },
         })
       : await supabase.auth.signInWithOtp({
           phone: identifier.value,
-          options: { shouldCreateUser: false },
+          options: { shouldCreateUser: false, ...captcha },
         });
 
   if (error) {
@@ -59,6 +68,10 @@ export async function sendSignInCode(
         // exists — the provider refused the number itself — so showing the
         // code screen would strand somebody on a screen no code is coming to.
         return { error: E.undeliverable, sentTo: null };
+      case "captcha_failed":
+        // NOT pretend_sent: the token is checked before any account lookup, so
+        // this says nothing about one, and pretending strands a real member.
+        return { error: E.captchaFailed, sentTo: null };
       case "failed":
         return { error: E.sendFailed, sentTo: null };
     }

@@ -2069,6 +2069,38 @@ subjectTokenType }`. `getVercelOidcToken` takes an options object whose
     a fresh invitation, the link opened in Safari, the code typed in the
     installed app, an account created, and `joined_in_beta` true afterwards.
 
+33. **SMS pumping drained Twilio, and the code half is built.** Found
+    2026-10-22 when Kevin asked why Twilio kept suspending the account. It was
+    the balance: about $40, gone.
+
+    From 2026-10-20 20:55 UTC a bot typed numbers into `/onboarding/phone` in
+    bursts of about thirty an hour — one Egypt probe, then **134 Belarus
+    (+375)** across 22 number ranges. Not one code was typed back. Every
+    request came through our own server action (`createServerClient`,
+    from Vercel's IPs), not straight at `/auth/v1/otp`.
+    What capped each burst was Supabase's project-wide SMS limit, which also
+    means a real member signing in during a burst was told to wait an hour.
+
+    **Signup had been an open SMS relay since 2026-09-13** (server 22): any
+    number, no CAPTCHA, no limit of ours. Built:
+
+    - `isSmsDestinationAllowed` — the US and Canada only, checked BEFORE
+      Supabase is asked anything, on signup and on sign-in. +1 minus the foreign
+      NANP area codes, deliberately a denylist: an allowlist of US area codes
+      goes stale with every new overlay and refuses a real member silently.
+      Every confirmed member on 2026-10-22 had a +1 number.
+    - Cloudflare Turnstile on every code send, first send and resend, checked by
+      **Supabase** rather than by us — so it also holds for a bot that moves to
+      calling `/auth/v1/otp` with the public key once the form is shut.
+    - `captcha_failed` as its own outcome, never `pretend_sent`.
+      `captcha.test.ts` fails if a send action lacks a case for any outcome,
+      because the switch has no default and a missing case reports SUCCESS.
+
+    **NOT SEEN IN EITHER ENGINE.** The widget needs a site key to render at all.
+    Capacitor only sends top-level navigations off `allowNavigation` to
+    Safari, so the Turnstile iframe should stay inside the iOS shell — read
+    from upstream source, not watched. What is left is Kevin 23.
+
 ## Lane: Kevin
 
 Nothing else can proceed on some of these, so they are roughly in the order they
@@ -2592,6 +2624,52 @@ a polish item.
     at least one chat. Whether that is done by onboarding it properly by hand or
     by extending `seed-test-members.mjs` is Kevin's call; the second is
     repeatable and the first is honest.
+
+23. **Shut the SMS relay: four switches, in this order.** Server 33 is the
+code; none of it protects anything until these are done, and the order is
+not optional.
+
+    1. **Twilio → Verify → the service → Geo Permissions: the US and Canada
+       only.** Today, before anything else. It is the one control that holds
+       whatever path a request takes, and Twilio's fraud detection did not
+       catch this on its own — thirty an hour across 22 ranges is built to stay
+       under it. Top the balance up afterwards, not before.
+    2. **Cloudflare → Turnstile → add a widget.** Managed mode. Hostnames
+       `www.loveplusone.app` and `loveplusone.app`, plus `localhost` for local
+       work. Put the SITE key in Vercel as `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+       (Production and Preview) and **redeploy** — it is inlined at build.
+    3. **Look at it before going further.** `/onboarding/phone` and `/sign-in`,
+       in the TWA and in the iOS shell. Usually nothing shows; the check is
+       that a code still arrives.
+    4. **Then Supabase → Authentication → Attack Protection → Enable CAPTCHA →
+       Turnstile, with the SECRET key.** This is the step that refuses a send
+       with no token. Done before step 2's deploy, it refuses every sign-in in
+       the app, the reviewer account included.
+
+    **The junk accounts are still there.** 134 `auth.users` rows, each with a
+    `profiles` row. They matter beyond tidiness: they EXIST, so `/sign-in`
+    will text them, because sign-in sends to any number with an account behind
+    it. Kevin approved deleting them; the session's guard refused a production
+    mass-delete, rightly, so this is for the SQL editor. It aborts unless it
+    matches exactly 134, and everything below `auth.users` cascades:
+
+    ```sql
+    do $$
+    declare n int;
+    begin
+      with gone as (
+        delete from auth.users
+        where phone like '375%' and phone_confirmed_at is null
+          and last_sign_in_at is null and created_at >= '2026-10-20'
+        returning id
+      )
+      select count(*) into n from gone;
+      if n <> 134 then raise exception 'matched %, expected 134 — rolled back', n; end if;
+    end $$;
+    ```
+
+    The Egypt probe (`+20…`, 2026-10-20 20:55 UTC) is a 135th, left out
+    because it was not in the number Kevin approved.
 
 ---
 

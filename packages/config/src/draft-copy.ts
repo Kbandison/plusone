@@ -348,6 +348,10 @@ export const DRAFT_COPY = {
        */
       undeliverable:
         "We could not send a code to that number. Check it is right, including the country code.",
+      /** isSmsDestinationAllowed refused it before anything was sent. */
+      unsupportedCountry: "Plus One is in the US and Canada for now, so it needs a +1 number.",
+      /** Supabase refused the CAPTCHA token. A fresh one is a retry away. */
+      captchaFailed: "We could not confirm you are a person. Try again.",
       notConfigured:
         "Phone sign-in is not switched on yet. This is a setup step on our side, not something you did.",
     },
@@ -455,6 +459,13 @@ export const DRAFT_COPY = {
        */
       undeliverable:
         "We could not send a code to that number. Check it is right, including the country code.",
+      /**
+       * About the number's country, never about an account, so it is safe to
+       * say plainly here: every member's number is +1, and this is refused
+       * before Supabase is asked anything.
+       */
+      unsupportedCountry: "Plus One is in the US and Canada for now, so it needs a +1 number.",
+      captchaFailed: "We could not confirm you are a person. Try again.",
       notConfigured:
         "Sign-in is not switched on yet. This is a setup step on our side, not something you did.",
     },

@@ -3,9 +3,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  NANP_OUTSIDE_US_CANADA,
   OTP_TTL_MS,
   STUB_OTP_CODE,
   createStubOtpProvider,
+  isSmsDestinationAllowed,
   isValidE164,
   normalizePhone,
 } from "./otp";
@@ -50,6 +52,42 @@ describe("normalisation", () => {
 
   it("returns null rather than a half-cleaned string", () => {
     expect(normalizePhone("not a phone")).toBeNull();
+  });
+});
+
+describe("where we will pay to send a text", () => {
+  it.each([
+    ["+12125550123", "New York"],
+    ["+14165550123", "Toronto"],
+    ["+16045550123", "Vancouver"],
+    ["+17875550123", "Puerto Rico, a US territory"],
+    // What the seeds and the App Review account use. Refusing these breaks
+    // review rather than fraud.
+    [PHONE, "a 555 test number"],
+    ["+15555550102", "the reviewer account"],
+    ["+18005550147", "a toll-free demo number"],
+  ])("sends to %s (%s)", (phone) => {
+    expect(isSmsDestinationAllowed(phone)).toBe(true);
+  });
+
+  it.each([
+    // The numbers that drained the balance, 2026-10-20 onward.
+    ["+375291234567", "Belarus"],
+    ["+201001234567", "Egypt, the probe that came first"],
+    ["+447700900123", "the UK"],
+    // Inside +1 and still abroad.
+    ["+18765550123", "Jamaica"],
+    ["+18095550123", "the Dominican Republic"],
+    ["+12425550123", "the Bahamas"],
+    ["+19005550123", "a premium-rate line"],
+    ["+1555123456", "too short for +1"],
+  ])("refuses %s (%s)", (phone) => {
+    expect(isSmsDestinationAllowed(phone)).toBe(false);
+  });
+
+  it("lists every foreign +1 area code once, as three digits", () => {
+    expect(new Set(NANP_OUTSIDE_US_CANADA).size).toBe(NANP_OUTSIDE_US_CANADA.length);
+    for (const code of NANP_OUTSIDE_US_CANADA) expect(code).toMatch(/^\d{3}$/);
   });
 });
 

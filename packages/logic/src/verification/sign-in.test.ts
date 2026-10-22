@@ -196,6 +196,15 @@ describe("classifySendFailure — an unknown identifier tells no tales", () => {
     },
   );
 
+  /**
+   * A refused CAPTCHA token is its own answer, and above all NOT pretend_sent:
+   * Supabase checks the token before it looks for an account, so on /sign-in a
+   * pretend here would show a code screen nobody is sending a code to.
+   */
+  it("captcha_failed asks for another try rather than pretending", () => {
+    expect(classifySendFailure("captcha_failed")).toBe("captcha_failed");
+  });
+
   it("does not pretend for an error it does not recognise", () => {
     // Pretending by default would hide a real outage behind a code screen.
     expect(classifySendFailure("unexpected_failure")).toBe("failed");
@@ -230,6 +239,7 @@ describe("classifySendFailure — an unknown identifier tells no tales", () => {
       "over_email_send_rate_limit",
       "over_sms_send_rate_limit",
       "over_request_rate_limit",
+      "captcha_failed",
     ]) {
       expect(union, `${code} is no longer a Supabase ErrorCode`).toContain(`'${code}'`);
     }

@@ -40,7 +40,10 @@ export default async function PhonePage() {
       {/* A suggestion, not an assumption — see lib/dial-code.ts. The field is a
           plain editable input and normalizePhone still refuses to invent a
           country code for anybody who clears it. */}
-      <PhoneForm suggestedDialCode={await suggestedDialCode()} />
+      <PhoneForm
+        suggestedDialCode={await suggestedDialCode()}
+        turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? null}
+      />
       {/* The invitation, for anybody whose link opened somewhere else — an
           iPhone's email link opens Safari, not the installed app (BACKLOG 32).
           Asked about the cookie that is actually HERE, so the confirmation

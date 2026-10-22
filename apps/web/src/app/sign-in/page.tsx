@@ -42,7 +42,10 @@ export default async function SignInPage({
         </p>
       ) : null}
 
-      <SignInForm suggestedDialCode={await suggestedDialCode()} />
+      <SignInForm
+        suggestedDialCode={await suggestedDialCode()}
+        turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? null}
+      />
     </main>
   );
 }
